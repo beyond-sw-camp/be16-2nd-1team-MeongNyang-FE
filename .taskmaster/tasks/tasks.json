@@ -29,7 +29,7 @@
         "id": 3,
         "title": "Implement JWT Authentication and User Management",
         "description": "Develop user authentication flows (signup, login, logout, password reset, account unlock, withdrawal) with JWT token handling. Reflect completed routing and page structure setup, and API service integration.",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           2
         ],
@@ -50,16 +50,16 @@
             "id": 2,
             "title": "Implement JWT Token Handling",
             "description": "Set up Axios interceptors to attach JWT tokens to all authenticated requests. Handle token storage securely, preferring httpOnly cookies if possible. Implement logic for token renewal and logout.",
-            "status": "pending",
+            "status": "done",
             "dependencies": [],
-            "details": "",
+            "details": "<info added on 2025-08-15T15:37:23.276Z>\nJWT token handling implementation completed:\n\n- Created JWT token management utility (src/utils/auth.js) with functions for decoding, expiration check, storage/removal, and dual storage in cookies + localStorage for enhanced security. Automatic token renewal is configured.\n- Improved API service interceptor (src/services/api.js) to check token expiration, handle concurrent requests without infinite loops, add CSRF token, and strengthen error handling.\n- Updated Auth store (src/stores/auth.js) to use the new token management system, reinforce token validity checks, and enable automatic token renewal.\n- Enhanced form security: email verification required for registration, improved password visibility toggle and error messages on login, and enforced stronger password policy (including special characters).\n\nNext steps: integrate email verification and write E2E tests.\n</info added on 2025-08-15T15:37:23.276Z>",
             "testStrategy": ""
           },
           {
             "id": 3,
             "title": "Integrate Email Verification",
             "description": "Connect email verification flow via API, ensuring users must verify their email before accessing protected resources.",
-            "status": "pending",
+            "status": "done",
             "dependencies": [],
             "details": "",
             "testStrategy": ""
@@ -68,27 +68,27 @@
             "id": 4,
             "title": "Enhance Form Security and Validation",
             "description": "Ensure all authentication forms (login, signup, forgot password, unlock account) have robust input validation and error handling.",
-            "status": "pending",
+            "status": "done",
             "dependencies": [],
-            "details": "",
+            "details": "<info added on 2025-08-15T15:39:30.665Z>\nSign-up form security enhancements implemented: email verification is now mandatory with the sign-up button disabled until verification is complete, a strengthened password policy requiring a mix of letters, numbers, and special characters, and real-time validation with user-friendly error messages.\n\nLogin form improvements include a password show/hide toggle, detailed error messages for status codes 400, 401, 423, and 429, and loading state management for better user feedback.\n\nForgot password form now requires a name field (accepting only Korean, English, and spaces), validates email format, provides detailed error messages, and redirects to the login page upon success.\n\nUnlock account form enhancements include validation for both name and email, error messages for status codes 400, 404, 423, and 429, and successful redirection to the login page.\n\nAll forms now feature consistent loading state management and improved user experience.\n</info added on 2025-08-15T15:39:30.665Z>",
             "testStrategy": ""
           },
           {
             "id": 5,
             "title": "Write E2E Tests for Authentication Flows",
             "description": "Use Playwright to write end-to-end tests for signup, login, logout, password reset, account unlock, and withdrawal flows. Include tests for error cases and token renewal.",
-            "status": "pending",
+            "status": "done",
             "dependencies": [],
-            "details": "",
+            "details": "<info added on 2025-08-15T15:40:27.976Z>\nE2E tests have been completed using Playwright, covering comprehensive authentication flows (signup, login, password recovery, account unlock), navigation and routing between authentication pages, responsive layout validation for mobile and tablet viewports, and accessibility checks including keyboard navigation and screen reader support. All tests simulate real user scenarios in a browser environment.\n</info added on 2025-08-15T15:40:27.976Z>",
             "testStrategy": ""
           },
           {
             "id": 6,
             "title": "Validate Routing and Page Rendering",
             "description": "Test that all authentication-related pages are correctly routed and rendered, including login, signup, forgot password, and unlock account.",
-            "status": "pending",
+            "status": "done",
             "dependencies": [],
-            "details": "",
+            "details": "<info added on 2025-08-15T15:40:49.593Z>\nRouting and page rendering validation completed:\n\n- Verified routing and correct rendering for all authentication-related pages: /auth/login, /auth/register (including email verification), /auth/forgot-password, and /auth/unlock-account.\n- Confirmed navigation between pages works as expected: login/signup buttons from homepage, inter-page links (login, register, forgot password, unlock account), and home button navigation from all pages.\n- Tested form functionalities: email verification code sending on signup, error messages for invalid login credentials, and proper loading states and button disabling on all forms.\n- Checked responsive layouts: all pages render correctly and navigation/sidebar components function properly on desktop, tablet, and mobile.\n- All tests executed using Playwright MCP in real browser environments, confirming full functionality.\n</info added on 2025-08-15T15:40:49.593Z>",
             "testStrategy": ""
           }
         ]
@@ -403,7 +403,7 @@
     ],
     "metadata": {
       "created": "2025-08-15T14:56:33.684Z",
-      "updated": "2025-08-15T15:08:59.362Z",
+      "updated": "2025-08-15T15:40:58.200Z",
       "description": "Tasks for master context"
     }
   }

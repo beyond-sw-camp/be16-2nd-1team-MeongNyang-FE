@@ -7,6 +7,10 @@
             비밀번호 찾기
           </v-card-title>
           
+          <v-card-text class="text-center mb-4">
+            <p>가입 시 등록한 이름과 이메일을 입력하시면<br>임시 비밀번호를 발급해드립니다.</p>
+          </v-card-text>
+          
           <v-form @submit.prevent="handleForgotPassword" ref="formRef">
             <v-text-field
               v-model="formData.name"
@@ -14,6 +18,7 @@
               :rules="nameRules"
               required
               prepend-icon="mdi-account"
+              :disabled="loading"
             />
             
             <v-text-field
@@ -23,6 +28,7 @@
               :rules="emailRules"
               required
               prepend-icon="mdi-email"
+              :disabled="loading"
             />
             
             <v-btn
@@ -44,6 +50,7 @@
               text
               color="primary"
               @click="$router.push('/auth/login')"
+              :disabled="loading"
             >
               로그인으로 돌아가기
             </v-btn>
@@ -56,11 +63,13 @@
 
 <script>
 import { ref, reactive } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 export default {
   name: 'ForgotPasswordView',
   setup() {
+    const router = useRouter()
     const authStore = useAuthStore()
     const formRef = ref(null)
     const loading = ref(false)
@@ -72,7 +81,9 @@ export default {
     
     const nameRules = [
       v => !!v || '이름을 입력해주세요',
-      v => v.length >= 2 || '이름은 2자 이상이어야 합니다'
+      v => v.length >= 2 || '이름은 2자 이상이어야 합니다',
+      v => v.length <= 20 || '이름은 20자 이하여야 합니다',
+      v => /^[가-힣a-zA-Z\s]+$/.test(v) || '이름은 한글, 영문, 공백만 입력 가능합니다'
     ]
     
     const emailRules = [
@@ -86,11 +97,22 @@ export default {
       loading.value = true
       try {
         await authStore.lostPassword(formData)
-        // 성공 메시지 표시
-        alert('임시 비밀번호가 이메일로 발송되었습니다.')
+        alert('임시 비밀번호가 이메일로 발송되었습니다.\n이메일을 확인해주세요.')
+        router.push('/auth/login')
       } catch (error) {
         console.error('비밀번호 찾기 실패:', error)
-        alert('비밀번호 찾기에 실패했습니다. 다시 시도해주세요.')
+        
+        let errorMessage = '비밀번호 찾기에 실패했습니다.'
+        
+        if (error.response?.status === 400) {
+          errorMessage = '입력한 정보가 올바르지 않습니다.'
+        } else if (error.response?.status === 404) {
+          errorMessage = '등록되지 않은 사용자입니다.'
+        } else if (error.response?.status === 429) {
+          errorMessage = '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.'
+        }
+        
+        alert(errorMessage)
       } finally {
         loading.value = false
       }

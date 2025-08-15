@@ -1,7 +1,24 @@
 import axios from 'axios'
+import { getToken, saveTokens, clearAllTokens, isTokenExpired, generateCSRFToken } from '@/utils/auth'
 
 // API 기본 설정
 const API_BASE_URL = process.env.VUE_APP_API_BASE_URL || 'http://localhost:8080'
+
+// 토큰 갱신 상태 관리
+let isRefreshing = false
+let failedQueue = []
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error)
+    } else {
+      prom.resolve(token)
+    }
+  })
+  
+  failedQueue = []
+}
 
 // axios 인스턴스 생성
 const apiClient = axios.create({
@@ -15,10 +32,18 @@ const apiClient = axios.create({
 // 요청 인터셉터 - 토큰 추가
 apiClient.interceptors.request.use(
   config => {
-    const accessToken = localStorage.getItem('accessToken')
-    if (accessToken) {
+    const accessToken = getToken('accessToken')
+    
+    if (accessToken && !isTokenExpired(accessToken)) {
       config.headers['Authorization'] = `Bearer ${accessToken}`
     }
+    
+    // CSRF 토큰 추가 (POST, PUT, DELETE 요청에만)
+    if (['post', 'put', 'delete', 'patch'].includes(config.method?.toLowerCase())) {
+      const csrfToken = generateCSRFToken()
+      config.headers['X-CSRF-Token'] = csrfToken
+    }
+    
     return config
   },
   error => {
@@ -30,24 +55,63 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   response => response,
   async error => {
-    if (error.response?.status === 401) {
+    const originalRequest = error.config
+    
+    // 401 에러이고 토큰 갱신을 시도하지 않은 경우
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        // 이미 토큰 갱신 중인 경우 큐에 추가
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject })
+        }).then(token => {
+          originalRequest.headers['Authorization'] = `Bearer ${token}`
+          return apiClient(originalRequest)
+        }).catch(err => {
+          return Promise.reject(err)
+        })
+      }
+      
+      originalRequest._retry = true
+      isRefreshing = true
+      
       try {
-        const refreshToken = localStorage.getItem('refreshToken')
-        const response = await apiClient.post('/users/refresh-token', { refreshToken })
-        localStorage.setItem('accessToken', response.data.data.accessToken)
+        const refreshToken = getToken('refreshToken')
+        if (!refreshToken) {
+          throw new Error('리프레시 토큰이 없습니다.')
+        }
+        
+        const response = await apiClient.post('/users/refresh-token', { 
+          refreshToken 
+        })
+        
+        const { accessToken: newAccessToken, refreshToken: newRefreshToken } = response.data.data
+        
+        // 새 토큰 저장
+        saveTokens(newAccessToken, newRefreshToken)
+        
+        // 큐에 대기 중인 요청들 처리
+        processQueue(null, newAccessToken)
         
         // 원래 요청 재시도
-        const originalRequest = error.config
-        originalRequest.headers['Authorization'] = `Bearer ${response.data.data.accessToken}`
+        originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`
         return apiClient(originalRequest)
+        
       } catch (refreshError) {
         // 토큰 갱신 실패 시 로그아웃
-        localStorage.removeItem('accessToken')
-        localStorage.removeItem('refreshToken')
-        window.location.href = '/auth/login'
+        processQueue(refreshError, null)
+        clearAllTokens()
+        
+        // 로그인 페이지로 리다이렉트 (현재 페이지가 로그인 페이지가 아닌 경우)
+        if (window.location.pathname !== '/auth/login') {
+          window.location.href = '/auth/login'
+        }
+        
         return Promise.reject(refreshError)
+      } finally {
+        isRefreshing = false
       }
     }
+    
     return Promise.reject(error)
   }
 )
@@ -71,6 +135,9 @@ export const userAPI = {
   
   // 로그인
   login: (credentials) => apiClient.post('/users/login', credentials),
+  
+  // 토큰 갱신
+  refreshToken: (refreshToken) => apiClient.post('/users/refresh-token', { refreshToken }),
   
   // 임시 비밀번호 발급
   lostPassword: (userData) => apiClient.post('/users/lost-password', userData),

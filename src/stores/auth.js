@@ -1,16 +1,27 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { userAPI } from '@/services/api'
+import { 
+  getToken, 
+  saveTokens, 
+  clearAllTokens, 
+  isValidToken, 
+  extractUserFromToken,
+  setupTokenRefresh 
+} from '@/utils/auth'
 
 export const useAuthStore = defineStore('auth', () => {
   // 상태
   const user = ref(null)
-  const accessToken = ref(localStorage.getItem('accessToken') || null)
-  const refreshToken = ref(localStorage.getItem('refreshToken') || null)
+  const accessToken = ref(getToken('accessToken') || null)
+  const refreshToken = ref(getToken('refreshToken') || null)
   const loading = ref(false)
+  const isInitialized = ref(false)
 
   // 계산된 속성
-  const isAuthenticated = computed(() => !!accessToken.value && !!user.value)
+  const isAuthenticated = computed(() => {
+    return !!accessToken.value && !!user.value && isValidToken(accessToken.value)
+  })
 
   // 액션
   const login = async (credentials) => {
@@ -22,11 +33,13 @@ export const useAuthStore = defineStore('auth', () => {
       // 토큰 저장
       accessToken.value = at
       refreshToken.value = rt
-      localStorage.setItem('accessToken', at)
-      localStorage.setItem('refreshToken', rt)
+      saveTokens(at, rt)
       
       // 사용자 정보 저장
       user.value = member
+      
+      // 토큰 자동 갱신 설정
+      setupTokenRefresh(refreshAccessToken)
       
       return response.data
     } finally {
@@ -48,17 +61,26 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
     accessToken.value = null
     refreshToken.value = null
-    localStorage.removeItem('accessToken')
-    localStorage.removeItem('refreshToken')
+    clearAllTokens()
   }
 
   const refreshAccessToken = async () => {
     try {
-      const response = await userAPI.refreshToken(refreshToken.value)
+      const currentRefreshToken = getToken('refreshToken')
+      if (!currentRefreshToken) {
+        throw new Error('리프레시 토큰이 없습니다.')
+      }
       
-      const { accessToken: at } = response.data.data
+      const response = await userAPI.refreshToken(currentRefreshToken)
+      const { accessToken: at, refreshToken: rt } = response.data.data
+      
+      // 새 토큰 저장
       accessToken.value = at
-      localStorage.setItem('accessToken', at)
+      refreshToken.value = rt
+      saveTokens(at, rt)
+      
+      // 토큰 자동 갱신 재설정
+      setupTokenRefresh(refreshAccessToken)
       
       return at
     } catch (error) {
@@ -68,7 +90,9 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const getCurrentUser = async () => {
-    if (!accessToken.value) return null
+    if (!accessToken.value || !isValidToken(accessToken.value)) {
+      return null
+    }
     
     try {
       const response = await userAPI.getMyPage()
@@ -161,12 +185,31 @@ export const useAuthStore = defineStore('auth', () => {
 
   // 초기화 시 사용자 정보 가져오기
   const initialize = async () => {
-    if (accessToken.value) {
-      try {
+    if (isInitialized.value) return
+    
+    try {
+      const token = getToken('accessToken')
+      if (token && isValidToken(token)) {
+        accessToken.value = token
+        refreshToken.value = getToken('refreshToken')
+        
+        // 토큰에서 사용자 정보 추출 (임시)
+        const userFromToken = extractUserFromToken(token)
+        if (userFromToken) {
+          user.value = userFromToken
+        }
+        
+        // 서버에서 최신 사용자 정보 가져오기
         await getCurrentUser()
-      } catch (error) {
-        console.error('사용자 정보 가져오기 실패:', error)
+        
+        // 토큰 자동 갱신 설정
+        setupTokenRefresh(refreshAccessToken)
       }
+    } catch (error) {
+      console.error('인증 초기화 실패:', error)
+      logout()
+    } finally {
+      isInitialized.value = true
     }
   }
 
@@ -176,6 +219,7 @@ export const useAuthStore = defineStore('auth', () => {
     accessToken,
     refreshToken,
     loading,
+    isInitialized,
     
     // 계산된 속성
     isAuthenticated,

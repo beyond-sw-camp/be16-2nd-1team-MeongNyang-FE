@@ -15,7 +15,50 @@
               :rules="emailRules"
               required
               prepend-icon="mdi-email"
+              :disabled="emailVerified"
             />
+            
+            <!-- 이메일 인증 섹션 -->
+            <div v-if="!emailVerified" class="mb-4">
+              <v-btn
+                @click="sendVerificationEmail"
+                :loading="sendingEmail"
+                :disabled="!formData.email || !isValidEmail(formData.email)"
+                color="secondary"
+                block
+                class="mb-2"
+              >
+                이메일 인증번호 발송
+              </v-btn>
+              
+              <v-text-field
+                v-model="verificationCode"
+                label="인증번호"
+                :rules="[v => !!v || '인증번호를 입력해주세요']"
+                required
+                prepend-icon="mdi-key"
+                :disabled="!sendingEmail"
+              />
+              
+              <v-btn
+                @click="verifyEmail"
+                :loading="verifyingEmail"
+                :disabled="!verificationCode"
+                color="info"
+                block
+                class="mb-2"
+              >
+                인증번호 확인
+              </v-btn>
+            </div>
+            
+            <v-alert
+              v-if="emailVerified"
+              type="success"
+              class="mb-4"
+            >
+              ✅ 이메일 인증이 완료되었습니다.
+            </v-alert>
             
             <v-text-field
               v-model="formData.nickname"
@@ -55,6 +98,7 @@
               block
               size="large"
               :loading="loading"
+              :disabled="!emailVerified"
               class="mb-4"
             >
               회원가입
@@ -79,7 +123,7 @@
 </template>
 
 <script>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
@@ -90,6 +134,10 @@ export default {
     const authStore = useAuthStore()
     const formRef = ref(null)
     const loading = ref(false)
+    const sendingEmail = ref(false)
+    const verifyingEmail = ref(false)
+    const emailVerified = ref(false)
+    const verificationCode = ref('')
     
     const formData = reactive({
       email: '',
@@ -99,9 +147,13 @@ export default {
       agreeToTerms: false
     })
     
+    const isValidEmail = (email) => {
+      return /.+@.+\..+/.test(email)
+    }
+    
     const emailRules = [
       v => !!v || '이메일을 입력해주세요',
-      v => /.+@.+\..+/.test(v) || '올바른 이메일 형식을 입력해주세요'
+      v => isValidEmail(v) || '올바른 이메일 형식을 입력해주세요'
     ]
     
     const nicknameRules = [
@@ -113,24 +165,67 @@ export default {
     const passwordRules = [
       v => !!v || '비밀번호를 입력해주세요',
       v => v.length >= 8 || '비밀번호는 8자 이상이어야 합니다',
-      v => /^(?=.*[a-zA-Z])(?=.*[0-9])/.test(v) || '비밀번호는 영문과 숫자를 포함해야 합니다'
+      v => /^(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[!@#$%^&*])/.test(v) || '비밀번호는 영문, 숫자, 특수문자를 포함해야 합니다'
     ]
     
-    const confirmPasswordRules = computed(() => [
+    const confirmPasswordRules = [
       v => !!v || '비밀번호 확인을 입력해주세요',
       v => v === formData.password || '비밀번호가 일치하지 않습니다'
-    ])
+    ]
+    
+    const sendVerificationEmail = async () => {
+      if (!isValidEmail(formData.email)) {
+        alert('올바른 이메일 형식을 입력해주세요.')
+        return
+      }
+      
+      sendingEmail.value = true
+      try {
+        await authStore.verifyEmail(formData.email)
+        alert('인증번호가 이메일로 발송되었습니다.')
+      } catch (error) {
+        console.error('이메일 발송 실패:', error)
+        alert('인증번호 발송에 실패했습니다. 다시 시도해주세요.')
+      } finally {
+        sendingEmail.value = false
+      }
+    }
+    
+    const verifyEmail = async () => {
+      if (!verificationCode.value) {
+        alert('인증번호를 입력해주세요.')
+        return
+      }
+      
+      verifyingEmail.value = true
+      try {
+        await authStore.verifyEmailCheck(formData.email, verificationCode.value)
+        emailVerified.value = true
+        alert('이메일 인증이 완료되었습니다.')
+      } catch (error) {
+        console.error('이메일 인증 실패:', error)
+        alert('인증번호가 올바르지 않습니다. 다시 확인해주세요.')
+      } finally {
+        verifyingEmail.value = false
+      }
+    }
     
     const handleRegister = async () => {
       if (!formRef.value.validate()) return
       
+      if (!emailVerified.value) {
+        alert('이메일 인증을 완료해주세요.')
+        return
+      }
+      
       loading.value = true
       try {
         await authStore.register(formData)
+        alert('회원가입이 완료되었습니다. 로그인해주세요.')
         router.push('/auth/login')
       } catch (error) {
         console.error('회원가입 실패:', error)
-        // 에러 처리 로직 추가
+        alert('회원가입에 실패했습니다. 다시 시도해주세요.')
       } finally {
         loading.value = false
       }
@@ -140,10 +235,17 @@ export default {
       formRef,
       formData,
       loading,
+      sendingEmail,
+      verifyingEmail,
+      emailVerified,
+      verificationCode,
       emailRules,
       nicknameRules,
       passwordRules,
       confirmPasswordRules,
+      isValidEmail,
+      sendVerificationEmail,
+      verifyEmail,
       handleRegister
     }
   }
