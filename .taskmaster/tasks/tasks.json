@@ -1,0 +1,410 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Initialize Vue 3 Project with Vuetify and Pinia",
+        "description": "Set up the project repository with Vue 3, Vuetify, Pinia, Vue Router, Axios, and Playwright for E2E testing.",
+        "details": "Use the latest Vue CLI or Vite (recommended for performance) to scaffold the project. Install Vuetify (v3.x), Pinia (latest), Vue Router (v4.x), Axios (latest), and Playwright. Configure TypeScript support. Set up project structure with folders for components, views, stores, services, and tests. Initialize Git repository and set up basic README.",
+        "testStrategy": "Verify project builds and runs locally. Ensure all dependencies are installed and initial test suite passes.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 2,
+        "title": "Configure Routing and Layouts",
+        "description": "Implement Vue Router with nested routes and responsive layouts using Vuetify.",
+        "details": "Define routes for authentication, main dashboard, pet management, diary, market, chat, admin, and error pages. Use Vuetify's layout system for responsive design. Implement navigation guards for protected routes. Use lazy loading for route components to enable code splitting.",
+        "testStrategy": "Test navigation between all routes, including protected routes. Validate responsiveness on mobile, tablet, and desktop.",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 3,
+        "title": "Implement JWT Authentication and User Management",
+        "description": "Develop user authentication flows (signup, login, logout, password reset, account unlock, withdrawal) with JWT token handling. Reflect completed routing and page structure setup, and API service integration.",
+        "status": "pending",
+        "dependencies": [
+          2
+        ],
+        "priority": "high",
+        "details": "All core authentication-related pages (login, signup, forgot password, unlock account) are implemented and routed. The API service file (src/services/api.js) is created with all endpoints based on backend API documentation, and the Auth store is updated to use this service. Pinia state management and responsive layout are complete. API base URL is set to localhost:8080. Next, implement JWT authentication: use Axios interceptors to attach JWT tokens to requests, handle secure token storage (prefer httpOnly cookies), and integrate email verification via API. Ensure secure forms with input validation and error handling.",
+        "testStrategy": "Write E2E tests for all authentication flows using Playwright. Validate JWT storage and renewal. Test error cases (invalid credentials, expired tokens). Confirm correct routing and page rendering for all authentication-related views. Verify API integration and state management.",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Verify API Service Integration",
+            "description": "Ensure all authentication endpoints in src/services/api.js are correctly implemented and match backend API documentation. Confirm Auth store uses the new API service.",
+            "status": "done",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement JWT Token Handling",
+            "description": "Set up Axios interceptors to attach JWT tokens to all authenticated requests. Handle token storage securely, preferring httpOnly cookies if possible. Implement logic for token renewal and logout.",
+            "status": "pending",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Integrate Email Verification",
+            "description": "Connect email verification flow via API, ensuring users must verify their email before accessing protected resources.",
+            "status": "pending",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Enhance Form Security and Validation",
+            "description": "Ensure all authentication forms (login, signup, forgot password, unlock account) have robust input validation and error handling.",
+            "status": "pending",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Write E2E Tests for Authentication Flows",
+            "description": "Use Playwright to write end-to-end tests for signup, login, logout, password reset, account unlock, and withdrawal flows. Include tests for error cases and token renewal.",
+            "status": "pending",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Validate Routing and Page Rendering",
+            "description": "Test that all authentication-related pages are correctly routed and rendered, including login, signup, forgot password, and unlock account.",
+            "status": "pending",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Develop Core UI/UX Components",
+        "description": "Build reusable UI components (buttons, forms, dialogs, loaders, notifications) using Vuetify.",
+        "details": "Follow atomic design principles. Ensure accessibility (ARIA roles, keyboard navigation). Implement global error and loading indicators. Use Vuetify's theming for consistent look and feel.",
+        "testStrategy": "Unit test components for rendering, props, and events. Use Playwright to check accessibility and responsiveness.",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 5,
+        "title": "Implement Pet Management Features",
+        "description": "Enable users to register, edit, delete pets, set representative pet, and search/select species.",
+        "details": "Create forms with validation for pet data. Use Pinia store for pet state. Integrate with PetController and SpeciesController APIs. Implement species autocomplete/search using debounce for API calls.",
+        "testStrategy": "Write unit and E2E tests for CRUD operations. Validate species search and selection. Test edge cases (duplicate pets, invalid data).",
+        "priority": "medium",
+        "dependencies": [
+          3,
+          4
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 6,
+        "title": "Build Diary and Community Features",
+        "description": "Allow users to create, edit, delete diaries with images, view lists/details, like, comment, reply, search, and report.",
+        "details": "Use Vuetify file input for multi-image upload. Integrate with PostRestController. Implement optimistic UI updates for likes/comments. Use Pinia for diary state. Add search with debounce. Implement report modal with reason selection.",
+        "testStrategy": "E2E tests for diary CRUD, image upload, like/unlike, comment/reply, search, and report. Validate image size/type restrictions.",
+        "priority": "medium",
+        "dependencies": [
+          4,
+          5
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 7,
+        "title": "Develop Marketplace Features",
+        "description": "Implement CRUD for market posts, image uploads, wishlist, purchase/sale lists, and category filtering.",
+        "details": "Integrate with MarketController API. Use Vuetify for forms and image uploads. Implement wishlist (찜) with Pinia store. Add category filter using Vuetify select. Optimize image uploads with compression (e.g., browser-image-compression).",
+        "testStrategy": "E2E tests for market post CRUD, image upload, wishlist, and category filtering. Validate image optimization and error handling.",
+        "priority": "medium",
+        "dependencies": [
+          4,
+          5
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 8,
+        "title": "Integrate Real-Time Chat with STOMP/WebSocket",
+        "description": "Enable real-time chat rooms, message exchange, file upload, participant management, and online/offline status.",
+        "details": "Use @stomp/stompjs (latest) for WebSocket integration. Create chat UI with Vuetify. Implement file upload with progress indicator. Manage chat state with Pinia. Handle reconnection and error states. Display online/offline status and read receipts.",
+        "testStrategy": "Simulate multi-user chat sessions. Test message/file delivery, participant management, and status updates. Validate reconnection logic.",
+        "priority": "medium",
+        "dependencies": [
+          3,
+          4
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 9,
+        "title": "Implement Real-Time Notifications via SSE",
+        "description": "Receive and display real-time notifications using Server-Sent Events (SSE).",
+        "details": "Integrate with SseController. Use EventSource API for SSE connection. Display notifications using Vuetify snackbar/toast. Handle reconnection and notification deduplication.",
+        "testStrategy": "Test notification delivery in real-time scenarios. Simulate network interruptions and validate reconnection.",
+        "priority": "medium",
+        "dependencies": [
+          3,
+          4
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 10,
+        "title": "Develop Admin Features",
+        "description": "Implement admin dashboard for user management, report handling, and permission checks.",
+        "details": "Create protected admin routes. Integrate with AdminRestController. Display user/report lists with pagination and filtering. Implement permission checks on frontend.",
+        "testStrategy": "E2E tests for admin actions. Validate permission enforcement and error handling.",
+        "priority": "medium",
+        "dependencies": [
+          3,
+          4
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 11,
+        "title": "Implement Security Best Practices",
+        "description": "Apply security measures: JWT handling, HTTPS, XSS/CSRF prevention, and input validation.",
+        "details": "Use secure HTTP-only cookies for JWT if possible. Enforce HTTPS in production. Sanitize user inputs (DOMPurify for XSS). Use CSRF tokens for sensitive actions. Validate all form inputs on client side.",
+        "testStrategy": "Penetration testing for XSS/CSRF. Validate JWT storage and renewal. Test input validation with malicious payloads.",
+        "priority": "high",
+        "dependencies": [
+          3,
+          4
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 12,
+        "title": "Optimize Performance and Responsiveness",
+        "description": "Implement image optimization, code splitting, and caching strategies.",
+        "details": "Use browser-image-compression for uploads. Enable lazy loading for images and components. Configure service workers for caching (Workbox). Analyze bundle size with Vite/webpack analyzer.",
+        "testStrategy": "Measure load times and bundle size. Test image upload and rendering performance. Validate offline caching.",
+        "priority": "medium",
+        "dependencies": [
+          6,
+          7
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 13,
+        "title": "Implement Comprehensive Testing",
+        "description": "Set up Playwright for E2E, component, and API integration tests.",
+        "details": "Write Playwright scripts for all critical user flows. Use Vue Test Utils for component tests. Mock API responses for integration tests. Set up CI pipeline for automated test runs.",
+        "testStrategy": "Run all tests locally and in CI. Ensure high coverage and reliability. Validate test results for regressions.",
+        "priority": "high",
+        "dependencies": [
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Set Up Playwright MCP and Testing Environment",
+            "description": "Install and configure Playwright MCP tool for E2E, component, and API integration testing. Ensure compatibility with Vue and CI pipeline integration.",
+            "dependencies": [],
+            "details": "Prepare the development environment by installing Playwright MCP, configuring project settings, and integrating with CI/CD for automated test execution. Ensure Playwright supports all required browsers and environments.",
+            "status": "pending",
+            "testStrategy": "Validate Playwright installation by running sample tests locally and in CI. Confirm MCP tool integration and environment readiness."
+          },
+          {
+            "id": 2,
+            "title": "Develop Authentication Flow Test Scenarios",
+            "description": "Write Playwright E2E scripts to cover all critical authentication flows, including login, logout, session renewal, and error handling.",
+            "dependencies": [
+              "13.1"
+            ],
+            "details": "Implement tests for user login, logout, JWT renewal, and handling invalid credentials. Mock API responses for integration tests and validate security best practices.",
+            "status": "pending",
+            "testStrategy": "Run E2E and integration tests for authentication. Simulate edge cases (expired tokens, invalid credentials) and verify correct handling."
+          },
+          {
+            "id": 3,
+            "title": "Create Pet Management Feature Tests",
+            "description": "Design and implement Playwright E2E and Vue Test Utils component tests for pet registration, editing, deletion, representative pet selection, and species search.",
+            "dependencies": [
+              "13.1"
+            ],
+            "details": "Write test scripts for CRUD operations on pets, species autocomplete/search, and validation of pet data. Mock API responses for integration scenarios.",
+            "status": "pending",
+            "testStrategy": "Execute E2E and component tests for all pet management flows. Validate edge cases (duplicate pets, invalid data) and species search accuracy."
+          },
+          {
+            "id": 4,
+            "title": "Implement Diary, Marketplace, and Chat Feature Tests",
+            "description": "Develop comprehensive Playwright E2E test scenarios for diary creation, marketplace transactions, and chat functionality.",
+            "dependencies": [
+              "13.1"
+            ],
+            "details": "Write test scripts for diary entry creation/editing, marketplace item listing/purchase, and chat message sending/receiving. Mock APIs for integration tests and cover real-time interactions.",
+            "status": "pending",
+            "testStrategy": "Run E2E tests for diary, marketplace, and chat flows. Simulate real-time scenarios and validate data integrity across features."
+          },
+          {
+            "id": 5,
+            "title": "Integrate and Validate Automated Test Execution in CI Pipeline",
+            "description": "Configure CI pipeline to run all Playwright MCP, component, and API integration tests automatically on code changes.",
+            "dependencies": [
+              "13.1",
+              "13.2",
+              "13.3",
+              "13.4"
+            ],
+            "details": "Set up CI workflows to execute all test suites, collect coverage reports, and notify on failures. Ensure tests run reliably in both local and CI environments.",
+            "status": "pending",
+            "testStrategy": "Trigger CI runs on pull requests and merges. Validate test results, coverage, and regression detection. Monitor for flaky tests and address failures promptly."
+          }
+        ]
+      },
+      {
+        "id": 14,
+        "title": "Configure Environment and Deployment",
+        "description": "Set up environment-specific configs, build optimization, and deployment scripts.",
+        "details": "Use dotenv for environment variables. Configure Vite/webpack for production builds. Set up deployment scripts for target environment (e.g., Netlify, Vercel, AWS S3/CloudFront). Enable source maps and error logging.",
+        "testStrategy": "Deploy to staging and production. Validate environment-specific behavior and error logging.",
+        "priority": "medium",
+        "dependencies": [
+          12,
+          13
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 15,
+        "title": "Implement Monitoring and Logging",
+        "description": "Integrate monitoring and logging for frontend errors and performance.",
+        "details": "Use Sentry (latest) for error tracking. Integrate Google Analytics or Plausible for usage monitoring. Log critical frontend errors and performance metrics.",
+        "testStrategy": "Trigger errors and validate logging/monitoring dashboards. Check for alerting on critical issues.",
+        "priority": "medium",
+        "dependencies": [
+          14
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 16,
+        "title": "Author Detailed E2E Test Scenarios Using Playwright MCP for All Major Features",
+        "description": "Create comprehensive end-to-end test scenarios for user authentication, pet management, diary, marketplace, real-time chat, and admin features using Playwright MCP, including concrete test cases for each core flow.",
+        "details": "Leverage Playwright MCP's natural language-driven automation to design and implement detailed E2E test scenarios for each major application feature. For each area (authentication, pet management, diary, marketplace, chat, admin), define user-centric test cases in plain English, then use Playwright MCP to generate and refine executable Playwright scripts. Example flows include: \n\n- **Authentication:** Signup, login, logout, password reset, account lock/unlock, withdrawal, error handling (invalid credentials, expired tokens).\n- **Pet Management:** Register, edit, delete pets; set representative pet; search/select species; validate form errors and edge cases.\n- **Diary:** Create, edit, delete diaries with images; like, comment, reply; search; report inappropriate content; validate image restrictions.\n- **Marketplace:** CRUD for market posts, image uploads, wishlist, purchase/sale lists, category filtering; validate image optimization and error handling.\n- **Real-Time Chat:** Join/leave rooms, send/receive messages and files, manage participants, check online/offline status, reconnection logic.\n- **Admin:** Access dashboard, manage users/reports, enforce permissions, pagination/filtering, error handling.\n\nFollow best practices: \n- Use Playwright MCP's step-by-step flow execution and snapshot tools to verify UI and API interactions[2][4].\n- After successful manual flow, emit Playwright TypeScript tests for maintainability[4].\n- Parameterize tests for different user roles and edge cases.\n- Organize test files by feature and ensure clear naming.\n- Integrate generated tests into the CI pipeline for automated regression coverage.\n- Document each scenario with expected outcomes and preconditions.\n\nReference current Playwright MCP workflows for rapid, accurate test generation and maintenance[1][2][3][4][5].",
+        "testStrategy": "For each feature, run the generated Playwright MCP tests locally and in CI. Validate that all critical user flows pass, including edge and error cases. Review Playwright test output and screenshots for correctness. Simulate multi-user and real-time scenarios (e.g., chat, notifications) using parallel test execution. Ensure tests are stable, repeatable, and provide actionable failure diagnostics. Periodically review and update scenarios as features evolve.",
+        "status": "pending",
+        "dependencies": [
+          13
+        ],
+        "priority": "high",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Define User-Centric E2E Test Scenarios in Plain English for Each Major Feature",
+            "description": "Identify and document comprehensive end-to-end user flows for authentication, pet management, diary, marketplace, real-time chat, and admin features, ensuring coverage of all critical paths, edge cases, and error handling.",
+            "dependencies": [],
+            "details": "For each feature area, list concrete user actions and expected outcomes in natural language, referencing business requirements and user stories. Include flows such as signup, login, CRUD operations, image uploads, chat interactions, and admin permissions.",
+            "status": "pending",
+            "testStrategy": "Review scenarios with stakeholders to ensure completeness and accuracy. Validate that all major and edge flows are represented."
+          },
+          {
+            "id": 2,
+            "title": "Generate Executable Playwright MCP Scripts from Natural Language Scenarios",
+            "description": "Use Playwright MCP's natural language-driven automation to convert the defined scenarios into executable Playwright test scripts for each feature.",
+            "dependencies": [
+              "16.1"
+            ],
+            "details": "Leverage Playwright MCP tools to translate each plain English scenario into Playwright code, utilizing step-by-step flow execution and snapshot tools to verify UI and API interactions. Refine scripts for accuracy and maintainability.",
+            "status": "pending",
+            "testStrategy": "Run generated scripts locally to confirm correct automation of each scenario. Inspect Playwright MCP outputs and snapshots for correctness."
+          },
+          {
+            "id": 3,
+            "title": "Parameterize and Organize Test Cases for Roles and Edge Cases",
+            "description": "Enhance generated Playwright MCP scripts by parameterizing tests for different user roles (e.g., admin, regular user) and edge cases, and organize test files by feature with clear naming conventions.",
+            "dependencies": [
+              "16.2"
+            ],
+            "details": "Implement test data parameterization and role-based variations within scripts. Structure test directories and filenames for maintainability and clarity, following best practices for Playwright projects.",
+            "status": "pending",
+            "testStrategy": "Verify that parameterized tests execute correctly for all roles and edge cases. Confirm test organization supports easy navigation and future maintenance."
+          },
+          {
+            "id": 4,
+            "title": "Integrate Playwright MCP Tests into CI Pipeline for Automated Regression",
+            "description": "Set up continuous integration (CI) to automatically run the generated Playwright MCP tests for all major features, ensuring ongoing regression coverage.",
+            "dependencies": [
+              "16.3"
+            ],
+            "details": "Configure the CI pipeline to execute Playwright MCP tests on each commit or pull request. Ensure test results, logs, and screenshots are captured and reported for review.",
+            "status": "pending",
+            "testStrategy": "Trigger CI runs for code changes and validate that all tests pass in the pipeline. Investigate and resolve any failures or flakiness."
+          },
+          {
+            "id": 5,
+            "title": "Document Test Scenarios, Preconditions, and Expected Outcomes",
+            "description": "Create detailed documentation for each test scenario, including preconditions, step-by-step actions, expected results, and references to the corresponding Playwright MCP scripts.",
+            "dependencies": [
+              "16.4"
+            ],
+            "details": "For each scenario, provide a clear description, setup requirements, and success criteria. Link documentation to test scripts and maintain it alongside the codebase for easy access.",
+            "status": "pending",
+            "testStrategy": "Review documentation for completeness and clarity. Ensure it enables new team members to understand and execute tests independently."
+          }
+        ]
+      },
+      {
+        "id": 17,
+        "title": "Develop Concrete Playwright MCP Test Code Examples for Core Features",
+        "description": "Write detailed Playwright MCP-based test code examples for authentication, pet registration, diary, marketplace, and chat features, covering realistic user flows for each.",
+        "details": "For each major feature (authentication, pet registration, diary, marketplace, chat), use Playwright MCP to generate and refine executable test scripts that mirror real user interactions. Begin by crafting natural language prompts describing the desired test flows (e.g., 'Test user signup, login, and logout with valid and invalid credentials' for authentication). Use Playwright MCP's AI-driven workflow to convert these prompts into Playwright test code, then manually review and enhance the generated scripts for robustness and maintainability. Ensure each test covers both positive and negative scenarios, including edge cases (e.g., duplicate pet registration, invalid diary input, failed marketplace transactions, chat message delivery under network interruptions). Structure tests using Playwright's best practices: organize by feature, use fixtures for setup/teardown, and leverage selectors resilient to UI changes. Annotate code with comments for clarity. Integrate these scripts into the project's E2E test suite, ensuring compatibility with CI pipelines. Reference recent Playwright MCP usage patterns, such as prompt-driven test generation, snapshot-based UI interaction, and iterative refinement for reliability[1][2][3][4][5].",
+        "testStrategy": "For each feature, execute the Playwright MCP-generated tests locally and in the CI environment. Validate that all critical user flows pass, including both typical and edge cases. Review test output, screenshots, and logs to confirm correct behavior. Simulate error conditions (e.g., invalid input, network failures) and verify that tests detect and report failures accurately. Ensure tests are stable across environments and maintainable as the UI evolves. Peer-review test code for clarity and completeness.",
+        "status": "pending",
+        "dependencies": [
+          16
+        ],
+        "priority": "high",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "created": "2025-08-15T14:56:33.684Z",
+      "updated": "2025-08-15T15:08:59.362Z",
+      "description": "Tasks for master context"
+    }
+  }
+}
