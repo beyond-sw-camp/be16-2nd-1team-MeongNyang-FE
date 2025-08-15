@@ -4,6 +4,7 @@ import { useAuthStore } from '@/stores/auth'
 // 뷰 컴포넌트들
 import HomeView from '@/views/HomeView.vue'
 import DashboardView from '@/views/DashboardView.vue'
+import ThemeDemoView from '@/views/ThemeDemoView.vue'
 
 // 라우터 모듈들
 import authRoutes from './modules/auth'
@@ -28,6 +29,12 @@ const baseRoutes = [
     name: 'Dashboard',
     component: DashboardView,
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/theme-demo',
+    name: 'ThemeDemo',
+    component: ThemeDemoView,
+    meta: { requiresAuth: false }
   }
 ]
 

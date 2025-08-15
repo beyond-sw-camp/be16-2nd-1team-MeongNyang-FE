@@ -103,8 +103,82 @@
         "dependencies": [
           1
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design and Implement Atom-Level Components",
+            "description": "Create fundamental, reusable UI components such as buttons, inputs, and icons using Vuetify, following atomic design principles.",
+            "dependencies": [],
+            "details": "Develop atom components (e.g., Button, Input, Icon) as the smallest building blocks. Ensure each component is accessible (ARIA roles, keyboard navigation) and leverages Vuetify's theming for consistency.\n<info added on 2025-08-15T15:56:21.725Z>\nAtom-level component implementation completed:\n\n1. BaseButton component (src/components/ui/atoms/BaseButton.vue)\n   - Reusable button based on Vuetify v-btn\n   - Supports multiple variants, sizes, and colors\n   - Includes icon, loading state, accessibility attributes\n   - Keyboard navigation (Enter, Space) supported\n\n2. BaseInput component (src/components/ui/atoms/BaseInput.vue)\n   - Input field based on Vuetify v-text-field\n   - Supports various input types and validation rules\n   - Includes icon, hint, counter, error message\n   - Accessibility attributes (ARIA labels, keyboard navigation)\n\n3. BaseIcon component (src/components/ui/atoms/BaseIcon.vue)\n   - Icon component based on Vuetify v-icon\n   - Supports multiple sizes, colors, positions\n   - Clickable icon, animation effects\n   - Accessibility and keyboard navigation supported\n\n4. BaseCard component (src/components/ui/atoms/BaseCard.vue)\n   - Card component based on Vuetify v-card\n   - Header, subtitle, content, action, footer slots\n   - Loading state, link functionality, hover effects\n   - Responsive design and dark mode supported\n\nAll components follow Atomic Design principles and fully support accessibility and Vuetify's theme system.\n</info added on 2025-08-15T15:56:21.725Z>",
+            "status": "done",
+            "testStrategy": "Write unit tests for rendering, props, and events. Use Playwright to verify accessibility and keyboard navigation."
+          },
+          {
+            "id": 2,
+            "title": "Develop Molecule-Level Components",
+            "description": "Combine atom components to create more complex, reusable molecules such as form fields, input groups, and button groups.",
+            "dependencies": [
+              "4.1"
+            ],
+            "details": "Assemble atoms into molecules (e.g., FormField with label and input, ButtonGroup). Ensure all molecules are accessible and styled with Vuetify's theme system.\n<info added on 2025-08-15T16:01:13.211Z>\nMolecule-level components implementation completed:\n\n1. FormField component (src/components/ui/molecules/FormField.vue)\n   - Combines BaseInput and label into a molecule component\n   - Includes required field indicator, description text, and accessibility attributes\n   - Supports state-based styling (error, success, disabled)\n   - Responsive design and dark mode support\n\n2. ButtonGroup component (src/components/ui/molecules/ButtonGroup.vue)\n   - Groups multiple BaseButton components as a molecule\n   - Supports horizontal/vertical orientation and various alignment options\n   - Connected styling for first, middle, last buttons\n   - Handles individual button click events\n   - Accessibility and keyboard navigation supported\n\n3. InputGroup component (src/components/ui/molecules/InputGroup.vue)\n   - Groups multiple BaseInput components as a molecule\n   - Supports horizontal/vertical layouts and individual label display options\n   - Group label, description, and required field indicator included\n   - Handles individual field events and slot support\n   - Fully responsive and accessible\n\nAll molecule components combine atom components to provide more complex functionality, with full support for Vuetify's theme system and accessibility standards.\n</info added on 2025-08-15T16:01:13.211Z>",
+            "status": "done",
+            "testStrategy": "Unit test molecule components for correct composition and interaction. Use Playwright to check accessibility and responsiveness."
+          },
+          {
+            "id": 3,
+            "title": "Build Organism-Level Components",
+            "description": "Compose molecules and atoms into larger, functional organisms such as forms, dialogs, and notification panels.",
+            "dependencies": [
+              "4.2"
+            ],
+            "details": "Create organisms (e.g., LoginForm, ModalDialog, NotificationPanel) by combining molecules and atoms. Ensure accessibility and consistent theming.\n<info added on 2025-08-15T16:04:02.023Z>\nOrganism-level components implementation completed:\n\n1. ModalDialog component (src/components/ui/organisms/ModalDialog.vue)\n   - Combines Vuetify v-dialog and BaseCard for a modal dialog\n   - Full modal structure with header, content, and actions\n   - Includes icon, title, close button, cancel/confirm buttons\n   - Accessibility attributes, keyboard navigation (ESC key), and focus management\n   - Responsive design, scrollable content, and custom styling\n\n2. NotificationPanel component (src/components/ui/organisms/NotificationPanel.vue)\n   - Combines BaseButton and BaseIcon for a notification panel\n   - Complete notification system with header, notification list, and footer\n   - Supports read/unread states, timestamps, and action buttons\n   - Empty state display, scrollable list, and individual notification dismissal\n   - Accessibility, responsive design, and animation effects\n\nAll organism components are fully functional by composing molecule and atom components, and provide complete support for Vuetify theming and accessibility.\n</info added on 2025-08-15T16:04:02.023Z>",
+            "status": "done",
+            "testStrategy": "Unit and integration tests for organism behavior and layout. Playwright tests for accessibility and user flows."
+          },
+          {
+            "id": 4,
+            "title": "Implement Global Error and Loading Indicators",
+            "description": "Develop global components for error and loading states, ensuring they can be triggered from anywhere in the app.",
+            "dependencies": [
+              "4.1",
+              "4.2",
+              "4.3"
+            ],
+            "details": "Create global error and loading indicators using Vuetify components (e.g., Snackbar, ProgressCircular). Ensure accessibility and theming alignment.\n<info added on 2025-08-15T16:06:25.062Z>\nGlobal error and loading indicator implementation completed:\n\n1. GlobalSnackbar component (src/components/ui/global/GlobalSnackbar.vue)\n   - Vuetify v-snackbar-based global notification system\n   - Supports success, error, warning, and info types\n   - Includes icon, title, message, and action button\n   - Accessibility attributes, responsive design, and animation effects\n\n2. GlobalLoadingOverlay component (src/components/ui/global/GlobalLoadingOverlay.vue)\n   - Vuetify v-overlay-based global loading overlay\n   - Supports progress indicator, message, and cancel button\n   - Blur effect, responsive design, and animation\n   - Accessibility attributes and keyboard navigation support\n\n3. UI store (src/stores/ui.js)\n   - Pinia-based global UI state management\n   - Manages snackbar and loading overlay state\n   - Convenience methods (showSuccessSnackbar, showErrorSnackbar, etc.)\n   - Event handlers and state update logic\n\n4. App.vue integration\n   - Integrated global components at the app level\n   - Connected UI store and components\n   - Provides a global UI system accessible throughout the app\n\nAll global components are fully accessible from anywhere in the app and fully support Vuetify's theming and accessibility features.\n</info added on 2025-08-15T16:06:25.062Z>",
+            "status": "done",
+            "testStrategy": "Unit and integration tests for correct display and dismissal. Playwright tests for triggering and accessibility."
+          },
+          {
+            "id": 5,
+            "title": "Enforce Accessibility Standards Across All Components",
+            "description": "Audit and enhance all core components to meet accessibility requirements, including ARIA roles and keyboard navigation.",
+            "dependencies": [
+              "4.1",
+              "4.2",
+              "4.3",
+              "4.4"
+            ],
+            "details": "Review and update all components to ensure ARIA attributes, focus management, and keyboard navigation are implemented according to WCAG guidelines.\n<info added on 2025-08-15T16:16:05.975Z>\nAccessibility standard implementation is complete.\n\nCompleted tasks:\n\n1. BaseButton component improvements:\n   - Enhanced ARIA attributes (aria-expanded, aria-pressed, aria-haspopup, aria-controls, aria-live)\n   - Improved keyboard navigation (support for Enter, Space, Escape keys)\n   - Strengthened focus management and visual feedback\n   - Support for high contrast mode, dark mode, and reduced motion settings\n   - Implemented automatic aria-label generation logic\n\n2. BaseInput component improvements:\n   - Changed to wrapper structure to separate error message area\n   - Enhanced ARIA attributes (aria-errormessage, aria-autocomplete, aria-expanded, aria-controls)\n   - Added accessible error message area (role=\"alert\", aria-live=\"polite\")\n   - Support for high contrast mode, dark mode, and reduced motion settings\n   - Implemented automatic ID generation and aria-describedby linkage\n\n3. BaseIcon component improvements:\n   - Enhanced ARIA attributes (aria-expanded, aria-pressed, aria-haspopup, aria-controls, aria-live)\n   - Improved keyboard navigation (support for Enter, Space, Escape keys)\n   - Implemented automatic aria-label and aria-hidden handling logic\n   - Set default role for clickable icons\n   - Support for high contrast mode, dark mode, and reduced motion settings\n\n4. BaseCard component improvements:\n   - Strengthened semantic structure (assigned IDs to header, subtitle, content, actions, footer)\n   - Enhanced ARIA attributes (aria-expanded, aria-pressed, aria-haspopup, aria-controls, aria-live)\n   - Improved keyboard navigation (support for Enter, Space, Escape keys)\n   - Accessibility support for loading state (role=\"progressbar\", aria-label)\n   - Support for high contrast mode, dark mode, and reduced motion settings\n\n5. FormField component improvements:\n   - Set group role (role=\"group\")\n   - Strengthened label and input field linkage (aria-labelledby)\n   - Added error and success message areas (role=\"alert\", role=\"status\", aria-live=\"polite\")\n   - Implemented automatic ID generation and aria-describedby linkage\n   - Support for high contrast mode, dark mode, and reduced motion settings\n\nApplied WCAG standards:\n- 1.3.1 Info and Relationships: semantic structure and ARIA roles\n- 1.4.3 Contrast (Minimum): support for high contrast mode\n- 2.1.1 Keyboard: full keyboard navigation support\n- 2.1.2 No Keyboard Trap: focus escape via Escape key\n- 2.4.3 Focus Order: logical focus order\n- 2.4.7 Focus Visible: clear focus indication\n- 3.2.1 On Focus: predictable behavior on focus\n- 4.1.2 Name, Role, Value: appropriate ARIA attributes\n\nAll components have achieved WCAG 2.1 AA level accessibility.\n</info added on 2025-08-15T16:16:05.975Z>",
+            "status": "done",
+            "testStrategy": "Automated accessibility testing with Playwright and manual keyboard navigation checks."
+          },
+          {
+            "id": 6,
+            "title": "Integrate Vuetify Theming for Consistent Look and Feel",
+            "description": "Apply and test Vuetify's theming system across all core UI components to ensure visual consistency.",
+            "dependencies": [
+              "4.1",
+              "4.2",
+              "4.3",
+              "4.4",
+              "4.5"
+            ],
+            "details": "Configure and apply Vuetify theme variables and styles to all components. Validate that dark/light modes and custom themes are supported.\n<info added on 2025-08-15T16:19:41.640Z>\nVuetify 테마 시스템 통합 작업이 완료되었습니다.\n\n완료된 작업:\n\n1. Vuetify 설정 개선 (src/plugins/vuetify.js):\n   - 라이트/다크 테마 색상 팔레트 정의\n   - 브랜드 색상 (primary, secondary), 상태 색상 (success, warning, error, info) 설정\n   - 표면 색상, 배경 색상, 텍스트 색상 정의\n   - 커스텀 타이포그래피 설정 (폰트 패밀리, 크기, 굵기, 줄 간격)\n   - 커스텀 간격, 둥근 모서리, 그림자, 애니메이션 설정\n   - 전역 기본값 설정 (VBtn, VTextField, VCard, VDialog, VSnackbar, VOverlay)\n   - CSS 변수 정의로 일관된 디자인 시스템 구축\n\n2. ThemeToggle 컴포넌트 생성 (src/components/ui/atoms/ThemeToggle.vue):\n   - 라이트/다크 모드 전환 기능\n   - 시스템 테마 설정 감지 및 자동 적용\n   - 로컬 스토리지에 테마 설정 저장\n   - 접근성 지원 (aria-label, 키보드 네비게이션)\n   - 반응형 디자인 및 애니메이션 효과\n\n3. 테마 데모 페이지 생성 (src/views/ThemeDemoView.vue):\n   - 모든 UI 컴포넌트의 테마 적용 상태 시연\n   - 색상 팔레트 시각화\n   - BaseButton, BaseInput, BaseCard, FormField 등 모든 컴포넌트 변형 표시\n   - 타이포그래피 시스템 데모\n   - 실시간 테마 전환 기능\n\n4. 라우터 설정 업데이트:\n   - 테마 데모 페이지 라우트 추가 (/theme-demo)\n   - 인증 불필요 설정\n\n적용된 테마 시스템 특징:\n- 일관된 색상 시스템: 브랜드 색상부터 상태 색상까지 체계적 정의\n- 다크 모드 완전 지원: 모든 컴포넌트가 다크 모드에서 적절히 표시\n- 시스템 테마 감지: 사용자의 시스템 설정에 따른 자동 테마 적용\n- 접근성 고려: 고대비 모드, 모션 감소 설정 등 지원\n- 반응형 디자인: 모든 화면 크기에서 일관된 디자인\n- 성능 최적화: CSS 변수 활용으로 효율적인 테마 전환\n\n모든 UI 컴포넌트가 Vuetify 테마 시스템과 완전히 통합되어 일관된 시각적 경험을 제공합니다.\n</info added on 2025-08-15T16:19:41.640Z>",
+            "status": "done",
+            "testStrategy": "Visual regression tests and manual review in different theme modes. Unit tests for theme-related props."
+          }
+        ]
       },
       {
         "id": 5,
@@ -117,8 +191,65 @@
           3,
           4
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Set Up Pinia Store for Pet State Management",
+            "description": "Create a modular Pinia store to manage pet-related state, including pet list, selected pet, and representative pet. Ensure proper organization and scalability.",
+            "dependencies": [],
+            "details": "Define state, actions, and getters for pet data. Integrate with API calls for CRUD operations and representative pet selection. Follow best practices for modular store design.",
+            "status": "done",
+            "testStrategy": "Write unit tests for store actions and getters. Validate state updates and API integration."
+          },
+          {
+            "id": 2,
+            "title": "Implement Pet Registration and Edit Forms with Validation",
+            "description": "Develop forms for registering and editing pet information, including validation for required fields and data formats.",
+            "dependencies": [
+              "5.1"
+            ],
+            "details": "Use Vue form components with validation rules. Connect forms to Pinia store actions and PetController API. Handle edge cases such as duplicate pets and invalid data.",
+            "status": "done",
+            "testStrategy": "Write component tests for form validation and submission. Test error handling for invalid inputs."
+          },
+          {
+            "id": 3,
+            "title": "Develop Species Search/Autocomplete Component with Debounced API Calls",
+            "description": "Create a species search and autocomplete component that queries the SpeciesController API using debounced requests.",
+            "dependencies": [
+              "5.1"
+            ],
+            "details": "Implement input field with debounce logic for API calls. Display search results and allow selection. Integrate selected species with pet forms.",
+            "status": "done",
+            "testStrategy": "Test debounce behavior, API integration, and selection flow. Validate edge cases for empty and invalid queries."
+          },
+          {
+            "id": 4,
+            "title": "Implement Pet List View with Search, Filter, and Representative Pet Selection",
+            "description": "Build a pet list view that supports searching, filtering, and setting a representative pet.",
+            "dependencies": [
+              "5.1",
+              "5.2",
+              "5.3"
+            ],
+            "details": "Display pets from Pinia store. Add search and filter functionality. Enable users to select a representative pet and update state/API accordingly.",
+            "status": "done",
+            "testStrategy": "Write E2E tests for list rendering, search/filter, and representative pet selection. Validate state and API updates."
+          },
+          {
+            "id": 5,
+            "title": "Enable Pet Deletion with Confirmation and Error Handling",
+            "description": "Implement pet deletion functionality with confirmation dialogs and robust error handling.",
+            "dependencies": [
+              "5.1",
+              "5.4"
+            ],
+            "details": "Add delete action to pet list and detail views. Show confirmation dialog before deletion. Handle API errors and update Pinia store state.",
+            "status": "done",
+            "testStrategy": "Test deletion flow, confirmation dialog, and error scenarios. Validate state consistency after deletion."
+          }
+        ]
       },
       {
         "id": 6,
@@ -403,7 +534,7 @@
     ],
     "metadata": {
       "created": "2025-08-15T14:56:33.684Z",
-      "updated": "2025-08-15T15:40:58.200Z",
+      "updated": "2025-08-15T16:33:34.342Z",
       "description": "Tasks for master context"
     }
   }

@@ -1,19 +1,25 @@
 <template>
-  <v-container>
-    <v-card>
-      <v-card-title>반려동물 관리</v-card-title>
-      <v-card-text>
-        <p>반려동물 목록 페이지입니다.</p>
-        <v-btn color="primary" @click="$router.push('/pets/new')">
-          새 반려동물 등록
-        </v-btn>
-      </v-card-text>
-    </v-card>
-  </v-container>
+  <div class="pet-list-view">
+    <v-container fluid>
+      <PetList />
+    </v-container>
+  </div>
 </template>
 
 <script>
+import PetList from '@/components/pet/PetList.vue'
+
 export default {
-  name: 'PetListView'
+  name: 'PetListView',
+  components: {
+    PetList
+  }
 }
 </script>
+
+<style scoped>
+.pet-list-view {
+  min-height: 100vh;
+  background-color: var(--v-theme-background);
+}
+</style>
