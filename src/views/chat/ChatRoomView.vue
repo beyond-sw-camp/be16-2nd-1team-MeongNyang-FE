@@ -22,8 +22,10 @@ export default {
     const senderEmail = ref('')
     const roomId = ref(null)
     const selectedFiles = ref([])
-    const loading = ref(true)
+    const loading = ref(false)
     const error = ref(null)
+    const showLeaveDialog = ref(false)
+    const leaving = ref(false)
     const currentRoom = ref(null)
     
     // 스낵바 상태
@@ -81,6 +83,28 @@ export default {
     
     const goBack = () => {
       router.push('/chat')
+    }
+    
+    const leaveChatRoom = async () => {
+      try {
+        leaving.value = true
+        await chatStore.leaveRoom(roomId.value)
+        
+        // 성공 메시지 표시
+        showConnectionMessage('채팅방을 나갔습니다.', 'success')
+        
+        // 잠시 후 채팅 목록으로 이동
+        setTimeout(() => {
+          router.push('/chat')
+        }, 1500)
+        
+      } catch (error) {
+        console.error('채팅방 나가기 실패:', error)
+        showConnectionMessage('채팅방을 나가는데 실패했습니다.', 'error')
+      } finally {
+        leaving.value = false
+        showLeaveDialog.value = false
+      }
     }
     
     const retryLoad = async () => {
@@ -330,6 +354,8 @@ export default {
       loading,
       error,
       currentRoom,
+      showLeaveDialog,
+      leaving,
       
       // 스낵바 상태
       showConnectionSnackbar,
@@ -349,6 +375,7 @@ export default {
       showConnectionMessage,
       goBack,
       retryLoad,
+      leaveChatRoom,
       connectWebsocket,
       disconnectWebsocket,
       sendMessage,
@@ -377,6 +404,16 @@ export default {
                 <div class="d-flex align-center">
                   <v-btn icon @click.stop="drawer = !drawer" class="mr-2">
                     <v-icon>mdi-account-group</v-icon>
+                  </v-btn>
+                  <v-btn 
+                    color="error" 
+                    variant="outlined" 
+                    size="small" 
+                    @click="showLeaveDialog = true"
+                    class="mr-2"
+                  >
+                    <v-icon left>mdi-exit-to-app</v-icon>
+                    나가기
                   </v-btn>
                   <v-btn icon @click="goBack" variant="text">
                     <v-icon>mdi-arrow-left</v-icon>
@@ -494,6 +531,38 @@ export default {
         <v-btn variant="text" @click="showConnectionSnackbar = false">닫기</v-btn>
       </template>
     </v-snackbar>
+    
+    <!-- 나가기 확인 다이얼로그 -->
+    <v-dialog v-model="showLeaveDialog" max-width="400">
+      <v-card>
+        <v-card-title class="text-h6 text-center">
+          채팅방 나가기
+        </v-card-title>
+        <v-card-text class="text-center">
+          <v-icon size="64" color="warning" class="mb-4">mdi-alert-circle</v-icon>
+          <p>정말로 이 채팅방을 나가시겠습니까?</p>
+          <p class="text-caption text-grey-darken-1">
+            나가면 채팅방에 다시 참여할 수 없습니다.
+          </p>
+        </v-card-text>
+        <v-card-actions class="justify-center pb-4">
+          <v-btn 
+            color="grey-darken-1" 
+            variant="outlined" 
+            @click="showLeaveDialog = false"
+          >
+            취소
+          </v-btn>
+          <v-btn 
+            color="error" 
+            @click="leaveChatRoom"
+            :loading="leaving"
+          >
+            나가기
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-layout>
 </template>
 

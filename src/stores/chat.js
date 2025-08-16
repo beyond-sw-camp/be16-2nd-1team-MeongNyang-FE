@@ -90,11 +90,18 @@ export const useChatStore = defineStore('chat', {
     async leaveRoom(roomId) {
       try {
         await chatAPI.leaveRoom(roomId)
-        // 채팅방 목록에서 제거
-        this.chatRoomList = this.chatRoomList.filter(room => room.id !== roomId)
+        
+        // 현재 채팅방에서 나가는 경우 상태 정리
         if (this.currentRoom?.id === roomId) {
           this.currentRoom = null
+          this.messages = []
+          this.participants = []
         }
+        
+        // 채팅방 목록에서 제거
+        this.chatRoomList = this.chatRoomList.filter(room => room.id !== roomId)
+        
+        return true
       } catch (error) {
         console.error('채팅방 나가기 실패:', error)
         throw error
