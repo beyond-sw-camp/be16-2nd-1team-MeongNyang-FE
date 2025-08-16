@@ -285,7 +285,7 @@ export default {
     
     const isVideo = (url) => {
       if (!url) return false
-      const videoExtensions = ['mp4', 'webm', 'ogg']
+      const videoExtensions = ['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv', 'm4v', '3gp', 'flv']
       const extension = url.split('.').pop().toLowerCase()
       return videoExtensions.includes(extension)
     }
