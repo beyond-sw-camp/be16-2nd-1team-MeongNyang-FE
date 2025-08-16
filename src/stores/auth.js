@@ -9,6 +9,7 @@ import {
   extractUserFromToken,
   setupTokenRefresh 
 } from '@/utils/auth'
+import { getEmailFromToken } from '@/utils/jwt'
 
 export const useAuthStore = defineStore('auth', () => {
   // 상태
@@ -34,6 +35,12 @@ export const useAuthStore = defineStore('auth', () => {
       accessToken.value = at
       refreshToken.value = rt
       saveTokens(at, rt)
+      
+      // JWT에서 이메일 추출하여 저장
+      const email = getEmailFromToken(at)
+      if (email) {
+        localStorage.setItem('email', email)
+      }
       
       // 사용자 정보 저장
       user.value = member
@@ -62,6 +69,9 @@ export const useAuthStore = defineStore('auth', () => {
     accessToken.value = null
     refreshToken.value = null
     clearAllTokens()
+    
+    // localStorage에서 이메일도 제거
+    localStorage.removeItem('email')
   }
 
   const refreshAccessToken = async () => {
@@ -78,6 +88,12 @@ export const useAuthStore = defineStore('auth', () => {
       accessToken.value = at
       refreshToken.value = rt
       saveTokens(at, rt)
+      
+      // JWT에서 이메일 추출하여 저장
+      const email = getEmailFromToken(at)
+      if (email) {
+        localStorage.setItem('email', email)
+      }
       
       // 토큰 자동 갱신 재설정
       setupTokenRefresh(refreshAccessToken)
@@ -192,6 +208,12 @@ export const useAuthStore = defineStore('auth', () => {
       if (token && isValidToken(token)) {
         accessToken.value = token
         refreshToken.value = getToken('refreshToken')
+        
+        // JWT에서 이메일 추출하여 저장
+        const email = getEmailFromToken(token)
+        if (email) {
+          localStorage.setItem('email', email)
+        }
         
         // 토큰에서 사용자 정보 추출 (임시)
         const userFromToken = extractUserFromToken(token)
