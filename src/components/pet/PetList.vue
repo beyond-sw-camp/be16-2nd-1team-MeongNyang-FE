@@ -95,7 +95,7 @@
             <div class="flex-grow-1">
               <h3 class="text-h6 mb-1">{{ representativePet.name }}</h3>
               <p class="text-body-2 mb-0">
-                {{ getSpeciesName(representativePet.speciesId) }} • 
+                {{ getSpeciesName(representativePet.speciesId, representativePet.species) }} • 
                 {{ representativePet.age }}살 • 
                 {{ getGenderLabel(representativePet.gender) }}
               </p>
@@ -130,7 +130,7 @@
             class="pet-card"
             :class="{ 'representative': pet.id === representativePet?.id }"
           >
-            <template #title>
+            <template #header>
               <div class="d-flex align-center justify-space-between">
                 <span class="text-h6">{{ pet.name }}</span>
                 <div class="pet-actions">
@@ -146,16 +146,20 @@
                     icon="mdi-pencil"
                     variant="text"
                     size="small"
+                    :disabled="!pet.id"
                     @click.stop="editPet(pet)"
                     aria-label="반려동물 수정"
+                    :title="!pet.id ? 'ID가 없어 수정할 수 없습니다' : '반려동물 수정'"
                   />
                   <v-btn
                     icon="mdi-delete"
                     variant="text"
                     size="small"
                     color="error"
+                    :disabled="!pet.id"
                     @click.stop="confirmDelete(pet)"
                     aria-label="반려동물 삭제"
+                    :title="!pet.id ? 'ID가 없어 삭제할 수 없습니다' : '반려동물 삭제'"
                   />
                 </div>
               </div>
@@ -177,7 +181,7 @@
                 <div class="pet-info">
                   <div class="info-row">
                     <v-icon size="16" color="primary">mdi-dog</v-icon>
-                    <span>{{ getSpeciesName(pet.speciesId) }}</span>
+                    <span>{{ getSpeciesName(pet.speciesId, pet.species) }}</span>
                   </div>
                   
                   <div class="info-row">
@@ -319,7 +323,7 @@ export default {
     const petToDelete = ref(null)
     
     // 계산된 속성
-    const pets = computed(() => petStore.getPets)
+    const pets = computed(() => petStore.getPets?.pets || [])
     const representativePet = computed(() => petStore.getRepresentativePet)
     const loading = computed(() => petStore.isLoading)
     
@@ -367,9 +371,14 @@ export default {
       return option ? option.label : gender
     }
     
-    const getSpeciesName = (speciesId) => {
-      const species = petStore.getSpeciesById(speciesId)
-      return species ? species.species : '알 수 없음'
+    const getSpeciesName = (speciesId, petSpecies = null) => {
+      // speciesId가 있으면 store에서 조회
+      if (speciesId) {
+        const species = petStore.getSpeciesById(speciesId)
+        return species ? species.species : '알 수 없음'
+      }
+      // speciesId가 없으면 pet.species 사용
+      return petSpecies || '알 수 없음'
     }
     
     const formatDate = (dateString) => {
@@ -385,6 +394,10 @@ export default {
     }
     
     const editPet = (pet) => {
+      if (!pet.id) {
+        showSnackbar('ID가 없어 수정할 수 없습니다. 백엔드 관리자에게 문의하세요.', 'error')
+        return
+      }
       editingPet.value = pet
       showAddForm.value = true
     }
@@ -399,6 +412,10 @@ export default {
     }
     
     const confirmDelete = (pet) => {
+      if (!pet.id) {
+        showSnackbar('ID가 없어 삭제할 수 없습니다. 백엔드 관리자에게 문의하세요.', 'error')
+        return
+      }
       petToDelete.value = pet
       showDeleteConfirm.value = true
     }
