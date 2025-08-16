@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import api from '@/services/api'
+import { petAPI, speciesAPI } from '@/services/api'
 
 export const usePetStore = defineStore('pet', () => {
   // State
@@ -37,21 +37,38 @@ export const usePetStore = defineStore('pet', () => {
     try {
       setLoading(true)
       clearError()
-      const response = await api.get('/pets/list')
-      if (response.data.success) {
+      console.log('=== fetchPets 시작 ===')
+      
+      const response = await petAPI.getList()
+      console.log('API 응답:', response)
+      console.log('응답 데이터:', response.data)
+      
+      // 백엔드 응답 구조에 따라 success 또는 isSuccess 확인
+      const isSuccess = response.data.success || response.data.isSuccess
+      console.log('성공 여부:', isSuccess)
+      
+      if (isSuccess) {
         pets.value = response.data.data || []
+        console.log('설정된 pets:', pets.value)
+        
         // 대표 반려동물이 설정되어 있지 않다면 첫 번째 반려동물을 대표로 설정
         if (!representativePet.value && pets.value.length > 0) {
           representativePet.value = pets.value[0]
+          console.log('대표 반려동물 설정:', representativePet.value)
         }
       } else {
-        setError(response.data.message || '반려동물 목록을 불러오는데 실패했습니다.')
+        const errorMsg = response.data.message || '반려동물 목록을 불러오는데 실패했습니다.'
+        console.log('API 에러:', errorMsg)
+        setError(errorMsg)
       }
     } catch (err) {
-      setError(err.response?.data?.message || '반려동물 목록을 불러오는데 실패했습니다.')
-      console.error('Error fetching pets:', err)
+      console.error('fetchPets 에러:', err)
+      console.error('에러 응답:', err.response)
+      const errorMessage = err.response?.data?.message || '반려동물 목록을 불러오는데 실패했습니다.'
+      setError(errorMessage)
     } finally {
       setLoading(false)
+      console.log('=== fetchPets 완료 ===')
     }
   }
 
@@ -60,25 +77,7 @@ export const usePetStore = defineStore('pet', () => {
       setLoading(true)
       clearError()
       
-      const formData = new FormData()
-      
-      // PetRegisterReq 데이터 추가
-      Object.keys(petData).forEach(key => {
-        if (petData[key] !== null && petData[key] !== undefined) {
-          formData.append(key, petData[key])
-        }
-      })
-      
-      // 이미지가 있다면 추가
-      if (petImage) {
-        formData.append('petImg', petImage)
-      }
-
-      const response = await api.post('/pets/register', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      })
+      const response = await petAPI.register(petData, petImage)
 
       if (response.data.success) {
         // 등록 후 목록 새로고침
@@ -88,10 +87,10 @@ export const usePetStore = defineStore('pet', () => {
         setError(response.data.message || '반려동물 등록에 실패했습니다.')
         return { success: false, message: response.data.message }
       }
-    } catch (err) {
-      const errorMessage = err.response?.data?.message || '반려동물 등록에 실패했습니다.'
+    } catch (error) {
+      console.error('반려동물 등록 에러:', error)
+      const errorMessage = error.response?.data?.message || '반려동물 등록 중 오류가 발생했습니다.'
       setError(errorMessage)
-      console.error('Error registering pet:', err)
       return { success: false, message: errorMessage }
     } finally {
       setLoading(false)
@@ -103,25 +102,7 @@ export const usePetStore = defineStore('pet', () => {
       setLoading(true)
       clearError()
       
-      const formData = new FormData()
-      
-      // PetRegisterReq 데이터 추가
-      Object.keys(petData).forEach(key => {
-        if (petData[key] !== null && petData[key] !== undefined) {
-          formData.append(key, petData[key])
-        }
-      })
-      
-      // 이미지가 있다면 추가
-      if (petImage) {
-        formData.append('petImg', petImage)
-      }
-
-      const response = await api.put(`/pets/${petId}`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      })
+      const response = await petAPI.update(petId, petData, petImage)
 
       if (response.data.success) {
         // 수정 후 목록 새로고침
@@ -131,10 +112,9 @@ export const usePetStore = defineStore('pet', () => {
         setError(response.data.message || '반려동물 수정에 실패했습니다.')
         return { success: false, message: response.data.message }
       }
-    } catch (err) {
-      const errorMessage = err.response?.data?.message || '반려동물 수정에 실패했습니다.'
-      setError(errorMessage)
-      console.error('Error updating pet:', err)
+    } catch (error) {
+      console.error('반려동물 수정 에러:', error)
+      const errorMessage = error.response?.data?.message || '반려동물 수정 중 오류가 발생했습니다.'
       return { success: false, message: errorMessage }
     } finally {
       setLoading(false)
@@ -146,7 +126,7 @@ export const usePetStore = defineStore('pet', () => {
       setLoading(true)
       clearError()
       
-      const response = await api.delete(`/pets/${petId}`)
+      const response = await petAPI.delete(petId)
       
       if (response.data.success) {
         // 삭제 후 목록 새로고침
@@ -171,8 +151,8 @@ export const usePetStore = defineStore('pet', () => {
     try {
       setLoading(true)
       clearError()
-      const response = await api.get('/species/list')
-      if (response.data.success) {
+      const response = await speciesAPI.getList()
+      if (response.data.isSuccess) {
         species.value = response.data.data || []
       } else {
         setError(response.data.message || '반려동물 종류 목록을 불러오는데 실패했습니다.')
@@ -189,9 +169,28 @@ export const usePetStore = defineStore('pet', () => {
     try {
       setLoading(true)
       clearError()
-      const response = await api.get('/species/search', { params: searchParams })
-      if (response.data.success) {
-        return response.data.data || []
+      // 백엔드에는 /species/search 엔드포인트가 없으므로 /species/list로 검색
+      const response = await speciesAPI.getList()
+      console.log('=== searchSpecies API 응답 ===')
+      console.log('전체 응답:', response)
+      console.log('response.data:', response.data)
+      console.log('response.data.data:', response.data.data)
+      
+      if (response.data.isSuccess) {
+        const allSpecies = response.data.data || []
+        console.log('전체 종류 목록:', allSpecies)
+        
+        // 프론트엔드에서 검색어로 필터링
+        if (searchParams.species) {
+          const searchTerm = searchParams.species.toLowerCase()
+          const filteredSpecies = allSpecies.filter(species => 
+            species.species.toLowerCase().includes(searchTerm) ||
+            species.petOrder.toLowerCase().includes(searchTerm)
+          )
+          console.log('필터링된 종류:', filteredSpecies)
+          return filteredSpecies
+        }
+        return allSpecies
       } else {
         setError(response.data.message || '반려동물 종류 검색에 실패했습니다.')
         return []

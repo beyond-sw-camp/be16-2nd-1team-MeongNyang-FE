@@ -347,10 +347,11 @@ export default {
       return filtered
     })
     
-    // 옵션 데이터
+    // 옵션 데이터 (백엔드 Enum과 정확히 일치)
     const genderOptions = [
       { value: 'MALE', label: '수컷' },
-      { value: 'FEMALE', label: '암컷' }
+      { value: 'FEMALE', label: '암컷' },
+      { value: 'NEUTRALITY', label: '중성' }
     ]
     
     const speciesOptions = computed(() => {

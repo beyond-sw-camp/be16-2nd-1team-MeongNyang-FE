@@ -44,6 +44,11 @@ apiClient.interceptors.request.use(
       config.headers['X-CSRF-Token'] = csrfToken
     }
     
+    // FormData 요청일 때는 Content-Type 헤더 제거 (브라우저가 자동으로 설정)
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type']
+    }
+    
     return config
   },
   error => {
@@ -188,9 +193,7 @@ export const postAPI = {
     if (files) {
       files.forEach(file => formData.append('files', file))
     }
-    return apiClient.post('/posts', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    })
+    return apiClient.post('/posts', formData)
   },
   
   // 일기 수정
@@ -200,9 +203,7 @@ export const postAPI = {
     if (files) {
       files.forEach(file => formData.append('files', file))
     }
-    return apiClient.patch(`/posts/${postId}`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    })
+    return apiClient.patch(`/posts/${postId}`, formData)
   },
   
   // 일기 삭제
@@ -254,11 +255,9 @@ export const marketAPI = {
     const formData = new FormData()
     formData.append('marketPostCreateReq', JSON.stringify(postData))
     if (imageFiles) {
-      imageFiles.forEach(file => formData.append('imageFiles', file))
+      imageFiles.forEach(file => formData.append('files', file))
     }
-    return apiClient.post('/markets/posts', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    })
+    return apiClient.post('/markets/posts', formData)
   },
   
   // 거래글 수정
@@ -266,11 +265,9 @@ export const marketAPI = {
     const formData = new FormData()
     formData.append('marketPostUpdateReq', JSON.stringify(postData))
     if (imageFiles) {
-      imageFiles.forEach(file => formData.append('imageFiles', file))
+      imageFiles.forEach(file => formData.append('files', file))
     }
-    return apiClient.patch(`/markets/${postId}`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    })
+    return apiClient.patch(`/markets/${postId}`, formData)
   },
   
   // 거래글 삭제
@@ -303,12 +300,38 @@ export const petAPI = {
   // 반려동물 등록
   register: (petData, petImg) => {
     const formData = new FormData()
-    formData.append('petRegisterReq', JSON.stringify(petData))
+    
+    // JSON 데이터를 문자열로 변환하여 추가
+    formData.append('PetRegisterReq', new Blob([JSON.stringify(petData)], {
+      type: 'application/json'
+    }))
+    
+    // 이미지 파일 추가
     if (petImg) {
       formData.append('petImg', petImg)
     }
+    
+    // FormData 디버깅
+    console.log('=== FormData Debug ===')
+    console.log('Original petData:', petData)
+    console.log('FormData contents:')
+    for (let [key, value] of formData.entries()) {
+      console.log(`${key}:`, value, typeof value)
+      if (key === 'PetRegisterReq') {
+        try {
+          const parsed = JSON.parse(value)
+          console.log('Parsed PetRegisterReq:', parsed)
+        } catch (e) {
+          console.log('Failed to parse PetRegisterReq:', e)
+        }
+      }
+    }
+    console.log('=== End FormData Debug ===')
+    
     return apiClient.post('/pets/register', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+      headers: {
+        'Content-Type': undefined // 명시적으로 undefined로 설정
+      }
     })
   },
   
@@ -318,12 +341,38 @@ export const petAPI = {
   // 반려동물 수정
   update: (petId, petData, petImg) => {
     const formData = new FormData()
-    formData.append('petRegisterReq', JSON.stringify(petData))
+    
+    // JSON 데이터를 Blob으로 변환하여 추가
+    formData.append('PetRegisterReq', new Blob([JSON.stringify(petData)], {
+      type: 'application/json'
+    }))
+    
+    // 이미지 파일 추가
     if (petImg) {
       formData.append('petImg', petImg)
     }
+    
+    // FormData 디버깅
+    console.log('=== FormData Debug ===')
+    console.log('Original petData:', petData)
+    console.log('FormData contents:')
+    for (let [key, value] of formData.entries()) {
+      console.log(`${key}:`, value, typeof value)
+      if (key === 'PetRegisterReq') {
+        try {
+          const parsed = JSON.parse(value)
+          console.log('Parsed PetRegisterReq:', parsed)
+        } catch (e) {
+          console.log('Failed to parse PetRegisterReq:', e)
+        }
+      }
+    }
+    console.log('=== End FormData Debug ===')
+    
     return apiClient.put(`/pets/${petId}`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+      headers: {
+        'Content-Type': undefined // 명시적으로 undefined로 설정
+      }
     })
   },
   
@@ -365,9 +414,7 @@ export const chatAPI = {
   uploadFiles: (roomId, files) => {
     const formData = new FormData()
     files.forEach(file => formData.append('files', file))
-    return apiClient.post(`/chat-rooms/${roomId}/files`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    })
+    return apiClient.post(`/chat-rooms/${roomId}/files`, formData)
   }
 }
 

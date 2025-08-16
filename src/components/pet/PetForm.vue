@@ -82,26 +82,18 @@
 
           <!-- 성별 -->
           <v-col cols="12" md="6">
-            <FormField
+            <v-select
               v-model="petData.gender"
+              :items="genderOptions"
+              item-title="label"
+              item-value="value"
               label="성별"
               placeholder="성별을 선택하세요"
               :rules="[v => !!v || '성별은 필수입니다']"
               required
               prepend-icon="mdi-gender-male-female"
-            >
-              <template #default>
-                <v-select
-                  v-model="petData.gender"
-                  :items="genderOptions"
-                  item-title="label"
-                  item-value="value"
-                  placeholder="성별 선택"
-                  clearable
-                  hide-details
-                />
-              </template>
-            </FormField>
+              clearable
+            />
           </v-col>
 
           <!-- 나이 -->
@@ -218,7 +210,23 @@ export default {
     const petStore = usePetStore()
     const form = ref(null)
     const fileInput = ref(null)
-    const isValid = ref(false)
+    // 폼 유효성 검사
+    const isValid = computed(() => {
+      console.log('폼 유효성 검사:', {
+        name: petData.name,
+        speciesId: petData.speciesId,
+        gender: petData.gender,
+        age: petData.age,
+        weight: petData.weight,
+        birthday: petData.birthday
+      })
+      return petData.name && 
+             petData.speciesId && 
+             petData.gender && 
+             petData.age !== null && 
+             petData.weight !== null && 
+             petData.birthday
+    })
     const previewImage = ref(null)
     
     // 폼 데이터 초기화
@@ -235,10 +243,11 @@ export default {
     // 로딩 상태
     const loading = computed(() => petStore.isLoading)
     
-    // 성별 옵션
+    // 성별 옵션 (백엔드 Enum과 정확히 일치)
     const genderOptions = [
       { value: 'MALE', label: '수컷' },
-      { value: 'FEMALE', label: '암컷' }
+      { value: 'FEMALE', label: '암컷' },
+      { value: 'NEUTRALITY', label: '중성' }
     ]
     
     // 수정 모드일 때 기존 데이터 로드
@@ -315,7 +324,7 @@ export default {
     // 컴포넌트 마운트 시 종류 목록 로드
     onMounted(async () => {
       if (petStore.getSpecies.length === 0) {
-        await petStore.fetchSpecies()
+        console.log('fetchSpecies', await petStore.fetchSpecies())
       }
     })
     

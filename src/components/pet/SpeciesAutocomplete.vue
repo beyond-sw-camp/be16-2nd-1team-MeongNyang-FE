@@ -196,7 +196,18 @@ export default {
     
     // 종류 선택
     const selectSpecies = (species) => {
-      emit('update:modelValue', species.id)
+      console.log('=== 종류 선택 상세 정보 ===')
+      console.log('전체 species 객체:', species)
+      console.log('species의 모든 키:', Object.keys(species))
+      console.log('species.id:', species.id)
+      console.log('species.speciesId:', species.speciesId)
+      console.log('species.species:', species.species)
+      
+      // 백엔드 응답 구조에 따라 올바른 ID 필드 사용
+      const speciesId = species.id || species.speciesId
+      console.log('사용할 speciesId:', speciesId)
+      
+      emit('update:modelValue', speciesId)
       emit('change', species)
       searchQuery.value = species.species
       showDropdown.value = false
