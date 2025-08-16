@@ -230,8 +230,33 @@ export default {
 
 <style scoped>
 .v-btn {
-  transition: all 0.2s ease-in-out;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
+  border-radius: 12px;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  text-transform: none;
+  overflow: hidden;
+}
+
+.v-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.v-btn:hover::before {
+  left: 100%;
+}
+
+.v-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);
 }
 
 /* 포커스 표시 개선 */

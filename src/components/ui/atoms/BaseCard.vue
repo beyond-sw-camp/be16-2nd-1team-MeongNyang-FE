@@ -352,15 +352,19 @@ export default {
 
 <style scoped>
 .v-card {
-  transition: all 0.2s ease-in-out;
-  border-radius: 8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 16px;
   overflow: hidden;
   position: relative;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .v-card:not(.v-card--disabled):hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(99, 102, 241, 0.15), 0 8px 16px rgba(15, 23, 42, 0.1);
+  border-color: rgba(99, 102, 241, 0.3);
 }
 
 /* 포커스 표시 개선 */

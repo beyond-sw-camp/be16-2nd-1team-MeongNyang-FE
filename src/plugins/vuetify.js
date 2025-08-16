@@ -8,182 +8,196 @@ import { mdi } from 'vuetify/iconsets/mdi';
 const lightTheme = {
   dark: false,
   colors: {
-    // 브랜드 색상
-    primary: '#1976D2',
-    'primary-darken-1': '#1565C0',
-    'primary-lighten-1': '#42A5F5',
+    // 브랜드 색상 - 더 세련된 파란색 계열
+    primary: '#6366F1',
+    'primary-darken-1': '#4F46E5',
+    'primary-lighten-1': '#818CF8',
     
-    // 보조 색상
-    secondary: '#424242',
-    'secondary-darken-1': '#212121',
-    'secondary-lighten-1': '#757575',
+    // 보조 색상 - 모던한 그레이 계열
+    secondary: '#64748B',
+    'secondary-darken-1': '#475569',
+    'secondary-lighten-1': '#94A3B8',
     
-    // 성공/경고/오류 색상
-    success: '#4CAF50',
-    'success-darken-1': '#388E3C',
-    'success-lighten-1': '#81C784',
+    // 성공/경고/오류 색상 - 더 부드러운 톤
+    success: '#10B981',
+    'success-darken-1': '#059669',
+    'success-lighten-1': '#34D399',
     
-    warning: '#FF9800',
-    'warning-darken-1': '#F57C00',
-    'warning-lighten-1': '#FFB74D',
+    warning: '#F59E0B',
+    'warning-darken-1': '#D97706',
+    'warning-lighten-1': '#FBBF24',
     
-    error: '#F44336',
-    'error-darken-1': '#D32F2F',
-    'error-lighten-1': '#E57373',
+    error: '#EF4444',
+    'error-darken-1': '#DC2626',
+    'error-lighten-1': '#F87171',
     
-    info: '#2196F3',
-    'info-darken-1': '#1976D2',
-    'info-lighten-1': '#64B5F6',
+    info: '#3B82F6',
+    'info-darken-1': '#2563EB',
+    'info-lighten-1': '#60A5FA',
     
-    // 표면 색상
+    // 표면 색상 - 더 부드러운 화이트
     surface: '#FFFFFF',
-    'surface-variant': '#F5F5F5',
+    'surface-variant': '#F8FAFC',
     'surface-bright': '#FFFFFF',
-    'surface-light': '#FAFAFA',
-    'surface-dark': '#F5F5F5',
+    'surface-light': '#F1F5F9',
+    'surface-dark': '#E2E8F0',
     
-    // 배경 색상
+    // 배경 색상 - 그라데이션 친화적
     background: '#FFFFFF',
-    'background-light': '#FAFAFA',
-    'background-dark': '#F5F5F5',
+    'background-light': '#F8FAFC',
+    'background-dark': '#F1F5F9',
     
     // 텍스트 색상
     'on-primary': '#FFFFFF',
     'on-primary-darken-1': '#FFFFFF',
-    'on-primary-lighten-1': '#000000',
+    'on-primary-lighten-1': '#1E293B',
     
     'on-secondary': '#FFFFFF',
     'on-secondary-darken-1': '#FFFFFF',
-    'on-secondary-lighten-1': '#000000',
+    'on-secondary-lighten-1': '#1E293B',
     
     'on-success': '#FFFFFF',
     'on-success-darken-1': '#FFFFFF',
-    'on-success-lighten-1': '#000000',
+    'on-success-lighten-1': '#1E293B',
     
-    'on-warning': '#000000',
-    'on-warning-darken-1': '#000000',
-    'on-warning-lighten-1': '#000000',
+    'on-warning': '#FFFFFF',
+    'on-warning-darken-1': '#FFFFFF',
+    'on-warning-lighten-1': '#1E293B',
     
     'on-error': '#FFFFFF',
     'on-error-darken-1': '#FFFFFF',
-    'on-error-lighten-1': '#000000',
+    'on-error-lighten-1': '#1E293B',
     
     'on-info': '#FFFFFF',
     'on-info-darken-1': '#FFFFFF',
-    'on-info-lighten-1': '#000000',
+    'on-info-lighten-1': '#1E293B',
     
-    'on-surface': '#000000',
-    'on-surface-variant': '#000000',
-    'on-surface-bright': '#000000',
-    'on-surface-light': '#000000',
-    'on-surface-dark': '#000000',
+    'on-surface': '#1E293B',
+    'on-surface-variant': '#475569',
+    'on-surface-bright': '#1E293B',
+    'on-surface-light': '#475569',
+    'on-surface-dark': '#64748B',
     
-    'on-background': '#000000',
-    'on-background-light': '#000000',
-    'on-background-dark': '#000000',
+    'on-background': '#1E293B',
+    'on-background-light': '#475569',
+    'on-background-dark': '#64748B',
     
-    // 기타 색상
-    outline: '#E0E0E0',
-    'outline-variant': '#BDBDBD',
-    shadow: 'rgba(0, 0, 0, 0.12)',
-    'shadow-light': 'rgba(0, 0, 0, 0.08)',
-    'shadow-dark': 'rgba(0, 0, 0, 0.24)',
+    // 기타 색상 - 더 세련된 톤
+    outline: '#E2E8F0',
+    'outline-variant': '#CBD5E1',
+    shadow: 'rgba(15, 23, 42, 0.08)',
+    'shadow-light': 'rgba(15, 23, 42, 0.04)',
+    'shadow-dark': 'rgba(15, 23, 42, 0.16)',
     
     // 반투명 색상
-    'overlay-light': 'rgba(255, 255, 255, 0.8)',
-    'overlay-dark': 'rgba(0, 0, 0, 0.5)',
-    'overlay-darker': 'rgba(0, 0, 0, 0.7)',
+    'overlay-light': 'rgba(255, 255, 255, 0.9)',
+    'overlay-dark': 'rgba(15, 23, 42, 0.6)',
+    'overlay-darker': 'rgba(15, 23, 42, 0.8)',
+    
+    // 새로운 그라데이션 색상
+    'gradient-primary': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    'gradient-secondary': 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+    'gradient-success': 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+    'gradient-warning': 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+    'gradient-error': 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
   }
 };
 
 const darkTheme = {
   dark: true,
   colors: {
-    // 브랜드 색상
-    primary: '#90CAF9',
-    'primary-darken-1': '#64B5F6',
-    'primary-lighten-1': '#BBDEFB',
+    // 브랜드 색상 - 더 세련된 파란색 계열
+    primary: '#818CF8',
+    'primary-darken-1': '#6366F1',
+    'primary-lighten-1': '#A5B4FC',
     
-    // 보조 색상
-    secondary: '#BDBDBD',
-    'secondary-darken-1': '#9E9E9E',
-    'secondary-lighten-1': '#E0E0E0',
+    // 보조 색상 - 모던한 그레이 계열
+    secondary: '#94A3B8',
+    'secondary-darken-1': '#64748B',
+    'secondary-lighten-1': '#CBD5E1',
     
-    // 성공/경고/오류 색상
-    success: '#81C784',
-    'success-darken-1': '#66BB6A',
-    'success-lighten-1': '#A5D6A7',
+    // 성공/경고/오류 색상 - 더 부드러운 톤
+    success: '#34D399',
+    'success-darken-1': '#10B981',
+    'success-lighten-1': '#6EE7B7',
     
-    warning: '#FFB74D',
-    'warning-darken-1': '#FFA726',
-    'warning-lighten-1': '#FFCC02',
+    warning: '#FBBF24',
+    'warning-darken-1': '#F59E0B',
+    'warning-lighten-1': '#FCD34D',
     
-    error: '#E57373',
-    'error-darken-1': '#EF5350',
-    'error-lighten-1': '#FFCDD2',
+    error: '#F87171',
+    'error-darken-1': '#EF4444',
+    'error-lighten-1': '#FCA5A5',
     
-    info: '#64B5F6',
-    'info-darken-1': '#42A5F5',
-    'info-lighten-1': '#90CAF9',
+    info: '#60A5FA',
+    'info-darken-1': '#3B82F6',
+    'info-lighten-1': '#93C5FD',
     
-    // 표면 색상
-    surface: '#121212',
-    'surface-variant': '#1E1E1E',
-    'surface-bright': '#1E1E1E',
-    'surface-light': '#2D2D2D',
-    'surface-dark': '#0A0A0A',
+    // 표면 색상 - 더 부드러운 다크 톤
+    surface: '#0F172A',
+    'surface-variant': '#1E293B',
+    'surface-bright': '#1E293B',
+    'surface-light': '#334155',
+    'surface-dark': '#020617',
     
-    // 배경 색상
-    background: '#121212',
-    'background-light': '#1E1E1E',
-    'background-dark': '#0A0A0A',
+    // 배경 색상 - 그라데이션 친화적
+    background: '#0F172A',
+    'background-light': '#1E293B',
+    'background-dark': '#020617',
     
     // 텍스트 색상
-    'on-primary': '#000000',
-    'on-primary-darken-1': '#000000',
-    'on-primary-lighten-1': '#000000',
+    'on-primary': '#0F172A',
+    'on-primary-darken-1': '#0F172A',
+    'on-primary-lighten-1': '#0F172A',
     
-    'on-secondary': '#000000',
-    'on-secondary-darken-1': '#000000',
-    'on-secondary-lighten-1': '#000000',
+    'on-secondary': '#0F172A',
+    'on-secondary-darken-1': '#0F172A',
+    'on-secondary-lighten-1': '#0F172A',
     
-    'on-success': '#000000',
-    'on-success-darken-1': '#000000',
-    'on-success-lighten-1': '#000000',
+    'on-success': '#0F172A',
+    'on-success-darken-1': '#0F172A',
+    'on-success-lighten-1': '#0F172A',
     
-    'on-warning': '#000000',
-    'on-warning-darken-1': '#000000',
-    'on-warning-lighten-1': '#000000',
+    'on-warning': '#0F172A',
+    'on-warning-darken-1': '#0F172A',
+    'on-warning-lighten-1': '#0F172A',
     
-    'on-error': '#000000',
-    'on-error-darken-1': '#000000',
-    'on-error-lighten-1': '#000000',
+    'on-error': '#0F172A',
+    'on-error-darken-1': '#0F172A',
+    'on-error-lighten-1': '#0F172A',
     
-    'on-info': '#000000',
-    'on-info-darken-1': '#000000',
-    'on-info-lighten-1': '#000000',
+    'on-info': '#0F172A',
+    'on-info-darken-1': '#0F172A',
+    'on-info-lighten-1': '#0F172A',
     
-    'on-surface': '#FFFFFF',
-    'on-surface-variant': '#FFFFFF',
-    'on-surface-bright': '#FFFFFF',
-    'on-surface-light': '#FFFFFF',
-    'on-surface-dark': '#FFFFFF',
+    'on-surface': '#F8FAFC',
+    'on-surface-variant': '#E2E8F0',
+    'on-surface-bright': '#F8FAFC',
+    'on-surface-light': '#CBD5E1',
+    'on-surface-dark': '#94A3B8',
     
-    'on-background': '#FFFFFF',
-    'on-background-light': '#FFFFFF',
-    'on-background-dark': '#FFFFFF',
+    'on-background': '#F8FAFC',
+    'on-background-light': '#E2E8F0',
+    'on-background-dark': '#CBD5E1',
     
-    // 기타 색상
-    outline: '#424242',
-    'outline-variant': '#616161',
-    shadow: 'rgba(0, 0, 0, 0.3)',
-    'shadow-light': 'rgba(0, 0, 0, 0.2)',
-    'shadow-dark': 'rgba(0, 0, 0, 0.5)',
+    // 기타 색상 - 더 세련된 톤
+    outline: '#334155',
+    'outline-variant': '#475569',
+    shadow: 'rgba(0, 0, 0, 0.4)',
+    'shadow-light': 'rgba(0, 0, 0, 0.3)',
+    'shadow-dark': 'rgba(0, 0, 0, 0.6)',
     
     // 반투명 색상
-    'overlay-light': 'rgba(255, 255, 255, 0.1)',
-    'overlay-dark': 'rgba(0, 0, 0, 0.7)',
+    'overlay-light': 'rgba(15, 23, 42, 0.2)',
+    'overlay-dark': 'rgba(0, 0, 0, 0.8)',
     'overlay-darker': 'rgba(0, 0, 0, 0.9)',
+    
+    // 새로운 그라데이션 색상
+    'gradient-primary': 'linear-gradient(135deg, #818CF8 0%, #6366F1 100%)',
+    'gradient-secondary': 'linear-gradient(135deg, #A5B4FC 0%, #818CF8 100%)',
+    'gradient-success': 'linear-gradient(135deg, #34D399 0%, #10B981 100%)',
+    'gradient-warning': 'linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)',
+    'gradient-error': 'linear-gradient(135deg, #F87171 0%, #EF4444 100%)',
   }
 };
 
@@ -282,33 +296,51 @@ const borderRadius = {
   full: 9999,
 };
 
-// 커스텀 그림자 설정
+// 커스텀 그림자 설정 - 더 현대적이고 부드러운 그림자
 const shadows = {
   none: 'none',
-  sm: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-  base: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-  md: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-  lg: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-  xl: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-  '2xl': '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+  sm: '0 1px 3px 0 rgba(15, 23, 42, 0.08), 0 1px 2px 0 rgba(15, 23, 42, 0.04)',
+  base: '0 1px 3px 0 rgba(15, 23, 42, 0.1), 0 1px 2px 0 rgba(15, 23, 42, 0.06)',
+  md: '0 4px 6px -1px rgba(15, 23, 42, 0.1), 0 2px 4px -1px rgba(15, 23, 42, 0.06)',
+  lg: '0 10px 15px -3px rgba(15, 23, 42, 0.1), 0 4px 6px -2px rgba(15, 23, 42, 0.05)',
+  xl: '0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 10px 10px -5px rgba(15, 23, 42, 0.04)',
+  '2xl': '0 25px 50px -12px rgba(15, 23, 42, 0.25)',
+  // 새로운 그림자 효과
+  'glow': '0 0 20px rgba(99, 102, 241, 0.3)',
+  'glow-success': '0 0 20px rgba(16, 185, 129, 0.3)',
+  'glow-warning': '0 0 20px rgba(245, 158, 11, 0.3)',
+  'glow-error': '0 0 20px rgba(239, 68, 68, 0.3)',
+  'inner': 'inset 0 2px 4px 0 rgba(15, 23, 42, 0.06)',
+  'inner-lg': 'inset 0 4px 8px 0 rgba(15, 23, 42, 0.1)',
 };
 
-// 커스텀 애니메이션 설정
+// 커스텀 애니메이션 설정 - 더 부드럽고 현대적인 전환
 const transitions = {
   // 기본 전환 시간
   duration: {
     fast: 150,
     normal: 250,
     slow: 350,
+    slower: 500,
   },
   
-  // 이징 함수
+  // 이징 함수 - 더 자연스러운 움직임
   easing: {
     linear: 'linear',
-    ease: 'ease',
-    'ease-in': 'ease-in',
-    'ease-out': 'ease-out',
-    'ease-in-out': 'ease-in-out',
+    ease: 'cubic-bezier(0.4, 0, 0.2, 1)',
+    'ease-in': 'cubic-bezier(0.4, 0, 1, 1)',
+    'ease-out': 'cubic-bezier(0, 0, 0.2, 1)',
+    'ease-in-out': 'cubic-bezier(0.4, 0, 0.2, 1)',
+    'bounce': 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+    'elastic': 'cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+  },
+  
+  // 커스텀 전환 효과
+  effects: {
+    'fade-in': 'opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    'slide-up': 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    'scale-in': 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+    'bounce-in': 'transform 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
   }
 };
 
@@ -435,6 +467,18 @@ export default createVuetify({
       '--transition-fast': `${transitions.duration.fast}ms`,
       '--transition-normal': `${transitions.duration.normal}ms`,
       '--transition-slow': `${transitions.duration.slow}ms`,
+      '--transition-slower': `${transitions.duration.slower}ms`,
+      
+      // 이징 함수
+      '--ease-default': transitions.easing.ease,
+      '--ease-bounce': transitions.easing.bounce,
+      '--ease-elastic': transitions.easing.elastic,
+      
+      // 커스텀 전환 효과
+      '--transition-fade-in': transitions.effects['fade-in'],
+      '--transition-slide-up': transitions.effects['slide-up'],
+      '--transition-scale-in': transitions.effects['scale-in'],
+      '--transition-bounce-in': transitions.effects['bounce-in'],
     }
   }
 });

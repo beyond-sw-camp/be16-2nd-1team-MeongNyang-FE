@@ -124,89 +124,14 @@
           md="4"
           lg="3"
         >
-          <BaseCard
-            :clickable="true"
-            @click="selectPet(pet)"
-            class="pet-card"
-            :class="{ 'representative': pet.id === representativePet?.id }"
-          >
-            <template #header>
-              <div class="d-flex align-center justify-space-between">
-                <span class="text-h6">{{ pet.name }}</span>
-                <div class="pet-actions">
-                  <v-btn
-                    v-if="pet.id !== representativePet?.id"
-                    icon="mdi-star-outline"
-                    variant="text"
-                    size="small"
-                    @click.stop="setAsRepresentative(pet)"
-                    aria-label="대표 반려동물로 설정"
-                  />
-                  <v-btn
-                    icon="mdi-pencil"
-                    variant="text"
-                    size="small"
-                    :disabled="!pet.id"
-                    @click.stop="editPet(pet)"
-                    aria-label="반려동물 수정"
-                    :title="!pet.id ? 'ID가 없어 수정할 수 없습니다' : '반려동물 수정'"
-                  />
-                  <v-btn
-                    icon="mdi-delete"
-                    variant="text"
-                    size="small"
-                    color="error"
-                    :disabled="!pet.id"
-                    @click.stop="confirmDelete(pet)"
-                    aria-label="반려동물 삭제"
-                    :title="!pet.id ? 'ID가 없어 삭제할 수 없습니다' : '반려동물 삭제'"
-                  />
-                </div>
-              </div>
-            </template>
-            
-            <template #default>
-              <div class="pet-card-content">
-                <div class="text-center mb-3">
-                  <v-avatar :size="80" class="mb-2">
-                    <v-img
-                      v-if="pet.url"
-                      :src="pet.url"
-                      :alt="pet.name"
-                    />
-                    <v-icon v-else size="40" color="grey">mdi-paw</v-icon>
-                  </v-avatar>
-                </div>
-                
-                <div class="pet-info">
-                  <div class="info-row">
-                    <v-icon size="16" color="primary">mdi-dog</v-icon>
-                    <span>{{ getSpeciesName(pet.speciesId, pet.species) }}</span>
-                  </div>
-                  
-                  <div class="info-row">
-                    <v-icon size="16" color="primary">mdi-gender-male-female</v-icon>
-                    <span>{{ getGenderLabel(pet.gender) }}</span>
-                  </div>
-                  
-                  <div class="info-row">
-                    <v-icon size="16" color="primary">mdi-calendar</v-icon>
-                    <span>{{ pet.age }}살</span>
-                  </div>
-                  
-                  <div class="info-row">
-                    <v-icon size="16" color="primary">mdi-weight</v-icon>
-                    <span>{{ pet.weight }}kg</span>
-                  </div>
-                  
-                  <div v-if="pet.birthday" class="info-row">
-                    <v-icon size="16" color="primary">mdi-cake-variant</v-icon>
-                    <span>{{ formatDate(pet.birthday) }}</span>
-                  </div>
-                </div>
-              </div>
-            </template>
-          </BaseCard>
+          <PetCard
+            :pet="pet"
+            :representative-pet="representativePet"
+            @set-representative="setAsRepresentative"
+            @edit="editPet"
+            @delete="confirmDelete"
+            @view-details="selectPet"
+          />
         </v-col>
       </v-row>
     </div>
@@ -294,18 +219,19 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { usePetStore } from '@/stores/pet'
 import { useSnackbar } from '@/composables/useSnackbar'
 import BaseButton from '@/components/ui/atoms/BaseButton.vue'
-import BaseCard from '@/components/ui/atoms/BaseCard.vue'
+
 import FormField from '@/components/ui/molecules/FormField.vue'
 import ModalDialog from '@/components/ui/organisms/ModalDialog.vue'
+import PetCard from './PetCard.vue'
 import PetForm from './PetForm.vue'
 
 export default {
   name: 'PetList',
   components: {
     BaseButton,
-    BaseCard,
     FormField,
     ModalDialog,
+    PetCard,
     PetForm
   },
   
