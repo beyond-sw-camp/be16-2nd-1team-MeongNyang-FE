@@ -8,7 +8,7 @@ module.exports = defineConfig({
   // 환경 변수 설정
   chainWebpack: config => {
     config.plugin('define').tap(args => {
-      args[0]['process.env.VUE_APP_API_BASE_URL'] = JSON.stringify('http://localhost:8080/api')
+      args[0]['process.env.VUE_APP_API_BASE_URL'] = JSON.stringify('http://localhost:8080')
       return args
     })
   }

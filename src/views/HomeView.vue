@@ -14,7 +14,7 @@
       <div class="hero-content">
         <div class="hero-text">
           <h1 class="hero-title">
-            <span class="title-line">멍냥이 커뮤니티에</span>
+            <span class="title-line">멍멍냥냥에</span>
             <span class="title-line">오신 것을 환영합니다!</span>
           </h1>
           <p class="hero-subtitle">
@@ -25,7 +25,6 @@
           <div class="hero-actions">
             <v-btn
               v-if="!isLoggedIn"
-              color="primary"
               size="x-large"
               variant="elevated"
               class="hero-btn login-btn"
@@ -36,7 +35,6 @@
             </v-btn>
             <v-btn
               v-if="!isLoggedIn"
-              color="white"
               size="x-large"
               variant="outlined"
               class="hero-btn register-btn"
@@ -47,7 +45,6 @@
             </v-btn>
             <v-btn
               v-if="isLoggedIn"
-              color="primary"
               size="x-large"
               variant="elevated"
               class="hero-btn dashboard-btn"
@@ -80,9 +77,9 @@
       <div class="container">
         <h2 class="section-title">주요 기능</h2>
         <div class="features-grid">
-          <div class="feature-card">
+          <div class="feature-card palette-pet">
             <div class="feature-icon">
-              <v-icon size="48" color="primary">mdi-paw</v-icon>
+              <v-icon size="48">mdi-paw</v-icon>
             </div>
             <h3 class="feature-title">반려동물 관리</h3>
             <p class="feature-description">
@@ -90,9 +87,9 @@
             </p>
           </div>
           
-          <div class="feature-card">
+          <div class="feature-card palette-diary">
             <div class="feature-icon">
-              <v-icon size="48" color="success">mdi-book-open</v-icon>
+              <v-icon size="48">mdi-book-open</v-icon>
             </div>
             <h3 class="feature-title">다이어리</h3>
             <p class="feature-description">
@@ -100,9 +97,9 @@
             </p>
           </div>
           
-          <div class="feature-card">
+          <div class="feature-card palette-market">
             <div class="feature-icon">
-              <v-icon size="48" color="warning">mdi-store</v-icon>
+              <v-icon size="48">mdi-store</v-icon>
             </div>
             <h3 class="feature-title">마켓플레이스</h3>
             <p class="feature-description">
@@ -110,9 +107,9 @@
             </p>
           </div>
           
-          <div class="feature-card">
+          <div class="feature-card palette-community">
             <div class="feature-icon">
-              <v-icon size="48" color="info">mdi-chat</v-icon>
+              <v-icon size="48">mdi-chat</v-icon>
             </div>
             <h3 class="feature-title">커뮤니티</h3>
             <p class="feature-description">
@@ -189,7 +186,7 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #FAF8F5 0%, #FFFFFF 100%);
   z-index: -2;
 }
 
@@ -199,7 +196,7 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(15, 23, 42, 0.3);
+  background: rgba(255, 255, 255, 0.0);
   z-index: -1;
 }
 
@@ -260,7 +257,7 @@ export default {
 }
 
 .hero-text {
-  color: white;
+  color: #111111;
   text-align: left;
 }
 
@@ -269,7 +266,7 @@ export default {
   font-weight: 800;
   line-height: 1.2;
   margin-bottom: 24px;
-  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
 }
 
 .title-line {
@@ -280,8 +277,9 @@ export default {
   font-size: 1.25rem;
   line-height: 1.6;
   margin-bottom: 48px;
-  opacity: 0.9;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  opacity: 0.95;
+  color: #4B5563;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .hero-actions {
@@ -296,6 +294,12 @@ export default {
   padding: 16px 32px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  line-height: 1;
+  text-transform: none;
 }
 
 .hero-btn:hover {
@@ -304,21 +308,23 @@ export default {
 }
 
 .login-btn {
-  background: linear-gradient(135deg, #6366F1 0%, #818CF8 100%) !important;
+  background: linear-gradient(135deg, #FF8B8B 0%, #FF6B6B 100%) !important;
+  color: #fff !important;
 }
 
 .register-btn {
-  border: 2px solid white;
-  color: white !important;
+  border: 2px solid #FF8B8B;
+  color: #FF8B8B !important;
+  background: transparent !important;
 }
 
 .register-btn:hover {
-  background: white !important;
-  color: #6366F1 !important;
+  background: #FF8B8B !important;
+  color: #ffffff !important;
 }
 
 .dashboard-btn {
-  background: linear-gradient(135deg, #10B981 0%, #34D399 100%) !important;
+  background: linear-gradient(135deg, #FF8B8B 0%, #FF6B6B 100%) !important;
 }
 
 /* 히어로 비주얼 */
@@ -368,7 +374,7 @@ export default {
 /* 기능 소개 섹션 */
 .features-section {
   padding: 120px 0;
-  background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%);
+  background: linear-gradient(135deg, #FF8B8B 0%, #FFC1C1 100%);
 }
 
 .container {
@@ -381,7 +387,7 @@ export default {
   text-align: center;
   font-size: 2.5rem;
   font-weight: 700;
-  color: #1E293B;
+  color: #FFFFFF !important;
   margin-bottom: 64px;
 }
 
@@ -392,16 +398,33 @@ export default {
 }
 
 .feature-card {
-  background: white;
+  background: #FFFFFF;
   padding: 40px 32px;
   border-radius: 24px;
   text-align: center;
-  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.06);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
 }
+
+/* 팔레트 변형: 카드별 배경/아이콘/텍스트 컬러 차별화 */
+.palette-pet { background: linear-gradient(135deg, #FFF5F5 0%, #FFECEC 100%); }
+.palette-pet .feature-icon { background: linear-gradient(135deg, #FFE3E3 0%, #FFD6D6 100%); }
+.palette-pet .feature-title { color: #7F1D1D; }
+
+.palette-diary { background: linear-gradient(135deg, #F5FFF7 0%, #ECFFEE 100%); }
+.palette-diary .feature-icon { background: linear-gradient(135deg, #DFFBE5 0%, #CCF7D5 100%); }
+.palette-diary .feature-title { color: #065F46; }
+
+.palette-market { background: linear-gradient(135deg, #F5F8FF 0%, #ECF2FF 100%); }
+.palette-market .feature-icon { background: linear-gradient(135deg, #DDE7FF 0%, #CCD9FF 100%); }
+.palette-market .feature-title { color: #1E3A8A; }
+
+.palette-community { background: linear-gradient(135deg, #FFF9F0 0%, #FFF2E0 100%); }
+.palette-community .feature-icon { background: linear-gradient(135deg, #FFE6C7 0%, #FFD8A8 100%); }
+.palette-community .feature-title { color: #9A3412; }
 
 .feature-card::before {
   content: '';
@@ -410,7 +433,7 @@ export default {
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.05), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 139, 139, 0.06), transparent);
   transition: left 0.5s;
 }
 
@@ -427,7 +450,7 @@ export default {
   margin-bottom: 24px;
   display: inline-block;
   padding: 20px;
-  background: linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 100%);
+  background: linear-gradient(135deg, #FFF3E0 0%, #FFE8D6 100%);
   border-radius: 20px;
 }
 
@@ -441,14 +464,14 @@ export default {
 .feature-description {
   font-size: 1rem;
   line-height: 1.6;
-  color: #64748B;
+  color: #475569;
 }
 
 /* 통계 섹션 */
 .stats-section {
   padding: 80px 0;
-  background: linear-gradient(135deg, #6366F1 0%, #818CF8 100%);
-  color: white;
+  background: linear-gradient(135deg, #FFFAF0 0%, #FFF7EC 100%);
+  color: #1E293B;
 }
 
 .stats-grid {
@@ -466,13 +489,14 @@ export default {
   font-size: 3rem;
   font-weight: 800;
   margin-bottom: 8px;
-  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  color: #0F172A;
 }
 
 .stat-label {
   font-size: 1.125rem;
   opacity: 0.9;
   font-weight: 500;
+  color: #334155;
 }
 
 /* 반응형 디자인 */
@@ -554,26 +578,17 @@ export default {
 
 /* 다크 모드 지원 */
 @media (prefers-color-scheme: dark) {
+  /* 다크 모드에서도 동일 팔레트 유지 */
   .features-section {
-    background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
+    background: linear-gradient(135deg, #FF8B8B 0%, #FFC1C1 100%);
   }
-  
   .feature-card {
-    background: rgba(30, 41, 59, 0.8);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: #FFFFFF;
+    border-color: rgba(0, 0, 0, 0.06);
   }
-  
-  .feature-title {
-    color: #F8FAFC;
-  }
-  
-  .feature-description {
-    color: #CBD5E1;
-  }
-  
-  .section-title {
-    color: #F8FAFC;
-  }
+  .feature-title { color: #1E293B; }
+  .feature-description { color: #475569; }
+  .section-title { color: #FFFFFF !important; }
 }
 
 /* 모션 감소 설정 지원 */

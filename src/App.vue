@@ -58,6 +58,19 @@ export default {
 </script>
 
 <style>
+#app, html, body {
+  background-color: #FFFAF0; /* 상아색 전역 배경 */
+}
+
+/* Vuetify 루트와 메인 영역에도 동일하게 적용 */
+.v-application {
+  background-color: #FFFAF0 !important;
+}
+
+.v-main {
+  background-color: transparent !important;
+}
+
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
