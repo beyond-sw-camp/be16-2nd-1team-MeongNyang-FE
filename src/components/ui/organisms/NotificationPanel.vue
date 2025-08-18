@@ -352,7 +352,7 @@ export default {
       }
     })
     
-    const getItemClass = (notification, index) => {
+    const getItemClass = (notification) => {
       return {
         'notification-panel__item--unread': !notification.read,
         'notification-panel__item--read': notification.read,

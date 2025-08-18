@@ -215,7 +215,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { usePetStore } from '@/stores/pet'
 import { useSnackbar } from '@/composables/useSnackbar'
 import BaseButton from '@/components/ui/atoms/BaseButton.vue'

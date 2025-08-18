@@ -113,7 +113,7 @@ export const useUIStore = defineStore('ui', () => {
     hideSnackbar()
   }
 
-  const handleSnackbarAction = ({ action, index }) => {
+  const handleSnackbarAction = ({ action }) => {
     if (action.handler) {
       action.handler()
     }

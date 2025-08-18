@@ -300,7 +300,7 @@ export default {
       return classes.join(' ')
     }
     
-    const getInputClass = (index, field) => {
+    const getInputClass = () => {
       return 'input-group__input'
     }
     
