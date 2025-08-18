@@ -1,9 +1,11 @@
 import { createApp } from 'vue'
+import { createPinia } from 'pinia'
 import App from './App.vue'
 import vuetify from './plugins/vuetify';
 import router from './router';
 import '@mdi/font/css/materialdesignicons.css';
 import axios from 'axios';
+import { useAuthStore } from './stores/auth';
 
 axios.interceptors.request.use(
     config => {
@@ -40,6 +42,14 @@ axios.interceptors.response.use(
 )
 
 const app = createApp(App);
+const pinia = createPinia();
+
+app.use(pinia)
 app.use(vuetify)
 app.use(router)
+
+// 인증 스토어 초기화
+const authStore = useAuthStore()
+authStore.initialize()
+
 app.mount('#app')
