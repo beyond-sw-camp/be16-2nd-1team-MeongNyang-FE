@@ -75,7 +75,7 @@
     ></v-btn>
 
     <!-- 채팅방 생성 모달 -->
-    <v-dialog v-model="showCreateRoomModal" max-width="500" persistent>
+    <v-dialog v-model="showCreateRoomModal" max-width="600" persistent>
       <v-card>
         <v-card-title class="text-h6 font-weight-bold">
           새로운 채팅방 생성
@@ -89,7 +89,37 @@
             @keyup.enter="createChatRoom"
             :error-messages="roomTitleError"
             :disabled="creating"
+            class="mb-4"
           ></v-text-field>
+          
+          <!-- 선택된 사용자 표시 -->
+          <div v-if="selectedParticipants.length > 0" class="mb-4">
+            <v-label class="text-subtitle-2 mb-2">선택된 참여자 ({{ selectedParticipants.length }}명)</v-label>
+            <v-chip-group>
+              <v-chip
+                v-for="participant in selectedParticipants"
+                :key="participant.userEmail"
+                closable
+                @click:close="removeParticipant(participant)"
+                color="primary"
+                variant="outlined"
+              >
+                {{ participant.userName || participant.userEmail }}
+              </v-chip>
+            </v-chip-group>
+          </div>
+          
+          <!-- 사용자 선택 버튼 -->
+          <v-btn
+            color="secondary"
+            variant="outlined"
+            @click="showUserSelectionModal = true"
+            :disabled="creating"
+            prepend-icon="mdi-account-plus"
+            class="mb-4"
+          >
+            팔로워/팔로잉에서 참여자 선택
+          </v-btn>
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
@@ -114,6 +144,12 @@
       </v-card>
     </v-dialog>
 
+    <!-- 사용자 선택 모달 -->
+    <UserSelectionModal
+      v-model="showUserSelectionModal"
+      @users-selected="onUsersSelected"
+    />
+
     <!-- 성공/에러 스낵바 -->
     <v-snackbar v-model="showSnackbar" :color="snackbarColor" timeout="3000">
       {{ snackbarMessage }}
@@ -127,8 +163,13 @@
 <script>
 import { useChatStore } from '@/stores/chat';
 import { storeToRefs } from 'pinia';
+import UserSelectionModal from '@/components/chat/UserSelectionModal.vue';
 
 export default {
+  components: {
+    UserSelectionModal
+  },
+  
   setup() {
     const chatStore = useChatStore();
     const { chatRoomList } = storeToRefs(chatStore);
@@ -142,8 +183,10 @@ export default {
   data() {
     return {
       showCreateRoomModal: false,
+      showUserSelectionModal: false,
       newRoomTitle: "",
       roomTitleError: "",
+      selectedParticipants: [],
       creating: false,
       showSnackbar: false,
       snackbarMessage: "",
@@ -171,12 +214,19 @@ export default {
       this.roomTitleError = "";
       
       try {
-        const newRoom = await this.chatStore.createChatRoom(this.newRoomTitle.trim());
+        // 선택된 참여자들의 이메일 목록 생성
+        const participantEmails = this.selectedParticipants.map(p => p.userEmail);
+        
+        const roomId = await this.chatStore.createChatRoom(
+          this.newRoomTitle.trim(), 
+          participantEmails
+        );
+        
         this.showSnackbarMessage('채팅방이 생성되었습니다.', 'success');
         this.closeCreateModal();
         
         // 새로 생성된 채팅방으로 이동
-        this.$router.push({ path: `/chat/${newRoom.id}` });
+        this.$router.push({ path: `/chat/${roomId}` });
       } catch (error) {
         this.showSnackbarMessage('채팅방 생성에 실패했습니다.', 'error');
       } finally {
@@ -186,8 +236,23 @@ export default {
     
     closeCreateModal() {
       this.showCreateRoomModal = false;
+      this.showUserSelectionModal = false;
       this.newRoomTitle = "";
       this.roomTitleError = "";
+      this.selectedParticipants = [];
+    },
+    
+    // 사용자 선택 완료 시 호출
+    onUsersSelected(users) {
+      this.selectedParticipants = users;
+    },
+    
+    // 선택된 참여자 제거
+    removeParticipant(participant) {
+      const index = this.selectedParticipants.findIndex(p => p.userEmail === participant.userEmail);
+      if (index > -1) {
+        this.selectedParticipants.splice(index, 1);
+      }
     },
     
     async retryFetch() {

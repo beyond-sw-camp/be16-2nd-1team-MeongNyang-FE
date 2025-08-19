@@ -40,12 +40,21 @@ export const useChatStore = defineStore('chat', {
       }
     },
 
-    async createChatRoom(roomName) {
+    async createChatRoom(roomName, participantEmails = []) {
       try {
-        const response = await chatAPI.createRoom({ roomName })
-        const newRoom = response.data.data
-        this.chatRoomList.push(newRoom)
-        return newRoom
+        // 현재 로그인한 사용자의 이메일 가져오기
+        const currentUserEmail = localStorage.getItem('email')
+        
+        // 참여자 목록에 현재 사용자 이메일도 포함 (중복 제거)
+        const allParticipantEmails = [...new Set([currentUserEmail, ...participantEmails])]
+        const roomData = { 
+          roomName,
+          participantEmails: allParticipantEmails
+        }
+        const response = await chatAPI.createRoom(roomData)
+        const roomId = response.data.data
+        // this.chatRoomList.push(newRoom)
+        return roomId
       } catch (error) {
         console.error('채팅방 생성 실패:', error)
         throw error
