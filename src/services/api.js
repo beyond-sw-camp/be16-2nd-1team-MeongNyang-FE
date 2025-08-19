@@ -186,6 +186,9 @@ export const userAPI = {
 
 // 게시글 관련 API
 export const postAPI = {
+  // 내 일기 목록 조회 (대시보드용)
+  getMyPosts: (pageable = { page: 0, size: 1 }) => apiClient.get('/posts', { params: pageable }),
+  
   // 일기 작성
   create: (postData, files) => {
     const formData = new FormData()
@@ -283,7 +286,7 @@ export const marketAPI = {
   getPurchases: (pageable) => apiClient.get('/markets/purchases', { params: pageable }),
   
   // 판매목록 조회
-  getSales: (pageable) => apiClient.get('/markets/sales', { params: pageable }),
+  getSales: (pageable = { page: 0, size: 1 }) => apiClient.get('/markets/sales', { params: pageable }),
   
   // 찜하기
   like: (postId) => apiClient.post(`/markets/${postId}/like`),
@@ -396,6 +399,9 @@ export const chatAPI = {
   
   // 채팅방 목록 조회
   getRooms: () => apiClient.get('/chat-rooms'),
+  
+  // 내 채팅방 목록 조회
+  getMyChatRooms: () => apiClient.get('/chat-rooms'),
   
   // 메시지 목록 조회
   getMessages: (roomId) => apiClient.get(`/chat-rooms/${roomId}/messages`),
