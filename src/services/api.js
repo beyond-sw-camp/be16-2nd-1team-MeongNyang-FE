@@ -174,6 +174,12 @@ export const userAPI = {
   // 팔로잉 목록 조회
   getFollowings: (pageable) => apiClient.get('/users/follows/followings', { params: pageable }),
   
+  // 팔로워 개수 조회 (프로필용)
+  getFollowersCount: () => apiClient.get('/users/follows/followers', { params: { page: 0, size: 1 } }),
+  
+  // 팔로잉 개수 조회 (프로필용)
+  getFollowingsCount: () => apiClient.get('/users/follows/followings', { params: { page: 0, size: 1 } }),
+  
   // 사용자 차단
   block: (userId) => apiClient.post(`/users/blocks/${userId}`),
   
@@ -188,6 +194,9 @@ export const userAPI = {
 export const postAPI = {
   // 내 일기 목록 조회 (대시보드용)
   getMyPosts: (pageable = { page: 0, size: 1 }) => apiClient.get('/posts', { params: pageable }),
+  
+  // 내 게시물 개수 조회 (프로필용)
+  getMyPostsCount: () => apiClient.get('/posts', { params: { page: 0, size: 1 } }),
   
   // 일기 작성
   create: (postData, files) => {
@@ -339,7 +348,13 @@ export const petAPI = {
   },
   
   // 반려동물 목록 조회
-  getList: () => apiClient.get('/pets/list'),
+  getList: () => apiClient.get('/pets'),
+  
+  // 사용자 반려동물 목록 조회 (프로필용)
+  getUserPets: () => apiClient.get('/pets'),
+  
+  // 대표 펫 설정
+  setMainPet: (petId) => apiClient.put(`/pets/${petId}/main`),
   
   // 반려동물 수정
   update: (petId, petData, petImg) => {
