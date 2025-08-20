@@ -403,6 +403,8 @@ export default {
   border-radius: 25px;
   max-width: 70%;
   word-wrap: break-word;
+  word-break: break-all;
+  overflow-wrap: break-word;
   text-align: left;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
