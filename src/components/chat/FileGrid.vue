@@ -48,7 +48,7 @@
               controls 
               class="rounded video-player"
               preload="metadata"
-              :poster="getVideoPoster(video)"
+              :poster="getVideoPoster()"
               @loadedmetadata="onVideoLoaded"
               @error="onVideoError"
             >
@@ -125,30 +125,166 @@
       </div>
     </div>
 
-    <!-- 이미지 뷰어 다이얼로그 -->
-    <v-dialog v-model="imageViewerOpen" max-width="90vw" max-height="90vh">
-      <v-card>
-        <v-card-actions class="justify-space-between pa-2">
-          <v-btn icon @click="previousImage" :disabled="currentImageIndex === 0">
-            <v-icon>mdi-chevron-left</v-icon>
-          </v-btn>
-          <v-spacer></v-spacer>
-          <span class="text-caption">{{ currentImageIndex + 1 }} / {{ groupedFiles.images.length }}</span>
-          <v-spacer></v-spacer>
-          <v-btn icon @click="nextImage" :disabled="currentImageIndex === groupedFiles.images.length - 1">
-            <v-icon>mdi-chevron-right</v-icon>
-          </v-btn>
-          <v-btn icon @click="imageViewerOpen = false">
+    <!-- 향상된 이미지 뷰어 다이얼로그 -->
+    <v-dialog 
+      v-model="imageViewerOpen" 
+      fullscreen 
+      hide-overlay 
+      transition="dialog-bottom-transition"
+      @keydown.esc="closeImageViewer"
+      @keydown.left="previousImage"
+      @keydown.right="nextImage"
+    >
+      <v-card class="image-viewer-container" color="black">
+        <!-- 상단 툴바 -->
+        <v-app-bar 
+          color="rgba(0,0,0,0.8)" 
+          dark 
+          flat 
+          class="image-viewer-toolbar"
+          :class="{ 'toolbar-hidden': toolbarHidden }"
+        >
+          <v-btn icon @click="closeImageViewer" class="mr-2">
             <v-icon>mdi-close</v-icon>
           </v-btn>
-        </v-card-actions>
-        <v-card-text class="pa-0">
-          <v-img 
-            :src="groupedFiles.images[currentImageIndex]" 
-            max-height="80vh"
-            contain
-          ></v-img>
-        </v-card-text>
+          
+          <v-toolbar-title class="text-subtitle-1">
+            {{ getFileName(groupedFiles.images[currentImageIndex]) }}
+          </v-toolbar-title>
+          
+          <v-spacer></v-spacer>
+          
+          <!-- 이미지 카운터 -->
+          <span class="text-caption mr-4">
+            {{ currentImageIndex + 1 }} / {{ groupedFiles.images.length }}
+          </span>
+          
+          <!-- 확대/축소 컨트롤 -->
+          <v-btn icon @click="zoomOut" :disabled="zoomLevel <= 0.5" class="mr-1">
+            <v-icon>mdi-magnify-minus</v-icon>
+          </v-btn>
+          <span class="text-caption mx-2">{{ Math.round(zoomLevel * 100) }}%</span>
+          <v-btn icon @click="zoomIn" :disabled="zoomLevel >= 3" class="mr-2">
+            <v-icon>mdi-magnify-plus</v-icon>
+          </v-btn>
+          
+          <!-- 원본 크기 보기 -->
+          <v-btn icon @click="resetZoom" class="mr-2">
+            <v-icon>mdi-fit-to-screen</v-icon>
+          </v-btn>
+          
+          <!-- 다운로드 버튼 -->
+          <v-btn icon @click="downloadCurrentImage" class="mr-2">
+            <v-icon>mdi-download</v-icon>
+          </v-btn>
+          
+          <!-- 정보 토글 -->
+          <v-btn icon @click="toggleImageInfo">
+            <v-icon>mdi-information-outline</v-icon>
+          </v-btn>
+        </v-app-bar>
+
+        <!-- 메인 이미지 영역 -->
+        <div 
+          class="image-viewer-content"
+          @click="toggleToolbar"
+          @wheel="onImageWheel"
+          @mousedown="onImageMouseDown"
+          @mousemove="onImageMouseMove"
+          @mouseup="onImageMouseUp"
+          @mouseleave="onImageMouseUp"
+          @touchstart="onImageTouchStart"
+          @touchmove="onImageTouchMove"
+          @touchend="onImageTouchEnd"
+        >
+          <div 
+            class="image-container"
+            :style="imageContainerStyle"
+            ref="imageContainer"
+          >
+            <v-img 
+              :src="groupedFiles.images[currentImageIndex]" 
+              class="viewer-image"
+              :style="imageStyle"
+              @load="onImageLoad"
+              @error="onImageError"
+            >
+              <template v-slot:placeholder>
+                <div class="d-flex align-center justify-center fill-height">
+                  <v-progress-circular indeterminate color="white" size="64"></v-progress-circular>
+                </div>
+              </template>
+            </v-img>
+          </div>
+
+          <!-- 이전/다음 버튼 -->
+          <v-btn 
+            v-if="groupedFiles.images.length > 1 && currentImageIndex !== 0"
+            icon 
+            size="large"
+            class="nav-btn nav-btn-left"
+            :class="{ 'nav-hidden': toolbarHidden }"
+            @click.stop="previousImage"
+          >
+            <v-icon size="32">mdi-chevron-left</v-icon>
+          </v-btn>
+          
+          <v-btn 
+            v-if="groupedFiles.images.length > 1 && currentImageIndex !== groupedFiles.images.length - 1"
+            icon 
+            size="large"
+            class="nav-btn nav-btn-right"
+            :class="{ 'nav-hidden': toolbarHidden }"
+            @click.stop="nextImage"
+          >
+            <v-icon size="32">mdi-chevron-right</v-icon>
+          </v-btn>
+        </div>
+
+        <!-- 하단 이미지 정보 패널 -->
+        <v-sheet 
+          v-if="showImageInfo"
+          color="rgba(0,0,0,0.9)" 
+          class="image-info-panel pa-4"
+        >
+          <div class="d-flex align-center">
+            <v-icon color="white" class="mr-2">mdi-image</v-icon>
+            <div class="text-white">
+              <div class="text-subtitle-2">{{ getFileName(groupedFiles.images[currentImageIndex]) }}</div>
+              <div class="text-caption text-grey-lighten-1">
+                <span v-if="currentImageSize && currentImageSize.width && currentImageSize.height">
+                  {{ currentImageSize.width }} × {{ currentImageSize.height }}px
+                </span>
+                <span v-if="getFileSize(groupedFiles.images[currentImageIndex])" class="ml-3">
+                  {{ getFileSize(groupedFiles.images[currentImageIndex]) }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </v-sheet>
+
+        <!-- 하단 썸네일 네비게이션 -->
+        <div 
+          v-if="groupedFiles.images.length > 1 && !toolbarHidden"
+          class="thumbnail-navigation pa-2"
+        >
+          <div class="thumbnail-container">
+            <div 
+              v-for="(image, index) in groupedFiles.images" 
+              :key="`thumb-${index}`"
+              class="thumbnail-item"
+              :class="{ 'thumbnail-active': index === currentImageIndex }"
+              @click="currentImageIndex = index"
+            >
+              <v-img 
+                :src="image" 
+                aspect-ratio="1"
+                cover
+                class="thumbnail-image"
+              ></v-img>
+            </div>
+          </div>
+        </div>
       </v-card>
     </v-dialog>
   </div>
@@ -171,6 +307,24 @@ export default {
     const fileSizes = ref({})
     const videoLoadingStates = ref({})
     const videoErrors = ref({})
+    
+    // 이미지 뷰어 관련 상태
+    const zoomLevel = ref(1)
+    const panX = ref(0)
+    const panY = ref(0)
+    const toolbarHidden = ref(false)
+    const showImageInfo = ref(false)
+    const currentImageSize = ref(null)
+    const isDragging = ref(false)
+    const dragStart = ref({ x: 0, y: 0 })
+    const lastPanX = ref(0)
+    const lastPanY = ref(0)
+    const imageContainer = ref(null)
+    
+    // 터치 관련 상태
+    const touchStartDistance = ref(0)
+    const touchStartZoom = ref(1)
+    const touchStartPan = ref({ x: 0, y: 0 })
 
     // 파일들을 종류별로 그룹화
     const groupedFiles = computed(() => {
@@ -195,6 +349,18 @@ export default {
 
       return groups
     })
+
+    // 이미지 뷰어 스타일 계산
+    const imageContainerStyle = computed(() => ({
+      transform: `translate(${panX.value}px, ${panY.value}px)`,
+      cursor: isDragging.value ? 'grabbing' : (zoomLevel.value > 1 ? 'grab' : 'default')
+    }))
+
+    const imageStyle = computed(() => ({
+      transform: `scale(${zoomLevel.value})`,
+      transformOrigin: 'center center',
+      transition: isDragging.value ? 'none' : 'transform 0.3s ease'
+    }))
 
     // 파일 타입 체크 함수들
     const isImage = (url) => {
@@ -300,7 +466,7 @@ export default {
       return mimeTypes[extension] || 'video/mp4'
     }
 
-    const getVideoPoster = (url) => {
+    const getVideoPoster = () => {
       // 실제 환경에서는 서버에서 썸네일 이미지를 제공하거나
       // 비디오에서 첫 프레임을 추출한 이미지 URL을 반환해야 합니다.
       // 현재는 기본 포스터를 사용하지 않습니다.
@@ -309,9 +475,9 @@ export default {
 
     const onVideoLoaded = (event) => {
       const video = event.target
-      const url = video.src
-      videoLoadingStates.value[url] = false
-      videoErrors.value[url] = false
+      const videoUrl = video.src
+      videoLoadingStates.value[videoUrl] = false
+      videoErrors.value[videoUrl] = false
       
       // 비디오가 로드되면 첫 프레임을 보여주기 위해 currentTime을 설정
       video.currentTime = 0.1
@@ -319,10 +485,10 @@ export default {
 
     const onVideoError = (event) => {
       const video = event.target
-      const url = video.src
-      videoLoadingStates.value[url] = false
-      videoErrors.value[url] = true
-      console.warn('비디오 로드 실패:', url)
+      const videoUrl = video.src
+      videoLoadingStates.value[videoUrl] = false
+      videoErrors.value[videoUrl] = true
+      console.warn('비디오 로드 실패:', videoUrl)
     }
 
     // 이미지 그리드 클래스 계산
@@ -345,17 +511,202 @@ export default {
     const openImageViewer = (image, index) => {
       currentImageIndex.value = index
       imageViewerOpen.value = true
+      resetImageViewer()
+    }
+
+    const closeImageViewer = () => {
+      imageViewerOpen.value = false
+      resetImageViewer()
+    }
+
+    const resetImageViewer = () => {
+      zoomLevel.value = 1
+      panX.value = 0
+      panY.value = 0
+      toolbarHidden.value = false
+      showImageInfo.value = false
+      isDragging.value = false
+      currentImageSize.value = null
     }
 
     const nextImage = () => {
       if (currentImageIndex.value < groupedFiles.value.images.length - 1) {
         currentImageIndex.value++
+        resetImagePosition()
       }
     }
 
     const previousImage = () => {
       if (currentImageIndex.value > 0) {
         currentImageIndex.value--
+        resetImagePosition()
+      }
+    }
+
+    const resetImagePosition = () => {
+      zoomLevel.value = 1
+      panX.value = 0
+      panY.value = 0
+    }
+
+    // 확대/축소 함수들
+    const zoomIn = () => {
+      if (zoomLevel.value < 3) {
+        zoomLevel.value = Math.min(3, zoomLevel.value * 1.5)
+      }
+    }
+
+    const zoomOut = () => {
+      if (zoomLevel.value > 0.5) {
+        zoomLevel.value = Math.max(0.5, zoomLevel.value / 1.5)
+        
+        // 축소 시 패닝 조정
+        if (zoomLevel.value === 1) {
+          panX.value = 0
+          panY.value = 0
+        }
+      }
+    }
+
+    const resetZoom = () => {
+      zoomLevel.value = 1
+      panX.value = 0
+      panY.value = 0
+    }
+
+    // UI 토글 함수들
+    const toggleToolbar = () => {
+      toolbarHidden.value = !toolbarHidden.value
+    }
+
+    const toggleImageInfo = () => {
+      showImageInfo.value = !showImageInfo.value
+    }
+
+    const downloadCurrentImage = () => {
+      if (groupedFiles.value.images[currentImageIndex.value]) {
+        downloadFile(groupedFiles.value.images[currentImageIndex.value])
+      }
+    }
+
+    // 이미지 로드 이벤트
+    const onImageLoad = (event) => {
+      try {
+        // Vuetify v-img에서 이벤트 구조가 다를 수 있으므로 안전하게 처리
+        const img = event.target || event.srcElement
+        if (img && img.naturalWidth && img.naturalHeight) {
+          currentImageSize.value = {
+            width: img.naturalWidth,
+            height: img.naturalHeight
+          }
+        } else {
+          // 이미지 크기를 가져올 수 없는 경우 null로 설정
+          currentImageSize.value = null
+        }
+      } catch (error) {
+        console.warn('이미지 크기 정보를 가져올 수 없습니다:', error)
+        currentImageSize.value = null
+      }
+    }
+
+    const onImageError = (event) => {
+      console.warn('이미지 로드 실패:', event)
+      currentImageSize.value = null
+    }
+
+    // 마우스 이벤트 핸들러
+    const onImageWheel = (event) => {
+      event.preventDefault()
+      const delta = event.deltaY > 0 ? -1 : 1
+      const zoomFactor = 1.1
+      
+      if (delta > 0 && zoomLevel.value < 3) {
+        zoomLevel.value = Math.min(3, zoomLevel.value * zoomFactor)
+      } else if (delta < 0 && zoomLevel.value > 0.5) {
+        zoomLevel.value = Math.max(0.5, zoomLevel.value / zoomFactor)
+        
+        if (zoomLevel.value === 1) {
+          panX.value = 0
+          panY.value = 0
+        }
+      }
+    }
+
+    const onImageMouseDown = (event) => {
+      if (zoomLevel.value > 1) {
+        isDragging.value = true
+        dragStart.value = { x: event.clientX, y: event.clientY }
+        lastPanX.value = panX.value
+        lastPanY.value = panY.value
+        event.preventDefault()
+      }
+    }
+
+    const onImageMouseMove = (event) => {
+      if (isDragging.value && zoomLevel.value > 1) {
+        const deltaX = event.clientX - dragStart.value.x
+        const deltaY = event.clientY - dragStart.value.y
+        panX.value = lastPanX.value + deltaX
+        panY.value = lastPanY.value + deltaY
+      }
+    }
+
+    const onImageMouseUp = () => {
+      isDragging.value = false
+    }
+
+    // 터치 이벤트 핸들러
+    const getTouchDistance = (touches) => {
+      const dx = touches[0].clientX - touches[1].clientX
+      const dy = touches[0].clientY - touches[1].clientY
+      return Math.sqrt(dx * dx + dy * dy)
+    }
+
+    const onImageTouchStart = (event) => {
+      if (event.touches.length === 2) {
+        // 핀치 줌 시작
+        touchStartDistance.value = getTouchDistance(event.touches)
+        touchStartZoom.value = zoomLevel.value
+        touchStartPan.value = { x: panX.value, y: panY.value }
+      } else if (event.touches.length === 1 && zoomLevel.value > 1) {
+        // 단일 터치 드래그 시작
+        isDragging.value = true
+        dragStart.value = { 
+          x: event.touches[0].clientX, 
+          y: event.touches[0].clientY 
+        }
+        lastPanX.value = panX.value
+        lastPanY.value = panY.value
+      }
+      event.preventDefault()
+    }
+
+    const onImageTouchMove = (event) => {
+      if (event.touches.length === 2) {
+        // 핀치 줌
+        const currentDistance = getTouchDistance(event.touches)
+        const scale = currentDistance / touchStartDistance.value
+        const newZoom = Math.max(0.5, Math.min(3, touchStartZoom.value * scale))
+        
+        zoomLevel.value = newZoom
+        
+        if (newZoom === 1) {
+          panX.value = 0
+          panY.value = 0
+        }
+      } else if (event.touches.length === 1 && isDragging.value && zoomLevel.value > 1) {
+        // 단일 터치 드래그
+        const deltaX = event.touches[0].clientX - dragStart.value.x
+        const deltaY = event.touches[0].clientY - dragStart.value.y
+        panX.value = lastPanX.value + deltaX
+        panY.value = lastPanY.value + deltaY
+      }
+      event.preventDefault()
+    }
+
+    const onImageTouchEnd = (event) => {
+      if (event.touches.length === 0) {
+        isDragging.value = false
       }
     }
 
@@ -365,6 +716,18 @@ export default {
       currentImageIndex,
       videoLoadingStates,
       videoErrors,
+      
+      // 이미지 뷰어 상태
+      zoomLevel,
+      panX,
+      panY,
+      toolbarHidden,
+      showImageInfo,
+      currentImageSize,
+      imageContainer,
+      imageContainerStyle,
+      imageStyle,
+      
       isImage,
       isVideo,
       isAudio,
@@ -379,9 +742,27 @@ export default {
       onVideoLoaded,
       onVideoError,
       getImageGridClass,
+      
+      // 이미지 뷰어 함수들
       openImageViewer,
+      closeImageViewer,
       nextImage,
-      previousImage
+      previousImage,
+      zoomIn,
+      zoomOut,
+      resetZoom,
+      toggleToolbar,
+      toggleImageInfo,
+      downloadCurrentImage,
+      onImageLoad,
+      onImageError,
+      onImageWheel,
+      onImageMouseDown,
+      onImageMouseMove,
+      onImageMouseUp,
+      onImageTouchStart,
+      onImageTouchMove,
+      onImageTouchEnd
     }
   }
 }
@@ -568,7 +949,165 @@ export default {
   display: none;
 }
 
+/* 이미지 뷰어 스타일 */
+.image-viewer-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.image-viewer-toolbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  transition: transform 0.3s ease;
+}
+
+.toolbar-hidden {
+  transform: translateY(-100%);
+}
+
+.image-viewer-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.image-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.viewer-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+}
+
+.nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 999;
+  background-color: rgba(0, 0, 0, 0.6) !important;
+  color: white !important;
+  transition: all 0.3s ease;
+}
+
+.nav-btn:hover {
+  background-color: rgba(0, 0, 0, 0.8) !important;
+  transform: translateY(-50%) scale(1.1);
+}
+
+.nav-btn-left {
+  left: 20px;
+}
+
+.nav-btn-right {
+  right: 20px;
+}
+
+.nav-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.image-info-panel {
+  position: absolute;
+  bottom: 80px;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+}
+
+.thumbnail-navigation {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 1000;
+}
+
+.thumbnail-container {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.thumbnail-container::-webkit-scrollbar {
+  display: none;
+}
+
+.thumbnail-item {
+  flex-shrink: 0;
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+}
+
+.thumbnail-item:hover {
+  transform: scale(1.1);
+}
+
+.thumbnail-active {
+  border-color: #42a5f5;
+  transform: scale(1.1);
+}
+
+.thumbnail-image {
+  width: 100%;
+  height: 100%;
+}
+
 /* 반응형 스타일 */
+@media (max-width: 768px) {
+  .nav-btn-left {
+    left: 10px;
+  }
+  
+  .nav-btn-right {
+    right: 10px;
+  }
+  
+  .thumbnail-item {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .image-viewer-toolbar .v-btn {
+    margin: 0 2px;
+  }
+  
+  .image-viewer-toolbar .text-caption {
+    font-size: 0.7rem;
+  }
+}
+
 @media (max-width: 480px) {
   .image-grid,
   .video-container,
@@ -576,6 +1115,24 @@ export default {
   .audio-card,
   .file-attachment {
     max-width: 100%;
+  }
+  
+  .thumbnail-navigation {
+    padding: 4px;
+  }
+  
+  .thumbnail-item {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .nav-btn {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .image-info-panel {
+    bottom: 60px;
   }
 }
 </style>
