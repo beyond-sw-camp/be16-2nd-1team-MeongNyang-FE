@@ -9,39 +9,34 @@
         <div v-if="item.type === 'date-separator'" class="text-center my-4">
           <v-chip small>{{ item.date }}</v-chip>
         </div>
-        <div v-else :class="['d-flex', 'mb-2', item.senderEmail === senderEmail ? 'justify-end' : 'justify-start']">
-          <div :class="['d-flex', item.senderEmail === senderEmail ? 'flex-row-reverse' : 'flex-row', 'align-start']">
-            <v-avatar v-if="item.senderEmail !== senderEmail && item.showAvatarAndEmail" size="40" class="mr-3">
+        <div v-else :class="['message-row', 'mb-2', item.senderEmail === senderEmail ? 'sent-message' : 'received-message']">
+          <!-- 아바타 영역 -->
+          <div class="avatar-area">
+            <v-avatar v-if="item.senderEmail !== senderEmail && item.showAvatarAndEmail" size="40">
               <v-img src="https://cdn.vuetifyjs.com/images/john.jpg" alt="avatar"></v-img>
             </v-avatar>
-            <div v-else-if="item.senderEmail !== senderEmail" style="width: 40px;" class="mr-3"></div>
-            <div :class="['d-flex', 'flex-column', item.senderEmail === senderEmail ? 'align-end' : 'align-start', 'flex-grow-1']">
-              <div class="font-weight-bold mb-1" v-if="item.senderEmail !== senderEmail && item.showAvatarAndEmail">{{ item.senderEmail }}</div>
-              <div class="d-flex align-end" :class="[item.senderEmail === senderEmail ? 'flex-row-reverse' : 'flex-row']">
-                <div :class="['message-bubble', item.senderEmail === senderEmail ? 'sent' : 'received', { 'media-bubble': item.fileUrls && item.fileUrls.length > 0 }]">
-                  <div v-if="item.message">{{ item.message }}</div>
-                  
-                  <!-- 파일 표시 -->
-                  <div v-if="item.fileUrls && item.fileUrls.length > 0" class="mt-2">
-                    <div v-for="(url, index) in item.fileUrls" :key="index" class="my-1">
-                      <v-img v-if="isImage(url)" :src="url" class="rounded-lg" aspect-ratio="1.7778"></v-img>
-                      <video v-else-if="isVideo(url)" :src="url" controls></video>
-                      <audio v-else-if="isAudio(url)" :src="url" controls></audio>
-                      <a v-else :href="url" target="_blank" rel="noopener noreferrer">{{ url.split('/').pop() }}</a>
-                    </div>
+          </div>
+          
+          <!-- 메시지 내용 영역 -->
+          <div class="message-content">
+            <div class="font-weight-bold mb-1" v-if="item.senderEmail !== senderEmail && item.showAvatarAndEmail">{{ item.senderEmail }}</div>
+            <div class="message-bubble-container">
+              <div :class="['message-bubble', item.senderEmail === senderEmail ? 'sent' : 'received', { 'media-bubble': item.fileUrls && item.fileUrls.length > 0 }]">
+                <div v-if="item.message">{{ item.message }}</div>
+                
+                <!-- 파일 표시 -->
+                <div v-if="item.fileUrls && item.fileUrls.length > 0" class="mt-2">
+                  <div v-for="(url, index) in item.fileUrls" :key="index" class="my-1">
+                    <v-img v-if="isImage(url)" :src="url" class="rounded-lg" aspect-ratio="1.7778"></v-img>
+                    <video v-else-if="isVideo(url)" :src="url" controls></video>
+                    <audio v-else-if="isAudio(url)" :src="url" controls></audio>
+                    <a v-else :href="url" target="_blank" rel="noopener noreferrer">{{ url.split('/').pop() }}</a>
                   </div>
                 </div>
-                <div class="d-flex align-end mx-2" v-if="item.senderEmail !== senderEmail">
-                  <div class="text-caption text-grey-darken-1" :style="{ visibility: item.unreadCount > 0 ? 'visible' : 'hidden' }">{{ item.unreadCount }}</div>
-                  <div class="text-caption text-grey-darken-1 ml-1" :style="{ visibility: item.showTimestamp ? 'visible' : 'hidden' }">{{ formatTime(item.sendTime) }}</div>
-                  <!-- <div class="text-caption text-grey-darken-1 ml-1" v-if="item.showTimestamp">{{ formatTime(item.sendTime) }}</div> -->
-                </div>
-                <div class="d-flex align-end mx-2" v-if="item.senderEmail === senderEmail">
-                  <div class="text-caption text-grey-darken-1" :style="{ visibility: item.unreadCount && item.showTimestamp > 0 ? 'visible' : 'hidden' }">{{ item.unreadCount }}</div>
-                  <div class="text-caption text-grey-darken-1 ml-1" :style="{ visibility: item.showTimestamp ? 'visible' : 'hidden' }">{{ formatTime(item.sendTime) }}</div>
-                  <div class="text-caption text-grey-darken-1" :style="{ visibility: item.unreadCount && !item.showTimestamp > 0 ? 'visible' : 'hidden' }">{{ item.unreadCount }}</div>
-                  <!-- <div class="text-caption text-grey-darken-1 ml-1" v-if="item.showTimestamp">{{ formatTime(item.sendTime) }}</div> -->
-                </div>
+              </div>
+              <div class="message-meta" v-if="item.showTimestamp || item.unreadCount > 0">
+                <div class="text-caption text-grey-darken-1" v-if="item.unreadCount > 0">{{ item.unreadCount }}</div>
+                <div class="text-caption text-grey-darken-1" v-if="item.showTimestamp">{{ formatTime(item.sendTime) }}</div>
               </div>
             </div>
           </div>
@@ -412,10 +407,55 @@ export default {
   height: 100%;
 }
 
+/* Grid 레이아웃 기반 메시지 구조 */
+.message-row {
+  display: grid;
+  gap: 12px;
+  align-items: start;
+}
+
+.received-message {
+  grid-template-columns: 40px 1fr;
+  justify-items: start;
+}
+
+.sent-message {
+  grid-template-columns: 1fr 40px;
+  justify-items: end;
+}
+
+.sent-message .avatar-area {
+  order: 2;
+}
+
+.sent-message .message-content {
+  order: 1;
+  justify-self: end;
+}
+
+.avatar-area {
+  display: flex;
+  justify-content: center;
+}
+
+.message-content {
+  min-width: 0; /* Grid에서 텍스트 오버플로우 방지 */
+}
+
+.message-bubble-container {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+}
+
+.sent-message .message-bubble-container {
+  flex-direction: row-reverse;
+}
+
 .message-bubble {
   padding: 12px 18px;
   border-radius: 25px;
-  max-width: 70%;
+  max-width: 70vw;
   word-wrap: break-word;
   word-break: break-all;
   overflow-wrap: break-word;
@@ -425,6 +465,13 @@ export default {
 
 .media-bubble {
   min-width: 250px;
+  max-width: 70vw;
+}
+
+.media-bubble video,
+.media-bubble img {
+  max-width: 100%;
+  height: auto;
 }
 
 .sent {
@@ -437,6 +484,14 @@ export default {
   background-color: #f1f3f4;
   color: black;
   border-bottom-left-radius: 4px;
+}
+
+.message-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: fit-content;
 }
 
 video, audio {
