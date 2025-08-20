@@ -19,7 +19,7 @@
           
           <!-- 메시지 내용 영역 -->
           <div class="message-content">
-            <div class="font-weight-bold mb-1" v-if="item.senderEmail !== senderEmail && item.showAvatarAndEmail">{{ item.senderEmail }}</div>
+            <div class="font-weight-bold mb-1 text-left" v-if="item.senderEmail !== senderEmail && item.showAvatarAndEmail">{{ item.senderEmail }}</div>
             <div class="message-bubble-container">
               <div :class="['message-bubble', item.senderEmail === senderEmail ? 'sent' : 'received', { 'media-bubble': item.fileUrls && item.fileUrls.length > 0 }]">
                 <div v-if="item.message">{{ item.message }}</div>
