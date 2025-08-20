@@ -12,7 +12,7 @@
         <div v-else :class="['d-flex', 'mb-2', item.senderEmail === senderEmail ? 'justify-end' : 'justify-start']">
           <div :class="['d-flex', item.senderEmail === senderEmail ? 'flex-row-reverse' : 'flex-row', 'align-end']">
             <v-avatar v-if="item.senderEmail !== senderEmail && item.showAvatarAndEmail" size="40" class="mr-3">
-              <v-img src="https://cdn.vuetifyjs.com/images/john.jpg" alt="John"></v-img>
+              <v-img src="https://cdn.vuetifyjs.com/images/john.jpg" alt="PI"></v-img>
             </v-avatar>
             <div v-else-if="item.senderEmail !== senderEmail" style="width: 40px;" class="mr-3"></div>
             <div :class="['d-flex', 'flex-column', item.senderEmail === senderEmail ? 'align-end' : 'align-start', 'flex-grow-1']">
@@ -31,9 +31,16 @@
                     </div>
                   </div>
                 </div>
-                <div class="d-flex align-end mx-2" :style="{ visibility: item.showTimestamp ? 'visible' : 'hidden' }">
+                <div class="d-flex align-end mx-2" v-if="item.senderEmail !== senderEmail">
                   <div class="text-caption text-grey-darken-1" v-if="item.unreadCount > 0">{{ item.unreadCount }}</div>
-                  <div class="text-caption text-grey-darken-1 ml-1">{{ formatTime(item.sendTime) }}</div>
+                  <div class="text-caption text-grey-darken-1 ml-1" :style="{ visibility: item.showTimestamp ? 'visible' : 'hidden' }">{{ formatTime(item.sendTime) }}</div>
+                  <!-- <div class="text-caption text-grey-darken-1 ml-1" v-if="item.showTimestamp">{{ formatTime(item.sendTime) }}</div> -->
+                </div>
+                <div class="d-flex align-end mx-2" v-if="item.senderEmail === senderEmail">
+                  <div class="text-caption text-grey-darken-1" v-if="item.unreadCount > 0 && item.showTimestamp">{{ item.unreadCount }}</div>
+                  <div class="text-caption text-grey-darken-1 ml-1" :style="{ visibility: item.showTimestamp ? 'visible' : 'hidden' }">{{ formatTime(item.sendTime) }}</div>
+                  <div class="text-caption text-grey-darken-1" v-if="item.unreadCount > 0 && !item.showTimestamp">{{ item.unreadCount }}</div>
+                  <!-- <div class="text-caption text-grey-darken-1 ml-1" v-if="item.showTimestamp">{{ formatTime(item.sendTime) }}</div> -->
                 </div>
               </div>
             </div>
