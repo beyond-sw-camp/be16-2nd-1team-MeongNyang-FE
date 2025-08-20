@@ -2,6 +2,35 @@
   <v-card class="chat-room-container d-flex flex-column" flat tile>
     <v-toolbar color="white" flat class="chat-header">
       <v-toolbar-title>{{ currentRoom?.roomName || '채팅' }}</v-toolbar-title>
+      <v-spacer></v-spacer>
+      <v-menu>
+        <template v-slot:activator="{ props }">
+          <v-btn icon v-bind="props">
+            <v-icon>mdi-dots-vertical</v-icon>
+          </v-btn>
+        </template>
+        <v-list>
+          <v-list-item @click="showParticipants">
+            <v-list-item-title>
+              <v-icon start>mdi-account-group</v-icon>
+              참여자 목록 ({{ participants.length }})
+            </v-list-item-title>
+          </v-list-item>
+          <v-list-item @click="inviteParticipants">
+            <v-list-item-title>
+              <v-icon start>mdi-account-plus</v-icon>
+              초대하기
+            </v-list-item-title>
+          </v-list-item>
+          <v-divider></v-divider>
+          <v-list-item @click="confirmLeaveRoom" color="error">
+            <v-list-item-title class="text-error">
+              <v-icon start>mdi-exit-to-app</v-icon>
+              채팅방 나가기
+            </v-list-item-title>
+          </v-list-item>
+        </v-list>
+      </v-menu>
     </v-toolbar>
     <v-divider></v-divider>
     <v-card-text class="chat-messages-container flex-grow-1 pa-4" ref="chatBox">
@@ -73,6 +102,116 @@
       ></v-btn>
     </v-card-actions>
   </v-card>
+
+  <!-- 참여자 목록 모달 -->
+  <v-dialog v-model="showParticipantsDialog" max-width="400">
+    <v-card>
+      <v-card-title class="d-flex align-center">
+        <v-icon class="mr-2">mdi-account-group</v-icon>
+        참여자 목록
+        <v-spacer></v-spacer>
+        <v-btn icon @click="showParticipantsDialog = false">
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
+      </v-card-title>
+      <v-card-text>
+        <v-list>
+          <v-list-item v-for="participant in participants" :key="participant.email">
+            <template v-slot:prepend>
+              <v-avatar size="32">
+                <v-img src="https://cdn.vuetifyjs.com/images/john.jpg" alt="avatar"></v-img>
+              </v-avatar>
+            </template>
+            <v-list-item-title>{{ participant.email }}</v-list-item-title>
+            <template v-slot:append>
+              <v-chip 
+                :color="isOnline(participant.email) ? 'green' : 'grey'" 
+                size="small"
+                variant="outlined"
+              >
+                {{ isOnline(participant.email) ? '온라인' : '오프라인' }}
+              </v-chip>
+            </template>
+          </v-list-item>
+        </v-list>
+      </v-card-text>
+    </v-card>
+  </v-dialog>
+
+  <!-- 초대하기 모달 -->
+  <v-dialog v-model="showInviteDialog" max-width="500">
+    <v-card>
+      <v-card-title class="d-flex align-center">
+        <v-icon class="mr-2">mdi-account-plus</v-icon>
+        초대하기
+        <v-spacer></v-spacer>
+        <v-btn icon @click="showInviteDialog = false">
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
+      </v-card-title>
+      <v-card-text>
+        <v-text-field
+          v-model="inviteSearchQuery"
+          label="사용자 검색"
+          placeholder="이메일로 검색하세요"
+          prepend-inner-icon="mdi-magnify"
+          clearable
+          @input="searchUsers"
+        ></v-text-field>
+        <v-list v-if="searchResults.length > 0">
+          <v-list-item 
+            v-for="user in searchResults" 
+            :key="user.email"
+            @click="inviteUser(user)"
+          >
+            <template v-slot:prepend>
+              <v-avatar size="32">
+                <v-img src="https://cdn.vuetifyjs.com/images/john.jpg" alt="avatar"></v-img>
+              </v-avatar>
+            </template>
+            <v-list-item-title>{{ user.email }}</v-list-item-title>
+            <template v-slot:append>
+              <v-btn 
+                size="small" 
+                color="primary" 
+                variant="outlined"
+                :disabled="isAlreadyParticipant(user.email)"
+              >
+                {{ isAlreadyParticipant(user.email) ? '이미 참여중' : '초대' }}
+              </v-btn>
+            </template>
+          </v-list-item>
+        </v-list>
+        <v-alert 
+          v-else-if="inviteSearchQuery && !searching" 
+          type="info" 
+          variant="tonal"
+        >
+          검색 결과가 없습니다.
+        </v-alert>
+      </v-card-text>
+    </v-card>
+  </v-dialog>
+
+  <!-- 채팅방 나가기 확인 다이얼로그 -->
+  <v-dialog v-model="showLeaveConfirmDialog" max-width="400">
+    <v-card>
+      <v-card-title class="d-flex align-center">
+        <v-icon class="mr-2" color="error">mdi-alert-circle</v-icon>
+        채팅방 나가기
+      </v-card-title>
+      <v-card-text>
+        정말로 이 채팅방을 나가시겠습니까?
+        <br>
+        <small class="text-grey">나가면 다시 들어올 수 없습니다.</small>
+      </v-card-text>
+      <v-card-actions>
+        <v-spacer></v-spacer>
+        <v-btn @click="showLeaveConfirmDialog = false">취소</v-btn>
+        <v-btn color="error" @click="leaveRoom">나가기</v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
 
 <script>
@@ -114,6 +253,16 @@ export default {
     const fileInput = ref(null)
     const chatBox = ref(null)
     
+    // 모달 상태
+    const showParticipantsDialog = ref(false)
+    const showInviteDialog = ref(false)
+    const showLeaveConfirmDialog = ref(false)
+
+    // 초대 관련 상태
+    const inviteSearchQuery = ref('')
+    const searchResults = ref([])
+    const searching = ref(false)
+
     // 계산된 속성
     const displayedMessages = computed(() => {
       return messages.value.map(message => {
@@ -329,6 +478,96 @@ export default {
         hour12: true
       }).format(date)
     }
+
+    const isOnline = (email) => {
+      return onlineParticipants.value.some(p => p.email === email);
+    }
+
+    const showParticipants = () => {
+      showParticipantsDialog.value = true;
+    }
+
+    const inviteParticipants = () => {
+      showInviteDialog.value = true;
+    }
+
+    const searchUsers = async () => {
+      if (!inviteSearchQuery.value) {
+        searchResults.value = [];
+        return;
+      }
+      searching.value = true;
+      try {
+        const res = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/users/search?email=${inviteSearchQuery.value}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          }
+        });
+        searchResults.value = res.data.data;
+      } catch (error) {
+        console.error('사용자 검색 실패:', error);
+        searchResults.value = [];
+      } finally {
+        searching.value = false;
+      }
+    }
+
+         const inviteUser = async (user) => {
+       if (isAlreadyParticipant(user.email)) {
+         console.warn(`${user.email}는 이미 참여자입니다.`);
+         return;
+       }
+       try {
+         const inviteData = [{ inviteeEmail: user.email }];
+         await axios.post(`${process.env.VUE_APP_API_BASE_URL}/chat-rooms/${props.roomId}/participants`, inviteData, {
+           headers: {
+             'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+           }
+         });
+         console.log(`${user.email}에게 초대 메시지를 보냈습니다.`);
+         showInviteDialog.value = false;
+         inviteSearchQuery.value = '';
+         searchResults.value = [];
+       } catch (error) {
+         console.error('초대 실패:', error);
+         if (error.response && error.response.data && error.response.data.message) {
+           alert(error.response.data.message);
+         } else {
+           alert('초대에 실패했습니다.');
+         }
+       }
+     }
+
+    const isAlreadyParticipant = (email) => {
+      return participants.value.some(p => p.email === email);
+    }
+
+    const confirmLeaveRoom = () => {
+      showLeaveConfirmDialog.value = true;
+    }
+
+    const leaveRoom = async () => {
+      try {
+        await axios.delete(`${process.env.VUE_APP_API_BASE_URL}/chat-rooms/${props.roomId}/participants/me`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          }
+        });
+        console.log(`채팅방 ${props.roomId}에서 나갔습니다.`);
+        // 채팅방 나가기 후 페이지 이동 또는 새로고침
+        // 현재 페이지에서 채팅방 목록으로 이동하거나, 메인 페이지로 이동
+        // 예: this.$router.push('/chat-rooms')
+        // 또는 현재 페이지를 새로고침하여 채팅방 목록을 다시 로드
+        window.location.reload(); 
+      } catch (error) {
+        console.error('채팅방 나가기 실패:', error);
+        if (error.response && error.response.data && error.response.data.message) {
+          alert(error.response.data.message);
+        } else {
+          alert('채팅방 나가기에 실패했습니다.');
+        }
+      }
+    }
     
     watch(() => props.roomId, async (newRoomId, oldRoomId) => {
       if (newRoomId && newRoomId !== oldRoomId) {
@@ -380,7 +619,21 @@ export default {
       onFileChange,
       uploadFiles,
       formatTime,
-      isSending
+      isSending,
+      showParticipantsDialog,
+      showInviteDialog,
+      showLeaveConfirmDialog,
+      inviteSearchQuery,
+      searchResults,
+      searching,
+      isOnline,
+      showParticipants,
+      inviteParticipants,
+      searchUsers,
+      inviteUser,
+      isAlreadyParticipant,
+      confirmLeaveRoom,
+      leaveRoom
     }
   }
 }
