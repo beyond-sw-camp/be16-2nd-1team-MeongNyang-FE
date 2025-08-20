@@ -14,6 +14,7 @@
             <v-avatar v-if="item.senderEmail !== senderEmail && item.showAvatarAndEmail" size="40" class="mr-3">
               <v-img src="https://cdn.vuetifyjs.com/images/john.jpg" alt="John"></v-img>
             </v-avatar>
+            <div v-else-if="item.senderEmail !== senderEmail" style="width: 40px;" class="mr-3"></div>
             <div :class="['d-flex', 'flex-column', item.senderEmail === senderEmail ? 'align-end' : 'align-start', 'flex-grow-1']">
               <div class="font-weight-bold mb-1" v-if="item.senderEmail !== senderEmail && item.showAvatarAndEmail">{{ item.senderEmail }}</div>
               <div class="d-flex align-end" :class="[item.senderEmail === senderEmail ? 'flex-row-reverse' : 'flex-row']">
