@@ -24,31 +24,9 @@
               <div :class="['message-bubble', item.senderEmail === senderEmail ? 'sent' : 'received', { 'media-bubble': item.fileUrls && item.fileUrls.length > 0 }]">
                 <div v-if="item.message">{{ item.message }}</div>
                 
-                <!-- 파일 표시 -->
+                <!-- 파일 표시 - 종류별 그룹화된 그리드 -->
                 <div v-if="item.fileUrls && item.fileUrls.length > 0" class="mt-2">
-                  <div v-for="(url, index) in item.fileUrls" :key="index" class="my-1">
-                    <v-img v-if="isImage(url)" :src="url" class="rounded-lg" aspect-ratio="1.7778"></v-img>
-                    <video v-else-if="isVideo(url)" :src="url" controls></video>
-                    <audio v-else-if="isAudio(url)" :src="url" controls></audio>
-                    <!-- 기타 파일들을 위한 카드 UI -->
-                    <v-card v-else class="file-attachment" elevation="1" @click="downloadFile(url)">
-                      <v-card-text class="pa-3 d-flex align-center">
-                        <v-icon class="mr-3" size="32" color="primary">
-                          {{ getFileIcon(url) }}
-                        </v-icon>
-                        <div class="flex-grow-1">
-                          <div class="file-name text-subtitle-2 font-weight-medium">
-                            {{ getFileName(url) }}
-                          </div>
-                          <div class="file-info text-caption text-grey-darken-1">
-                            <span>{{ getFileExtension(url).toUpperCase() }} 파일</span>
-                            <span v-if="getFileSize(url)" class="ml-2">• {{ getFileSize(url) }}</span>
-                          </div>
-                        </div>
-                        <v-icon color="grey-darken-1">mdi-download</v-icon>
-                      </v-card-text>
-                    </v-card>
-                  </div>
+                  <FileGrid :files="item.fileUrls" />
                 </div>
               </div>
               <div class="message-meta">
@@ -103,9 +81,13 @@ import { useChatStore } from '@/stores/chat'
 import SockJS from 'sockjs-client'
 import Stomp from 'webstomp-client'
 import axios from 'axios'
+import FileGrid from './FileGrid.vue'
 
 export default {
   name: 'ChatRoom',
+  components: {
+    FileGrid
+  },
   props: {
     roomId: {
       type: String,
@@ -336,93 +318,7 @@ export default {
       }
     }
     
-    const isImage = (url) => {
-      if (!url) return false
-      const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp']
-      const extension = url.split('.').pop().toLowerCase()
-      return imageExtensions.includes(extension)
-    }
-    
-    const isVideo = (url) => {
-      if (!url) return false
-      const videoExtensions = ['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv', 'm4v', '3gp', 'flv']
-      const extension = url.split('.').pop().toLowerCase()
-      return videoExtensions.includes(extension)
-    }
-    
-    const isAudio = (url) => {
-      if (!url) return false
-      const audioExtensions = ['mp3', 'ogg', 'wav']
-      const extension = url.split('.').pop().toLowerCase()
-      return audioExtensions.includes(extension)
-    }
-    
-    const getFileName = (url) => {
-      return url.split('/').pop() || '알 수 없는 파일'
-    }
-    
-    const getFileExtension = (url) => {
-      const fileName = getFileName(url)
-      const lastDot = fileName.lastIndexOf('.')
-      return lastDot > 0 ? fileName.substring(lastDot + 1) : ''
-    }
-    
-    const getFileIcon = (url) => {
-      const extension = getFileExtension(url).toLowerCase()
-      
-      // 문서 파일
-      if (['pdf'].includes(extension)) return 'mdi-file-pdf-box'
-      if (['doc', 'docx'].includes(extension)) return 'mdi-file-word-box'
-      if (['xls', 'xlsx'].includes(extension)) return 'mdi-file-excel-box'
-      if (['ppt', 'pptx'].includes(extension)) return 'mdi-file-powerpoint-box'
-      if (['txt'].includes(extension)) return 'mdi-file-document-outline'
-      
-      // 압축 파일
-      if (['zip', 'rar', '7z', 'tar', 'gz'].includes(extension)) return 'mdi-folder-zip-outline'
-      
-      // 코드 파일
-      if (['js', 'ts', 'jsx', 'tsx', 'vue', 'html', 'css', 'scss', 'json', 'xml'].includes(extension)) return 'mdi-file-code-outline'
-      if (['java', 'py', 'cpp', 'c', 'php', 'rb', 'go', 'rs'].includes(extension)) return 'mdi-file-code-outline'
-      
-      // 기본 파일 아이콘
-      return 'mdi-file-outline'
-    }
-    
-    const downloadFile = (url) => {
-      // 새 탭에서 파일 열기 (다운로드 트리거)
-      window.open(url, '_blank', 'noopener,noreferrer')
-    }
-    
-    const fileSizes = ref({})
-    
-    const getFileSize = (url) => {
-      // 이미 캐시된 크기가 있으면 반환
-      if (fileSizes.value[url]) {
-        return fileSizes.value[url]
-      }
-      
-      // 파일 크기를 비동기적으로 가져오기
-      fetch(url, { method: 'HEAD' })
-        .then(response => {
-          const contentLength = response.headers.get('Content-Length')
-          if (contentLength) {
-            fileSizes.value[url] = formatFileSize(parseInt(contentLength))
-          }
-        })
-        .catch(() => {
-          // 오류 시 기본값 설정하지 않음 (크기 표시 안함)
-        })
-      
-      return null // 첫 로드시에는 null 반환
-    }
-    
-    const formatFileSize = (bytes) => {
-      if (bytes === 0) return '0 B'
-      const k = 1024
-      const sizes = ['B', 'KB', 'MB', 'GB']
-      const i = Math.floor(Math.log(bytes) / Math.log(k))
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
-    }
+
     
     const formatTime = (dateTime) => {
       if (!dateTime) return ''
@@ -483,15 +379,6 @@ export default {
       triggerFileInput,
       onFileChange,
       uploadFiles,
-      isImage,
-      isVideo,
-      isAudio,
-      getFileName,
-      getFileExtension,
-      getFileIcon,
-      getFileSize,
-      formatFileSize,
-      downloadFile,
       formatTime,
       isSending
     }
@@ -591,38 +478,5 @@ export default {
   min-width: fit-content;
 }
 
-video, audio {
-  max-width: 100%;
-  border-radius: 10px;
-}
 
-/* 파일 첨부 카드 스타일 */
-.file-attachment {
-  max-width: 280px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border-radius: 12px !important;
-}
-
-.file-attachment:hover {
-  box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
-  transform: translateY(-1px);
-}
-
-.file-attachment .v-card-text {
-  border-radius: 12px;
-}
-
-.file-name {
-  word-break: break-word;
-  line-height: 1.2;
-  max-width: 180px;
-}
-
-.file-info {
-  margin-top: 2px;
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-}
 </style>
