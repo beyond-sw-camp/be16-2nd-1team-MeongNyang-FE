@@ -10,7 +10,7 @@
           <v-chip small>{{ item.date }}</v-chip>
         </div>
         <div v-else :class="['d-flex', 'mb-2', item.senderEmail === senderEmail ? 'justify-end' : 'justify-start']">
-          <div :class="['d-flex', item.senderEmail === senderEmail ? 'flex-row-reverse' : 'flex-row', 'align-end']">
+          <div :class="['d-flex', item.senderEmail === senderEmail ? 'flex-row-reverse' : 'flex-row', 'align-start']">
             <v-avatar v-if="item.senderEmail !== senderEmail && item.showAvatarAndEmail" size="40" class="mr-3">
               <v-img src="https://cdn.vuetifyjs.com/images/john.jpg" alt="avatar"></v-img>
             </v-avatar>
