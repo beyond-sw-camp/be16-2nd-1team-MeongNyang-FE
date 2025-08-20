@@ -9,25 +9,31 @@
         <div v-if="item.type === 'date-separator'" class="text-center my-4">
           <v-chip small>{{ item.date }}</v-chip>
         </div>
-        <div v-else
-          :class="['d-flex', 'mb-4', item.senderEmail === senderEmail ? 'flex-row-reverse' : 'flex-row', 'align-end']">
-          <div :class="['message-bubble', item.senderEmail === senderEmail ? 'sent' : 'received', { 'media-bubble': item.fileUrls && item.fileUrls.length > 0 }]">
-            <div class="font-weight-bold" v-if="item.senderEmail !== senderEmail">{{ item.senderEmail }}</div>
-            <div v-if="item.message">{{ item.message }}</div>
-            
-            <!-- 파일 표시 -->
-            <div v-if="item.fileUrls && item.fileUrls.length > 0" class="mt-2">
-              <div v-for="(url, index) in item.fileUrls" :key="index" class="my-1">
-                <v-img v-if="isImage(url)" :src="url" class="rounded-lg" aspect-ratio="1.7778"></v-img>
-                <video v-else-if="isVideo(url)" :src="url" controls></video>
-                <audio v-else-if="isAudio(url)" :src="url" controls></audio>
-                <a v-else :href="url" target="_blank" rel="noopener noreferrer">{{ url.split('/').pop() }}</a>
+        <div v-else :class="['d-flex', 'mb-2', item.senderEmail === senderEmail ? 'flex-row-reverse' : 'flex-row', 'align-end']">
+          <v-avatar v-if="item.senderEmail !== senderEmail" size="40" class="mr-3">
+            <v-img src="https://cdn.vuetifyjs.com/images/john.jpg" alt="John"></v-img>
+          </v-avatar>
+          <div :class="['d-flex', 'flex-column', item.senderEmail === senderEmail ? 'align-end' : 'align-start']">
+            <div class="font-weight-bold mb-1" v-if="item.senderEmail !== senderEmail">{{ item.senderEmail }}</div>
+            <div class="d-flex align-end" :class="[item.senderEmail === senderEmail ? 'flex-row-reverse' : 'flex-row']">
+              <div :class="['message-bubble', item.senderEmail === senderEmail ? 'sent' : 'received', { 'media-bubble': item.fileUrls && item.fileUrls.length > 0 }]">
+                <div v-if="item.message">{{ item.message }}</div>
+                
+                <!-- 파일 표시 -->
+                <div v-if="item.fileUrls && item.fileUrls.length > 0" class="mt-2">
+                  <div v-for="(url, index) in item.fileUrls" :key="index" class="my-1">
+                    <v-img v-if="isImage(url)" :src="url" class="rounded-lg" aspect-ratio="1.7778"></v-img>
+                    <video v-else-if="isVideo(url)" :src="url" controls></video>
+                    <audio v-else-if="isAudio(url)" :src="url" controls></audio>
+                    <a v-else :href="url" target="_blank" rel="noopener noreferrer">{{ url.split('/').pop() }}</a>
+                  </div>
+                </div>
+              </div>
+              <div class="d-flex align-end mx-2" v-if="item.showTimestamp">
+                <div class="text-caption text-grey-darken-1" v-if="item.unreadCount > 0">{{ item.unreadCount }}</div>
+                <div class="text-caption text-grey-darken-1 ml-1">{{ formatTime(item.sendTime) }}</div>
               </div>
             </div>
-          </div>
-          <div class="d-flex align-end mx-2">
-            <div class="text-caption text-grey-darken-1" v-if="item.unreadCount > 0">{{ item.unreadCount }}</div>
-            <div class="text-caption text-grey-darken-1 ml-1">{{ formatTime(item.sendTime) }}</div>
           </div>
         </div>
       </template>
@@ -111,7 +117,7 @@ export default {
     const messagesWithDateSeparators = computed(() => {
       const messagesWithSeparators = []
       let lastDate = null
-      displayedMessages.value.forEach(message => {
+      displayedMessages.value.forEach((message, index) => {
         const messageDate = new Date(message.sendTime).toLocaleDateString()
         if (lastDate !== messageDate) {
           messagesWithSeparators.push({
@@ -121,7 +127,11 @@ export default {
           })
           lastDate = messageDate
         }
-        messagesWithSeparators.push(message)
+
+        const nextMessage = displayedMessages.value[index + 1];
+        const showTimestamp = !nextMessage || nextMessage.senderEmail !== message.senderEmail || new Date(nextMessage.sendTime) - new Date(message.sendTime) > 60000;
+
+        messagesWithSeparators.push({ ...message, showTimestamp })
       })
       return messagesWithSeparators
     })
@@ -376,10 +386,12 @@ export default {
 }
 
 .message-bubble {
-  padding: 10px 15px;
-  border-radius: 20px;
+  padding: 12px 18px;
+  border-radius: 25px;
   max-width: 70%;
   word-wrap: break-word;
+  text-align: left;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .media-bubble {
@@ -387,17 +399,15 @@ export default {
 }
 
 .sent {
-  background-color: #1976D2;
+  background-color: #42a5f5;
   color: white;
-  align-self: flex-end;
-  border-bottom-right-radius: 0;
+  border-bottom-right-radius: 4px;
 }
 
 .received {
-  background-color: #f0f0f0;
+  background-color: #f1f3f4;
   color: black;
-  align-self: flex-start;
-  border-bottom-left-radius: 0;
+  border-bottom-left-radius: 4px;
 }
 
 video, audio {
