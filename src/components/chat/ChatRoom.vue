@@ -1,10 +1,10 @@
 <template>
-  <v-card class="d-flex flex-column fill-height" flat tile>
-    <v-toolbar color="white" flat>
+  <v-card class="chat-room-container d-flex flex-column" flat tile>
+    <v-toolbar color="white" flat class="chat-header">
       <v-toolbar-title>{{ currentRoom?.roomName || '채팅' }}</v-toolbar-title>
     </v-toolbar>
     <v-divider></v-divider>
-    <v-card-text class="flex-grow-1 overflow-y-auto pa-4" ref="chatBox">
+    <v-card-text class="chat-messages-container flex-grow-1 pa-4" ref="chatBox">
       <template v-for="item in messagesWithDateSeparators" :key="item.id">
         <div v-if="item.type === 'date-separator'" class="text-center my-4">
           <v-chip small>{{ item.date }}</v-chip>
@@ -46,7 +46,7 @@
       </template>
     </v-card-text>
     <v-divider></v-divider>
-    <v-card-actions class="pa-4">
+    <v-card-actions class="chat-input-container pa-4">
       <v-btn icon @click="triggerFileInput" class="mr-2">
         <v-icon>mdi-paperclip</v-icon>
       </v-btn>
@@ -387,8 +387,53 @@ export default {
 </script>
 
 <style scoped>
-.chat-container {
-  height: 100%;
+/* 채팅방 컨테이너 높이 제한 */
+.chat-room-container {
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+}
+
+/* 채팅 헤더 고정 높이 */
+.chat-header {
+  flex-shrink: 0;
+  min-height: 64px;
+}
+
+/* 메시지 컨테이너 스크롤 영역 */
+.chat-messages-container {
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: calc(100vh - 140px); /* 헤더(64px) + 입력영역(76px) 제외 */
+  max-height: calc(100vh - 140px);
+  scroll-behavior: smooth;
+}
+
+/* 입력 영역 고정 높이 */
+.chat-input-container {
+  flex-shrink: 0;
+  min-height: 76px;
+  background-color: white;
+  border-top: 1px solid #e0e0e0;
+}
+
+/* 스크롤바 스타일링 */
+.chat-messages-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-messages-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.chat-messages-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.chat-messages-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 
 /* Grid 레이아웃 기반 메시지 구조 */
@@ -478,5 +523,24 @@ export default {
   min-width: fit-content;
 }
 
-
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .chat-room-container {
+    height: 100vh;
+  }
+  
+  .chat-messages-container {
+    height: calc(100vh - 120px);
+    max-height: calc(100vh - 120px);
+  }
+  
+  .message-bubble {
+    max-width: 80%;
+  }
+  
+  .media-bubble {
+    min-width: 200px;
+    max-width: 80%;
+  }
+}
 </style>
