@@ -455,7 +455,7 @@ export default {
 .message-bubble {
   padding: 12px 18px;
   border-radius: 25px;
-  max-width: 70vw;
+  max-width: 60%;
   word-wrap: break-word;
   word-break: break-all;
   overflow-wrap: break-word;
@@ -465,7 +465,7 @@ export default {
 
 .media-bubble {
   min-width: 250px;
-  max-width: 70vw;
+  max-width: 60%;
 }
 
 .media-bubble video,
