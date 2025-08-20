@@ -138,49 +138,51 @@
       <v-card class="image-viewer-container" color="black">
         <!-- 상단 툴바 -->
         <v-app-bar 
+          v-if="!toolbarHidden"
           color="rgba(0,0,0,0.8)" 
           dark 
           flat 
           class="image-viewer-toolbar"
           :class="{ 'toolbar-hidden': toolbarHidden }"
+          style="top: 0; left: 0; right: 0; position: absolute;"
         >
-          <v-btn icon @click="closeImageViewer" class="mr-2">
-            <v-icon>mdi-close</v-icon>
+          <v-btn icon @click="closeImageViewer" class="mr-2 toolbar-btn" style="margin-left: 8px;">
+            <v-icon color="white">mdi-close</v-icon>
           </v-btn>
           
-          <v-toolbar-title class="text-subtitle-1">
+          <v-toolbar-title class="text-subtitle-1 toolbar-text">
             {{ getFileName(groupedFiles.images[currentImageIndex]) }}
           </v-toolbar-title>
           
           <v-spacer></v-spacer>
           
           <!-- 이미지 카운터 -->
-          <span class="text-caption mr-4">
+          <span class="text-caption mr-4 toolbar-text">
             {{ currentImageIndex + 1 }} / {{ groupedFiles.images.length }}
           </span>
           
           <!-- 확대/축소 컨트롤 -->
-          <v-btn icon @click="zoomOut" :disabled="zoomLevel <= 0.5" class="mr-1">
-            <v-icon>mdi-magnify-minus</v-icon>
+          <v-btn icon @click="zoomOut" :disabled="zoomLevel <= 0.5" class="mr-1 toolbar-btn">
+            <v-icon color="white">mdi-magnify-minus</v-icon>
           </v-btn>
-          <span class="text-caption mx-2">{{ Math.round(zoomLevel * 100) }}%</span>
-          <v-btn icon @click="zoomIn" :disabled="zoomLevel >= 3" class="mr-2">
-            <v-icon>mdi-magnify-plus</v-icon>
+          <span class="text-caption mx-2 toolbar-text">{{ Math.round(zoomLevel * 100) }}%</span>
+          <v-btn icon @click="zoomIn" :disabled="zoomLevel >= 3" class="mr-2 toolbar-btn">
+            <v-icon color="white">mdi-magnify-plus</v-icon>
           </v-btn>
           
           <!-- 원본 크기 보기 -->
-          <v-btn icon @click="resetZoom" class="mr-2">
-            <v-icon>mdi-fit-to-screen</v-icon>
+          <v-btn icon @click="resetZoom" class="mr-2 toolbar-btn">
+            <v-icon color="white">mdi-fit-to-screen</v-icon>
           </v-btn>
           
           <!-- 다운로드 버튼 -->
-          <v-btn icon @click="downloadCurrentImage" class="mr-2">
-            <v-icon>mdi-download</v-icon>
+          <v-btn icon @click="downloadCurrentImage" class="mr-2 toolbar-btn">
+            <v-icon color="white">mdi-download</v-icon>
           </v-btn>
           
           <!-- 정보 토글 -->
-          <v-btn icon @click="toggleImageInfo">
-            <v-icon>mdi-information-outline</v-icon>
+          <v-btn icon @click="toggleImageInfo" class="toolbar-btn">
+            <v-icon color="white">mdi-information-outline</v-icon>
           </v-btn>
         </v-app-bar>
 
@@ -957,13 +959,43 @@ export default {
   overflow: hidden;
 }
 
+/* Vuetify 앱바 기본 스타일 오버라이드 */
+.image-viewer-container .v-app-bar {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
 .image-viewer-toolbar {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
   z-index: 1000;
   transition: transform 0.3s ease;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* 툴바 버튼 스타일 */
+.toolbar-btn {
+  color: white !important;
+}
+
+.toolbar-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.toolbar-btn:disabled {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* 툴바 텍스트 스타일 */
+.toolbar-text {
+  color: white !important;
 }
 
 .toolbar-hidden {
