@@ -9,29 +9,31 @@
         <div v-if="item.type === 'date-separator'" class="text-center my-4">
           <v-chip small>{{ item.date }}</v-chip>
         </div>
-        <div v-else :class="['d-flex', 'mb-2', item.senderEmail === senderEmail ? 'flex-row-reverse' : 'flex-row', 'align-end']">
-          <v-avatar v-if="item.senderEmail !== senderEmail" size="40" class="mr-3">
-            <v-img src="https://cdn.vuetifyjs.com/images/john.jpg" alt="John"></v-img>
-          </v-avatar>
-          <div :class="['d-flex', 'flex-column', item.senderEmail === senderEmail ? 'align-end' : 'align-start']">
-            <div class="font-weight-bold mb-1" v-if="item.senderEmail !== senderEmail">{{ item.senderEmail }}</div>
-            <div class="d-flex align-end" :class="[item.senderEmail === senderEmail ? 'flex-row-reverse' : 'flex-row']">
-              <div :class="['message-bubble', item.senderEmail === senderEmail ? 'sent' : 'received', { 'media-bubble': item.fileUrls && item.fileUrls.length > 0 }]">
-                <div v-if="item.message">{{ item.message }}</div>
-                
-                <!-- 파일 표시 -->
-                <div v-if="item.fileUrls && item.fileUrls.length > 0" class="mt-2">
-                  <div v-for="(url, index) in item.fileUrls" :key="index" class="my-1">
-                    <v-img v-if="isImage(url)" :src="url" class="rounded-lg" aspect-ratio="1.7778"></v-img>
-                    <video v-else-if="isVideo(url)" :src="url" controls></video>
-                    <audio v-else-if="isAudio(url)" :src="url" controls></audio>
-                    <a v-else :href="url" target="_blank" rel="noopener noreferrer">{{ url.split('/').pop() }}</a>
+        <div v-else :class="['d-flex', 'mb-2', item.senderEmail === senderEmail ? 'justify-end' : 'justify-start']">
+          <div :class="['d-flex', item.senderEmail === senderEmail ? 'flex-row-reverse' : 'flex-row', 'align-end']">
+            <v-avatar v-if="item.senderEmail !== senderEmail && item.showAvatarAndEmail" size="40" class="mr-3">
+              <v-img src="https://cdn.vuetifyjs.com/images/john.jpg" alt="John"></v-img>
+            </v-avatar>
+            <div :class="['d-flex', 'flex-column', item.senderEmail === senderEmail ? 'align-end' : 'align-start', 'flex-grow-1']">
+              <div class="font-weight-bold mb-1" v-if="item.senderEmail !== senderEmail && item.showAvatarAndEmail">{{ item.senderEmail }}</div>
+              <div class="d-flex align-end" :class="[item.senderEmail === senderEmail ? 'flex-row-reverse' : 'flex-row']">
+                <div :class="['message-bubble', item.senderEmail === senderEmail ? 'sent' : 'received', { 'media-bubble': item.fileUrls && item.fileUrls.length > 0 }]">
+                  <div v-if="item.message">{{ item.message }}</div>
+                  
+                  <!-- 파일 표시 -->
+                  <div v-if="item.fileUrls && item.fileUrls.length > 0" class="mt-2">
+                    <div v-for="(url, index) in item.fileUrls" :key="index" class="my-1">
+                      <v-img v-if="isImage(url)" :src="url" class="rounded-lg" aspect-ratio="1.7778"></v-img>
+                      <video v-else-if="isVideo(url)" :src="url" controls></video>
+                      <audio v-else-if="isAudio(url)" :src="url" controls></audio>
+                      <a v-else :href="url" target="_blank" rel="noopener noreferrer">{{ url.split('/').pop() }}</a>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div class="d-flex align-end mx-2" v-if="item.showTimestamp">
-                <div class="text-caption text-grey-darken-1" v-if="item.unreadCount > 0">{{ item.unreadCount }}</div>
-                <div class="text-caption text-grey-darken-1 ml-1">{{ formatTime(item.sendTime) }}</div>
+                <div class="d-flex align-end mx-2" :style="{ visibility: item.showTimestamp ? 'visible' : 'hidden' }">
+                  <div class="text-caption text-grey-darken-1" v-if="item.unreadCount > 0">{{ item.unreadCount }}</div>
+                  <div class="text-caption text-grey-darken-1 ml-1">{{ formatTime(item.sendTime) }}</div>
+                </div>
               </div>
             </div>
           </div>
@@ -128,10 +130,13 @@ export default {
           lastDate = messageDate
         }
 
+        const previousMessage = displayedMessages.value[index - 1];
         const nextMessage = displayedMessages.value[index + 1];
-        const showTimestamp = !nextMessage || nextMessage.senderEmail !== message.senderEmail || new Date(nextMessage.sendTime) - new Date(message.sendTime) > 60000;
 
-        messagesWithSeparators.push({ ...message, showTimestamp })
+        const showTimestamp = !nextMessage || nextMessage.senderEmail !== message.senderEmail || new Date(nextMessage.sendTime) - new Date(message.sendTime) > 60000;
+        const showAvatarAndEmail = !previousMessage || previousMessage.senderEmail !== message.senderEmail || new Date(message.sendTime) - new Date(previousMessage.sendTime) > 60000;
+
+        messagesWithSeparators.push({ ...message, showTimestamp, showAvatarAndEmail })
       })
       return messagesWithSeparators
     })
