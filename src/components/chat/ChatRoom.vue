@@ -32,14 +32,14 @@
                   </div>
                 </div>
                 <div class="d-flex align-end mx-2" v-if="item.senderEmail !== senderEmail">
-                  <div class="text-caption text-grey-darken-1" v-if="item.unreadCount > 0">{{ item.unreadCount }}</div>
+                  <div class="text-caption text-grey-darken-1" :style="{ visibility: item.unreadCount > 0 ? 'visible' : 'hidden' }">{{ item.unreadCount }}</div>
                   <div class="text-caption text-grey-darken-1 ml-1" :style="{ visibility: item.showTimestamp ? 'visible' : 'hidden' }">{{ formatTime(item.sendTime) }}</div>
                   <!-- <div class="text-caption text-grey-darken-1 ml-1" v-if="item.showTimestamp">{{ formatTime(item.sendTime) }}</div> -->
                 </div>
                 <div class="d-flex align-end mx-2" v-if="item.senderEmail === senderEmail">
-                  <div class="text-caption text-grey-darken-1" v-if="item.unreadCount > 0 && item.showTimestamp">{{ item.unreadCount }}</div>
+                  <div class="text-caption text-grey-darken-1" :style="{ visibility: item.unreadCount && item.showTimestamp > 0 ? 'visible' : 'hidden' }">{{ item.unreadCount }}</div>
                   <div class="text-caption text-grey-darken-1 ml-1" :style="{ visibility: item.showTimestamp ? 'visible' : 'hidden' }">{{ formatTime(item.sendTime) }}</div>
-                  <div class="text-caption text-grey-darken-1" v-if="item.unreadCount > 0 && !item.showTimestamp">{{ item.unreadCount }}</div>
+                  <div class="text-caption text-grey-darken-1" :style="{ visibility: item.unreadCount && !item.showTimestamp > 0 ? 'visible' : 'hidden' }">{{ item.unreadCount }}</div>
                   <!-- <div class="text-caption text-grey-darken-1 ml-1" v-if="item.showTimestamp">{{ formatTime(item.sendTime) }}</div> -->
                 </div>
               </div>
