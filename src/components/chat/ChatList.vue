@@ -28,7 +28,7 @@
             </v-avatar>
             <div class="flex-grow-1">
               <v-list-item-title class="font-weight-medium">{{ chatRoom.roomName }}</v-list-item-title>
-              <v-list-item-subtitle>{{ chatRoom.lastMessage.length > 19 ? chatRoom.lastMessage.substr(0, 19) + "..." : chatRoom.lastMessage }}</v-list-item-subtitle>
+              <v-list-item-subtitle>{{ chatRoom.lastMessage }}</v-list-item-subtitle>
             </div>
             <div class="d-flex flex-column align-end">
               <v-list-item-subtitle class="mb-1">{{ formatTime(chatRoom.lastMessageTime) }}</v-list-item-subtitle>

@@ -65,13 +65,14 @@
         rows="1"
         auto-grow
         class="mr-2"
-        :disabled="!stompClient?.connected"
+        :disabled="!stompClient?.connected || isSending"
       ></v-textarea>
       <v-btn 
         icon="mdi-send" 
         color="primary" 
         @click="sendMessage"
-        :disabled="!stompClient?.connected"
+        :disabled="!stompClient?.connected || isSending"
+        :loading="isSending"
       ></v-btn>
     </v-card-actions>
   </v-card>
@@ -106,6 +107,7 @@ export default {
     const loading = ref(false)
     const error = ref(null)
     const currentRoom = ref(null)
+    const isSending = ref(false)
     
     // 파일 입력 참조
     const fileInput = ref(null)
@@ -247,25 +249,36 @@ export default {
     }
     
     const sendMessage = async () => {
+      if (isSending.value) return
       if (newMessage.value.trim() === '' && selectedFiles.value.length === 0) return
-      
-      let fileUrls = []
-      if (selectedFiles.value.length > 0) {
-        fileUrls = await uploadFiles()
+
+      isSending.value = true
+      error.value = null
+
+      try {
+        let fileUrls = []
+        if (selectedFiles.value.length > 0) {
+          fileUrls = await uploadFiles()
+        }
+
+        const message = {
+          senderEmail: senderEmail.value,
+          message: newMessage.value,
+          fileUrls: fileUrls
+        }
+
+        const json = JSON.stringify(message)
+        stompClient.value.send(`/publish/chat-rooms/${props.roomId}/chat-message`, json)
+
+        newMessage.value = ''
+        selectedFiles.value = []
+        if (fileInput.value) fileInput.value.value = null
+      } catch (err) {
+        error.value = '메시지 전송에 실패했습니다. 잠시 후 다시 시도해주세요.'
+        console.error('메시지 전송 실패:', err)
+      } finally {
+        isSending.value = false
       }
-      
-      const message = {
-        senderEmail: senderEmail.value,
-        message: newMessage.value,
-        fileUrls: fileUrls
-      }
-      
-      const json = JSON.stringify(message)
-      stompClient.value.send(`/publish/chat-rooms/${props.roomId}/chat-message`, json)
-      
-      newMessage.value = ''
-      selectedFiles.value = []
-      if (fileInput.value) fileInput.value.value = null
     }
     
     const scrollToBottom = () => {
@@ -300,7 +313,7 @@ export default {
         return res.data.data
       } catch (error) {
         console.error('파일 업로드 실패:', error)
-        return []
+        throw new Error('파일 업로드에 실패했습니다.')
       }
     }
     
@@ -387,7 +400,8 @@ export default {
       isImage,
       isVideo,
       isAudio,
-      formatTime
+      formatTime,
+      isSending
     }
   }
 }
