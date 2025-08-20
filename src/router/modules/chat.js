@@ -1,14 +1,20 @@
 export default [
   {
     path: '/chat',
-    name: 'Chat',
-    component: () => import('@/views/chat/ChatListView.vue'),
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/chat/:roomId',
-    name: 'ChatRoom',
-    component: () => import('@/views/chat/ChatRoomView.vue'),
-    meta: { requiresAuth: true }
+    component: () => import('@/views/chat/ChatView.vue'),
+    meta: { requiresAuth: true },
+    children: [
+      {
+        path: '',
+        name: 'Chat',
+        component: () => import('@/components/chat/ChatPlaceholder.vue')
+      },
+      {
+        path: ':roomId',
+        name: 'ChatRoom',
+        component: () => import('@/components/chat/ChatRoom.vue'),
+        props: true
+      }
+    ]
   }
 ]
