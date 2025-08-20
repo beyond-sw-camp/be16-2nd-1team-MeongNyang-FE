@@ -42,12 +42,27 @@
           :key="`video-${index}`"
           class="video-grid-item"
         >
-          <video 
-            :src="video" 
-            controls 
-            class="rounded video-player"
-            preload="metadata"
-          ></video>
+          <div class="video-container">
+            <video 
+              :src="video" 
+              controls 
+              class="rounded video-player"
+              preload="metadata"
+              :poster="getVideoPoster(video)"
+              @loadedmetadata="onVideoLoaded"
+              @error="onVideoError"
+            >
+              <source :src="video" :type="getVideoMimeType(video)">
+              브라우저에서 비디오를 지원하지 않습니다.
+            </video>
+            <div v-if="videoLoadingStates[video]" class="video-loading-overlay">
+              <v-progress-circular indeterminate color="white" size="48"></v-progress-circular>
+            </div>
+            <div v-if="videoErrors[video]" class="video-error-overlay">
+              <v-icon size="48" color="white">mdi-play-circle-outline</v-icon>
+              <div class="text-caption text-white mt-2">{{ getFileName(video) }}</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -154,6 +169,8 @@ export default {
     const imageViewerOpen = ref(false)
     const currentImageIndex = ref(0)
     const fileSizes = ref({})
+    const videoLoadingStates = ref({})
+    const videoErrors = ref({})
 
     // 파일들을 종류별로 그룹화
     const groupedFiles = computed(() => {
@@ -266,6 +283,48 @@ export default {
       window.open(url, '_blank', 'noopener,noreferrer')
     }
 
+    // 비디오 관련 함수들
+    const getVideoMimeType = (url) => {
+      const extension = getFileExtension(url).toLowerCase()
+      const mimeTypes = {
+        'mp4': 'video/mp4',
+        'webm': 'video/webm',
+        'ogg': 'video/ogg',
+        'mov': 'video/quicktime',
+        'avi': 'video/x-msvideo',
+        'mkv': 'video/x-matroska',
+        'm4v': 'video/mp4',
+        '3gp': 'video/3gpp',
+        'flv': 'video/x-flv'
+      }
+      return mimeTypes[extension] || 'video/mp4'
+    }
+
+    const getVideoPoster = (url) => {
+      // 실제 환경에서는 서버에서 썸네일 이미지를 제공하거나
+      // 비디오에서 첫 프레임을 추출한 이미지 URL을 반환해야 합니다.
+      // 현재는 기본 포스터를 사용하지 않습니다.
+      return null
+    }
+
+    const onVideoLoaded = (event) => {
+      const video = event.target
+      const url = video.src
+      videoLoadingStates.value[url] = false
+      videoErrors.value[url] = false
+      
+      // 비디오가 로드되면 첫 프레임을 보여주기 위해 currentTime을 설정
+      video.currentTime = 0.1
+    }
+
+    const onVideoError = (event) => {
+      const video = event.target
+      const url = video.src
+      videoLoadingStates.value[url] = false
+      videoErrors.value[url] = true
+      console.warn('비디오 로드 실패:', url)
+    }
+
     // 이미지 그리드 클래스 계산
     const getImageGridClass = (totalImages, index) => {
       if (totalImages === 1) return 'single-image'
@@ -304,6 +363,8 @@ export default {
       groupedFiles,
       imageViewerOpen,
       currentImageIndex,
+      videoLoadingStates,
+      videoErrors,
       isImage,
       isVideo,
       isAudio,
@@ -313,6 +374,10 @@ export default {
       getFileSize,
       formatFileSize,
       downloadFile,
+      getVideoMimeType,
+      getVideoPoster,
+      onVideoLoaded,
+      onVideoError,
       getImageGridClass,
       openImageViewer,
       nextImage,
@@ -411,10 +476,39 @@ export default {
   gap: 8px;
 }
 
+.video-container {
+  position: relative;
+  max-width: 300px;
+}
+
 .video-player {
   width: 100%;
-  max-width: 300px;
   height: auto;
+  background-color: #000;
+  border-radius: 8px;
+}
+
+.video-loading-overlay,
+.video-error-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+.video-error-overlay {
+  cursor: pointer;
+}
+
+.video-error-overlay:hover {
+  background-color: rgba(0, 0, 0, 0.8);
 }
 
 /* 오디오 그리드 스타일 */
@@ -477,6 +571,7 @@ export default {
 /* 반응형 스타일 */
 @media (max-width: 480px) {
   .image-grid,
+  .video-container,
   .video-player,
   .audio-card,
   .file-attachment {
