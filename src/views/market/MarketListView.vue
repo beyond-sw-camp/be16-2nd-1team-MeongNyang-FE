@@ -418,12 +418,58 @@ export default {
       this.$router.push(`/market/${postId}`)
     },
 
-    // 로컬스토리지에서 찜한 게시글 정보 가져오기
+    // 백엔드와 찜하기 상태 동기화 (수정)
+    async syncLikeStatus() {
+      try {
+        // 백엔드에서 현재 로그인한 사용자의 찜한 게시글 목록을 가져와서 동기화
+        const response = await marketAPI.getUserLikedPosts()
+        if (response.data && response.data.isSuccess) {
+          const likedPostIds = response.data.data || []
+          this.likedPosts = new Set(likedPostIds)
+          console.log('백엔드에서 가져온 찜한 게시글:', [...this.likedPosts])
+          
+          // localStorage 업데이트 (사용자별로 구분)
+          this.saveLikedPosts()
+        } else {
+          console.log('백엔드에서 찜한 게시글을 가져올 수 없음, localStorage 사용')
+          this.loadLikedPosts()
+        }
+      } catch (error) {
+        console.error('찜하기 상태 동기화 오류:', error)
+        // 에러 발생 시 localStorage에서 기존 정보 로드
+        this.loadLikedPosts()
+      }
+    },
+
+    // localStorage의 찜한 게시글 정보 초기화 (수정)
+    clearLikedPosts() {
+      this.likedPosts.clear()
+      // 사용자별로 구분된 localStorage 키 사용
+      const currentUserId = this.getCurrentUserId()
+      if (currentUserId) {
+        localStorage.removeItem(`likedPosts_${currentUserId}`)
+      }
+      // 모든 포스트의 isLiked 상태를 false로 초기화
+      if (this.posts.length > 0) {
+        this.posts.forEach(post => {
+          post.isLiked = false
+        })
+      }
+    },
+
+    // 로컬스토리지에서 찜한 게시글 정보 가져오기 (수정)
     loadLikedPosts() {
       try {
-        const likedPostsData = localStorage.getItem('likedPosts')
+        const currentUserId = this.getCurrentUserId()
+        if (!currentUserId) {
+          this.likedPosts = new Set()
+          return
+        }
+        
+        const likedPostsData = localStorage.getItem(`likedPosts_${currentUserId}`)
         if (likedPostsData) {
           this.likedPosts = new Set(JSON.parse(likedPostsData))
+          console.log(`사용자 ${currentUserId}의 찜한 게시글:`, [...this.likedPosts])
         }
       } catch (error) {
         console.error('찜한 게시글 정보 로드 오류:', error)
@@ -431,36 +477,78 @@ export default {
       }
     },
 
-    // 로컬스토리지에 찜한 게시글 정보 저장
+    // 로컬스토리지에 찜한 게시글 정보 저장 (수정)
     saveLikedPosts() {
       try {
-        localStorage.setItem('likedPosts', JSON.stringify([...this.likedPosts]))
+        const currentUserId = this.getCurrentUserId()
+        if (!currentUserId) return
+        
+        localStorage.setItem(`likedPosts_${currentUserId}`, JSON.stringify([...this.likedPosts]))
+        console.log(`사용자 ${currentUserId}의 찜한 게시글 저장됨:`, [...this.likedPosts])
       } catch (error) {
         console.error('찜한 게시글 정보 저장 오류:', error)
       }
     },
 
-    // 게시글을 찜한 게시글 목록에 추가
+    // 현재 로그인한 사용자 ID 가져오기
+    getCurrentUserId() {
+      // auth store에서 현재 사용자 정보 가져오기
+      try {
+        const authStore = this.$store?.auth || this.$pinia?.auth
+        if (authStore && authStore.user) {
+          return authStore.user.id || authStore.user.userId
+        }
+        
+        // JWT 토큰에서 사용자 ID 추출 시도
+        const token = localStorage.getItem('accessToken')
+        if (token) {
+          const payload = JSON.parse(atob(token.split('.')[1]))
+          return payload.sub || payload.userId || payload.id
+        }
+        
+        return null
+      } catch (error) {
+        console.error('사용자 ID 가져오기 오류:', error)
+        return null
+      }
+    },
+
+    // 게시글을 찜한 게시글 목록에 추가 (수정)
     addLikedPost(postId) {
       this.likedPosts.add(postId)
       this.saveLikedPosts()
+      console.log(`게시글 ${postId} 찜하기 추가됨`)
     },
 
-    // 게시글을 찜한 게시글 목록에서 제거
+    // 게시글을 찜한 게시글 목록에서 제거 (수정)
     removeLikedPost(postId) {
       this.likedPosts.delete(postId)
       this.saveLikedPosts()
+      console.log(`게시글 ${postId} 찜하기 제거됨`)
     },
 
-    // 특정 게시글이 찜해져 있는지 확인
+    // 특정 게시글이 찜해져 있는지 확인 (수정)
     isPostLiked(postId) {
-      return this.likedPosts.has(postId)
+      const isLiked = this.likedPosts.has(postId)
+      console.log(`게시글 ${postId} 찜 상태:`, isLiked)
+      return isLiked
+    },
+
+    // 찜하기 상태 업데이트 (백엔드 동기화)
+    async updateLikeStatus() {
+      await this.syncLikeStatus()
+      // posts가 로드된 후에만 isLiked 상태 업데이트
+      if (this.posts.length > 0) {
+        this.posts.forEach(post => {
+          post.isLiked = this.isPostLiked(post.id)
+        })
+      }
     },
   },
 
   mounted() {
-    // 찜한 게시글 정보 로드
-    this.loadLikedPosts()
+    // 백엔드와 찜하기 상태 동기화
+    this.syncLikeStatus()
     
     // 초기 데이터 로드
     this.fetchMarketPosts()
