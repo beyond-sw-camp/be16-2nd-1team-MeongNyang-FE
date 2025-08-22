@@ -30,6 +30,7 @@ export const useChatStore = defineStore('chat', {
       
       try {
         const response = await chatAPI.getRooms()
+        // ChatRoomSummaryRes DTO 구조에 맞춰 데이터 매핑
         this.chatRoomList = response.data.data || []
       } catch (error) {
         console.error('채팅방 목록 조회 실패:', error)
@@ -52,8 +53,38 @@ export const useChatStore = defineStore('chat', {
           participantEmails: allParticipantEmails
         }
         const response = await chatAPI.createRoom(roomData)
-        const roomId = response.data.data
-        // this.chatRoomList.push(newRoom)
+        
+        // API 응답 구조 로깅
+        console.log('채팅방 생성 응답:', response.data)
+        
+        // roomId 추출 - 응답 구조에 따라 적절히 처리
+        let roomId
+        if (response.data && response.data.data) {
+          // response.data.data가 객체인 경우 id 필드에서 추출
+          if (typeof response.data.data === 'object' && response.data.data.id) {
+            roomId = response.data.data.id
+          } else {
+            // response.data.data가 직접 ID인 경우
+            roomId = response.data.data
+          }
+        } else if (response.data && response.data.id) {
+          // response.data에 직접 id가 있는 경우
+          roomId = response.data.id
+        } else {
+          throw new Error('채팅방 ID를 찾을 수 없습니다.')
+        }
+        
+        console.log('추출된 roomId:', roomId, typeof roomId)
+        
+        // 새로 생성된 채팅방 정보를 목록에 추가
+        const newRoom = {
+          id: roomId,
+          roomName: roomName,
+          lastMessage: "메세지를 보내 채팅을 시작해보세요!",
+          newMessageCount: 0
+        }
+        this.chatRoomList.unshift(newRoom)
+        
         return roomId
       } catch (error) {
         console.error('채팅방 생성 실패:', error)

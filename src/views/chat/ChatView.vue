@@ -50,10 +50,41 @@ export default {
   },
   methods: {
     onChatSelected(roomId) {
-      this.$router.push({ name: 'ChatRoom', params: { roomId } })
+      // roomId 유효성 검사
+      console.log('ChatView에서 받은 roomId:', roomId, typeof roomId);
+      
+      if (!roomId || roomId === null || roomId === undefined) {
+        console.error('유효하지 않은 roomId:', roomId);
+        this.showMessage({
+          type: 'error',
+          text: '채팅방 ID가 유효하지 않습니다.'
+        });
+        return;
+      }
+      
+      // roomId가 객체인 경우 id 필드에서 추출
+      let actualRoomId = roomId;
+      if (typeof roomId === 'object' && roomId !== null) {
+        if (roomId.id !== undefined) {
+          actualRoomId = roomId.id;
+        } else {
+          console.error('roomId 객체에 id 필드가 없습니다:', roomId);
+          this.showMessage({
+            type: 'error',
+            text: '채팅방 ID를 찾을 수 없습니다.'
+          });
+          return;
+        }
+      }
+      
+      // 숫자나 문자열로 변환
+      actualRoomId = String(actualRoomId);
+      console.log('라우터로 이동할 roomId:', actualRoomId);
+      
+      this.$router.push({ name: 'ChatRoom', params: { roomId: actualRoomId } });
     },
     showMessage(message) {
-      this.showSnackbar(message.text, message.type)
+      this.showSnackbar(message.text, message.type);
     }
   }
 }

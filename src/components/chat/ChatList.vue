@@ -55,7 +55,6 @@
               <v-list-item-subtitle>{{ chatRoom.lastMessage }}</v-list-item-subtitle>
             </div>
             <div class="d-flex flex-column align-end">
-              <v-list-item-subtitle class="mb-1">{{ formatTime(chatRoom.lastMessageTime) }}</v-list-item-subtitle>
               <v-badge
                 color="error"
                 :content="chatRoom.newMessageCount"
@@ -114,10 +113,6 @@ export default {
     selectChatRoom(roomId) {
       this.$emit('chat-selected', roomId);
     },
-    formatTime(time) {
-      // Implement your time formatting logic here
-      return time;
-    },
     async createNewChatRoom(selectedUsers) {
       try {
         // 선택된 사용자들로 새로운 채팅방 생성
@@ -132,6 +127,10 @@ export default {
         // 채팅방 생성 API 호출
         const roomId = await this.chatStore.createChatRoom(roomName, userIds);
         
+        // roomId 디버깅
+        console.log('생성된 roomId:', roomId, typeof roomId);
+        console.log('roomId가 유효한지 확인:', roomId && roomId !== null && roomId !== undefined);
+        
         // 성공 메시지 표시
         this.$emit('show-message', {
           type: 'success',
@@ -142,7 +141,16 @@ export default {
         await this.refreshChatList();
         
         // 새로 생성된 채팅방으로 이동
-        this.$emit('chat-selected', roomId);
+        if (roomId && roomId !== null && roomId !== undefined) {
+          console.log('채팅방으로 이동:', roomId);
+          this.$emit('chat-selected', roomId);
+        } else {
+          console.error('유효하지 않은 roomId:', roomId);
+          this.$emit('show-message', {
+            type: 'error',
+            text: '채팅방 ID가 유효하지 않습니다.'
+          });
+        }
         
       } catch (error) {
         console.error('채팅방 생성 실패:', error);
