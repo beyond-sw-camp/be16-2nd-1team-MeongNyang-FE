@@ -94,19 +94,22 @@
         </div>
       </template>
       
-      <!-- 맨 아래로 버튼 -->
-      <v-btn
-        v-show="showScrollToBottomButton"
-        @click="scrollToBottom"
-        class="scroll-to-bottom-btn"
-        color="primary"
-        icon
-        size="large"
-        elevation="4"
-        :ripple="false"
-      >
-        <v-icon>mdi-chevron-down</v-icon>
-      </v-btn>
+      <!-- 맨 아래로 버튼 - 스크롤과 함께 움직이는 고정 버튼 -->
+      <div v-show="showScrollToBottomButton" class="scroll-to-bottom-button-sticky">
+        <v-btn
+          @click="scrollToBottom"
+          class="scroll-to-bottom-btn"
+          color="primary"
+          icon
+          size="large"
+          elevation="6"
+          :ripple="false"
+          title="맨 아래로 이동"
+        >
+          <v-icon size="24">mdi-chevron-down</v-icon>
+        </v-btn>
+      </div>
+
     </v-card-text>
     <v-divider></v-divider>
     <v-card-actions class="chat-input-container pa-4">
@@ -784,7 +787,7 @@ export default {
       if (!chatContainer) return
       
       const { scrollTop, scrollHeight, clientHeight } = chatContainer
-      const threshold = 50 // 하단에서 50px 이내면 하단으로 간주 (더 민감하게)
+      const threshold = 100 // 하단에서 100px 이내면 하단으로 간주 (더 관대하게)
       
       // 현재 스크롤 위치가 하단에 가까운지 확인
       const atBottom = scrollTop + clientHeight >= scrollHeight - threshold
@@ -794,9 +797,15 @@ export default {
         isAtBottom.value = atBottom
       }
       
-      // 하단이 아니고 스크롤이 위로 올라갔을 때만 버튼 표시
-      const shouldShowButton = !atBottom && scrollTop > 50
+      // 하단이 아니고 스크롤이 위로 올라갔을 때만 버튼 표시 (더 민감하게)
+      const shouldShowButton = !atBottom && scrollTop > 20
       showScrollToBottomButton.value = shouldShowButton
+    }
+    
+    // 버튼 위치 조정 (더 이상 필요하지 않음 - CSS로 처리)
+    const adjustButtonPosition = () => {
+      // 버튼이 이제 채팅 메시지 컨테이너 내부에 고정되어 있으므로
+      // 별도의 위치 조정이 필요하지 않음
     }
     
     const triggerFileInput = () => {
@@ -1338,6 +1347,8 @@ export default {
       // 전체 페이지에 드래그 이벤트 추가 (브라우저 기본 동작 방지)
       window.addEventListener('dragover', preventDefault)
       window.addEventListener('drop', preventDefault)
+      
+      // 버튼이 이제 CSS로 고정되어 있으므로 ResizeObserver가 필요하지 않음
     })
     
     onUnmounted(() => {
@@ -1423,7 +1434,8 @@ export default {
       isUserSelected,
       // 스크롤 관련
       showScrollToBottomButton,
-      isAtBottom
+      isAtBottom,
+      adjustButtonPosition
     }
   }
 }
@@ -1719,29 +1731,59 @@ export default {
   }
 }
 
-/* 맨 아래로 버튼 스타일 */
-.scroll-to-bottom-btn {
-  position: absolute !important;
-  bottom: 20px; /* 채팅 메시지 컨테이너 하단에서 20px 위 */
+/* 맨 아래로 버튼 - 스크롤과 함께 움직이는 고정 버튼 */
+.scroll-to-bottom-button-sticky {
+  position: sticky;
+  bottom: 20px;
   right: 20px;
-  z-index: 100;
-  border-radius: 50% !important;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(10px);
-  background-color: rgba(25, 118, 210, 0.9) !important;
-}
-
-.scroll-to-bottom-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(25, 118, 210, 0.3) !important;
-  background-color: rgba(25, 118, 210, 1) !important;
+  z-index: 1000;
+  display: flex;
+  justify-content: flex-end;
+  pointer-events: none; /* 컨테이너는 클릭 이벤트를 통과시킴 */
 }
 
 /* 모바일에서 버튼 위치 조정 */
 @media (max-width: 768px) {
+  .scroll-to-bottom-button-sticky {
+    bottom: 0px;
+    right: 10px;
+  }
+}
+
+/* 맨 아래로 버튼 스타일 */
+.scroll-to-bottom-btn {
+  pointer-events: auto; /* 버튼만 클릭 가능 */
+  border-radius: 50% !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
+  background-color: rgba(25, 118, 210, 0.95) !important;
+  border: 2px solid rgba(255, 255, 255, 0.8) !important;
+  animation: pulse 2s infinite;
+}
+
+.scroll-to-bottom-btn:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 8px 25px rgba(25, 118, 210, 0.4) !important;
+  background-color: rgba(25, 118, 210, 1) !important;
+  animation: none;
+}
+
+/* 펄스 애니메이션 */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(25, 118, 210, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(25, 118, 210, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(25, 118, 210, 0);
+  }
+}
+
+/* 모바일에서 버튼 크기 조정 */
+@media (max-width: 768px) {
   .scroll-to-bottom-btn {
-    bottom: 16px;
-    right: 16px;
     width: 48px !important;
     height: 48px !important;
   }
