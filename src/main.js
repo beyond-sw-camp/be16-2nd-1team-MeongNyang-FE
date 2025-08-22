@@ -53,14 +53,14 @@ app.config.errorHandler = (error, instance, info) => {
   console.error('에러 정보:', info)
   console.error('컴포넌트:', instance)
   
-  // 사용자에게 에러 알림
-  handleError(error, router)
+  // 사용자에게 에러 알림 (간단한 alert로 대체)
+  alert('오류가 발생했습니다. 페이지를 새로고침해주세요.')
 }
 
 // 처리되지 않은 Promise 에러 핸들러
 window.addEventListener('unhandledrejection', (event) => {
   console.error('처리되지 않은 Promise 에러:', event.reason)
-  handleError(event.reason, router)
+  alert('오류가 발생했습니다. 페이지를 새로고침해주세요.')
   event.preventDefault()
 })
 

@@ -159,7 +159,7 @@ export default {
       if (mediaList.value.length === 0) return null
       return mediaList.value[currentMediaIndex.value]
     })
-    
+        
 
     
     // 제출 가능 여부
@@ -297,6 +297,11 @@ export default {
         return
       }
       
+      if (mediaList.value.length === 0) {
+        alert('최소 하나의 이미지나 비디오를 업로드해주세요.')
+        return
+      }
+      
       try {
         console.log('=== 다이어리 작성 시작 ===')
         console.log('제목:', title.value)
@@ -305,39 +310,45 @@ export default {
         
         const formData = new FormData()
         
-        // 미디어 파일 추가
-        mediaList.value.forEach((media, index) => {
+        // 미디어 파일들을 비동기적으로 처리
+        const filePromises = mediaList.value.map(async (media, index) => {
           console.log(`미디어 ${index} 처리:`, media)
           
           if (media.isExisting) {
             // 기존 S3 파일인 경우
             console.log(`기존 미디어 ${index} 변환 시작:`, media.url)
             
-            // fetch를 사용하여 파일을 다시 가져와서 File 객체로 변환
-            fetch(media.url)
-              .then(res => res.blob())
-              .then(blob => {
-                const file = new File([blob], `existing_media_${index}.${media.type === 'video' ? 'mp4' : 'jpg'}`, {
-                  type: media.type === 'video' ? 'video/mp4' : 'image/jpeg'
-                })
-                formData.append('files', file)
-                console.log(`기존 미디어 ${index} 변환 완료:`, file)
+            try {
+              const response = await fetch(media.url)
+              const blob = await response.blob()
+              const file = new File([blob], `existing_media_${index}.${media.type === 'video' ? 'mp4' : 'jpg'}`, {
+                type: media.type === 'video' ? 'video/mp4' : 'image/jpeg'
               })
-              .catch(error => {
-                console.error(`기존 미디어 ${index} 변환 실패:`, error)
-                throw new Error(`이미지 로드 실패: ${media.url}`)
-              })
+              console.log(`기존 미디어 ${index} 변환 완료:`, file)
+              return file
+            } catch (error) {
+              console.error(`기존 미디어 ${index} 변환 실패:`, error)
+              throw new Error(`이미지 로드 실패: ${media.url}`)
+            }
           } else {
             // 새로 업로드된 파일인 경우
             console.log(`새 미디어 ${index} 추가:`, media.file)
-            formData.append('files', media.file)
+            return media.file
           }
         })
         
-        // JSON 데이터를 Blob으로 변환하여 추가
+        // 모든 파일 처리가 완료될 때까지 대기
+        const files = await Promise.all(filePromises)
+        
+        // 파일들을 FormData에 추가
+        files.forEach(file => {
+          formData.append('files', file)
+        })
+        
+        // JSON 데이터를 별도의 RequestPart로 추가
         const postCreateRequest = {
-          title: title.value,
-          content: content.value
+          title: title.value.trim(),
+          content: content.value.trim()
         }
         
         const jsonBlob = new Blob([JSON.stringify(postCreateRequest)], {
