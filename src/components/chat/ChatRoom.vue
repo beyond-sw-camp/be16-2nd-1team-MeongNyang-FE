@@ -825,6 +825,12 @@ export default {
     // 다중 선택 관련 함수들
     const toggleUserSelection = (user) => {
       const userEmail = user.userEmail || user.email;
+      
+      // 이미 참여중인 사용자는 선택할 수 없음
+      if (isAlreadyParticipant(userEmail)) {
+        return;
+      }
+      
       if (selectedUsers.value.has(userEmail)) {
         selectedUsers.value.delete(userEmail);
       } else {
@@ -834,7 +840,7 @@ export default {
 
     const toggleSelectAll = () => {
       if (selectAll.value) {
-        // 모든 사용자 선택
+        // 모든 사용자 선택 (이미 참여중인 사용자 제외)
         const currentUsers = getCurrentTabUsers();
         currentUsers.forEach(user => {
           const userEmail = user.userEmail || user.email;
@@ -849,20 +855,37 @@ export default {
     }
 
     const getCurrentTabUsers = () => {
+      let users = [];
       switch (inviteTab.value) {
         case 'followers':
-          return filteredFollowers.value;
+          users = filteredFollowers.value;
+          break;
         case 'followings':
-          return filteredFollowings.value;
+          users = filteredFollowings.value;
+          break;
         case 'search':
-          return searchResults.value;
+          users = searchResults.value;
+          break;
         default:
           return [];
       }
+      
+      // 이미 참여중인 사용자 제외
+      return users.filter(user => {
+        const userEmail = user.userEmail || user.email;
+        return !isAlreadyParticipant(userEmail);
+      });
     }
 
     const getSelectedUsersCount = () => {
-      return selectedUsers.value.size;
+      // 이미 참여중인 사용자는 카운트에서 제외
+      let count = 0;
+      selectedUsers.value.forEach(email => {
+        if (!isAlreadyParticipant(email)) {
+          count++;
+        }
+      });
+      return count;
     }
 
     const isUserSelected = (user) => {
@@ -920,20 +943,23 @@ export default {
 
     // 다중 초대 함수
     const inviteSelectedUsers = async () => {
-      if (selectedUsers.value.size === 0) {
+      // 이미 참여중인 사용자 제외하고 실제 초대 가능한 사용자만 필터링
+      const validUsers = Array.from(selectedUsers.value).filter(email => !isAlreadyParticipant(email));
+      
+      if (validUsers.length === 0) {
         alert('초대할 사용자를 선택해주세요.');
         return;
       }
 
       try {
-        const inviteData = Array.from(selectedUsers.value).map(email => ({ inviteeEmail: email }));
+        const inviteData = validUsers.map(email => ({ inviteeEmail: email }));
         await axios.post(`${process.env.VUE_APP_API_BASE_URL}/chat-rooms/${props.roomId}/participants`, inviteData, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
           }
         });
         
-        console.log(`${selectedUsers.value.size}명의 사용자에게 초대 메시지를 보냈습니다.`);
+        console.log(`${validUsers.length}명의 사용자에게 초대 메시지를 보냈습니다.`);
         showInviteDialog.value = false;
         
         // 초기화
