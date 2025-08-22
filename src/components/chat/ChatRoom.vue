@@ -145,7 +145,7 @@
           <v-textarea
             v-model="newMessage"
             label="메세지 입력"
-            @keyup.enter="sendMessage"
+            @keydown="handleKeydown"
             hide-details
             outlined
             dense
@@ -153,7 +153,7 @@
             auto-grow
             class="mr-2 flex-grow-1"
             :disabled="!stompClient?.connected || isSending"
-            placeholder="메시지를 입력하거나 파일을 첨부하세요"
+            placeholder="메시지를 입력하거나 파일을 첨부하세요 (Enter: 전송, Shift+Enter: 줄바꿈)"
           ></v-textarea>
           
           <v-btn 
@@ -773,6 +773,20 @@ export default {
       return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
     }
     
+    const handleKeydown = (event) => {
+      // Enter 키만 눌렀을 때 (Shift나 Ctrl 없이)
+      if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
+        event.preventDefault() // 기본 동작 방지
+        sendMessage()
+      }
+      // Ctrl+Enter 또는 Cmd+Enter로 강제 전송
+      else if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+        event.preventDefault()
+        sendMessage()
+      }
+      // Shift+Enter는 줄바꿈 허용 (기본 동작)
+    }
+    
     const uploadFiles = async () => {
       const formData = new FormData()
       selectedFiles.value.forEach(file => {
@@ -1208,6 +1222,7 @@ export default {
       getFileIconColor,
       truncateFileName,
       formatFileSize,
+      handleKeydown,
       uploadFiles,
       formatTime,
       isSending,
