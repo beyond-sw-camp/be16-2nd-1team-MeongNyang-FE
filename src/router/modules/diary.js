@@ -6,7 +6,7 @@ export default [
     meta: { requiresAuth: true }
   },
   {
-    path: '/diary/create',
+    path: '/diarys/create',
     name: 'DiaryCreate',
     component: () => import('@/views/post/DiaryCreateView.vue'),
     meta: { requiresAuth: true }

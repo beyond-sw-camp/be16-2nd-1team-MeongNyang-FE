@@ -242,54 +242,12 @@ export const postAPI = {
   getMyPostsCount: () => apiClient.get('/posts', { params: { page: 0, size: 1 } }),
   
   // 일기 작성
-  create: (postData, files) => {
-    const formData = new FormData()
-    
-    // JSON 데이터를 Blob으로 변환하여 Content-Type 설정
-    const jsonBlob = new Blob([JSON.stringify(postData)], {
-      type: 'application/json'
-    })
-    formData.append('postCreateRequest', jsonBlob)
-    
-    if (files) {
-      files.forEach(file => formData.append('files', file))
-    }
+  create: (formData) => {
     return apiClient.post('/posts', formData)
   },
   
   // 일기 수정
-  update: (postId, postData, files) => {
-    const formData = new FormData()
-    
-    console.log('API - postId:', postId)
-    console.log('API - postData:', postData)
-    console.log('API - files:', files)
-    
-    // JSON 데이터를 Blob으로 변환하여 Content-Type 설정
-    const jsonBlob = new Blob([JSON.stringify(postData)], {
-      type: 'application/json'
-    })
-    formData.append('postEditReq', jsonBlob)
-    
-    // files가 없거나 빈 배열이어도 빈 파일을 전송하여 백엔드 요구사항 충족
-    if (files && files.length > 0) {
-      files.forEach((file, index) => {
-        console.log(`API - 파일 ${index}:`, file.name, file.type, file.size)
-        formData.append('files', file)
-      })
-    } else {
-      // 빈 파일을 전송하여 'files' 파트가 존재하도록 함
-      console.log('API - 빈 파일 전송')
-      const emptyBlob = new Blob([], { type: 'application/octet-stream' })
-      const emptyFile = new File([emptyBlob], 'empty.txt', { type: 'text/plain' })
-      formData.append('files', emptyFile)
-    }
-    
-    console.log('API - FormData entries:')
-    for (let [key, value] of formData.entries()) {
-      console.log(key, value)
-    }
-    
+  update: (postId, formData) => {
     return apiClient.patch(`/posts/${postId}`, formData)
   },
   
@@ -493,8 +451,8 @@ export const petAPI = {
   // 대표 펫 설정
   setMainPet: (petId) => apiClient.put(`/pets/${petId}/main`),
   
-  // 대표 반려동물 설정
-  setMainPet: (petId) => apiClient.put(`/users/my-page/${petId}/main-pet`),
+  // 대표 반려동물 설정 (다른 엔드포인트)
+  setMainPetAlt: (petId) => apiClient.put(`/users/my-page/${petId}/main-pet`),
   
   // 반려동물 수정
   update: async (petId, petData, petImg) => {
