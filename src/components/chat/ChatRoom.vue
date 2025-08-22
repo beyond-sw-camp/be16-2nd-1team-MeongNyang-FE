@@ -1367,6 +1367,7 @@ export default {
   word-wrap: break-word;
   word-break: break-all;
   overflow-wrap: break-word;
+  white-space: pre-wrap;
   text-align: left;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
