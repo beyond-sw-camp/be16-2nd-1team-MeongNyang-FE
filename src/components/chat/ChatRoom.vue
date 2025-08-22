@@ -33,7 +33,26 @@
       </v-menu>
     </v-toolbar>
     <v-divider></v-divider>
-    <v-card-text class="chat-messages-container flex-grow-1 pa-4" ref="chatBox">
+    <v-card-text 
+      class="chat-messages-container flex-grow-1 pa-4" 
+      ref="chatBox"
+      @dragenter="handleDragEnter"
+      @dragover="handleDragOver"
+      @dragleave="handleDragLeave"
+      @drop="handleDrop"
+    >
+      <!-- 드래그 앤 드롭 오버레이 -->
+      <div 
+        v-if="isDragOver" 
+        class="drag-drop-overlay"
+      >
+        <div class="drag-drop-content">
+          <v-icon size="64" color="primary">mdi-cloud-upload</v-icon>
+          <div class="text-h6 mt-4">파일을 여기에 놓아주세요</div>
+          <div class="text-body-2 text-grey-darken-1">이미지, 문서, 미디어 파일 등을 첨부할 수 있습니다</div>
+        </div>
+      </div>
+      
       <template v-for="item in messagesWithDateSeparators" :key="item.id">
         <div v-if="item.type === 'date-separator'" class="text-center my-4">
           <v-chip small>{{ item.date }}</v-chip>
@@ -524,6 +543,10 @@ export default {
     const fileInput = ref(null)
     const chatBox = ref(null)
     
+    // 드래그 앤 드롭 상태
+    const isDragOver = ref(false)
+    const dragCounter = ref(0)
+    
     // 모달 상태
     const showParticipantsDialog = ref(false)
     const showInviteDialog = ref(false)
@@ -785,6 +808,53 @@ export default {
         sendMessage()
       }
       // Shift+Enter는 줄바꿈 허용 (기본 동작)
+    }
+    
+    const handleDragEnter = (event) => {
+      event.preventDefault()
+      event.stopPropagation()
+      dragCounter.value++
+      isDragOver.value = true
+    }
+    
+    const handleDragOver = (event) => {
+      event.preventDefault()
+      event.stopPropagation()
+    }
+    
+    const handleDragLeave = (event) => {
+      event.preventDefault()
+      event.stopPropagation()
+      dragCounter.value--
+      if (dragCounter.value === 0) {
+        isDragOver.value = false
+      }
+    }
+    
+    const handleDrop = (event) => {
+      event.preventDefault()
+      event.stopPropagation()
+      dragCounter.value = 0
+      isDragOver.value = false
+      
+      const files = Array.from(event.dataTransfer.files)
+      if (files.length > 0) {
+        // 기존 선택된 파일에 추가
+        selectedFiles.value = [...selectedFiles.value, ...files]
+        
+        // 성공 메시지 표시
+        if (showMessage) {
+          showMessage({
+            type: 'success',
+            text: `${files.length}개 파일이 첨브되었습니다.`
+          })
+        }
+      }
+    }
+    
+    const preventDefault = (event) => {
+      event.preventDefault()
+      event.stopPropagation()
     }
     
     const uploadFiles = async () => {
@@ -1188,11 +1258,19 @@ export default {
         connectWebsocket()
       }
       window.addEventListener('beforeunload', disconnectWebsocket)
+      
+      // 전체 페이지에 드래그 이벤트 추가 (브라우저 기본 동작 방지)
+      window.addEventListener('dragover', preventDefault)
+      window.addEventListener('drop', preventDefault)
     })
     
     onUnmounted(() => {
       disconnectWebsocket()
       window.removeEventListener('beforeunload', disconnectWebsocket)
+      
+      // 전체 페이지 드래그 이벤트 리스너 제거
+      window.removeEventListener('dragover', preventDefault)
+      window.removeEventListener('drop', preventDefault)
     })
     
     return {
@@ -1208,6 +1286,7 @@ export default {
       currentRoom,
       fileInput,
       chatBox,
+      isDragOver,
       displayedMessages,
       messagesWithDateSeparators,
       retryLoad,
@@ -1223,6 +1302,11 @@ export default {
       truncateFileName,
       formatFileSize,
       handleKeydown,
+      handleDragEnter,
+      handleDragOver,
+      handleDragLeave,
+      handleDrop,
+      preventDefault,
       uploadFiles,
       formatTime,
       isSending,
@@ -1426,6 +1510,32 @@ export default {
 
 .cursor-pointer {
   cursor: pointer;
+}
+
+/* 드래그 앤 드롭 스타일 */
+.drag-over {
+  position: relative;
+}
+
+.drag-drop-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(33, 150, 243, 0.15);
+  border: 3px dashed #2196f3;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  backdrop-filter: blur(2px);
+}
+
+.drag-drop-content {
+  text-align: center;
+  color: #1976d2;
 }
 
 /* 파일 선택 영역 스타일 */
