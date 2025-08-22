@@ -135,10 +135,13 @@ export const usePetStore = defineStore('pet', () => {
       const isSuccess = response.data.isSuccess
       
       if (isSuccess) {
-        console.log('등록 성공! 목록 새로고침 시작')
-        // 등록 후 목록 새로고침
-        await fetchPets()
-        console.log('목록 새로고침 완료')
+        console.log('등록 성공! 데이터 새로고침 시작')
+        // 등록 후 목록과 종 데이터 새로고침
+        await Promise.all([
+          fetchPets(),
+          fetchSpecies()  // 종 데이터도 함께 새로고침
+        ])
+        console.log('데이터 새로고침 완료')
         
         // 백엔드 응답 구조에 맞게 메시지 추출 (우선순위: data > message > status.message > 기본메시지)
         let successMessage = '반려동물이 등록되었습니다.'
@@ -253,8 +256,11 @@ export const usePetStore = defineStore('pet', () => {
 
       // 백엔드 응답 구조: CommonRes<String> - isSuccess 필드 사용
       if (response.data.isSuccess) {
-        // 수정 후 목록 새로고침
-        await fetchPets()
+        // 수정 후 목록과 종 데이터 새로고침
+        await Promise.all([
+          fetchPets(),
+          fetchSpecies()  // 종 데이터도 함께 새로고침
+        ])
         return { success: true, message: response.data.data || '반려동물이 성공적으로 수정되었습니다.' }
       } else {
         setError(response.data.message || '반려동물 수정에 실패했습니다.')
@@ -446,6 +452,15 @@ export const usePetStore = defineStore('pet', () => {
         pets.value.forEach(p => {
           p.isMain = p.id === pet.id
         })
+        
+        // 🔥 중요: authStore의 myPageInfo.mainPetId도 즉시 업데이트
+        const { useAuthStore } = await import('./auth')
+        const authStore = useAuthStore()
+        if (authStore.myPageInfo) {
+          authStore.myPageInfo.mainPetId = pet.id
+          console.log('✅ authStore.myPageInfo.mainPetId 업데이트됨:', pet.id)
+        }
+        
         return { success: true, message: '대표 반려동물이 설정되었습니다.' }
       } else {
         setError(response.data.message || '대표 반려동물 설정에 실패했습니다.')
@@ -467,7 +482,8 @@ export const usePetStore = defineStore('pet', () => {
   }
 
   const getSpeciesById = (speciesId) => {
-    return species.value.find(species => species.id === speciesId)
+    // 백엔드 데이터 구조가 id가 아니라 speciesId 필드 사용
+    return species.value.find(species => species.speciesId === speciesId)
   }
 
   const resetStore = () => {

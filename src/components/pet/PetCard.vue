@@ -11,7 +11,7 @@
           class="pet-image"
         />
         <div v-else class="image-placeholder">
-          <v-icon :size="48" :color="getSpeciesIconColor(pet.speciesId)" :icon="getSpeciesIcon(pet.speciesId)" />
+          <v-icon :size="48" :color="getSpeciesIconColor(pet.petOrder)" :icon="getSpeciesIcon(pet.petOrder)" />
         </div>
         
         <!-- 대표 반려동물 배지 -->
@@ -72,9 +72,9 @@
       <div class="pet-details">
         <div class="detail-item">
           <div class="detail-icon">
-            <v-icon :size="18" :color="getSpeciesIconColor(pet.speciesId)" :icon="getSpeciesIcon(pet.speciesId)" />
+            <v-icon :size="18" :color="getSpeciesIconColor(pet.petOrder)" :icon="getSpeciesIcon(pet.petOrder)" />
           </div>
-          <span class="detail-text">{{ getSpeciesName(pet.speciesId) }}</span>
+          <span class="detail-text">{{ pet.species || '알 수 없음' }}</span>
         </div>
         
         <!-- 성별 -->
@@ -116,7 +116,6 @@
 
 <script>
 import { computed } from 'vue'
-import { usePetStore } from '@/stores/pet'
 
 export default {
   name: 'PetCard',
@@ -135,41 +134,22 @@ export default {
   emits: ['view-details', 'edit', 'delete', 'set-representative'],
   
   setup(props) {
-    const petStore = usePetStore()
-    
     // 계산된 속성
     const isRepresentative = computed(() => {
       return props.representativePet && props.representativePet.id === props.pet.id
     })
     
-    // 유틸리티 함수들
-    const getSpeciesName = (speciesId) => {
-      if (speciesId) {
-        const species = petStore.getSpeciesById(speciesId)
-        return species ? species.species : '알 수 없음'
-      }
-      return '알 수 없음'
-    }
-    
-    // 종류에 따른 아이콘 반환
-    const getSpeciesIcon = (speciesId) => {
-      if (speciesId) {
-        const species = petStore.getSpeciesById(speciesId)
-        if (species && species.petOrder === 'DOG') return 'mdi-dog'
-        if (species && species.petOrder === 'CAT') return 'mdi-cat'
-        return 'mdi-paw'
-      }
+    // 종류에 따른 아이콘 반환 (백엔드 응답의 petOrder 직접 사용)
+    const getSpeciesIcon = (petOrder) => {
+      if (petOrder === '강아지') return 'mdi-dog'
+      if (petOrder === '고양이') return 'mdi-cat'
       return 'mdi-paw'
     }
 
-    // 종류에 따른 아이콘 색상 반환
-    const getSpeciesIconColor = (speciesId) => {
-      if (speciesId) {
-        const species = petStore.getSpeciesById(speciesId)
-        if (species && species.petOrder === 'DOG') return 'primary'
-        if (species && species.petOrder === 'CAT') return 'secondary'
-        return 'info'
-      }
+    // 종류에 따른 아이콘 색상 반환 (백엔드 응답의 petOrder 직접 사용)
+    const getSpeciesIconColor = (petOrder) => {
+      if (petOrder === '강아지') return 'primary'
+      if (petOrder === '고양이') return 'secondary'
       return 'info'
     }
 
@@ -181,7 +161,6 @@ export default {
 
     return {
       isRepresentative,
-      getSpeciesName,
       getSpeciesIcon,
       getSpeciesIconColor,
       formatBirthday

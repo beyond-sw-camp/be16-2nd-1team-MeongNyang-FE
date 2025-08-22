@@ -355,86 +355,51 @@ export const marketAPI = {
 export const petAPI = {
   // 반려동물 등록
   register: async (petData, petImg) => {
-    // 이미지가 없으면 JSON으로만 전송
-    if (!petImg) {
-      console.log('이미지 없음 - JSON으로만 전송')
-      return await apiClient.post('/pets/register', petData, {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
-    }
+    console.log('=== 반려동물 등록 시작 ===')
+    console.log('petData:', petData)
+    console.log('petImg:', petImg)
     
-    // 이미지가 있으면 FormData로 전송
+    // 백엔드가 기대하는 multipart/form-data 구조로 전송
     const formData = new FormData()
     
-    // PetRegisterReq를 JSON 문자열로 전송
-    formData.append('PetRegisterReq', JSON.stringify(petData))
+    // PetRegisterReq를 JSON Blob으로 추가 (Spring Boot @RequestPart 방식)
+    const petDataBlob = new Blob([JSON.stringify(petData)], {
+      type: 'application/json'
+    })
+    formData.append('PetRegisterReq', petDataBlob)
     
-    // 이미지 파일 추가 (백엔드 @RequestPart("url")와 맞춤)
-    formData.append('url', petImg)
+    // 이미지 파일 추가 (선택사항) - 다시 활성화
+    if (petImg) {
+      // 백엔드 Pet.java의 @RequestPart 어노테이션에 맞는 필드명 시도
+      formData.append('url', petImg)  // Pet.java에서 petProfileUrl = req.getUrl()이므로
+      console.log('✅ 이미지 파일 추가됨 (url 필드):', petImg.name, petImg.size, 'bytes')
+    }
     
     // FormData 디버깅
-    console.log('=== FormData Debug ===')
-    console.log('Original petData:', petData)
-    console.log('FormData contents:')
+    console.log('=== FormData 구조 ===')
     for (let [key, value] of formData.entries()) {
-      console.log(`${key}:`, value, typeof value)
-      if (key === 'PetRegisterReq') {
-        try {
-          const parsed = JSON.parse(value)
-          console.log('Parsed PetRegisterReq:', parsed)
-        } catch (e) {
-          console.log('Failed to parse PetRegisterReq:', e)
-        }
+      console.log(`${key}:`, value)
+      if (value instanceof Blob) {
+        console.log(`  - Blob type: ${value.type}`)
+        console.log(`  - Blob size: ${value.size}`)
+      }
+      if (value instanceof File) {
+        console.log(`  - File name: ${value.name}`)
+        console.log(`  - File type: ${value.type}`)
+        console.log(`  - File size: ${value.size}`)
       }
     }
-    console.log('=== End FormData Debug ===')
-    
-    console.log('=== API 요청 시작 ===')
-    console.log('요청 URL:', '/pets/register')
-    console.log('요청 헤더:', { 'Content-Type': undefined })
     
     try {
       const response = await apiClient.post('/pets/register', formData, {
         headers: {
-          'Content-Type': undefined // 명시적으로 undefined로 설정
+          'Content-Type': 'multipart/form-data'
         }
       })
-      
-      console.log('=== API 응답 성공 ===')
-      console.log('응답 상태:', response.status)
-      console.log('응답 헤더:', response.headers)
-      console.log('응답 데이터:', response.data)
-      console.log('응답 데이터 타입:', typeof response.data)
-      console.log('응답 데이터 키들:', Object.keys(response.data))
-      
-      // 백엔드 응답 구조 상세 분석
-      if (response.data) {
-        console.log('=== 백엔드 응답 구조 분석 ===')
-        console.log('response.data.success:', response.data.success)
-        console.log('response.data.isSuccess:', response.data.isSuccess)
-        console.log('response.data.message:', response.data.message)
-        console.log('response.data.data:', response.data.data)
-        console.log('response.data.status:', response.data.status)
-        
-        if (response.data.status) {
-          console.log('response.data.status.code:', response.data.status.code)
-          console.log('response.data.status.message:', response.data.status.message)
-        }
-        console.log('=== 백엔드 응답 구조 분석 완료 ===')
-      }
-      
+      console.log('✅ FormData 등록 성공:', response.data)
       return response
     } catch (error) {
-      console.log('=== API 요청 실패 ===')
-      console.log('에러 객체:', error)
-      console.log('에러 응답:', error.response)
-      if (error.response) {
-        console.log('에러 응답 상태:', error.response.status)
-        console.log('에러 응답 데이터:', error.response.data)
-        console.log('에러 응답 헤더:', error.response.headers)
-      }
+      console.log('❌ FormData 등록 실패:', error.response?.data)
       throw error
     }
   },
@@ -456,104 +421,52 @@ export const petAPI = {
   
   // 반려동물 수정
   update: async (petId, petData, petImg) => {
-    // 이미지가 없으면 JSON으로만 전송
-    if (!petImg) {
-      console.log('이미지 없음 - JSON으로만 전송')
-      return await apiClient.put(`/pets/${petId}`, petData, {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
-    }
+    console.log('=== 반려동물 수정 시작 ===')
+    console.log('petId:', petId)
+    console.log('petData:', petData)
+    console.log('petImg:', petImg)
     
-    // 이미지가 있으면 FormData로 전송
+    // 백엔드가 기대하는 multipart/form-data 구조로 전송
     const formData = new FormData()
     
-    // PetRegisterReq를 JSON 문자열로 전송
-    formData.append('PetRegisterReq', JSON.stringify(petData))
+    // PetRegisterReq를 JSON Blob으로 추가 (Spring Boot @RequestPart 방식)
+    const petDataBlob = new Blob([JSON.stringify(petData)], {
+      type: 'application/json'
+    })
+    formData.append('PetRegisterReq', petDataBlob)
     
-    // 이미지 파일 추가 (백엔드 @RequestPart("url")와 맞춤)
-    formData.append('url', petImg)
+    // 이미지 파일 추가 (선택사항) - 다시 활성화
+    if (petImg) {
+      // 백엔드 Pet.java의 @RequestPart 어노테이션에 맞는 필드명 시도
+      formData.append('url', petImg)  // Pet.java에서 petProfileUrl = req.getUrl()이므로
+      console.log('✅ 수정 시 이미지 파일 추가됨 (url 필드):', petImg.name, petImg.size, 'bytes')
+    }
     
     // FormData 디버깅
-    console.log('=== FormData Debug (UPDATE) ===')
-    console.log('수정할 petId:', petId)
-    console.log('Original petData:', petData)
-    console.log('FormData contents:')
+    console.log('=== FormData 구조 (UPDATE) ===')
     for (let [key, value] of formData.entries()) {
-      console.log(`${key}:`, value, typeof value)
-      if (key === 'PetRegisterReq') {
-        try {
-          const parsed = JSON.parse(value)
-          console.log('Parsed PetRegisterReq:', parsed)
-        } catch (e) {
-          console.log('Failed to parse PetRegisterReq:', e)
-        }
+      console.log(`${key}:`, value)
+      if (value instanceof Blob) {
+        console.log(`  - Blob type: ${value.type}`)
+        console.log(`  - Blob size: ${value.size}`)
       }
-      if (key === 'petImg') {
-        console.log('=== 이미지 파일 상세 정보 ===')
-        console.log('파일 이름:', value.name)
-        console.log('파일 크기:', value.size, 'bytes')
-        console.log('파일 타입:', value.type)
-        console.log('파일 마지막 수정:', value.lastModified)
-        console.log('=== 이미지 파일 상세 정보 완료 ===')
+      if (value instanceof File) {
+        console.log(`  - File name: ${value.name}`)
+        console.log(`  - File type: ${value.type}`)
+        console.log(`  - File size: ${value.size}`)
       }
     }
-    console.log('=== End FormData Debug (UPDATE) ===')
-    
-    console.log('=== UPDATE API 요청 시작 ===')
-    console.log('요청 URL:', `/pets/${petId}`)
-    console.log('요청 헤더:', { 'Content-Type': undefined })
     
     try {
       const response = await apiClient.put(`/pets/${petId}`, formData, {
         headers: {
-          'Content-Type': undefined // 명시적으로 undefined로 설정
+          'Content-Type': 'multipart/form-data'
         }
       })
-      
-      console.log('=== UPDATE API 응답 성공 ===')
-      console.log('응답 상태:', response.status)
-      console.log('응답 헤더:', response.headers)
-      console.log('응답 데이터:', response.data)
-      console.log('응답 데이터 타입:', typeof response.data)
-      console.log('응답 데이터 키들:', Object.keys(response.data))
-      
-              // 백엔드 응답 구조 상세 분석
-        if (response.data) {
-          console.log('=== UPDATE 백엔드 응답 구조 분석 ===')
-          console.log('response.data.success:', response.data.success)
-          console.log('response.data.isSuccess:', response.data.isSuccess)
-          console.log('response.data.message:', response.data.message)
-          console.log('response.data.data:', response.data.data)
-          console.log('response.data.status:', response.data.status)
-          
-          if (response.data.status) {
-            console.log('response.data.status.code:', response.data.status.code)
-            console.log('response.data.status.message:', response.data.status.message)
-          }
-          
-          // 백엔드 응답 전체 구조 상세 분석
-          console.log('=== 백엔드 응답 전체 구조 ===')
-          console.log('전체 response.data:', JSON.stringify(response.data, null, 2))
-          console.log('response.data 키들:', Object.keys(response.data))
-          console.log('response.data.data 타입:', typeof response.data.data)
-          console.log('response.data.data 내용:', response.data.data)
-          console.log('=== 백엔드 응답 전체 구조 완료 ===')
-          
-          console.log('=== UPDATE 백엔드 응답 구조 분석 완료 ===')
-        }
-      
+      console.log('✅ FormData 수정 성공:', response.data)
       return response
     } catch (error) {
-      console.log('=== UPDATE API 요청 실패 ===')
-      console.log('에러 객체:', error)
-      console.log('에러 응답:', error.response)
-      if (error.response) {
-        console.log('에러 응답 상태:', error.response.status)
-        console.log('에러 응답 데이터:', error.response.data)
-        console.log('에러 응답 헤더:', error.response.headers)
-      }
+      console.log('❌ FormData 수정 실패:', error.response?.data)
       throw error
     }
   },

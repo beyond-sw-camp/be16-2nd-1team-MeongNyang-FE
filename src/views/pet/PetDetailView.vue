@@ -29,7 +29,7 @@
                   class="pet-image"
                 />
                 <div v-else class="avatar-placeholder">
-                  <v-icon :size="80" :color="getSpeciesIconColor(pet.speciesId)" :icon="getSpeciesIcon(pet.speciesId)" />
+                  <v-icon :size="80" :color="getSpeciesIconColor(pet.petOrder)" :icon="getSpeciesIcon(pet.petOrder)" />
                 </div>
               </v-avatar>
               
@@ -44,7 +44,7 @@
           <div class="pet-info-header">
             <h1 class="pet-name">{{ petName }}</h1>
             <div class="pet-species">
-              <v-icon :size="24" :color="getSpeciesIconColor(pet.speciesId)" :icon="getSpeciesIcon(pet.speciesId)" />
+              <v-icon :size="24" :color="getSpeciesIconColor(pet.petOrder)" :icon="getSpeciesIcon(pet.petOrder)" />
               <span>{{ petSpecies }}</span>
             </div>
             <p class="pet-description">{{ petDescription }}</p>
@@ -109,11 +109,11 @@
           
           <div class="info-card">
             <div class="card-icon">
-              <v-icon :size="28" :color="getSpeciesIconColor(pet.speciesId)" :icon="getSpeciesIcon(pet.speciesId)" />
+              <v-icon :size="28" :color="getSpeciesIconColor(pet.petOrder)" :icon="getSpeciesIcon(pet.petOrder)" />
             </div>
             <div class="card-content">
               <h3 class="card-label">종류</h3>
-              <p class="card-value">{{ getSpeciesName(pet.speciesId) }}</p>
+              <p class="card-value">{{ pet.species || '알 수 없음' }}</p>
             </div>
           </div>
           
@@ -161,6 +161,8 @@
               <p class="card-value">{{ formatBirthday(pet.birthday) }}</p>
             </div>
           </div>
+          
+
         </div>
       </div>
 
@@ -342,10 +344,26 @@ const isRepresentative = computed(() => {
 })
 
 const petName = computed(() => pet.value?.name || '알 수 없음')
-const petSpecies = computed(() => pet.value?.speciesId ? getSpeciesName(pet.value.speciesId) : '알 수 없음')
+const petSpecies = computed(() => pet.value?.species || '알 수 없음')
 const petDescription = computed(() => {
   if (!pet.value) return ''
-  return `${pet.value.name}와(과) 함께하는 특별한 순간들을 기록해보세요`
+  
+  // 소개글이 있으면 소개글 표시, 없으면 기본 메시지
+  if (pet.value.introduce && pet.value.introduce.trim() && pet.value.introduce !== '1') {
+    return pet.value.introduce
+  }
+  
+  // 기본 메시지 (더 따뜻하고 개성 있는 메시지)
+  const defaultMessages = [
+    `${pet.value.name}와(과) 함께하는 특별한 순간들을 기록해보세요`,
+    `${pet.value.name}와(과)의 행복한 일상을 담아보세요`,
+    `${pet.value.name}와(과) 함께하는 소중한 추억을 만들어가요`,
+    `${pet.value.name}와(과)의 사랑스러운 모습을 기록해보세요`
+  ]
+  
+  // 랜덤하게 기본 메시지 선택
+  const randomIndex = Math.floor(Math.random() * defaultMessages.length)
+  return defaultMessages[randomIndex]
 })
 
 // 계산된 속성
@@ -464,34 +482,17 @@ const showMessage = (message, type = 'success') => {
   showSnackbar.value = true
 }
 
-// 유틸리티 함수들
-const getSpeciesName = (speciesId) => {
-  if (speciesId) {
-    const species = petStore.getSpeciesById(speciesId)
-    return species ? species.species : '알 수 없음'
-  }
-  return '알 수 없음'
-}
-
-// 종류에 따른 아이콘 반환
-const getSpeciesIcon = (speciesId) => {
-  if (speciesId) {
-    const species = petStore.getSpeciesById(speciesId)
-    if (species && species.petOrder === 'DOG') return 'mdi-dog'
-    if (species && species.petOrder === 'CAT') return 'mdi-cat'
-    return 'mdi-paw'
-  }
+// 종류에 따른 아이콘 반환 (백엔드 응답의 petOrder 직접 사용)
+const getSpeciesIcon = (petOrder) => {
+  if (petOrder === '강아지') return 'mdi-dog'
+  if (petOrder === '고양이') return 'mdi-cat'
   return 'mdi-paw'
 }
 
-// 종류에 따른 아이콘 색상 반환
-const getSpeciesIconColor = (speciesId) => {
-  if (speciesId) {
-    const species = petStore.getSpeciesById(speciesId)
-    if (species && species.petOrder === 'DOG') return 'primary'
-    if (species && species.petOrder === 'CAT') return 'secondary'
-    return 'info'
-  }
+// 종류에 따른 아이콘 색상 반환 (백엔드 응답의 petOrder 직접 사용)
+const getSpeciesIconColor = (petOrder) => {
+  if (petOrder === '강아지') return 'primary'
+  if (petOrder === '고양이') return 'secondary'
   return 'info'
 }
 
@@ -1157,4 +1158,6 @@ onMounted(async () => {
 .v-card-title .v-icon {
   margin-right: 8px;
 }
+
+
 </style>

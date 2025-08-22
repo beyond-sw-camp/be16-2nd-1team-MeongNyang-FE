@@ -104,8 +104,8 @@
             <h3 class="pet-name">{{ representativePet.name }}</h3>
             <div class="pet-details">
               <div class="detail-item">
-                <v-icon :size="20" :color="getSpeciesIconColor(representativePet.speciesId)" :icon="getSpeciesIcon(representativePet.speciesId)" />
-                <span>{{ getSpeciesName(representativePet.speciesId) }}</span>
+                <v-icon :size="20" :color="getSpeciesIconColor(representativePet.petOrder)" :icon="getSpeciesIcon(representativePet.petOrder)" />
+                <span>{{ representativePet.species || '알 수 없음' }}</span>
               </div>
               <div class="detail-item">
                 <v-icon size="20" color="orange">mdi-cake-variant</v-icon>
@@ -194,7 +194,6 @@
     <v-dialog
       v-model="showAddForm"
       max-width="800"
-      persistent
       class="pet-form-dialog"
     >
       <v-card class="pet-form-card mm-card" rounded="xl">
@@ -346,34 +345,17 @@ export default {
     // 반려동물 목록 (필터링 없음)
     const filteredPets = computed(() => pets.value)
     
-    // 유틸리티 함수들
-    const getSpeciesName = (speciesId) => {
-      if (speciesId) {
-        const species = petStore.getSpeciesById(speciesId)
-        return species ? species.species : '알 수 없음'
-      }
-      return '알 수 없음'
-    }
-
-    // 종류에 따른 아이콘 반환
-    const getSpeciesIcon = (speciesId) => {
-      if (speciesId) {
-        const species = petStore.getSpeciesById(speciesId)
-        if (species && species.petOrder === 'DOG') return 'mdi-dog'
-        if (species && species.petOrder === 'CAT') return 'mdi-cat'
-        return 'mdi-paw'
-      }
+    // 종류에 따른 아이콘 반환 (백엔드 응답의 petOrder 직접 사용)
+    const getSpeciesIcon = (petOrder) => {
+      if (petOrder === '강아지') return 'mdi-dog'
+      if (petOrder === '고양이') return 'mdi-cat'
       return 'mdi-paw'
     }
 
-    // 종류에 따른 아이콘 색상 반환
-    const getSpeciesIconColor = (speciesId) => {
-      if (speciesId) {
-        const species = petStore.getSpeciesById(speciesId)
-        if (species && species.petOrder === 'DOG') return 'primary'
-        if (species && species.petOrder === 'CAT') return 'secondary'
-        return 'info'
-      }
+    // 종류에 따른 아이콘 색상 반환 (백엔드 응답의 petOrder 직접 사용)
+    const getSpeciesIconColor = (petOrder) => {
+      if (petOrder === '강아지') return 'primary'
+      if (petOrder === '고양이') return 'secondary'
       return 'info'
     }
 
@@ -387,18 +369,18 @@ export default {
       router.push(`/pets/${pet.id}`)
     }
     
-    // 통계 카드용 함수들
-    const getDogCount = () => {
-      return pets.value.filter(pet => 
-        pet.speciesId && petStore.getSpeciesById(pet.speciesId)?.petOrder === 'DOG'
-      ).length
-    }
+    // 통계 카드용 계산된 속성들 (백엔드 응답의 petOrder 직접 사용)
+    const dogCount = computed(() => {
+      return pets.value.filter(pet => pet.petOrder === '강아지').length
+    })
     
-    const getCatCount = () => {
-      return pets.value.filter(pet => 
-        pet.speciesId && petStore.getSpeciesById(pet.speciesId)?.petOrder === 'CAT'
-      ).length
-    }
+    const catCount = computed(() => {
+      return pets.value.filter(pet => pet.petOrder === '고양이').length
+    })
+    
+    // 호환성을 위한 함수들 (템플릿에서 함수 호출로 사용)
+    const getDogCount = () => dogCount.value
+    const getCatCount = () => catCount.value
     
 
     
@@ -535,7 +517,6 @@ export default {
       
       // 메서드
       getGenderLabel,
-      getSpeciesName,
       getSpeciesIcon,
       getSpeciesIconColor,
       formatDate,
