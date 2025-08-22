@@ -424,6 +424,7 @@ import axios from 'axios'
 import FileGrid from './FileGrid.vue'
 import { userAPI } from '@/services/api'
 import { useRouter } from 'vue-router'
+import { inject } from 'vue'
 
 export default {
   name: 'ChatRoom',
@@ -439,6 +440,7 @@ export default {
   setup(props) {
     const chatStore = useChatStore()
     const router = useRouter()
+    const showMessage = inject('showMessage', null)
     
     // 반응형 데이터
     const participants = ref([])
@@ -1007,14 +1009,16 @@ export default {
         // 채팅방 목록 새로고침 (백엔드에서 최신 상태 가져오기)
         await chatStore.fetchChatRoomList();
         
+        // 성공 메시지를 부모 컴포넌트로 전달
+        if (showMessage) {
+          showMessage({
+            type: 'success',
+            text: '채팅방에서 나갔습니다.'
+          });
+        }
+        
         // 채팅방 나가기 후 채팅방 목록으로 리다이렉트
         router.push({ name: 'Chat' });
-        
-        // 성공 메시지를 localStorage에 저장하여 부모 컴포넌트에서 표시
-        localStorage.setItem('chatLeaveMessage', JSON.stringify({
-          type: 'success',
-          text: '채팅방에서 나갔습니다.'
-        }));
         
       } catch (error) {
         console.error('채팅방 나가기 실패:', error);

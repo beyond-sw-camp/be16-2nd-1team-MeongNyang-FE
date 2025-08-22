@@ -21,6 +21,7 @@
 import ChatList from '@/components/chat/ChatList.vue'
 import GlobalSnackbar from '@/components/ui/global/GlobalSnackbar.vue'
 import { useSnackbar } from '@/composables/useSnackbar'
+import { provide } from 'vue'
 
 export default {
   name: 'ChatView',
@@ -31,29 +32,21 @@ export default {
   setup() {
     const { showSnackbar } = useSnackbar()
     
-    // 채팅방 나가기 메시지 확인
-    const checkLeaveMessage = () => {
-      const leaveMessage = localStorage.getItem('chatLeaveMessage')
-      if (leaveMessage) {
-        try {
-          const message = JSON.parse(leaveMessage)
-          showSnackbar(message.text, message.type)
-          localStorage.removeItem('chatLeaveMessage')
-        } catch (error) {
-          console.error('메시지 파싱 실패:', error)
-          localStorage.removeItem('chatLeaveMessage')
-        }
-      }
+    // showMessage 함수를 provide로 제공
+    const showMessage = (message) => {
+      showSnackbar(message.text, message.type)
     }
     
+    // provide를 통해 showMessage 함수 제공
+    provide('showMessage', showMessage)
+    
     return {
-      showSnackbar,
-      checkLeaveMessage
+      showSnackbar
     }
   },
   mounted() {
     // 컴포넌트 마운트 시 채팅방 나가기 메시지 확인
-    this.checkLeaveMessage()
+    // this.checkLeaveMessage() // Removed as per edit hint
   },
   methods: {
     onChatSelected(roomId) {
