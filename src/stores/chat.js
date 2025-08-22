@@ -98,7 +98,8 @@ export const useChatStore = defineStore('chat', {
 
     async leaveRoom(roomId) {
       try {
-        await chatAPI.leaveRoom(roomId)
+        // 백엔드 API 호출은 이미 ChatRoom 컴포넌트에서 완료됨
+        // 여기서는 로컬 상태만 정리
         
         // 현재 채팅방에서 나가는 경우 상태 정리
         if (this.currentRoom?.id === roomId) {
@@ -112,7 +113,7 @@ export const useChatStore = defineStore('chat', {
         
         return true
       } catch (error) {
-        console.error('채팅방 나가기 실패:', error)
+        console.error('채팅방 상태 정리 실패:', error)
         throw error
       }
     },

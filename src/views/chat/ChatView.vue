@@ -31,9 +31,29 @@ export default {
   setup() {
     const { showSnackbar } = useSnackbar()
     
-    return {
-      showSnackbar
+    // 채팅방 나가기 메시지 확인
+    const checkLeaveMessage = () => {
+      const leaveMessage = localStorage.getItem('chatLeaveMessage')
+      if (leaveMessage) {
+        try {
+          const message = JSON.parse(leaveMessage)
+          showSnackbar(message.text, message.type)
+          localStorage.removeItem('chatLeaveMessage')
+        } catch (error) {
+          console.error('메시지 파싱 실패:', error)
+          localStorage.removeItem('chatLeaveMessage')
+        }
+      }
     }
+    
+    return {
+      showSnackbar,
+      checkLeaveMessage
+    }
+  },
+  mounted() {
+    // 컴포넌트 마운트 시 채팅방 나가기 메시지 확인
+    this.checkLeaveMessage()
   },
   methods: {
     onChatSelected(roomId) {

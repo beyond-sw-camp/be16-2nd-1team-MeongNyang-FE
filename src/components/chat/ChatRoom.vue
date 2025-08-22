@@ -423,6 +423,7 @@ import Stomp from 'webstomp-client'
 import axios from 'axios'
 import FileGrid from './FileGrid.vue'
 import { userAPI } from '@/services/api'
+import { useRouter } from 'vue-router'
 
 export default {
   name: 'ChatRoom',
@@ -437,6 +438,7 @@ export default {
   },
   setup(props) {
     const chatStore = useChatStore()
+    const router = useRouter()
     
     // 반응형 데이터
     const participants = ref([])
@@ -991,17 +993,29 @@ export default {
 
     const leaveRoom = async () => {
       try {
+        // 백엔드 API로 채팅방 나가기
         await axios.delete(`${process.env.VUE_APP_API_BASE_URL}/chat-rooms/${props.roomId}/participants/me`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
           }
         });
         console.log(`채팅방 ${props.roomId}에서 나갔습니다.`);
-        // 채팅방 나가기 후 페이지 이동 또는 새로고침
-        // 현재 페이지에서 채팅방 목록으로 이동하거나, 메인 페이지로 이동
-        // 예: this.$router.push('/chat-rooms')
-        // 또는 현재 페이지를 새로고침하여 채팅방 목록을 다시 로드
-        window.location.reload(); 
+        
+        // 채팅 스토어에서도 채팅방 제거
+        await chatStore.leaveRoom(props.roomId);
+        
+        // 채팅방 목록 새로고침 (백엔드에서 최신 상태 가져오기)
+        await chatStore.fetchChatRoomList();
+        
+        // 채팅방 나가기 후 채팅방 목록으로 리다이렉트
+        router.push({ name: 'Chat' });
+        
+        // 성공 메시지를 localStorage에 저장하여 부모 컴포넌트에서 표시
+        localStorage.setItem('chatLeaveMessage', JSON.stringify({
+          type: 'success',
+          text: '채팅방에서 나갔습니다.'
+        }));
+        
       } catch (error) {
         console.error('채팅방 나가기 실패:', error);
         if (error.response && error.response.data && error.response.data.message) {
