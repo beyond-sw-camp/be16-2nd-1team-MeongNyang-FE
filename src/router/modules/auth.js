@@ -27,5 +27,21 @@ export default [
     name: 'UnlockAccount',
     component: UnlockAccountView,
     meta: { requiresAuth: false }
-  }
+  },
+{
+  path: '/auth/oauth/link',
+  name: 'oauth-link',
+  component: () => import('@/views/auth/OAuthLinkDecision.vue'),
+},
+{
+  path: '/auth/signup-extra',
+  name: 'signup-extra',
+  component: () => import('@/views/auth/SignupExtra.vue'),
+},
+{
+  path: '/oauth/:provider(google|kakao)/redirect/:_tail(.*)?',
+  name: 'oauth-callback-any',
+  component: () => import('@/views/auth/OAuthCallback.vue'),
+  meta: { public: true },
+},
 ]

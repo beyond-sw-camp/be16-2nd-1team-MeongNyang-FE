@@ -537,5 +537,13 @@
       "updated": "2025-08-15T16:33:34.342Z",
       "description": "Tasks for master context"
     }
+  },
+  "phase1-auth": {
+    "tasks": [],
+    "metadata": {
+      "created": "2025-08-21T05:05:08.488Z",
+      "updated": "2025-08-21T05:05:08.488Z",
+      "description": "Phase 1: 핵심 인증 완성 작업"
+    }
   }
 }

@@ -1,26 +1,29 @@
 <template>
-  <div class="pet-card" :class="{ 'is-representative': isRepresentative }">
-    <!-- 반려동물 사진 영역 -->
-    <div class="pet-image-container">
-      <div class="pet-image-placeholder">
-        <v-icon size="48" color="primary" class="pet-icon">mdi-dog</v-icon>
-      </div>
-      <div class="pet-status-badges">
-        <v-chip
-          v-if="isRepresentative"
-          size="small"
-          color="primary"
-          variant="elevated"
-          class="representative-badge"
-        >
-          <v-icon size="16" class="me-1">mdi-star</v-icon>
-          대표
-        </v-chip>
+  <div class="pet-card mm-card mm-hover-lift" :class="{ 'is-representative': isRepresentative }">
+    <!-- 반려동물 이미지 영역 -->
+    <div class="pet-image-section">
+      <div class="image-container">
+        <v-img
+          v-if="pet.url"
+          :src="pet.url"
+          :alt="pet.name"
+          cover
+          class="pet-image"
+        />
+        <div v-else class="image-placeholder">
+          <v-icon :size="48" :color="getSpeciesIconColor(pet.speciesId)" :icon="getSpeciesIcon(pet.speciesId)" />
+        </div>
+        
+        <!-- 대표 반려동물 배지 -->
+        <div v-if="isRepresentative" class="representative-badge">
+          <v-icon color="amber" size="16">mdi-star</v-icon>
+          <span>대표</span>
+        </div>
       </div>
     </div>
 
     <!-- 반려동물 정보 영역 -->
-    <div class="pet-info">
+    <div class="pet-info-section">
       <div class="pet-header">
         <h3 class="pet-name">{{ pet.name }}</h3>
         <div class="pet-actions">
@@ -29,10 +32,19 @@
             icon="mdi-star-outline"
             variant="text"
             size="small"
-            color="primary"
+            color="amber"
             @click="$emit('set-representative', pet)"
             class="action-btn"
             aria-label="대표 반려동물로 설정"
+          />
+          <v-btn
+            icon="mdi-eye"
+            variant="text"
+            size="small"
+            color="primary"
+            @click="$emit('view-details', pet)"
+            class="action-btn"
+            aria-label="반려동물 상세보기"
           />
           <v-btn
             icon="mdi-pencil"
@@ -58,48 +70,45 @@
       </div>
 
       <div class="pet-details">
-        <div class="detail-row">
-          <v-icon size="16" color="primary" class="detail-icon">mdi-dog</v-icon>
-          <span class="detail-text">{{ getSpeciesName(pet.speciesId, pet.species) }}</span>
+        <div class="detail-item">
+          <div class="detail-icon">
+            <v-icon :size="18" :color="getSpeciesIconColor(pet.speciesId)" :icon="getSpeciesIcon(pet.speciesId)" />
+          </div>
+          <span class="detail-text">{{ getSpeciesName(pet.speciesId) }}</span>
         </div>
         
-        <div class="detail-row">
-          <v-icon size="16" color="secondary" class="detail-icon">
-            {{ pet.gender === 'MALE' ? 'mdi-gender-male' : 'mdi-gender-female' }}
-          </v-icon>
+        <!-- 성별 -->
+        <div class="detail-item">
+          <div class="detail-icon">
+            <v-icon 
+              size="18" 
+              :color="pet.gender === 'MALE' ? 'blue' : 'red'" 
+              :icon="pet.gender === 'MALE' ? 'mdi-gender-male' : 'mdi-gender-female'" 
+            />
+          </div>
           <span class="detail-text">{{ pet.gender === 'MALE' ? '수컷' : '암컷' }}</span>
         </div>
         
-        <div class="detail-row">
-          <v-icon size="16" color="info" class="detail-icon">mdi-cake-variant</v-icon>
+        <div class="detail-item">
+          <div class="detail-icon">
+            <v-icon size="18" color="orange">mdi-cake-variant</v-icon>
+          </div>
           <span class="detail-text">{{ pet.age }}살</span>
         </div>
         
-        <div class="detail-row">
-          <v-icon size="16" color="warning" class="detail-icon">mdi-weight</v-icon>
+        <div class="detail-item">
+          <div class="detail-icon">
+            <v-icon size="18" color="teal">mdi-weight</v-icon>
+          </div>
           <span class="detail-text">{{ pet.weight }}kg</span>
         </div>
         
-        <div class="detail-row">
-          <v-icon size="16" color="success" class="detail-icon">mdi-calendar</v-icon>
+        <div class="detail-item">
+          <div class="detail-icon">
+            <v-icon size="18" color="indigo">mdi-calendar</v-icon>
+          </div>
           <span class="detail-text">{{ formatBirthday(pet.birthday) }}</span>
         </div>
-      </div>
-    </div>
-
-    <!-- 호버 오버레이 -->
-    <div class="pet-card-overlay">
-      <div class="overlay-content">
-        <v-btn
-          color="primary"
-          variant="elevated"
-          size="large"
-          @click="$emit('view-details', pet)"
-          class="view-details-btn"
-        >
-          <v-icon class="me-2">mdi-eye</v-icon>
-          상세보기
-        </v-btn>
       </div>
     </div>
   </div>
@@ -107,9 +116,11 @@
 
 <script>
 import { computed } from 'vue'
+import { usePetStore } from '@/stores/pet'
 
 export default {
   name: 'PetCard',
+  
   props: {
     pet: {
       type: Object,
@@ -121,19 +132,45 @@ export default {
     }
   },
   
-  emits: ['set-representative', 'edit', 'delete', 'view-details'],
+  emits: ['view-details', 'edit', 'delete', 'set-representative'],
   
   setup(props) {
+    const petStore = usePetStore()
+    
+    // 계산된 속성
     const isRepresentative = computed(() => {
-      return props.representativePet && props.pet.id === props.representativePet.id
+      return props.representativePet && props.representativePet.id === props.pet.id
     })
-
-    const getSpeciesName = (speciesId, petSpecies = null) => {
+    
+    // 유틸리티 함수들
+    const getSpeciesName = (speciesId) => {
       if (speciesId) {
-        // TODO: store에서 species 조회
-        return petSpecies || '알 수 없음'
+        const species = petStore.getSpeciesById(speciesId)
+        return species ? species.species : '알 수 없음'
       }
-      return petSpecies || '알 수 없음'
+      return '알 수 없음'
+    }
+    
+    // 종류에 따른 아이콘 반환
+    const getSpeciesIcon = (speciesId) => {
+      if (speciesId) {
+        const species = petStore.getSpeciesById(speciesId)
+        if (species && species.petOrder === 'DOG') return 'mdi-dog'
+        if (species && species.petOrder === 'CAT') return 'mdi-cat'
+        return 'mdi-paw'
+      }
+      return 'mdi-paw'
+    }
+
+    // 종류에 따른 아이콘 색상 반환
+    const getSpeciesIconColor = (speciesId) => {
+      if (speciesId) {
+        const species = petStore.getSpeciesById(speciesId)
+        if (species && species.petOrder === 'DOG') return 'primary'
+        if (species && species.petOrder === 'CAT') return 'secondary'
+        return 'info'
+      }
+      return 'info'
     }
 
     const formatBirthday = (birthday) => {
@@ -145,6 +182,8 @@ export default {
     return {
       isRepresentative,
       getSpeciesName,
+      getSpeciesIcon,
+      getSpeciesIconColor,
       formatBirthday
     }
   }
@@ -153,227 +192,242 @@ export default {
 
 <style scoped>
 .pet-card {
-  position: relative;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%);
-  border-radius: 20px;
-  padding: 20px;
-  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  backdrop-filter: blur(20px);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
-  cursor: pointer;
-}
-
-.pet-card:hover {
-  transform: translateY(-8px) scale(1.02);
-  box-shadow: 0 20px 40px rgba(99, 102, 241, 0.15), 0 8px 16px rgba(15, 23, 42, 0.1);
-  border-color: rgba(99, 102, 241, 0.4);
+  position: relative;
+  transition: all var(--mm-transition-normal);
 }
 
 .pet-card.is-representative {
-  border-color: rgba(99, 102, 241, 0.6);
-  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.2);
+  border: 2px solid var(--v-theme-primary);
+  box-shadow: 0 0 20px rgba(var(--v-theme-primary), 0.2);
 }
 
-.pet-card.is-representative::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #6366F1, #818CF8, #A5B4FC);
-}
-
-/* 반려동물 사진 영역 */
-.pet-image-container {
+/* 이미지 섹션 */
+.pet-image-section {
   position: relative;
-  margin-bottom: 16px;
+  height: 200px;
+  overflow: hidden;
 }
 
-.pet-image-placeholder {
+.image-container {
+  position: relative;
   width: 100%;
-  height: 120px;
-  background: linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 100%);
-  border-radius: 16px;
+  height: 100%;
+}
+
+.pet-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--mm-transition-normal);
+}
+
+.pet-card:hover .pet-image {
+  transform: scale(1.05);
+}
+
+.image-placeholder {
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px dashed #CBD5E1;
-  transition: all 0.3s ease;
+  background: linear-gradient(135deg, var(--mm-surface-variant), var(--mm-border-light));
+  color: var(--mm-on-surface-variant);
 }
 
-.pet-card:hover .pet-image-placeholder {
-  border-color: #6366F1;
-  background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%);
-}
-
-.pet-status-badges {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-}
-
+/* 대표 반려동물 배지 */
 .representative-badge {
-  font-size: 0.75rem;
-  font-weight: 600;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+  position: absolute;
+  top: var(--mm-space-3);
+  right: var(--mm-space-3);
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: white;
+  border-radius: var(--mm-radius-full);
+  padding: var(--mm-space-2) var(--mm-space-3);
+  font-size: var(--mm-text-xs);
+  font-weight: var(--mm-font-weight-bold);
+  display: flex;
+  align-items: center;
+  gap: var(--mm-space-1);
+  box-shadow: var(--mm-shadow-md);
+  z-index: 2;
 }
 
-/* 반려동물 정보 영역 */
-.pet-info {
+/* 정보 섹션 */
+.pet-info-section {
   flex: 1;
+  padding: var(--mm-space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--mm-space-4);
 }
 
 .pet-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 16px;
+  gap: var(--mm-space-3);
 }
 
 .pet-name {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #1E293B;
+  font-size: var(--mm-text-xl);
+  font-weight: var(--mm-font-weight-bold);
+  color: var(--mm-on-surface);
   margin: 0;
   line-height: 1.2;
+  flex: 1;
 }
 
 .pet-actions {
   display: flex;
-  gap: 4px;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.pet-card:hover .pet-actions {
-  opacity: 1;
+  gap: var(--mm-space-1);
+  flex-shrink: 0;
 }
 
 .action-btn {
-  transition: all 0.2s ease;
+  padding: var(--mm-space-1);
+  border-radius: var(--mm-radius-md);
+  transition: all var(--mm-transition-fast);
 }
 
 .action-btn:hover {
+  background-color: rgba(var(--v-theme-primary), 0.1);
   transform: scale(1.1);
 }
 
-/* 반려동물 상세 정보 */
+/* 상세 정보 */
 .pet-details {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--mm-space-3);
+  flex: 1;
 }
 
-.detail-row {
+.detail-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--mm-space-3);
+  font-size: var(--mm-text-sm);
+  color: var(--mm-on-surface-variant);
 }
 
 .detail-icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(var(--v-theme-primary), 0.1);
+  border-radius: var(--mm-radius-md);
   flex-shrink: 0;
 }
 
 .detail-text {
-  font-size: 0.875rem;
-  color: #475569;
-  font-weight: 500;
-}
-
-/* 호버 오버레이 */
-.pet-card-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.9) 0%, rgba(129, 140, 248, 0.9) 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  border-radius: 20px;
-}
-
-.pet-card:hover .pet-card-overlay {
-  opacity: 1;
-}
-
-.overlay-content {
-  text-align: center;
-}
-
-.view-details-btn {
-  background: rgba(255, 255, 255, 0.95);
-  color: #6366F1;
-  font-weight: 600;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-}
-
-.view-details-btn:hover {
-  background: rgba(255, 255, 255, 1);
-  transform: scale(1.05);
+  font-weight: var(--mm-font-weight-medium);
+  line-height: 1.2;
 }
 
 /* 반응형 디자인 */
-@media (max-width: 600px) {
-  .pet-card {
-    padding: 16px;
-    border-radius: 16px;
+@media (max-width: 960px) {
+  .pet-image-section {
+    height: 180px;
+  }
+  
+  .pet-info-section {
+    padding: var(--mm-space-5);
+    gap: var(--mm-space-3);
   }
   
   .pet-name {
-    font-size: 1.125rem;
+    font-size: var(--mm-text-lg);
   }
   
-  .pet-image-placeholder {
-    height: 100px;
+  .detail-item {
+    font-size: var(--mm-text-xs);
+    gap: var(--mm-space-2);
+  }
+  
+  .detail-icon {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .pet-image-section {
+    height: 160px;
+  }
+  
+  .pet-info-section {
+    padding: var(--mm-space-4);
+  }
+  
+  .pet-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--mm-space-2);
   }
   
   .pet-actions {
-    opacity: 1;
+    justify-content: center;
+    gap: var(--mm-space-2);
+  }
+  
+  .action-btn {
+    padding: var(--mm-space-2);
+  }
+  
+  .detail-item {
+    justify-content: center;
   }
 }
 
-/* 다크 모드 지원 */
-@media (prefers-color-scheme: dark) {
-  .pet-card {
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(30, 41, 59, 0.85) 100%);
-    border-color: rgba(255, 255, 255, 0.1);
+@media (max-width: 480px) {
+  .pet-image-section {
+    height: 140px;
+  }
+  
+  .pet-info-section {
+    padding: var(--mm-space-3);
+    gap: var(--mm-space-2);
   }
   
   .pet-name {
-    color: #F8FAFC;
+    font-size: var(--mm-text-base);
+    text-align: center;
   }
   
-  .detail-text {
-    color: #CBD5E1;
+  .pet-actions {
+    gap: var(--mm-space-1);
   }
   
-  .pet-image-placeholder {
-    background: linear-gradient(135deg, #334155 0%, #475569 100%);
-    border-color: #64748B;
+  .action-btn {
+    padding: var(--mm-space-1);
   }
   
-  .pet-card:hover .pet-image-placeholder {
-    background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
-    border-color: #6366F1;
+  .detail-item {
+    font-size: var(--mm-text-xs);
+    gap: var(--mm-space-1);
   }
-}
-
-/* 모션 감소 설정 지원 */
-@media (prefers-reduced-motion: reduce) {
-  .pet-card,
-  .pet-card:hover,
-  .pet-card-overlay,
-  .action-btn,
-  .view-details-btn {
-    transition: none;
-    transform: none;
+  
+  .detail-icon {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .representative-badge {
+    top: var(--mm-space-2);
+    right: var(--mm-space-2);
+    padding: var(--mm-space-1) var(--mm-space-2);
+    font-size: 0.6rem;
+  }
+  
+  .representative-badge .v-icon {
+    font-size: 12px;
   }
 }
 </style>
