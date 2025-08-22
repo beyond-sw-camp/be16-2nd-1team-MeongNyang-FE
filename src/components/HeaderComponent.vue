@@ -82,8 +82,22 @@
             class="user-btn"
             v-bind="props"
           >
-            <v-avatar size="32" class="user-avatar">
-              <v-img v-if="user?.profileImage" :src="user.profileImage"></v-img>
+            <v-avatar 
+              size="32" 
+              class="user-avatar"
+              @click.stop="goToRepresentativePet"
+              style="cursor: pointer;"
+            >
+              <v-img 
+                v-if="representativePet?.url" 
+                :src="representativePet.url"
+                :alt="representativePet.name"
+              ></v-img>
+              <v-img 
+                v-else-if="user?.profileImage" 
+                :src="user.profileImage"
+                alt="사용자 프로필"
+              ></v-img>
               <v-icon v-else size="18">mdi-account</v-icon>
             </v-avatar>
             <span class="user-name">{{ user?.nickname || '사용자' }}</span>
@@ -242,18 +256,21 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { usePetStore } from '@/stores/pet'
 
 export default {
   name: 'HeaderComponent',
   setup() {
     const router = useRouter()
     const authStore = useAuthStore()
+    const petStore = usePetStore()
     const drawer = ref(false)
     
     
     const isLoggedIn = computed(() => authStore.isAuthenticated)
     const user = computed(() => authStore.user)
     const isAdmin = computed(() => user.value?.role === 'ADMIN')
+    const representativePet = computed(() => petStore.getRepresentativePet)
     
     const toggleDrawer = () => {
       drawer.value = !drawer.value
@@ -265,6 +282,14 @@ export default {
       drawer.value = false
     }
     
+    const goToRepresentativePet = () => {
+      if (representativePet.value?.id) {
+        router.push(`/pets/${representativePet.value.id}`)
+      } else {
+        router.push('/pets')
+      }
+    }
+    
     
     
     return {
@@ -272,8 +297,10 @@ export default {
       isLoggedIn,
       user,
       isAdmin,
+      representativePet,
       toggleDrawer,
-      handleLogout
+      handleLogout,
+      goToRepresentativePet
     }
   }
 }
