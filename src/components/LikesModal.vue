@@ -7,15 +7,32 @@
       
       <v-card-text class="modal-content">
         <div class="likes-list">
-          <div 
-            v-for="like in likesList" 
-            :key="like.id" 
-            class="like-item"
-          >
-            <v-avatar size="32" class="like-avatar">
-              <v-img :src="like.profileImage || 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=32&h=32&fit=crop&crop=center'"></v-img>
-            </v-avatar>
-            <span class="like-username">{{ like.username }}</span>
+          <!-- 좋아요 목록이 있을 때 -->
+          <template v-if="likesList.length > 0">
+            <div 
+              v-for="(like, index) in likesList" 
+              :key="index" 
+              class="like-item"
+            >
+              <v-avatar 
+                size="32" 
+                class="like-avatar clickable"
+                @click="goToUserDiary(like.userId)"
+              >
+                <v-img :src="like.profileImage || 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=32&h=32&fit=crop&crop=center'"></v-img>
+              </v-avatar>
+              <div class="like-info">
+                <span class="like-username clickable" @click="goToUserDiary(like.userId)">{{ like.petName || like.userName || like.username }}</span>
+                <span class="like-date">{{ like.date }}</span>
+              </div>
+            </div>
+          </template>
+          
+          <!-- 좋아요 목록이 없을 때 -->
+          <div v-else class="empty-likes">
+            <v-icon size="48" color="#CBD5E1">mdi-heart-outline</v-icon>
+            <p class="empty-text">아직 좋아요가 없습니다</p>
+            <p class="empty-subtext">첫 번째 좋아요를 눌러보세요!</p>
           </div>
         </div>
       </v-card-text>
@@ -60,6 +77,13 @@ export default {
   methods: {
     closeModal() {
       this.show = false
+    },
+    
+    // 사용자 다이어리로 이동하는 메서드
+    goToUserDiary(userId) {
+      if (userId) {
+        this.$router.push(`/diarys/${userId}`)
+      }
     }
   }
 }
@@ -116,10 +140,54 @@ export default {
   box-shadow: 0 2px 8px rgba(255, 139, 139, 0.2);
 }
 
+.like-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .like-username {
   font-weight: 600;
   font-size: 0.9rem;
   color: #1E293B;
+}
+
+.clickable {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.clickable:hover {
+  opacity: 0.8;
+  transform: scale(1.02);
+}
+
+.like-date {
+  font-size: 0.75rem;
+  color: #64748B;
+}
+
+/* 빈 상태 스타일 */
+.empty-likes {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.empty-text {
+  margin-top: 16px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #64748B;
+}
+
+.empty-subtext {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: #94A3B8;
 }
 
 .modal-actions {

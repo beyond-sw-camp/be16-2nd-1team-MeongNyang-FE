@@ -42,7 +42,7 @@
               </v-col>
               
               <v-col cols="12" sm="6" md="3">
-                <v-card class="stat-card stat-diary" @click="$router.push('/diary')">
+                <v-card class="stat-card stat-diary" @click="$router.push('/diarys')">
                   <v-card-title class="stat-title">
                     작성한 다이어리
                   </v-card-title>
@@ -133,7 +133,7 @@ export default {
     const menuItems = ref([
       { title: '홈', icon: 'mdi-home', to: '/dashboard' },
       { title: '반려동물 관리', icon: 'mdi-paw', to: '/pets' },
-      { title: '다이어리', icon: 'mdi-book-open', to: '/diary' },
+              { title: '다이어리', icon: 'mdi-book-open', to: '/diarys' },
       { title: '마켓플레이스', icon: 'mdi-store', to: '/market' },
       { title: '채팅', icon: 'mdi-chat', to: '/chat' },
       { title: '프로필', icon: 'mdi-account', to: '/profile' }

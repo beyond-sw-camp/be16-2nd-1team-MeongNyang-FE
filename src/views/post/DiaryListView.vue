@@ -1,5 +1,14 @@
 <template>
   <div class="diary-page">
+    <!-- 검색 컴포넌트 -->
+    <SearchComponent
+      v-model="searchKeyword"
+      :search-type="searchType"
+      @update:search-type="searchType = $event"
+      @search="handleSearch"
+      @clear="handleClearSearch"
+    />
+
     <!-- 프로필 섹션 -->
     <div class="profile-section">
       <div class="profile-container">
@@ -49,44 +58,34 @@
         </div>
         
         <!-- 추가 버튼 -->
-        <v-btn icon class="add-button" size="large" @click="$router.push('/diary/create')">
+        <v-btn icon class="add-button" size="large" @click="$router.push('/diarys/create')">
           <v-icon size="32">mdi-plus</v-icon>
         </v-btn>
       </div>
     </div>
     
-    <!-- 다이어리 그리드 -->
-    <div class="diary-grid">
+                    <!-- 다이어리 그리드 -->
+                <div class="diary-grid">
       <div class="grid-container">
-        <!-- 실제 다이어리 아이템들 -->
-        <div 
-          v-for="(diary, index) in diaryList" 
-          :key="diary.id" 
-          class="diary-item"
-          :class="{ 'featured': index === 0 }"
-          @click="viewDiary(diary.id)"
-        >
-          <v-img 
-            :src="diary.thumbnail || 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=400&h=400&fit=crop&crop=center'" 
-            class="diary-image"
-            cover
-          >
-            <div class="diary-overlay">
-              <v-icon size="24" color="white">mdi-heart</v-icon>
-            </div>
-          </v-img>
-        </div>
-        
-        <!-- 빈 다이어리 아이템들 (최대 6개까지) -->
-        <div 
-          v-for="i in Math.max(0, 6 - diaryList.length)" 
-          :key="`empty-${i}`" 
-          class="diary-item empty"
-        >
-          <div class="empty-placeholder">
-            <v-icon size="48" color="grey">mdi-image</v-icon>
-          </div>
-        </div>
+                            <!-- 실제 다이어리 아이템들 -->
+                    <div 
+                      v-for="(diary, index) in diaryList" 
+                      :key="diary.id" 
+                      class="diary-item"
+                      :class="{ 'featured': index === 0 }"
+                      @click="viewDiary(diary.id)"
+                    >
+                      <v-img 
+                        :src="diary.thumbnail || 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=400&h=400&fit=crop&crop=center'" 
+                        class="diary-image"
+                        cover
+                      ></v-img>
+                    </div>
+                    
+                    <!-- 로딩 인디케이터 -->
+                    <div v-if="isLoading" class="loading-indicator">
+                      <v-progress-circular indeterminate color="#FF8B8B" size="32"></v-progress-circular>
+                    </div>
       </div>
     </div>
     
@@ -130,12 +129,16 @@
 </template>
 
 <script>
-import { ref, onMounted, computed } from 'vue'
+            import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { postAPI, userAPI, petAPI } from '@/services/api'
+import SearchComponent from '@/components/SearchComponent.vue'
 
 export default {
   name: 'DiaryListView',
+  components: {
+    SearchComponent
+  },
   setup() {
     const $router = useRouter()
     const showMainPetModal = ref(false)
@@ -225,25 +228,94 @@ export default {
       }
     }
     
-    // 다이어리 목록 가져오기
-    const fetchDiaryList = async () => {
-      try {
-        const response = await postAPI.getList({ page: 0, size: 6 })
-        if (response.data && response.data.data) {
-          diaryList.value = response.data.data.content || []
-        }
-      } catch (error) {
-        console.error('다이어리 목록 조회 실패:', error)
-        diaryList.value = []
-      }
-    }
     
-    // 다이어리 상세 보기
-    const viewDiary = (diaryId) => {
-      if (diaryId) {
-        $router.push(`/diary/${diaryId}`)
-      }
-    }
+                
+                // 검색 상태
+                const searchType = ref('TITLE')
+                const searchKeyword = ref('')
+                
+                // 페이지네이션 상태
+                const currentPage = ref(0)
+                const hasMore = ref(true)
+                const isLoading = ref(false)
+                
+                // 다이어리 목록 가져오기
+                const fetchDiaryList = async (page = 0, append = false) => {
+                  try {
+                    isLoading.value = true
+                    
+                    let response
+                    if (searchKeyword.value.trim()) {
+                      // 검색이 있는 경우
+                      response = await postAPI.search(searchType.value, searchKeyword.value.trim(), { page, size: 9 })
+                    } else {
+                      // 일반 목록 조회
+                      response = await postAPI.getList({ page, size: 9 })
+                    }
+                    
+                    if (response.data && response.data.data) {
+                      const newContent = response.data.data.content || []
+                      if (append) {
+                        diaryList.value = [...diaryList.value, ...newContent]
+                      } else {
+                        diaryList.value = newContent
+                      }
+                      
+                      // 더 불러올 데이터가 있는지 확인
+                      hasMore.value = !response.data.data.last
+                      currentPage.value = page
+                    }
+                  } catch (error) {
+                    console.error('다이어리 목록 조회 실패:', error)
+                    if (!append) {
+                      diaryList.value = []
+                    }
+                  } finally {
+                    isLoading.value = false
+                  }
+                }
+                
+
+                
+                // 무한 스크롤 처리
+                const handleScroll = () => {
+                  const scrollTop = window.pageYOffset || document.documentElement.scrollTop
+                  const windowHeight = window.innerHeight
+                  const documentHeight = document.documentElement.scrollHeight
+                  
+                  // 스크롤이 하단에 가까워지면 다음 페이지 로드
+                  if (scrollTop + windowHeight >= documentHeight - 100 && !isLoading.value && hasMore.value) {
+                    fetchDiaryList(currentPage.value + 1, true)
+                  }
+                }
+    
+                    // 다이어리 상세 보기
+                const viewDiary = (diaryId) => {
+                  if (diaryId) {
+                    $router.push(`/diary/${diaryId}`)
+                  }
+                }
+                
+                // 검색 처리
+                const handleSearch = (searchData) => {
+                  searchType.value = searchData.type
+                  searchKeyword.value = searchData.keyword
+                  // 검색 시 새로운 검색 페이지로 이동
+                  $router.push({
+                    path: '/search',
+                    query: {
+                      type: searchData.type,
+                      keyword: searchData.keyword
+                    }
+                  })
+                }
+                
+                // 검색 초기화
+                const handleClearSearch = () => {
+                  searchKeyword.value = ''
+                }
+                
+
     
 
     
@@ -284,29 +356,45 @@ export default {
       }
     }
     
-    // 컴포넌트 마운트 시 데이터 가져오기
-    onMounted(() => {
-      fetchPostsCount()
-      fetchFollowersCount()
-      fetchFollowingsCount()
-      fetchUserPets()
-      fetchDiaryList()
+                    // 컴포넌트 마운트 시 데이터 가져오기
+                onMounted(() => {
+                  // 초기화를 nextTick으로 지연
+                  nextTick(() => {
+                    fetchPostsCount()
+                    fetchFollowersCount()
+                    fetchFollowingsCount()
+                    fetchUserPets()
+                    fetchDiaryList()
+                    
+                    // 스크롤 이벤트 리스너 추가
+                    window.addEventListener('scroll', handleScroll)
+                  })
+                })
+    
+    // 컴포넌트 언마운트 시 이벤트 리스너 제거
+    onUnmounted(() => {
+      window.removeEventListener('scroll', handleScroll)
     })
     
-    return {
-      showMainPetModal,
-      selectedPet,
-      userPets,
-      userName,
-      mainPet,
-      petBio,
-      postsCount,
-      followersCount,
-      followingsCount,
-      diaryList,
-      viewDiary,
-      changeMainPet
-    }
+                                      return {
+                    showMainPetModal,
+                    selectedPet,
+                    userPets,
+                    userName,
+                    mainPet,
+                    petBio,
+                    postsCount,
+                    followersCount,
+                    followingsCount,
+                    diaryList,
+                    isLoading,
+                    searchType,
+                    searchKeyword,
+                    viewDiary,
+                    changeMainPet,
+                    handleSearch,
+                    handleClearSearch
+                  }
   }
 }
 </script>
@@ -448,13 +536,23 @@ export default {
   transition: all 0.3s ease;
 }
 
-.add-button:hover {
-  background: linear-gradient(135deg, #334155 0%, #475569 100%);
-  transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(30, 41, 59, 0.4);
-}
+            .add-button:hover {
+              background: linear-gradient(135deg, #334155 0%, #475569 100%);
+              transform: translateY(-4px);
+              box-shadow: 0 12px 32px rgba(30, 41, 59, 0.4);
+            }
 
-/* 다이어리 그리드 */
+                        .loading-indicator {
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              padding: 20px;
+              grid-column: 1 / -1;
+            }
+
+
+
+            /* 다이어리 그리드 */
 .diary-grid {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);

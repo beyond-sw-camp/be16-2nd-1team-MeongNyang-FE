@@ -74,8 +74,8 @@ export const saveTokens = (token, refreshToken) => {
   
   if (refreshToken) {
     // 리프레시 토큰은 30일간 유지
-    const expiryDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-    document.cookie = `${REFRESH_TOKEN_KEY}=${refreshToken}; expires=${expiryDate.toUTCString()}; path=/; SameSite=Strict; Secure`
+    const refreshExpiryDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+    document.cookie = `${REFRESH_TOKEN_KEY}=${refreshToken}; expires=${refreshExpiryDate.toUTCString()}; path=/; SameSite=Strict; Secure`
   }
 }
 

@@ -1,12 +1,14 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
-import vuetify from './plugins/vuetify';
-import router from './router';
-import '@mdi/font/css/materialdesignicons.css';
-import axios from 'axios';
-import { useAuthStore } from './stores/auth';
+import vuetify from './plugins/vuetify'
+import router from './router'
+import '@mdi/font/css/materialdesignicons.css'
+import axios from 'axios'
+import { useAuthStore } from './stores/auth'
+import { handleError } from './utils/errorHandler'
 
+// Axios 인터셉터 설정
 axios.interceptors.request.use(
     config => {
         const accessToken = localStorage.getItem("accessToken");
@@ -41,12 +43,30 @@ axios.interceptors.response.use(
     }
 )
 
-const app = createApp(App);
-const pinia = createPinia();
+const app = createApp(App)
+
+// 전역 에러 핸들러 설정
+app.config.errorHandler = (error, instance, info) => {
+  console.error('전역 에러 발생:', error)
+  console.error('에러 정보:', info)
+  console.error('컴포넌트:', instance)
+  
+  // 사용자에게 에러 알림
+  handleError(error, router)
+}
+
+// 처리되지 않은 Promise 에러 핸들러
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('처리되지 않은 Promise 에러:', event.reason)
+  handleError(event.reason, router)
+  event.preventDefault()
+})
+
+const pinia = createPinia()
 
 app.use(pinia)
-app.use(vuetify)
 app.use(router)
+app.use(vuetify)
 
 // 인증 스토어 초기화
 const authStore = useAuthStore()
