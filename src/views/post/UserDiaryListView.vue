@@ -45,8 +45,8 @@
           <!-- 통계 -->
           <div class="stats">
             <span class="stat-item">{{ postsCount }} 게시물</span>
-            <span class="stat-item">{{ followersCount }} 팔로워</span>
-            <span class="stat-item">{{ followingsCount }} 팔로잉</span>
+            <span class="stat-item clickable" @click="openFollowModal('followers')">{{ followersCount }} 팔로워</span>
+            <span class="stat-item clickable" @click="openFollowModal('followings')">{{ followingsCount }} 팔로잉</span>
             <span 
               v-if="!isFollowing"
               class="stat-item follow-stat clickable"
@@ -93,6 +93,16 @@
         </div>
       </div>
     </div>
+
+    <!-- 팔로우/팔로워 모달 -->
+    <FollowModal
+      :is-visible="isFollowModalVisible"
+      :user-id="userId"
+      :followers-count="followersCount"
+      :followings-count="followingsCount"
+      :initial-tab="followModalTab"
+      @close="closeFollowModal"
+    />
   </div>
 </template>
 
@@ -101,11 +111,13 @@ import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { postAPI, userAPI, petAPI } from '@/services/api'
 import SearchComponent from '@/components/SearchComponent.vue'
+import FollowModal from '@/components/FollowModal.vue'
 
 export default {
   name: 'UserDiaryListView',
   components: {
-    SearchComponent
+    SearchComponent,
+    FollowModal
   },
   setup() {
     const $router = useRouter()
@@ -117,6 +129,8 @@ export default {
     // 팔로우 상태
     const isFollowing = ref(false)
     const followLoading = ref(false)
+    const isFollowModalVisible = ref(false)
+    const followModalTab = ref('followers')
     
     // 반려동물 데이터
     const userPets = ref([])
@@ -344,6 +358,23 @@ export default {
     const handleClearSearch = () => {
       searchKeyword.value = ''
     }
+
+    // 팔로우/팔로워 모달 처리
+    const openFollowModal = (type) => {
+      isFollowModalVisible.value = true
+      // 모달이 열린 후 탭 설정을 위해 nextTick 사용
+      nextTick(() => {
+        // FollowModal 컴포넌트의 activeTab을 설정
+        if (type === 'followers' || type === 'followings') {
+          // 모달 컴포넌트에 탭 정보 전달
+          followModalTab.value = type
+        }
+      })
+    }
+
+    const closeFollowModal = () => {
+      isFollowModalVisible.value = false
+    }
     
     // 컴포넌트 마운트 시 데이터 가져오기
     onMounted(() => {
@@ -372,6 +403,8 @@ export default {
       petBio,
       isFollowing,
       followLoading,
+      isFollowModalVisible,
+      followModalTab,
       postsCount,
       followersCount,
       followingsCount,
@@ -382,6 +415,8 @@ export default {
       viewDiary,
       handleFollow,
       handleUnfollow,
+      openFollowModal,
+      closeFollowModal,
       handleSearch,
       handleClearSearch
     }
@@ -470,6 +505,17 @@ export default {
   background: rgba(255, 139, 139, 0.1);
   border-radius: 20px;
   border: 1px solid rgba(255, 139, 139, 0.2);
+}
+
+.clickable {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.clickable:hover {
+  background: rgba(255, 139, 139, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 139, 139, 0.3);
 }
 
 .follow-stat {

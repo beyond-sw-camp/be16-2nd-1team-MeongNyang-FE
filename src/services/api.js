@@ -201,6 +201,12 @@ export const userAPI = {
   // 다른 사용자의 팔로잉 개수 조회
   getUserFollowingsCount: (userId) => apiClient.get('/users/follows/followings', { params: { userId } }),
   
+  // 다른 사용자의 팔로워 목록 조회
+  getUserFollowers: (userId, pageable = { page: 0, size: 20 }) => apiClient.get('/users/follows/followers', { params: { userId, ...pageable } }),
+  
+  // 다른 사용자의 팔로잉 목록 조회
+  getUserFollowings: (userId, pageable = { page: 0, size: 20 }) => apiClient.get('/users/follows/followings', { params: { userId, ...pageable } }),
+  
   // 다른 사용자의 게시물 개수 조회
   getUserPostsCount: (userId) => apiClient.get('/posts', { params: { userId, page: 0, size: 1 } })
 }
