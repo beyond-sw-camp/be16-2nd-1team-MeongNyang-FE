@@ -145,6 +145,19 @@
         <v-icon class="mr-2">mdi-account-plus</v-icon>
         초대하기
         <v-spacer></v-spacer>
+        <div class="d-flex align-center mr-4" v-if="getSelectedUsersCount() > 0">
+          <v-chip color="primary" variant="outlined" class="mr-2">
+            {{ getSelectedUsersCount() }}명 선택됨
+          </v-chip>
+          <v-btn 
+            color="primary" 
+            size="small"
+            @click="inviteSelectedUsers"
+            :disabled="getSelectedUsersCount() === 0"
+          >
+            선택된 사용자 초대
+          </v-btn>
+        </div>
         <v-btn icon @click="showInviteDialog = false">
           <v-icon>mdi-close</v-icon>
         </v-btn>
@@ -160,6 +173,15 @@
         <!-- 이메일 검색 탭 -->
         <v-window v-model="inviteTab">
           <v-window-item value="search">
+            <div class="d-flex align-center mb-3" v-if="searchResults.length > 0">
+              <v-checkbox
+                v-model="selectAll"
+                label="전체 선택"
+                @change="toggleSelectAll"
+                hide-details
+                class="mr-4"
+              ></v-checkbox>
+            </div>
             <v-text-field
               v-model="inviteSearchQuery"
               label="사용자 검색"
@@ -172,9 +194,17 @@
               <v-list-item 
                 v-for="user in searchResults" 
                 :key="user.email"
-                @click="inviteUser(user)"
+                @click="toggleUserSelection(user)"
+                class="cursor-pointer"
               >
                 <template v-slot:prepend>
+                  <v-checkbox
+                    :model-value="isUserSelected(user)"
+                    @click.stop
+                    @change="toggleUserSelection(user)"
+                    :disabled="isAlreadyParticipant(user.email)"
+                    hide-details
+                  ></v-checkbox>
                   <v-avatar size="32">
                     <v-img src="https://cdn.vuetifyjs.com/images/john.jpg" alt="avatar"></v-img>
                   </v-avatar>
@@ -186,6 +216,7 @@
                     color="primary" 
                     variant="outlined"
                     :disabled="isAlreadyParticipant(user.email)"
+                    @click.stop="inviteUser(user)"
                   >
                     {{ isAlreadyParticipant(user.email) ? '이미 참여중' : '초대' }}
                   </v-btn>
@@ -217,6 +248,15 @@
                 <v-icon>mdi-refresh</v-icon>
               </v-btn>
             </div>
+            <div class="d-flex align-center mb-3" v-if="filteredFollowers.length > 0">
+              <v-checkbox
+                v-model="selectAll"
+                label="전체 선택"
+                @change="toggleSelectAll"
+                hide-details
+                class="mr-4"
+              ></v-checkbox>
+            </div>
             <div v-if="loadingFollowers" class="text-center py-4">
               <v-progress-circular indeterminate color="primary"></v-progress-circular>
               <div class="mt-2">팔로워 목록을 불러오는 중...</div>
@@ -225,9 +265,17 @@
               <v-list-item 
                 v-for="user in filteredFollowers" 
                 :key="user.userEmail"
-                @click="inviteUser(user)"
+                @click="toggleUserSelection(user)"
+                class="cursor-pointer"
               >
                 <template v-slot:prepend>
+                  <v-checkbox
+                    :model-value="isUserSelected(user)"
+                    @click.stop
+                    @change="toggleUserSelection(user)"
+                    :disabled="isAlreadyParticipant(user.userEmail)"
+                    hide-details
+                  ></v-checkbox>
                   <v-avatar size="32">
                     <v-img src="https://cdn.vuetifyjs.com/images/john.jpg" alt="avatar"></v-img>
                   </v-avatar>
@@ -240,6 +288,7 @@
                     color="primary" 
                     variant="outlined"
                     :disabled="isAlreadyParticipant(user.userEmail)"
+                    @click.stop="inviteUser(user)"
                   >
                     {{ isAlreadyParticipant(user.userEmail) ? '이미 참여중' : '초대' }}
                   </v-btn>
@@ -278,6 +327,15 @@
                 <v-icon>mdi-refresh</v-icon>
               </v-btn>
             </div>
+            <div class="d-flex align-center mb-3" v-if="filteredFollowings.length > 0">
+              <v-checkbox
+                v-model="selectAll"
+                label="전체 선택"
+                @change="toggleSelectAll"
+                hide-details
+                class="mr-4"
+              ></v-checkbox>
+            </div>
             <div v-if="loadingFollowings" class="text-center py-4">
               <v-progress-circular indeterminate color="primary"></v-progress-circular>
               <div class="mt-2">팔로잉 목록을 불러오는 중...</div>
@@ -286,9 +344,17 @@
               <v-list-item 
                 v-for="user in filteredFollowings" 
                 :key="user.userEmail"
-                @click="inviteUser(user)"
+                @click="toggleUserSelection(user)"
+                class="cursor-pointer"
               >
                 <template v-slot:prepend>
+                  <v-checkbox
+                    :model-value="isUserSelected(user)"
+                    @click.stop
+                    @change="toggleUserSelection(user)"
+                    :disabled="isAlreadyParticipant(user.userEmail)"
+                    hide-details
+                  ></v-checkbox>
                   <v-avatar size="32">
                     <v-img src="https://cdn.vuetifyjs.com/images/john.jpg" alt="avatar"></v-img>
                   </v-avatar>
@@ -301,6 +367,7 @@
                     color="primary" 
                     variant="outlined"
                     :disabled="isAlreadyParticipant(user.userEmail)"
+                    @click.stop="inviteUser(user)"
                   >
                     {{ isAlreadyParticipant(user.userEmail) ? '이미 참여중' : '초대' }}
                   </v-btn>
@@ -404,6 +471,10 @@ export default {
     const loadingFollowings = ref(false)
     const filteredFollowers = ref([])
     const filteredFollowings = ref([])
+    
+    // 다중 선택 관련 상태
+    const selectedUsers = ref(new Set())
+    const selectAll = ref(false)
 
     // 계산된 속성
     const displayedMessages = computed(() => {
@@ -751,6 +822,54 @@ export default {
       });
     }
 
+    // 다중 선택 관련 함수들
+    const toggleUserSelection = (user) => {
+      const userEmail = user.userEmail || user.email;
+      if (selectedUsers.value.has(userEmail)) {
+        selectedUsers.value.delete(userEmail);
+      } else {
+        selectedUsers.value.add(userEmail);
+      }
+    }
+
+    const toggleSelectAll = () => {
+      if (selectAll.value) {
+        // 모든 사용자 선택
+        const currentUsers = getCurrentTabUsers();
+        currentUsers.forEach(user => {
+          const userEmail = user.userEmail || user.email;
+          if (!isAlreadyParticipant(userEmail)) {
+            selectedUsers.value.add(userEmail);
+          }
+        });
+      } else {
+        // 모든 선택 해제
+        selectedUsers.value.clear();
+      }
+    }
+
+    const getCurrentTabUsers = () => {
+      switch (inviteTab.value) {
+        case 'followers':
+          return filteredFollowers.value;
+        case 'followings':
+          return filteredFollowings.value;
+        case 'search':
+          return searchResults.value;
+        default:
+          return [];
+      }
+    }
+
+    const getSelectedUsersCount = () => {
+      return selectedUsers.value.size;
+    }
+
+    const isUserSelected = (user) => {
+      const userEmail = user.userEmail || user.email;
+      return selectedUsers.value.has(userEmail);
+    }
+
     // 탭 변경 시 데이터 로드
     const onTabChange = (newTab) => {
       if (newTab === 'followers') {
@@ -788,6 +907,7 @@ export default {
          followingSearchQuery.value = '';
          filteredFollowers.value = [];
          filteredFollowings.value = [];
+         selectedUsers.value.clear();
        } catch (error) {
          console.error('초대 실패:', error);
          if (error.response && error.response.data && error.response.data.message) {
@@ -797,6 +917,43 @@ export default {
          }
        }
      }
+
+    // 다중 초대 함수
+    const inviteSelectedUsers = async () => {
+      if (selectedUsers.value.size === 0) {
+        alert('초대할 사용자를 선택해주세요.');
+        return;
+      }
+
+      try {
+        const inviteData = Array.from(selectedUsers.value).map(email => ({ inviteeEmail: email }));
+        await axios.post(`${process.env.VUE_APP_API_BASE_URL}/chat-rooms/${props.roomId}/participants`, inviteData, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          }
+        });
+        
+        console.log(`${selectedUsers.value.size}명의 사용자에게 초대 메시지를 보냈습니다.`);
+        showInviteDialog.value = false;
+        
+        // 초기화
+        inviteSearchQuery.value = '';
+        searchResults.value = [];
+        followerSearchQuery.value = '';
+        followingSearchQuery.value = '';
+        filteredFollowers.value = [];
+        filteredFollowings.value = [];
+        selectedUsers.value.clear();
+        selectAll.value = false;
+      } catch (error) {
+        console.error('다중 초대 실패:', error);
+        if (error.response && error.response.data && error.response.data.message) {
+          alert(error.response.data.message);
+        } else {
+          alert('초대에 실패했습니다.');
+        }
+      }
+    }
 
     const isAlreadyParticipant = (email) => {
       return participants.value.some(p => p.email === email);
@@ -851,6 +1008,9 @@ export default {
         filteredFollowers.value = [];
         filteredFollowings.value = [];
         inviteTab.value = 'search';
+        // 선택 상태 초기화
+        selectedUsers.value.clear();
+        selectAll.value = false;
       }
     })
     
@@ -916,9 +1076,17 @@ export default {
       searchFollowings,
       onTabChange,
       inviteUser,
+      inviteSelectedUsers,
       isAlreadyParticipant,
       confirmLeaveRoom,
-      leaveRoom
+      leaveRoom,
+      // 다중 선택 관련
+      selectedUsers,
+      selectAll,
+      toggleUserSelection,
+      toggleSelectAll,
+      getSelectedUsersCount,
+      isUserSelected
     }
   }
 }
@@ -1080,5 +1248,9 @@ export default {
     min-width: 200px;
     max-width: 80%;
   }
+}
+
+.cursor-pointer {
+  cursor: pointer;
 }
 </style>
