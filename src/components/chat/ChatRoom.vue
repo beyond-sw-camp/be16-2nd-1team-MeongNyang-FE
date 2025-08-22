@@ -139,7 +139,7 @@
   </v-dialog>
 
   <!-- 초대하기 모달 -->
-  <v-dialog v-model="showInviteDialog" max-width="500">
+  <v-dialog v-model="showInviteDialog" max-width="600">
     <v-card>
       <v-card-title class="d-flex align-center">
         <v-icon class="mr-2">mdi-account-plus</v-icon>
@@ -150,45 +150,179 @@
         </v-btn>
       </v-card-title>
       <v-card-text>
-        <v-text-field
-          v-model="inviteSearchQuery"
-          label="사용자 검색"
-          placeholder="이메일로 검색하세요"
-          prepend-inner-icon="mdi-magnify"
-          clearable
-          @input="searchUsers"
-        ></v-text-field>
-        <v-list v-if="searchResults.length > 0">
-          <v-list-item 
-            v-for="user in searchResults" 
-            :key="user.email"
-            @click="inviteUser(user)"
-          >
-            <template v-slot:prepend>
-              <v-avatar size="32">
-                <v-img src="https://cdn.vuetifyjs.com/images/john.jpg" alt="avatar"></v-img>
-              </v-avatar>
-            </template>
-            <v-list-item-title>{{ user.email }}</v-list-item-title>
-            <template v-slot:append>
-              <v-btn 
-                size="small" 
-                color="primary" 
-                variant="outlined"
-                :disabled="isAlreadyParticipant(user.email)"
+        <!-- 탭 네비게이션 -->
+        <v-tabs v-model="inviteTab" color="primary" class="mb-4" @change="onTabChange">
+          <v-tab value="search">이메일 검색</v-tab>
+          <v-tab value="followers">팔로워</v-tab>
+          <v-tab value="followings">팔로잉</v-tab>
+        </v-tabs>
+
+        <!-- 이메일 검색 탭 -->
+        <v-window v-model="inviteTab">
+          <v-window-item value="search">
+            <v-text-field
+              v-model="inviteSearchQuery"
+              label="사용자 검색"
+              placeholder="이메일로 검색하세요"
+              prepend-inner-icon="mdi-magnify"
+              clearable
+              @input="searchUsers"
+            ></v-text-field>
+            <v-list v-if="searchResults.length > 0">
+              <v-list-item 
+                v-for="user in searchResults" 
+                :key="user.email"
+                @click="inviteUser(user)"
               >
-                {{ isAlreadyParticipant(user.email) ? '이미 참여중' : '초대' }}
+                <template v-slot:prepend>
+                  <v-avatar size="32">
+                    <v-img src="https://cdn.vuetifyjs.com/images/john.jpg" alt="avatar"></v-img>
+                  </v-avatar>
+                </template>
+                <v-list-item-title>{{ user.email }}</v-list-item-title>
+                <template v-slot:append>
+                  <v-btn 
+                    size="small" 
+                    color="primary" 
+                    variant="outlined"
+                    :disabled="isAlreadyParticipant(user.email)"
+                  >
+                    {{ isAlreadyParticipant(user.email) ? '이미 참여중' : '초대' }}
+                  </v-btn>
+                </template>
+              </v-list-item>
+            </v-list>
+            <v-alert 
+              v-else-if="inviteSearchQuery && !searching" 
+              type="info" 
+              variant="tonal"
+            >
+              검색 결과가 없습니다.
+            </v-alert>
+          </v-window-item>
+
+          <!-- 팔로워 탭 -->
+          <v-window-item value="followers">
+            <div class="d-flex align-center mb-3">
+              <v-text-field
+                v-model="followerSearchQuery"
+                label="팔로워 검색"
+                placeholder="이름이나 이메일로 검색하세요"
+                prepend-inner-icon="mdi-magnify"
+                clearable
+                @input="searchFollowers"
+                class="flex-grow-1 mr-2"
+              ></v-text-field>
+              <v-btn icon @click="loadFollowers" :loading="loadingFollowers">
+                <v-icon>mdi-refresh</v-icon>
               </v-btn>
-            </template>
-          </v-list-item>
-        </v-list>
-        <v-alert 
-          v-else-if="inviteSearchQuery && !searching" 
-          type="info" 
-          variant="tonal"
-        >
-          검색 결과가 없습니다.
-        </v-alert>
+            </div>
+            <div v-if="loadingFollowers" class="text-center py-4">
+              <v-progress-circular indeterminate color="primary"></v-progress-circular>
+              <div class="mt-2">팔로워 목록을 불러오는 중...</div>
+            </div>
+            <v-list v-else-if="filteredFollowers.length > 0">
+              <v-list-item 
+                v-for="user in filteredFollowers" 
+                :key="user.userEmail"
+                @click="inviteUser(user)"
+              >
+                <template v-slot:prepend>
+                  <v-avatar size="32">
+                    <v-img src="https://cdn.vuetifyjs.com/images/john.jpg" alt="avatar"></v-img>
+                  </v-avatar>
+                </template>
+                <v-list-item-title>{{ user.userEmail }}</v-list-item-title>
+                <v-list-item-subtitle v-if="user.userName">{{ user.userName }}</v-list-item-subtitle>
+                <template v-slot:append>
+                  <v-btn 
+                    size="small" 
+                    color="primary" 
+                    variant="outlined"
+                    :disabled="isAlreadyParticipant(user.userEmail)"
+                  >
+                    {{ isAlreadyParticipant(user.userEmail) ? '이미 참여중' : '초대' }}
+                  </v-btn>
+                </template>
+              </v-list-item>
+            </v-list>
+            <v-alert 
+              v-else-if="followerSearchQuery" 
+              type="info" 
+              variant="tonal"
+            >
+              검색 결과가 없습니다.
+            </v-alert>
+            <v-alert 
+              v-else-if="!loadingFollowers && filteredFollowers.length === 0" 
+              type="info" 
+              variant="tonal"
+            >
+              팔로워가 없습니다. 다른 사용자에게 팔로우를 받아보세요.
+            </v-alert>
+          </v-window-item>
+
+          <!-- 팔로잉 탭 -->
+          <v-window-item value="followings">
+            <div class="d-flex align-center mb-3">
+              <v-text-field
+                v-model="followingSearchQuery"
+                label="팔로잉 검색"
+                placeholder="이름이나 이메일로 검색하세요"
+                prepend-inner-icon="mdi-magnify"
+                clearable
+                @input="searchFollowings"
+                class="flex-grow-1 mr-2"
+              ></v-text-field>
+              <v-btn icon @click="loadFollowings" :loading="loadingFollowings">
+                <v-icon>mdi-refresh</v-icon>
+              </v-btn>
+            </div>
+            <div v-if="loadingFollowings" class="text-center py-4">
+              <v-progress-circular indeterminate color="primary"></v-progress-circular>
+              <div class="mt-2">팔로잉 목록을 불러오는 중...</div>
+            </div>
+            <v-list v-else-if="filteredFollowings.length > 0">
+              <v-list-item 
+                v-for="user in filteredFollowings" 
+                :key="user.userEmail"
+                @click="inviteUser(user)"
+              >
+                <template v-slot:prepend>
+                  <v-avatar size="32">
+                    <v-img src="https://cdn.vuetifyjs.com/images/john.jpg" alt="avatar"></v-img>
+                  </v-avatar>
+                </template>
+                <v-list-item-title>{{ user.userEmail }}</v-list-item-title>
+                <v-list-item-subtitle v-if="user.userName">{{ user.userName }}</v-list-item-subtitle>
+                <template v-slot:append>
+                  <v-btn 
+                    size="small" 
+                    color="primary" 
+                    variant="outlined"
+                    :disabled="isAlreadyParticipant(user.userEmail)"
+                  >
+                    {{ isAlreadyParticipant(user.userEmail) ? '이미 참여중' : '초대' }}
+                  </v-btn>
+                </template>
+              </v-list-item>
+            </v-list>
+            <v-alert 
+              v-else-if="followingSearchQuery" 
+              type="info" 
+              variant="tonal"
+            >
+              검색 결과가 없습니다.
+            </v-alert>
+            <v-alert 
+              v-else-if="!loadingFollowings && filteredFollowings.length === 0" 
+              type="info" 
+              variant="tonal"
+            >
+              팔로잉이 없습니다. 다른 사용자를 팔로우해보세요.
+            </v-alert>
+          </v-window-item>
+        </v-window>
       </v-card-text>
     </v-card>
   </v-dialog>
@@ -221,6 +355,7 @@ import SockJS from 'sockjs-client'
 import Stomp from 'webstomp-client'
 import axios from 'axios'
 import FileGrid from './FileGrid.vue'
+import { userAPI } from '@/services/api'
 
 export default {
   name: 'ChatRoom',
@@ -259,9 +394,16 @@ export default {
     const showLeaveConfirmDialog = ref(false)
 
     // 초대 관련 상태
+    const inviteTab = ref('search') // 탭 모델
     const inviteSearchQuery = ref('')
     const searchResults = ref([])
     const searching = ref(false)
+    const followerSearchQuery = ref('')
+    const followingSearchQuery = ref('')
+    const loadingFollowers = ref(false)
+    const loadingFollowings = ref(false)
+    const filteredFollowers = ref([])
+    const filteredFollowings = ref([])
 
     // 계산된 속성
     const displayedMessages = computed(() => {
@@ -489,6 +631,14 @@ export default {
 
     const inviteParticipants = () => {
       showInviteDialog.value = true;
+      inviteTab.value = 'followers'; // 기본적으로 팔로워 탭 선택
+      // 팔로워와 팔로잉 데이터가 없으면 로드
+      if (filteredFollowers.value.length === 0) {
+        loadFollowers();
+      }
+      if (filteredFollowings.value.length === 0) {
+        loadFollowings();
+      }
     }
 
     const searchUsers = async () => {
@@ -498,11 +648,7 @@ export default {
       }
       searching.value = true;
       try {
-        const res = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/users/search?email=${inviteSearchQuery.value}`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-          }
-        });
+        const res = await userAPI.searchUsersByEmail(inviteSearchQuery.value);
         searchResults.value = res.data.data;
       } catch (error) {
         console.error('사용자 검색 실패:', error);
@@ -512,22 +658,136 @@ export default {
       }
     }
 
+    // 팔로워 로드
+    const loadFollowers = async () => {
+      loadingFollowers.value = true;
+      try {
+        const res = await userAPI.getFollowers({ page: 0, size: 100 });
+        const followers = res.data.data.content || [];
+        if (Array.isArray(followers)) {
+          filteredFollowers.value = followers;
+        } else {
+          console.warn('팔로워 데이터가 배열이 아닙니다:', followers);
+          filteredFollowers.value = [];
+        }
+      } catch (error) {
+        console.error('팔로워 로드 실패:', error);
+        filteredFollowers.value = [];
+      } finally {
+        loadingFollowers.value = false;
+      }
+    }
+
+    // 팔로잉 로드
+    const loadFollowings = async () => {
+      loadingFollowings.value = true;
+      try {
+        const res = await userAPI.getFollowings({ page: 0, size: 100 });
+        const followings = res.data.data.content || [];
+        if (Array.isArray(followings)) {
+          filteredFollowings.value = followings;
+        } else {
+          console.warn('팔로잉 데이터가 배열이 아닙니다:', followings);
+          filteredFollowings.value = [];
+        }
+      } catch (error) {
+        console.error('팔로잉 로드 실패:', error);
+        filteredFollowings.value = [];
+      } finally {
+        loadingFollowings.value = false;
+      }
+    }
+
+    // 팔로워 검색
+    const searchFollowers = () => {
+      if (!followerSearchQuery.value) {
+        // 검색어가 없으면 원본 데이터로 복원
+        loadFollowers();
+        return;
+      }
+      const query = followerSearchQuery.value.toLowerCase();
+      // 원본 데이터에서 필터링 (API에서 다시 로드하지 않음)
+      userAPI.getFollowers({ page: 0, size: 100 }).then(res => {
+        const allFollowers = res.data.data.content || [];
+        if (Array.isArray(allFollowers)) {
+          filteredFollowers.value = allFollowers.filter(user => 
+            (user.userEmail && user.userEmail.toLowerCase().includes(query)) || 
+            (user.userName && user.userName.toLowerCase().includes(query))
+          );
+        } else {
+          console.warn('팔로워 데이터가 배열이 아닙니다:', allFollowers);
+          filteredFollowers.value = [];
+        }
+      }).catch(error => {
+        console.error('팔로워 검색 중 오류:', error);
+        filteredFollowers.value = [];
+      });
+    }
+
+    // 팔로잉 검색
+    const searchFollowings = () => {
+      if (!followingSearchQuery.value) {
+        // 검색어가 없으면 원본 데이터로 복원
+        loadFollowings();
+        return;
+      }
+      const query = followingSearchQuery.value.toLowerCase();
+      // 원본 데이터에서 필터링 (API에서 다시 로드하지 않음)
+      userAPI.getFollowings({ page: 0, size: 100 }).then(res => {
+        const allFollowings = res.data.data.content || [];
+        console.log(allFollowings);
+        if (Array.isArray(allFollowings)) {
+          filteredFollowings.value = allFollowings.filter(user => 
+            (user.userEmail && user.userEmail.toLowerCase().includes(query)) || 
+            (user.userName && user.userName.toLowerCase().includes(query))
+          );
+        } else {
+          console.warn('팔로잉 데이터가 배열이 아닙니다:', allFollowings);
+          filteredFollowings.value = [];
+        }
+      }).catch(error => {
+        console.error('팔로잉 검색 중 오류:', error);
+        filteredFollowings.value = [];
+      });
+    }
+
+    // 탭 변경 시 데이터 로드
+    const onTabChange = (newTab) => {
+      if (newTab === 'followers') {
+        // 팔로워 데이터가 없으면 로드
+        if (filteredFollowers.value.length === 0) {
+          loadFollowers();
+        }
+      } else if (newTab === 'followings') {
+        // 팔로잉 데이터가 없으면 로드
+        if (filteredFollowings.value.length === 0) {
+          loadFollowings();
+        }
+      }
+    }
+
          const inviteUser = async (user) => {
-       if (isAlreadyParticipant(user.email)) {
-         console.warn(`${user.email}는 이미 참여자입니다.`);
+       // 사용자 객체에서 이메일 추출 (팔로워/팔로잉은 userEmail, 검색결과는 email)
+       const userEmail = user.userEmail || user.email;
+       if (isAlreadyParticipant(userEmail)) {
+         console.warn(`${userEmail}는 이미 참여자입니다.`);
          return;
        }
        try {
-         const inviteData = [{ inviteeEmail: user.email }];
+         const inviteData = [{ inviteeEmail: userEmail }];
          await axios.post(`${process.env.VUE_APP_API_BASE_URL}/chat-rooms/${props.roomId}/participants`, inviteData, {
            headers: {
              'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
            }
          });
-         console.log(`${user.email}에게 초대 메시지를 보냈습니다.`);
+         console.log(`${userEmail}에게 초대 메시지를 보냈습니다.`);
          showInviteDialog.value = false;
          inviteSearchQuery.value = '';
          searchResults.value = [];
+         followerSearchQuery.value = '';
+         followingSearchQuery.value = '';
+         filteredFollowers.value = [];
+         filteredFollowings.value = [];
        } catch (error) {
          console.error('초대 실패:', error);
          if (error.response && error.response.data && error.response.data.message) {
@@ -581,6 +841,19 @@ export default {
       scrollToBottom()
     }, { deep: true })
     
+    watch(showInviteDialog, (newValue) => {
+      if (!newValue) {
+        // 다이얼로그가 닫힐 때 초기화
+        inviteSearchQuery.value = '';
+        searchResults.value = [];
+        followerSearchQuery.value = '';
+        followingSearchQuery.value = '';
+        filteredFollowers.value = [];
+        filteredFollowings.value = [];
+        inviteTab.value = 'search';
+      }
+    })
+    
     onMounted(async () => {
       senderEmail.value = localStorage.getItem('email')
       if (props.roomId) {
@@ -623,13 +896,25 @@ export default {
       showParticipantsDialog,
       showInviteDialog,
       showLeaveConfirmDialog,
+      inviteTab,
       inviteSearchQuery,
       searchResults,
       searching,
+      followerSearchQuery,
+      followingSearchQuery,
+      loadingFollowers,
+      loadingFollowings,
+      filteredFollowers,
+      filteredFollowings,
       isOnline,
       showParticipants,
       inviteParticipants,
       searchUsers,
+      loadFollowers,
+      loadFollowings,
+      searchFollowers,
+      searchFollowings,
+      onTabChange,
       inviteUser,
       isAlreadyParticipant,
       confirmLeaveRoom,
@@ -759,13 +1044,13 @@ export default {
 .sent {
   background-color: #42a5f5;
   color: white;
-  border-bottom-right-radius: 4px;
+  border-top-right-radius: 4px;
 }
 
 .received {
   background-color: #f1f3f4;
   color: black;
-  border-bottom-left-radius: 4px;
+  border-top-left-radius: 4px;
 }
 
 .message-meta {

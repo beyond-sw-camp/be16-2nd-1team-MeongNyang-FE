@@ -23,9 +23,9 @@
           class="list-item-hover"
         >
           <v-list-item-content class="d-flex align-center">
-            <v-avatar class="mr-4">
+            <!-- <v-avatar class="mr-4">
               <v-img :src="chatRoom.avatar || 'https://cdn.vuetifyjs.com/images/john.jpg'" alt="Avatar"></v-img>
-            </v-avatar>
+            </v-avatar> -->
             <div class="flex-grow-1">
               <v-list-item-title class="font-weight-medium">{{ chatRoom.roomName }}</v-list-item-title>
               <v-list-item-subtitle>{{ chatRoom.lastMessage }}</v-list-item-subtitle>
