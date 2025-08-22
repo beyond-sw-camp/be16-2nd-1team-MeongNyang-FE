@@ -395,7 +395,17 @@ export const speciesAPI = {
 // 채팅 관련 API
 export const chatAPI = {
   // 채팅방 개설
-  createRoom: (roomData) => apiClient.post('/chat-rooms', roomData),
+  createRoom: (roomData) => {
+    const { roomName, participantEmails = [] } = roomData
+    
+    // 백엔드 API 형식에 맞춰 요청 데이터 구성
+    const requestData = {
+      roomName,
+      userEmailList: participantEmails
+    }
+    
+    return apiClient.post('/chat-rooms', requestData)
+  },
   
   // 채팅방 목록 조회
   getRooms: () => apiClient.get('/chat-rooms'),
