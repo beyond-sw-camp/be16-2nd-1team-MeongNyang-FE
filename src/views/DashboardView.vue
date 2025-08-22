@@ -22,9 +22,33 @@
         <v-card class="main-content-card">
           <!-- 인사말 섹션 -->
           <div class="greeting-section">
-            <h1 class="greeting-title">
-              안녕하세요, {{ user?.nickname || '사용자' }}님! 🐕🐱
-            </h1>
+            <div class="greeting-content">
+              <div class="greeting-text">
+                <h1 class="greeting-title">
+                  안녕하세요, {{ user?.nickname || '사용자' }}님! 🐕🐱
+                </h1>
+                <p class="greeting-subtitle">
+                  {{ representativePet ? `${representativePet.name}와(과) 함께하는 하루를 보내세요!` : '반려동물과 함께하는 하루를 보내세요!' }}
+                </p>
+              </div>
+              
+              <div 
+                v-if="representativePet" 
+                class="representative-pet-avatar"
+                @click="goToRepresentativePet"
+              >
+                <v-avatar size="120" class="pet-avatar">
+                  <v-img
+                    v-if="representativePet.url"
+                    :src="representativePet.url"
+                    :alt="representativePet.name"
+                    cover
+                  />
+                  <v-icon v-else size="48" color="primary">mdi-paw</v-icon>
+                </v-avatar>
+                <div class="pet-badge">대표</div>
+              </div>
+            </div>
           </div>
           
           <!-- 통계 카드들 -->
@@ -120,15 +144,20 @@
 
 <script>
 import { computed, ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { usePetStore } from '@/stores/pet'
 import { postAPI, marketAPI, petAPI, chatAPI } from '@/services/api'
 
 export default {
   name: 'DashboardView',
   setup() {
+    const router = useRouter()
     const authStore = useAuthStore()
+    const petStore = usePetStore()
     
     const user = computed(() => authStore.user)
+    const representativePet = computed(() => petStore.getRepresentativePet)
     
     const menuItems = ref([
       { title: '홈', icon: 'mdi-home', to: '/dashboard' },
@@ -214,6 +243,12 @@ export default {
       fetchMarketCount()
       fetchChatCount()
     })
+
+    const goToRepresentativePet = () => {
+      if (representativePet.value) {
+        router.push('/pets/' + representativePet.value.id)
+      }
+    }
     
     return {
       user,
@@ -222,10 +257,12 @@ export default {
       diaryCount,
       marketCount,
       chatCount,
+      representativePet,
       weeklyDiaryCount,
       weeklyMarketCount,
       weeklyChatCount,
-      weeklyLoginDays
+      weeklyLoginDays,
+      goToRepresentativePet
     }
   }
 }
@@ -271,12 +308,59 @@ export default {
   text-align: center;
 }
 
+.greeting-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px; /* 텍스트와 이미지 사이 간격 */
+}
+
+.greeting-text {
+  flex: 1; /* 텍스트 영역을 차지하도록 */
+  text-align: left;
+}
+
 .greeting-title {
   font-size: 2rem;
   font-weight: 700;
   color: #1E293B;
   margin: 0;
   padding: 0;
+}
+
+.greeting-subtitle {
+  font-size: 1rem;
+  color: #6B7280;
+  margin-top: 8px;
+}
+
+.representative-pet-avatar {
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.representative-pet-avatar:hover {
+  transform: scale(1.05);
+}
+
+.pet-avatar {
+  border: 4px solid #FF8B8B; /* 테두리 두께 조정 */
+  box-shadow: 0 4px 15px rgba(255, 139, 139, 0.3); /* 그림자 효과 */
+}
+
+.pet-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background-color: #FF8B8B;
+  color: white;
+  border-radius: 12px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(255, 139, 139, 0.3);
+  z-index: 1;
 }
 
 /* 통계 섹션 */
@@ -468,6 +552,20 @@ export default {
     font-size: 1.75rem;
   }
   
+  .greeting-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 16px;
+  }
+  
+  .greeting-text {
+    text-align: center;
+  }
+  
+  .representative-pet-avatar {
+    order: -1; /* 모바일에서는 이미지를 위에 배치 */
+  }
+  
   .stat-card {
     padding: 20px;
   }
@@ -488,6 +586,15 @@ export default {
   
   .greeting-title {
     font-size: 1.5rem;
+  }
+  
+  .greeting-subtitle {
+    font-size: 0.875rem;
+  }
+  
+  .representative-pet-avatar .pet-avatar {
+    width: 80px !important;
+    height: 80px !important;
   }
   
   .section-divider {

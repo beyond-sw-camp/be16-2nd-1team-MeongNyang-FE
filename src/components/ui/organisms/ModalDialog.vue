@@ -17,113 +17,63 @@
     @click:outside="handleClickOutside"
     @keydown.esc="handleEscapeKey"
   >
-    <BaseCard
+    <v-card
       :elevation="cardElevation"
       :rounded="cardRounded"
       :shaped="cardShaped"
       :color="cardColor"
       :loading="loading"
       :disabled="disabled"
-      :custom-class="cardClass"
+      :class="cardClass"
       :aria-label="ariaLabel"
       :aria-describedby="ariaDescribedby"
     >
       <!-- 헤더 -->
-      <template #header>
-        <div class="modal-dialog__header">
-          <div class="modal-dialog__title-section">
-            <BaseIcon
-              v-if="icon"
-              :icon="icon"
-              :size="iconSize"
-              :color="iconColor"
-              class="modal-dialog__icon"
-            />
-            <h2 class="modal-dialog__title">{{ title }}</h2>
-          </div>
-          
-          <BaseButton
-            v-if="showCloseButton"
-            :icon="closeIcon"
-            :size="closeButtonSize"
-            :variant="closeButtonVariant"
-            :color="closeButtonColor"
-            :aria-label="closeButtonAriaLabel"
-            class="modal-dialog__close-button"
-            @click="handleClose"
+      <v-card-title v-if="title || $slots.header" class="d-flex align-center justify-space-between">
+        <div class="d-flex align-center">
+          <v-icon
+            v-if="icon"
+            :icon="icon"
+            :size="iconSize"
+            :color="iconColor"
+            class="me-3"
           />
+          <span class="text-h6">{{ title }}</span>
         </div>
-      </template>
+        
+        <v-btn
+          v-if="showCloseButton"
+          :icon="closeIcon"
+          :size="closeButtonSize"
+          :variant="closeButtonVariant"
+          :color="closeButtonColor"
+          :aria-label="closeButtonAriaLabel"
+          @click="handleClose"
+        />
+      </v-card-title>
       
       <!-- 내용 -->
-      <div class="modal-dialog__content">
-        <slot>{{ content }}</slot>
-      </div>
+      <v-card-text v-if="$slots.default" class="pa-4">
+        <slot />
+      </v-card-text>
       
       <!-- 액션 -->
-      <template #actions>
-        <div class="modal-dialog__actions">
-          <slot name="actions">
-            <BaseButton
-              v-if="showCancelButton"
-              :text="cancelText"
-              :color="cancelColor"
-              :variant="cancelVariant"
-              :size="buttonSize"
-              :disabled="cancelDisabled || disabled"
-              :loading="cancelLoading"
-              @click="handleCancel"
-            />
-            
-            <BaseButton
-              v-if="showConfirmButton"
-              :text="confirmText"
-              :color="confirmColor"
-              :variant="confirmVariant"
-              :size="buttonSize"
-              :disabled="confirmDisabled || disabled"
-              :loading="confirmLoading"
-              @click="handleConfirm"
-            />
-          </slot>
-        </div>
-      </template>
-    </BaseCard>
+      <v-card-actions v-if="$slots.actions" class="pa-4 pt-0">
+        <slot name="actions" />
+      </v-card-actions>
+    </v-card>
   </v-dialog>
 </template>
 
 <script>
-import BaseCard from '../atoms/BaseCard.vue'
-import BaseButton from '../atoms/BaseButton.vue'
-import BaseIcon from '../atoms/BaseIcon.vue'
-
 export default {
   name: 'ModalDialog',
-  components: {
-    BaseCard,
-    BaseButton,
-    BaseIcon
-  },
+  
   props: {
-    // 기본 속성
     modelValue: {
       type: Boolean,
       default: false
     },
-    title: {
-      type: String,
-      default: ''
-    },
-    content: {
-      type: String,
-      default: ''
-    },
-    icon: {
-      type: String,
-      default: ''
-    },
-    
-    // 다이얼로그 설정
     maxWidth: {
       type: [String, Number],
       default: 500
@@ -157,7 +107,7 @@ export default {
       default: undefined
     },
     overlayOpacity: {
-      type: [Number, String],
+      type: [String, Number],
       default: undefined
     },
     closeOnBack: {
@@ -168,14 +118,17 @@ export default {
       type: Boolean,
       default: false
     },
-    
-    // 카드 스타일링
+    customClass: {
+      type: String,
+      default: ''
+    },
+    // 카드 관련 props
     cardElevation: {
-      type: [Number, String],
-      default: 24
+      type: [String, Number],
+      default: 8
     },
     cardRounded: {
-      type: [Boolean, String],
+      type: [String, Number],
       default: 'lg'
     },
     cardShaped: {
@@ -186,11 +139,22 @@ export default {
       type: String,
       default: undefined
     },
-    
-    // 헤더 설정
+    cardClass: {
+      type: String,
+      default: ''
+    },
+    // 헤더 관련 props
+    title: {
+      type: String,
+      default: ''
+    },
+    icon: {
+      type: String,
+      default: ''
+    },
     iconSize: {
       type: [String, Number],
-      default: 'large'
+      default: 24
     },
     iconColor: {
       type: String,
@@ -205,7 +169,7 @@ export default {
       default: 'mdi-close'
     },
     closeButtonSize: {
-      type: String,
+      type: [String, Number],
       default: 'small'
     },
     closeButtonVariant: {
@@ -214,68 +178,13 @@ export default {
     },
     closeButtonColor: {
       type: String,
-      default: 'default'
+      default: 'grey'
     },
     closeButtonAriaLabel: {
       type: String,
-      default: '다이얼로그 닫기'
+      default: '닫기'
     },
-    
-    // 액션 버튼 설정
-    showCancelButton: {
-      type: Boolean,
-      default: true
-    },
-    showConfirmButton: {
-      type: Boolean,
-      default: true
-    },
-    cancelText: {
-      type: String,
-      default: '취소'
-    },
-    confirmText: {
-      type: String,
-      default: '확인'
-    },
-    cancelColor: {
-      type: String,
-      default: 'default'
-    },
-    confirmColor: {
-      type: String,
-      default: 'primary'
-    },
-    cancelVariant: {
-      type: String,
-      default: 'outlined'
-    },
-    confirmVariant: {
-      type: String,
-      default: 'elevated'
-    },
-    buttonSize: {
-      type: String,
-      default: 'default'
-    },
-    cancelDisabled: {
-      type: Boolean,
-      default: false
-    },
-    confirmDisabled: {
-      type: Boolean,
-      default: false
-    },
-    cancelLoading: {
-      type: Boolean,
-      default: false
-    },
-    confirmLoading: {
-      type: Boolean,
-      default: false
-    },
-    
-    // 상태
+    // 상태 관련 props
     loading: {
       type: Boolean,
       default: false
@@ -284,108 +193,74 @@ export default {
       type: Boolean,
       default: false
     },
-    
-    // 접근성
+    // 접근성 관련 props
     ariaLabel: {
       type: String,
-      default: ''
+      default: undefined
     },
     ariaDescribedby: {
       type: String,
-      default: ''
-    },
-    
-    // 커스텀 스타일
-    customClass: {
-      type: String,
-      default: ''
+      default: undefined
     }
   },
   
-  emits: [
-    'update:modelValue',
-    'close',
-    'cancel',
-    'confirm',
-    'click:outside',
-    'keydown:esc'
-  ],
+  emits: ['update:modelValue', 'close', 'confirm', 'cancel'],
   
-  computed: {
-    cardClass() {
-      return 'modal-dialog__card'
+  setup(props, { emit }) {
+    const handleUpdateModelValue = (value) => {
+      emit('update:modelValue', value)
     }
-  },
-  
-  methods: {
-    handleUpdateModelValue(value) {
-      this.$emit('update:modelValue', value)
-    },
     
-    handleClose() {
-      this.$emit('close')
-      this.$emit('update:modelValue', false)
-    },
+    const handleClose = () => {
+      emit('close')
+      emit('update:modelValue', false)
+    }
     
-    handleCancel() {
-      this.$emit('cancel')
-      this.$emit('update:modelValue', false)
-    },
-    
-    handleConfirm() {
-      this.$emit('confirm')
-      this.$emit('update:modelValue', false)
-    },
-    
-    handleClickOutside(event) {
-      this.$emit('click:outside', event)
-    },
-    
-    handleEscapeKey(event) {
-      this.$emit('keydown:esc', event)
-      if (!this.persistent) {
-        this.handleClose()
+    const handleClickOutside = () => {
+      if (!props.persistent) {
+        handleClose()
       }
+    }
+    
+    const handleEscapeKey = () => {
+      if (!props.persistent) {
+        handleClose()
+      }
+    }
+    
+    return {
+      handleUpdateModelValue,
+      handleClose,
+      handleClickOutside,
+      handleEscapeKey
     }
   }
 }
 </script>
 
 <style scoped>
-.modal-dialog__card {
-  max-height: 90vh;
-  overflow: hidden;
-}
-
 .modal-dialog__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 24px 24px 0 24px;
+  width: 100%;
 }
 
 .modal-dialog__title-section {
   display: flex;
   align-items: center;
-  gap: 12px;
-  flex: 1;
-  min-width: 0;
-}
-
-.modal-dialog__icon {
-  flex-shrink: 0;
+  flex-grow: 1;
 }
 
 .modal-dialog__title {
+  margin: 0;
   font-size: 1.25rem;
   font-weight: 600;
-  color: var(--v-theme-on-surface);
   line-height: 1.4;
-  margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+.modal-dialog__icon {
+  margin-right: 12px;
 }
 
 .modal-dialog__close-button {
@@ -393,91 +268,24 @@ export default {
 }
 
 .modal-dialog__content {
-  padding: 24px;
-  overflow-y: auto;
-  max-height: calc(90vh - 200px);
+  flex-grow: 1;
 }
 
 .modal-dialog__actions {
   display: flex;
-  align-items: center;
   justify-content: flex-end;
   gap: 12px;
-  padding: 0 24px 24px 24px;
-}
-
-/* 접근성 */
-.modal-dialog__card:focus-visible {
-  outline: 2px solid var(--v-primary-base);
-  outline-offset: 2px;
+  width: 100%;
 }
 
 /* 반응형 디자인 */
 @media (max-width: 600px) {
-  .modal-dialog__header {
-    padding: 16px 16px 0 16px;
-    gap: 12px;
-  }
-  
-  .modal-dialog__title-section {
-    gap: 8px;
-  }
-  
-  .modal-dialog__title {
-    font-size: 1.125rem;
-  }
-  
-  .modal-dialog__content {
-    padding: 16px;
-    max-height: calc(90vh - 160px);
-  }
-  
   .modal-dialog__actions {
-    padding: 0 16px 16px 16px;
-    gap: 8px;
+    flex-direction: column;
   }
   
   .modal-dialog__actions .v-btn {
-    flex: 1;
+    width: 100%;
   }
-}
-
-/* 다크 모드 지원 */
-@media (prefers-color-scheme: dark) {
-  .modal-dialog__title {
-    color: var(--v-theme-on-surface);
-  }
-}
-
-/* 애니메이션 */
-.modal-dialog__card {
-  transition: all 0.3s ease-in-out;
-}
-
-.modal-dialog__close-button {
-  transition: all 0.2s ease-in-out;
-}
-
-.modal-dialog__close-button:hover {
-  transform: scale(1.1);
-}
-
-/* 스크롤바 스타일링 */
-.modal-dialog__content::-webkit-scrollbar {
-  width: 6px;
-}
-
-.modal-dialog__content::-webkit-scrollbar-track {
-  background: rgba(var(--v-theme-on-surface), 0.04);
-  border-radius: 3px;
-}
-
-.modal-dialog__content::-webkit-scrollbar-thumb {
-  background: rgba(var(--v-theme-on-surface), 0.2);
-  border-radius: 3px;
-}
-
-.modal-dialog__content::-webkit-scrollbar-thumb:hover {
-  background: rgba(var(--v-theme-on-surface), 0.3);
 }
 </style>

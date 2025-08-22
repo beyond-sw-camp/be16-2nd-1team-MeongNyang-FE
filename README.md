@@ -61,7 +61,7 @@ npm run test:e2e
 프로젝트 실행을 위해 다음 환경이 필요합니다:
 
 - **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:8080/api
+- **Backend API**: http://localhost:8080
 
 ## Customize configuration
 See [Configuration Reference](https://cli.vuejs.org/config/).

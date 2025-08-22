@@ -1,125 +1,124 @@
 import axios from 'axios'
-import { getToken, saveTokens, clearAllTokens, isTokenExpired, generateCSRFToken } from '@/utils/auth'
+import {
+  ACCESS_KEY,           // 'accessToken'
+  REFRESH_KEY,          // 'refreshToken'
+  getToken,
+  saveTokens,
+  clearAllTokens,
+  // isTokenExpired,     // ← 사용 안 하면 주석/삭제
+  // generateCSRFToken,  // ← 사용 안 하면 주석/삭제
+  RT_HEADER_RAW,        // 'X-Refresh-Token' (요청 보낼 때 원형)
+  RT_HEADER_LOWER       // 'x-refresh-token' (응답 헤더 읽을 때)
+} from '@/utils/auth'
 
-// API 기본 설정
+// 환경변수 (네 프로젝트 규칙)
 const API_BASE_URL = process.env.VUE_APP_API_BASE_URL || 'http://localhost:8080'
 
-// 토큰 갱신 상태 관리
+// refresh 동시 처리 큐
 let isRefreshing = false
 let failedQueue = []
-
-const processQueue = (error, token = null) => {
-  failedQueue.forEach(prom => {
-    if (error) {
-      prom.reject(error)
-    } else {
-      prom.resolve(token)
-    }
-  })
-  
+const pushQueue = () => new Promise((resolve, reject) => failedQueue.push({ resolve, reject }))
+const flushQueue = (err, token = null) => {
+  failedQueue.forEach(p => err ? p.reject(err) : p.resolve(token))
   failedQueue = []
 }
 
-// axios 인스턴스 생성
+// axios 인스턴스
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json'
-  }
+  headers: { 'Content-Type': 'application/json' }
 })
 
-// 요청 인터셉터 - 토큰 추가
-apiClient.interceptors.request.use(
-  config => {
-    const accessToken = getToken('accessToken')
-    
-    if (accessToken && !isTokenExpired(accessToken)) {
-      config.headers['Authorization'] = `Bearer ${accessToken}`
-    }
-    
-    // CSRF 토큰 추가 (POST, PUT, DELETE 요청에만)
-    if (['post', 'put', 'delete', 'patch'].includes(config.method?.toLowerCase())) {
-      const csrfToken = generateCSRFToken()
-      config.headers['X-CSRF-Token'] = csrfToken
-    }
-    
-    // FormData 요청일 때는 Content-Type 헤더 제거 (브라우저가 자동으로 설정)
-    if (config.data instanceof FormData) {
-      delete config.headers['Content-Type']
-    }
-    
-    return config
-  },
-  error => {
-    return Promise.reject(error)
+// 요청 인터셉터 (필요 시 CSRF/만료검사 추가 가능)
+apiClient.interceptors.request.use((config) => {
+  const at = getToken(ACCESS_KEY)
+  if (at /* && !isTokenExpired(at) */) {
+    config.headers = config.headers || {}
+    config.headers.Authorization = `Bearer ${at}`
   }
-)
 
-// 응답 인터셉터 - 토큰 갱신
+  // FormData면 Content-Type 제거 (브라우저가 boundary 자동 설정)
+  if (config.data instanceof FormData) {
+    delete config.headers['Content-Type']
+  }
+
+  // 만약 CSRF 쓰려면 주석 해제
+  // if (['post','put','delete','patch'].includes((config.method || '').toLowerCase())) {
+  //   config.headers = config.headers || {}
+  //   config.headers['X-CSRF-Token'] = generateCSRFToken()
+  // }
+
+  return config
+})
+
+// 응답 인터셉터 (AT/RT 저장 + 401 자동 재발급)
 apiClient.interceptors.response.use(
-  response => response,
-  async error => {
-    const originalRequest = error.config
-    
-    // 401 에러이고 토큰 갱신을 시도하지 않은 경우
-    if (error.response?.status === 401 && !originalRequest._retry) {
+  (res) => {
+    const body = res?.data
+    const at = body?.accessToken ?? body?.data?.accessToken ?? null
+    const rt = res?.headers?.[RT_HEADER_LOWER] ?? null
+
+    if (at || rt) {
+      // 하나만 와도 기존 값 보존하여 저장
+      saveTokens(at || getToken(ACCESS_KEY), rt || getToken(REFRESH_KEY))
+    }
+    return res
+  },
+  async (error) => {
+    const original = error.config
+
+    if (error.response?.status === 401 && !original._retry) {
+      // 이미 다른 요청이 refresh 중 → 큐에 대기
       if (isRefreshing) {
-        // 이미 토큰 갱신 중인 경우 큐에 추가
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject })
-        }).then(token => {
-          originalRequest.headers['Authorization'] = `Bearer ${token}`
-          return apiClient(originalRequest)
-        }).catch(err => {
-          return Promise.reject(err)
-        })
+        try {
+          const newAT = await pushQueue()
+          original.headers = original.headers || {}
+          original.headers.Authorization = `Bearer ${newAT}`
+          return apiClient(original)
+        } catch (e) {
+          return Promise.reject(e)
+        }
       }
-      
-      originalRequest._retry = true
+
+      // 내가 refresh
+      original._retry = true
       isRefreshing = true
-      
+
       try {
-        const refreshToken = getToken('refreshToken')
-        if (!refreshToken) {
-          throw new Error('리프레시 토큰이 없습니다.')
-        }
-        
-        const response = await apiClient.post('/users/refresh-token', { 
-          refreshToken 
+        const rt = getToken(REFRESH_KEY)
+        if (!rt) throw new Error('NO_REFRESH_TOKEN')
+
+        // RT는 "헤더"로 보냄 (서버 규약)
+        const r = await axios.post(`${API_BASE_URL}/users/refresh-token`, {}, {
+          headers: { [RT_HEADER_RAW]: rt }
         })
-        
-        const { accessToken: newAccessToken, refreshToken: newRefreshToken } = response.data.data
-        
-        // 새 토큰 저장
-        saveTokens(newAccessToken, newRefreshToken)
-        
-        // 큐에 대기 중인 요청들 처리
-        processQueue(null, newAccessToken)
-        
-        // 원래 요청 재시도
-        originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`
-        return apiClient(originalRequest)
-        
-      } catch (refreshError) {
-        // 토큰 갱신 실패 시 로그아웃
-        processQueue(refreshError, null)
+
+        const newAT = r?.data?.accessToken ?? r?.data?.data?.accessToken
+        const newRT = r?.headers?.[RT_HEADER_LOWER] ?? rt // 회전 없으면 기존 유지
+
+        if (!newAT) throw new Error('REFRESH_FAILED_NO_AT')
+
+        saveTokens(newAT, newRT)
+        flushQueue(null, newAT)
+
+        original.headers = original.headers || {}
+        original.headers.Authorization = `Bearer ${newAT}`
+        return apiClient(original)
+      } catch (e) {
+        flushQueue(e, null)
         clearAllTokens()
-        
-        // 로그인 페이지로 리다이렉트 (현재 페이지가 로그인 페이지가 아닌 경우)
-        if (window.location.pathname !== '/auth/login') {
-          window.location.href = '/auth/login'
-        }
-        
-        return Promise.reject(refreshError)
+        if (window.location.pathname !== '/users/login') window.location.href = '/users/login'
+        return Promise.reject(e)
       } finally {
         isRefreshing = false
       }
     }
-    
+
     return Promise.reject(error)
   }
 )
+
 
 // 사용자 관련 API
 export const userAPI = {
@@ -141,9 +140,6 @@ export const userAPI = {
   // 로그인
   login: (credentials) => apiClient.post('/users/login', credentials),
   
-  // 토큰 갱신
-  refreshToken: (refreshToken) => apiClient.post('/users/refresh-token', { refreshToken }),
-  
   // 임시 비밀번호 발급
   lostPassword: (userData) => apiClient.post('/users/lost-password', userData),
   
@@ -154,13 +150,39 @@ export const userAPI = {
   changePassword: (passwordData) => apiClient.put('/users/change/password', passwordData),
   
   // 회원 탈퇴
-  delete: (password) => apiClient.post('/users/delete', { password }),
+  delete: (refreshToken) =>
+    apiClient.post('/users/delete', null, { headers: { [RT_HEADER_RAW]: refreshToken } }),
+
+  // --- 소셜 로그인 (인가코드 -> 서버) ---
+  oauthLogin: (provider, code) => apiClient.post(`/users/login/${provider}`, { code }),
+
+  // --- 소셜 계정 연동 확정 ---
+  confirmLink: (linkTicket) => apiClient.post('/users/link/confirm', { linkTicket }),
+  // --- 소셜 신규 유저 추가정보 제출 ---
+  signupExtra: (payload) => apiClient.post('/users/signup-extra', payload), 
   
+    // ✅ AT 재발급(헤더 RT)
+  refreshAT: (refreshToken) =>
+    apiClient.post('/users/token/refresh', null, { headers: { [RT_HEADER_RAW]: refreshToken } }),
+  // ✅ 로그아웃(헤더 RT)
+  logout: (refreshToken) =>
+    apiClient.post('/users/logout', null, { headers: { [RT_HEADER_RAW]: refreshToken } }),
+
   // 대표 동물 설정
   setMainPet: (petId) => apiClient.put(`/users/my-page/${petId}/main-pet`),
   
   // 마이페이지 정보 조회
   getMyPage: () => apiClient.get('/users/my-page'),
+  
+  // 프로필 업데이트
+  updateProfile: (profileData, imageFile) => {
+    const formData = new FormData()
+    formData.append('profileUpdateReq', JSON.stringify(profileData))
+    if (imageFile) {
+      formData.append('profileImage', imageFile)
+    }
+    return apiClient.put('/users/profile', formData)
+  },
   
   // 팔로우
   follow: (userId) => apiClient.post(`/users/follows/${userId}`),
@@ -317,6 +339,8 @@ export const postAPI = {
   report: (postId, reason) => apiClient.post(`/posts/${postId}/reports`, { reason })
 }
 
+
+
 // 마켓플레이스 관련 API
 export const marketAPI = {
   // 거래글 등록
@@ -361,24 +385,36 @@ export const marketAPI = {
   unlike: (postId) => apiClient.delete(`/markets/${postId}/like`),
   
   // 찜 목록 조회
-  getLikes: (pageable) => apiClient.get('/markets/like', { params: pageable })
+  getLikes: (pageable) => apiClient.get('/markets/like', { params: pageable }),
+  
+  // 사용자의 찜한 게시글 목록 조회
+  getUserLikedPosts() {
+    return apiClient.get('/markets/likes/user')
+  }
 }
 
 // 반려동물 관련 API
 export const petAPI = {
   // 반려동물 등록
-  register: (petData, petImg) => {
+  register: async (petData, petImg) => {
+    // 이미지가 없으면 JSON으로만 전송
+    if (!petImg) {
+      console.log('이미지 없음 - JSON으로만 전송')
+      return await apiClient.post('/pets/register', petData, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+    }
+    
+    // 이미지가 있으면 FormData로 전송
     const formData = new FormData()
     
-    // JSON 데이터를 문자열로 변환하여 추가
-    formData.append('PetRegisterReq', new Blob([JSON.stringify(petData)], {
-      type: 'application/json'
-    }))
+    // PetRegisterReq를 JSON 문자열로 전송
+    formData.append('PetRegisterReq', JSON.stringify(petData))
     
-    // 이미지 파일 추가
-    if (petImg) {
-      formData.append('petImg', petImg)
-    }
+    // 이미지 파일 추가 (백엔드 @RequestPart("url")와 맞춤)
+    formData.append('url', petImg)
     
     // FormData 디버깅
     console.log('=== FormData Debug ===')
@@ -397,11 +433,52 @@ export const petAPI = {
     }
     console.log('=== End FormData Debug ===')
     
-    return apiClient.post('/pets/register', formData, {
-      headers: {
-        'Content-Type': undefined // 명시적으로 undefined로 설정
+    console.log('=== API 요청 시작 ===')
+    console.log('요청 URL:', '/pets/register')
+    console.log('요청 헤더:', { 'Content-Type': undefined })
+    
+    try {
+      const response = await apiClient.post('/pets/register', formData, {
+        headers: {
+          'Content-Type': undefined // 명시적으로 undefined로 설정
+        }
+      })
+      
+      console.log('=== API 응답 성공 ===')
+      console.log('응답 상태:', response.status)
+      console.log('응답 헤더:', response.headers)
+      console.log('응답 데이터:', response.data)
+      console.log('응답 데이터 타입:', typeof response.data)
+      console.log('응답 데이터 키들:', Object.keys(response.data))
+      
+      // 백엔드 응답 구조 상세 분석
+      if (response.data) {
+        console.log('=== 백엔드 응답 구조 분석 ===')
+        console.log('response.data.success:', response.data.success)
+        console.log('response.data.isSuccess:', response.data.isSuccess)
+        console.log('response.data.message:', response.data.message)
+        console.log('response.data.data:', response.data.data)
+        console.log('response.data.status:', response.data.status)
+        
+        if (response.data.status) {
+          console.log('response.data.status.code:', response.data.status.code)
+          console.log('response.data.status.message:', response.data.status.message)
+        }
+        console.log('=== 백엔드 응답 구조 분석 완료 ===')
       }
-    })
+      
+      return response
+    } catch (error) {
+      console.log('=== API 요청 실패 ===')
+      console.log('에러 객체:', error)
+      console.log('에러 응답:', error.response)
+      if (error.response) {
+        console.log('에러 응답 상태:', error.response.status)
+        console.log('에러 응답 데이터:', error.response.data)
+        console.log('에러 응답 헤더:', error.response.headers)
+      }
+      throw error
+    }
   },
   
   // 반려동물 목록 조회
@@ -416,22 +493,33 @@ export const petAPI = {
   // 대표 펫 설정
   setMainPet: (petId) => apiClient.put(`/pets/${petId}/main`),
   
+  // 대표 반려동물 설정
+  setMainPet: (petId) => apiClient.put(`/users/my-page/${petId}/main-pet`),
+  
   // 반려동물 수정
-  update: (petId, petData, petImg) => {
-    const formData = new FormData()
-    
-    // JSON 데이터를 Blob으로 변환하여 추가
-    formData.append('PetRegisterReq', new Blob([JSON.stringify(petData)], {
-      type: 'application/json'
-    }))
-    
-    // 이미지 파일 추가
-    if (petImg) {
-      formData.append('petImg', petImg)
+  update: async (petId, petData, petImg) => {
+    // 이미지가 없으면 JSON으로만 전송
+    if (!petImg) {
+      console.log('이미지 없음 - JSON으로만 전송')
+      return await apiClient.put(`/pets/${petId}`, petData, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
     }
     
+    // 이미지가 있으면 FormData로 전송
+    const formData = new FormData()
+    
+    // PetRegisterReq를 JSON 문자열로 전송
+    formData.append('PetRegisterReq', JSON.stringify(petData))
+    
+    // 이미지 파일 추가 (백엔드 @RequestPart("url")와 맞춤)
+    formData.append('url', petImg)
+    
     // FormData 디버깅
-    console.log('=== FormData Debug ===')
+    console.log('=== FormData Debug (UPDATE) ===')
+    console.log('수정할 petId:', petId)
     console.log('Original petData:', petData)
     console.log('FormData contents:')
     for (let [key, value] of formData.entries()) {
@@ -444,14 +532,72 @@ export const petAPI = {
           console.log('Failed to parse PetRegisterReq:', e)
         }
       }
-    }
-    console.log('=== End FormData Debug ===')
-    
-    return apiClient.put(`/pets/${petId}`, formData, {
-      headers: {
-        'Content-Type': undefined // 명시적으로 undefined로 설정
+      if (key === 'petImg') {
+        console.log('=== 이미지 파일 상세 정보 ===')
+        console.log('파일 이름:', value.name)
+        console.log('파일 크기:', value.size, 'bytes')
+        console.log('파일 타입:', value.type)
+        console.log('파일 마지막 수정:', value.lastModified)
+        console.log('=== 이미지 파일 상세 정보 완료 ===')
       }
-    })
+    }
+    console.log('=== End FormData Debug (UPDATE) ===')
+    
+    console.log('=== UPDATE API 요청 시작 ===')
+    console.log('요청 URL:', `/pets/${petId}`)
+    console.log('요청 헤더:', { 'Content-Type': undefined })
+    
+    try {
+      const response = await apiClient.put(`/pets/${petId}`, formData, {
+        headers: {
+          'Content-Type': undefined // 명시적으로 undefined로 설정
+        }
+      })
+      
+      console.log('=== UPDATE API 응답 성공 ===')
+      console.log('응답 상태:', response.status)
+      console.log('응답 헤더:', response.headers)
+      console.log('응답 데이터:', response.data)
+      console.log('응답 데이터 타입:', typeof response.data)
+      console.log('응답 데이터 키들:', Object.keys(response.data))
+      
+              // 백엔드 응답 구조 상세 분석
+        if (response.data) {
+          console.log('=== UPDATE 백엔드 응답 구조 분석 ===')
+          console.log('response.data.success:', response.data.success)
+          console.log('response.data.isSuccess:', response.data.isSuccess)
+          console.log('response.data.message:', response.data.message)
+          console.log('response.data.data:', response.data.data)
+          console.log('response.data.status:', response.data.status)
+          
+          if (response.data.status) {
+            console.log('response.data.status.code:', response.data.status.code)
+            console.log('response.data.status.message:', response.data.status.message)
+          }
+          
+          // 백엔드 응답 전체 구조 상세 분석
+          console.log('=== 백엔드 응답 전체 구조 ===')
+          console.log('전체 response.data:', JSON.stringify(response.data, null, 2))
+          console.log('response.data 키들:', Object.keys(response.data))
+          console.log('response.data.data 타입:', typeof response.data.data)
+          console.log('response.data.data 내용:', response.data.data)
+          console.log('=== 백엔드 응답 전체 구조 완료 ===')
+          
+          console.log('=== UPDATE 백엔드 응답 구조 분석 완료 ===')
+        }
+      
+      return response
+    } catch (error) {
+      console.log('=== UPDATE API 요청 실패 ===')
+      console.log('에러 객체:', error)
+      console.log('에러 응답:', error.response)
+      if (error.response) {
+        console.log('에러 응답 상태:', error.response.status)
+        console.log('에러 응답 데이터:', error.response.data)
+        console.log('에러 응답 헤더:', error.response.headers)
+      }
+      throw error
+    }
   },
   
   // 반려동물 삭제
@@ -470,7 +616,17 @@ export const speciesAPI = {
 // 채팅 관련 API
 export const chatAPI = {
   // 채팅방 개설
-  createRoom: (roomData) => apiClient.post('/chat-rooms', roomData),
+  createRoom: (roomData) => {
+    const { roomName, participantEmails = [] } = roomData
+    
+    // 백엔드 API 형식에 맞춰 요청 데이터 구성
+    const requestData = {
+      roomName,
+      userEmailList: participantEmails
+    }
+    
+    return apiClient.post('/chat-rooms', requestData)
+  },
   
   // 채팅방 목록 조회
   getRooms: () => apiClient.get('/chat-rooms'),

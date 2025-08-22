@@ -1,17 +1,1250 @@
 <template>
-  <v-container>
-    <v-card>
-      <v-card-title>마켓플레이스</v-card-title>
-      <v-card-text>
-        <p>마켓플레이스 목록 페이지입니다.</p>
-        <v-btn color="primary" @click="$router.push('/market/new')">새 게시글 작성</v-btn>
-      </v-card-text>
-    </v-card>
-  </v-container>
+  <div class="market-page">
+    <v-container class="market-container">
+      <!-- 페이지 헤더 -->
+      <div class="market-header">
+        <h1 class="page-title">멍냥거래</h1>
+        <p class="page-subtitle">안쓰는 애완용품을 거래해보세요 🐱🐶</p>     </div>
+
+      <!-- 검색 및 필터 섹션 -->
+      <div class="search-filter-section">
+        <div class="filter-controls">
+          <!-- 검색창 -->
+          <div class="search-container">
+            <v-icon icon="mdi-magnify" class="search-icon" />
+            <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="찾고 싶은 물건을 검색해보세요"
+              class="search-input"
+              @input="handleSearch"
+            />
+          </div>
+
+          <!-- 카테고리 버튼들 -->
+          <div class="category-buttons">
+            <button
+              v-for="category in categories"
+              :key="category.value"
+              :class="['category-btn', { active: selectedCategory === category.value }]"
+              @click="handleCategorySelect(category.value)"
+            >
+              {{ category.label }}
+            </button>
+          </div>
+
+          <!-- 정렬 선택 -->
+          <div class="filter-group">
+            <div class="dropdown-container">
+              <button class="dropdown-btn" @click="toggleSortDropdown">
+                <span>{{ getSelectedSortLabel() }}</span>
+                <v-icon icon="mdi-chevron-down" class="dropdown-icon" />
+              </button>
+              <div v-if="showSortDropdown" class="dropdown-menu">
+                <div
+                  v-for="sort in sortOptions"
+                  :key="sort.value"
+                  :class="['dropdown-item', { active: selectedSort === sort.value }]"
+                  @click="selectSort(sort.value)"
+                >
+                  {{ sort.title }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 거래글 목록 -->
+      <div class="market-content">
+        <!-- 목록 정보 및 작성 버튼 -->
+        <div class="list-header">
+          <div class="list-info">
+            <span class="total-count">총 {{ totalElements }}개의 거래글</span>
+            <span class="category-info" v-if="selectedCategory !== 'all'">
+              • {{ getCategoryLabel(selectedCategory) }}
+            </span>
+          </div>
+          <button class="create-post-btn" @click="navigateToCreate">
+            <v-icon icon="mdi-plus" size="18" />
+            거래글 작성
+          </button>
+        </div>
+
+        <!-- 로딩 상태 -->
+        <div v-if="loading" class="loading-container">
+          <div class="loading-spinner"></div>
+          <p>거래글을 불러오는 중...</p>
+        </div>
+
+        <!-- 에러 상태 -->
+        <div v-else-if="error" class="error-container">
+          <p class="error-message">{{ error }}</p>
+          <button @click="fetchMarketPosts" class="retry-btn">다시 시도</button>
+        </div>
+
+        <!-- 거래글 그리드 (3x3) -->
+        <div v-else-if="posts.length > 0" class="posts-grid">
+          <div
+            v-for="post in posts"
+            :key="post.id"
+            class="post-card"
+            @click="navigateToPost(post.id)"
+          >
+            <!-- 이미지 -->
+            <div class="post-image">
+              <img 
+                :src="post.thumbnailUrl || 'https://via.placeholder.com/400x300/f0f0f0/cccccc?text=이미지+없음'" 
+                :alt="post.title"
+                @error="handleImageError"
+              />
+              <!-- 판매상태 배지 -->
+              <div class="status-badge" :class="getStatusClass(post.saleStatus)">
+                {{ getStatusText(post.saleStatus) }}
+              </div>
+            </div>
+
+            <!-- 내용 -->
+            <div class="post-content">
+              <h3 class="post-title">{{ post.title }}</h3>
+              <div class="post-price">{{ formatPrice(post.price) }}</div>
+            </div>
+
+            <!-- 찜하기 버튼과 찜개수 (좌하단) -->
+            <div class="like-section">
+              <button 
+                class="like-btn"
+                @click.stop="toggleLike(post.id)"
+                :class="{ liked: post.isLiked }"
+              >
+                <v-icon 
+                  :icon="post.isLiked ? 'mdi-heart' : 'mdi-heart-outline'" 
+                  size="20"
+                />
+              </button>
+              <!-- 찜개수 제거 -->
+            </div>
+          </div>
+        </div>
+
+        <!-- 빈 상태 -->
+        <div v-else class="empty-container">
+          <p>등록된 거래글이 없습니다.</p>
+        </div>
+
+        <!-- 페이지네이션 -->
+        <div class="pagination" v-if="totalPages > 1">
+          <button 
+            class="page-btn prev" 
+            :disabled="currentPage === 1"
+            @click="changePage(currentPage - 1)"
+          >
+            <v-icon icon="mdi-chevron-left" size="18" />
+          </button>
+          
+          <div class="page-numbers">
+            <button
+              v-for="page in visiblePages"
+              :key="page"
+              :class="['page-btn', { active: page === currentPage }]"
+              @click="changePage(page)"
+            >
+              {{ page }}
+            </button>
+          </div>
+          
+          <button 
+            class="page-btn next" 
+            :disabled="currentPage === totalPages"
+            @click="changePage(currentPage + 1)"
+          >
+            <v-icon icon="mdi-chevron-right" size="18" />
+          </button>
+        </div>
+      </div>
+    </v-container>
+  </div>
 </template>
 
 <script>
+import { marketAPI } from '@/services/api'
+
 export default {
-  name: 'MarketListView'
+  name: 'MarketListView',
+  data() {
+    return {
+      searchQuery: '',
+      selectedCategory: 'all',
+      selectedSort: 'latest',
+      showSortDropdown: false,
+      currentPage: 1,
+      itemsPerPage: 9,
+      posts: [],
+      loading: false,
+      error: null,
+      totalElements: 0,
+      totalPages: 0,
+      // 백엔드 Category enum 기반으로 수정
+      categories: [
+        { label: '전체', value: 'all' },
+        { label: '사료', value: 'FEED' },
+        { label: '의류', value: 'CLOTH' },
+        { label: '장난감', value: 'TOY' },
+        { label: '기타', value: 'OTHER' }
+      ],
+      sortOptions: [
+        { title: '최신순', value: 'latest' },
+        { title: '인기순', value: 'popular' },
+        { title: '가격 낮은순', value: 'price-low' },
+        { title: '가격 높은순', value: 'price-high' }
+      ],
+      likedPosts: new Set(), // 찜한 게시글 ID들을 저장할 Set
+    }
+  },
+  computed: {
+    visiblePages() {
+      const pages = []
+      const start = Math.max(1, this.currentPage - 2)
+      const end = Math.min(this.totalPages, this.currentPage + 2)
+      
+      for (let i = start; i <= end; i++) {
+        pages.push(i)
+      }
+      
+      return pages
+    }
+  },
+  methods: {
+    async fetchMarketPosts() {
+      this.loading = true
+      this.error = null
+      
+      try {
+        const pageable = {
+          page: this.currentPage - 1,
+          size: this.itemsPerPage,
+          sort: 'id,desc' // 기본 정렬
+        }
+
+        // 정렬 옵션에 따른 정렬 설정
+        if (this.selectedSort === 'price-low') {
+          pageable.sort = 'price,asc'
+        } else if (this.selectedSort === 'price-high') {
+          pageable.sort = 'price,desc'
+        } else if (this.selectedSort === 'popular') {
+          // 백엔드에서 likeCount 정렬이 안되므로 기본 정렬로 요청
+          pageable.sort = 'id,desc'
+        }
+
+        console.log('Fetching market posts with pageable:', pageable)
+        const response = await marketAPI.getList(pageable)
+        console.log('API Response:', response)
+        
+        if (response.data && response.data.isSuccess) {
+          let fetchedPosts = response.data.data?.content || []
+          
+          // 인기순 정렬은 클라이언트 사이드에서 처리
+          if (this.selectedSort === 'popular') {
+            fetchedPosts.sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0))
+            console.log('Sorted by likeCount:', fetchedPosts.map(p => ({ id: p.id, likeCount: p.likeCount })))
+          }
+          
+          this.posts = fetchedPosts
+          this.totalElements = response.data.data?.totalElements || 0
+          this.totalPages = response.data.data?.totalPages || 0
+          
+          // 각 포스트에 isLiked 속성 추가 (로컬스토리지에서 가져온 정보 사용)
+          this.posts.forEach(post => {
+            post.isLiked = this.isPostLiked(post.id)
+            if (!post.createdAt) {
+              post.createdAt = new Date().toISOString()
+            }
+          })
+        } else {
+          this.error = response.data?.status?.message || '거래글 목록을 불러오는데 실패했습니다.'
+          console.error('API Error:', response.data)
+        }
+      } catch (error) {
+        console.error('거래글 목록 조회 오류:', error)
+        this.error = '거래글 목록을 불러오는데 실패했습니다. 다시 시도해주세요.'
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async toggleLike(postId) {
+      try {
+        const post = this.posts.find(p => p.id === postId)
+        if (!post) return
+
+        if (post.isLiked) {
+          // 찜 취소
+          await marketAPI.unlike(postId)
+          post.likeCount = Math.max(0, (post.likeCount || 0) - 1)
+          this.removeLikedPost(postId)
+        } else {
+          // 찜하기
+          await marketAPI.like(postId)
+          post.likeCount = (post.likeCount || 0) + 1
+          this.addLikedPost(postId)
+        }
+        
+        post.isLiked = !post.isLiked
+      } catch (error) {
+        console.error('찜하기/취소 오류:', error)
+        // 에러 발생 시 사용자에게 알림
+        this.$emit('show-snackbar', {
+          message: '찜하기 처리에 실패했습니다.',
+          type: 'error'
+        })
+      }
+    },
+
+    handleCategorySelect(category) {
+      this.selectedCategory = category
+      this.currentPage = 1
+      // 현재는 백엔드에서 필터링을 지원하지 않으므로 클라이언트 사이드에서 필터링
+      this.filterPostsLocally()
+    },
+
+    handleSearch() {
+      // 검색어 입력 시 디바운싱 적용
+      clearTimeout(this.searchTimeout)
+      this.searchTimeout = setTimeout(() => {
+        this.currentPage = 1
+        // 현재는 백엔드에서 검색을 지원하지 않으므로 클라이언트 사이드에서 필터링
+        this.filterPostsLocally()
+      }, 500)
+    },
+
+    // 클라이언트 사이드 필터링 (백엔드 필터링 지원 전까지 임시)
+    filterPostsLocally() {
+      // 먼저 모든 데이터를 가져온 후 클라이언트에서 필터링
+      this.fetchMarketPosts().then(() => {
+        let filteredPosts = [...this.posts]
+        
+        // 카테고리 필터링
+        if (this.selectedCategory !== 'all') {
+          filteredPosts = filteredPosts.filter(post => 
+            post.category === this.selectedCategory
+          )
+        }
+        
+        // 검색어 필터링
+        if (this.searchQuery && this.searchQuery.trim()) {
+          const searchTerm = this.searchQuery.toLowerCase().trim()
+          filteredPosts = filteredPosts.filter(post => 
+            post.title.toLowerCase().includes(searchTerm) ||
+            (post.description && post.description.toLowerCase().includes(searchTerm))
+          )
+        }
+        
+        this.posts = filteredPosts
+        this.totalElements = filteredPosts.length
+        this.totalPages = Math.ceil(filteredPosts.length / this.itemsPerPage)
+      })
+    },
+
+    toggleSortDropdown() {
+      this.showSortDropdown = !this.showSortDropdown
+    },
+
+    selectSort(sort) {
+      this.selectedSort = sort
+      this.showSortDropdown = false
+      this.currentPage = 1
+      this.fetchMarketPosts()
+    },
+
+    getSelectedSortLabel() {
+      const sort = this.sortOptions.find(s => s.value === this.selectedSort)
+      return sort ? sort.title : '최신순'
+    },
+
+    getCategoryLabel(categoryValue) {
+      const category = this.categories.find(c => c.value === categoryValue)
+      return category ? category.label : '기타'
+    },
+
+    formatPrice(price) {
+      if (!price) return ''
+      return price.toLocaleString() + '원'
+    },
+
+    getStatusText(status) {
+      // 백엔드 SaleStatus enum 기반으로 수정
+      const statusMap = {
+        'SALE': '판매중',
+        'SOLD': '판매완료',
+        'RESERVED': '예약중'
+      }
+      return statusMap[status] || '판매중'
+    },
+
+    getStatusClass(status) {
+      const classMap = {
+        'SALE': 'status-sale',
+        'SOLD': 'status-sold',
+        'RESERVED': 'status-reserved'
+      }
+      return classMap[status] || 'status-default'
+    },
+
+    isNewPost(createdAt) {
+      if (!createdAt) return false
+      const createdDate = new Date(createdAt)
+      const now = new Date()
+      const diffTime = Math.abs(now - createdDate)
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      return diffDays <= 7 // 7일 이내면 NEW 표시
+    },
+
+    handleImageError(event) {
+      // 이미지 로드 실패 시 플레이스홀더로 대체
+      event.target.src = 'https://via.placeholder.com/400x300/f0f0f0/cccccc?text=이미지+없음'
+    },
+
+    changePage(page) {
+      this.currentPage = page
+      this.fetchMarketPosts()
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    },
+
+    navigateToCreate() {
+      this.$router.push('/market/new')
+    },
+
+    navigateToPost(postId) {
+      this.$router.push(`/market/${postId}`)
+    },
+
+    // 백엔드와 찜하기 상태 동기화 (수정)
+    async syncLikeStatus() {
+      try {
+        // 백엔드에서 현재 로그인한 사용자의 찜한 게시글 목록을 가져와서 동기화
+        const response = await marketAPI.getUserLikedPosts()
+        if (response.data && response.data.isSuccess) {
+          const likedPostIds = response.data.data || []
+          this.likedPosts = new Set(likedPostIds)
+          console.log('백엔드에서 가져온 찜한 게시글:', [...this.likedPosts])
+          
+          // localStorage 업데이트 (사용자별로 구분)
+          this.saveLikedPosts()
+        } else {
+          console.log('백엔드에서 찜한 게시글을 가져올 수 없음, localStorage 사용')
+          this.loadLikedPosts()
+        }
+      } catch (error) {
+        console.error('찜하기 상태 동기화 오류:', error)
+        // 에러 발생 시 localStorage에서 기존 정보 로드
+        this.loadLikedPosts()
+      }
+    },
+
+    // localStorage의 찜한 게시글 정보 초기화 (수정)
+    clearLikedPosts() {
+      this.likedPosts.clear()
+      // 사용자별로 구분된 localStorage 키 사용
+      const currentUserId = this.getCurrentUserId()
+      if (currentUserId) {
+        localStorage.removeItem(`likedPosts_${currentUserId}`)
+      }
+      // 모든 포스트의 isLiked 상태를 false로 초기화
+      if (this.posts.length > 0) {
+        this.posts.forEach(post => {
+          post.isLiked = false
+        })
+      }
+    },
+
+    // 로컬스토리지에서 찜한 게시글 정보 가져오기 (수정)
+    loadLikedPosts() {
+      try {
+        const currentUserId = this.getCurrentUserId()
+        if (!currentUserId) {
+          this.likedPosts = new Set()
+          return
+        }
+        
+        const likedPostsData = localStorage.getItem(`likedPosts_${currentUserId}`)
+        if (likedPostsData) {
+          this.likedPosts = new Set(JSON.parse(likedPostsData))
+          console.log(`사용자 ${currentUserId}의 찜한 게시글:`, [...this.likedPosts])
+        }
+      } catch (error) {
+        console.error('찜한 게시글 정보 로드 오류:', error)
+        this.likedPosts = new Set()
+      }
+    },
+
+    // 로컬스토리지에 찜한 게시글 정보 저장 (수정)
+    saveLikedPosts() {
+      try {
+        const currentUserId = this.getCurrentUserId()
+        if (!currentUserId) return
+        
+        localStorage.setItem(`likedPosts_${currentUserId}`, JSON.stringify([...this.likedPosts]))
+        console.log(`사용자 ${currentUserId}의 찜한 게시글 저장됨:`, [...this.likedPosts])
+      } catch (error) {
+        console.error('찜한 게시글 정보 저장 오류:', error)
+      }
+    },
+
+    // 현재 로그인한 사용자 ID 가져오기
+    getCurrentUserId() {
+      // auth store에서 현재 사용자 정보 가져오기
+      try {
+        const authStore = this.$store?.auth || this.$pinia?.auth
+        if (authStore && authStore.user) {
+          return authStore.user.id || authStore.user.userId
+        }
+        
+        // JWT 토큰에서 사용자 ID 추출 시도
+        const token = localStorage.getItem('accessToken')
+        if (token) {
+          const payload = JSON.parse(atob(token.split('.')[1]))
+          return payload.sub || payload.userId || payload.id
+        }
+        
+        return null
+      } catch (error) {
+        console.error('사용자 ID 가져오기 오류:', error)
+        return null
+      }
+    },
+
+    // 게시글을 찜한 게시글 목록에 추가 (수정)
+    addLikedPost(postId) {
+      this.likedPosts.add(postId)
+      this.saveLikedPosts()
+      console.log(`게시글 ${postId} 찜하기 추가됨`)
+    },
+
+    // 게시글을 찜한 게시글 목록에서 제거 (수정)
+    removeLikedPost(postId) {
+      this.likedPosts.delete(postId)
+      this.saveLikedPosts()
+      console.log(`게시글 ${postId} 찜하기 제거됨`)
+    },
+
+    // 특정 게시글이 찜해져 있는지 확인 (수정)
+    isPostLiked(postId) {
+      const isLiked = this.likedPosts.has(postId)
+      console.log(`게시글 ${postId} 찜 상태:`, isLiked)
+      return isLiked
+    },
+
+    // 찜하기 상태 업데이트 (백엔드 동기화)
+    async updateLikeStatus() {
+      await this.syncLikeStatus()
+      // posts가 로드된 후에만 isLiked 상태 업데이트
+      if (this.posts.length > 0) {
+        this.posts.forEach(post => {
+          post.isLiked = this.isPostLiked(post.id)
+        })
+      }
+    },
+  },
+
+  mounted() {
+    // 백엔드와 찜하기 상태 동기화
+    this.syncLikeStatus()
+    
+    // 초기 데이터 로드
+    this.fetchMarketPosts()
+
+    // 드롭다운 외부 클릭 시 닫기
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.dropdown-container')) {
+        this.showSortDropdown = false
+      }
+    })
+  },
+
+  beforeUnmount() {
+    // 컴포넌트 제거 시 이벤트 리스너 정리
+    document.removeEventListener('click', this.handleClickOutside)
+  }
 }
 </script>
+
+<style scoped>
+/* 기존 CSS 스타일은 그대로 유지 */
+.market-page {
+  min-height: 100vh;
+  background: var(--v-theme-surface-light);
+}
+
+.market-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 20px;
+}
+
+/* 페이지 헤더 */
+.market-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.page-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0 0 12px 0;
+}
+
+.page-subtitle {
+  font-size: 1.125rem;
+  color: #7f8c8d;
+  margin: 0;
+  font-weight: 400;
+}
+
+/* 검색 및 필터 섹션 */
+.search-filter-section {
+  background: white;
+  border-radius: 20px;
+  padding: 32px;
+  margin-bottom: 32px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.filter-controls {
+  display: flex;
+  align-items: center;
+  gap: 32px; /* 간격 증가 */
+  flex-wrap: wrap;
+}
+
+/* 검색창 */
+.search-container {
+  position: relative;
+  flex: 1;
+  max-width: 400px; /* 최대 너비 증가 */
+}
+
+.search-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #E87D7D;
+  z-index: 2;
+}
+
+.search-input {
+  width: 100%;
+  padding: 16px 16px 16px 48px;
+  border: 2px solid #e9ecef;
+  border-radius: 16px;
+  font-size: 1rem;
+  background: #f8f9fa;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+  color: #2c3e50;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #E87D7D;
+  background: white;
+  box-shadow: 0 0 0 4px rgba(232, 125, 125, 0.1);
+}
+
+.search-input::placeholder {
+  color: #adb5bd;
+}
+
+/* 카테고리 버튼들 */
+.category-buttons {
+  display: flex;
+  gap: 16px; /* 간격 증가 */
+  flex-wrap: wrap;
+}
+
+.category-btn {
+  padding: 12px 18px;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  background: white;
+  color: #6c757d;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.category-btn:hover {
+  border-color: #E87D7D;
+  color: #E87D7D;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(232, 125, 125, 0.15);
+}
+
+.category-btn.active {
+  background: #E87D7D;
+  color: white;
+  border-color: #E87D7D;
+}
+
+/* 필터 그룹 */
+.filter-group {
+  display: flex;
+  align-items: center;
+  margin-left: auto; /* 오른쪽 정렬 */
+}
+
+.dropdown-container {
+  position: relative;
+}
+
+.dropdown-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  background: white;
+  color: #2c3e50;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 130px;
+  justify-content: space-between;
+}
+
+.dropdown-btn:hover {
+  border-color: #E87D7D;
+  box-shadow: 0 2px 8px rgba(232, 125, 125, 0.1);
+}
+
+.dropdown-icon {
+  transition: transform 0.3s ease;
+  color: #6c757d;
+}
+
+.dropdown-container.active .dropdown-icon {
+  transform: rotate(180deg);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  margin-top: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 10;
+  overflow: hidden;
+}
+
+.dropdown-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid #f1f3f4;
+  color: #2c3e50;
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item:hover {
+  background-color: #f8f9fa;
+}
+
+.dropdown-item.active {
+  background-color: #E87D7D;
+  color: white;
+}
+
+/* 거래글 목록 */
+.market-content {
+  background: white;
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* 목록 헤더 */
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.list-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.total-count {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.category-info {
+  font-size: 0.9rem;
+  color: #7f8c8d;
+}
+
+/* 거래글 작성 버튼 */
+.create-post-btn {
+  background: linear-gradient(135deg, #E87D7D 0%, #d65a5a 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(232, 125, 125, 0.2);
+}
+
+.create-post-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(232, 125, 125, 0.3);
+}
+
+/* 거래글 그리드 (3x3) */
+.posts-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.post-card {
+  background: white;
+  border: 2px solid #f1f3f4;
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.post-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border-color: #E87D7D;
+}
+
+/* 이미지 */
+.post-image {
+  position: relative;
+  height: 200px;
+  overflow: hidden;
+}
+
+.post-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.post-card:hover .post-image img {
+  transform: scale(1.05);
+}
+
+/* 판매상태 배지 */
+.status-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px; /* NEW 위치로 이동 */
+  background: #E87D7D;
+  color: white;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.status-sale {
+  background-color: #4CAF50; /* 판매중 */
+}
+
+.status-sold {
+  background-color: #F44336; /* 판매완료 */
+}
+
+.status-reserved {
+  background-color: #FF9800; /* 예약중 */
+}
+
+.status-default {
+  background-color: #9E9E9E; /* 기본 */
+}
+
+/* 내용 */
+.post-content {
+  padding: 20px;
+}
+
+.post-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0 0 12px 0;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.post-price {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #E87D7D;
+  margin-bottom: 8px;
+}
+
+.post-status {
+  margin-bottom: 12px;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: white;
+}
+
+.status-sale {
+  background-color: #4CAF50; /* 판매중 */
+}
+
+.status-sold {
+  background-color: #F44336; /* 판매완료 */
+}
+
+/* 찜하기 버튼 (좌하단) */
+.like-btn {
+  position: absolute;
+  bottom: 16px; /* 좌하단으로 이동 */
+  left: 16px; /* 좌하단으로 이동 */
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid #e9ecef; /* 동그라미 테두리 */
+  border-radius: 50%;
+  width: 44px; /* 크기 증가 */
+  height: 44px; /* 크기 증가 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.like-btn:hover {
+  background: white;
+  transform: scale(1.1);
+  border-color: #E87D7D;
+  box-shadow: 0 4px 12px rgba(232, 125, 125, 0.2);
+}
+
+.like-btn.liked {
+  background: #E87D7D;
+  color: white;
+  border-color: #E87D7D;
+}
+
+.like-btn:not(.liked) {
+  color: #6c757d;
+}
+
+/* 기존 우상단 찜하기 버튼 스타일 제거 */
+.like-button-top {
+  display: none;
+}
+
+/* 기존 하단 찜하기 버튼 스타일 제거 */
+.like-button-inline {
+  display: none;
+}
+
+/* 기존 NEW 배지 스타일 제거 */
+.post-badge {
+  display: none;
+}
+
+/* 로딩 상태 */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+  color: #7f8c8d;
+}
+
+.loading-spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #E87D7D;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 15px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 에러 상태 */
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+  color: #E87D7D;
+}
+
+.error-message {
+  font-size: 1.125rem;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.retry-btn {
+  background: linear-gradient(135deg, #E87D7D 0%, #d65a5a 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(232, 125, 125, 0.2);
+}
+
+.retry-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(232, 125, 125, 0.3);
+}
+
+/* 빈 상태 */
+.empty-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+  color: #7f8c8d;
+}
+
+.empty-container p {
+  font-size: 1.125rem;
+  margin-bottom: 20px;
+}
+
+/* 페이지네이션 */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.page-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  background: white;
+  color: #6c757d;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.page-btn:hover:not(:disabled) {
+  border-color: #E87D7D;
+  color: #E87D7D;
+}
+
+.page-btn.active {
+  background: #E87D7D;
+  color: white;
+  border-color: #E87D7D;
+}
+
+.page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-numbers {
+  display: flex;
+  gap: 8px;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 1024px) {
+  .posts-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .market-container {
+    padding: 20px 16px;
+  }
+
+  .page-title {
+    font-size: 2rem;
+  }
+
+  .search-filter-section {
+    padding: 24px;
+  }
+
+  .filter-controls {
+    flex-direction: column;
+    gap: 24px; /* 모바일에서 간격 조정 */
+    align-items: stretch;
+  }
+
+  .search-container {
+    max-width: none;
+  }
+
+  .category-buttons {
+    justify-content: center;
+    gap: 12px; /* 모바일에서 간격 조정 */
+  }
+
+  .category-btn {
+    padding: 10px 16px;
+    font-size: 0.85rem;
+  }
+
+  .market-content {
+    padding: 24px;
+  }
+
+  .list-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .create-post-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .posts-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-title {
+    font-size: 1.75rem;
+  }
+
+  .search-filter-section {
+    padding: 20px;
+  }
+
+  .market-content {
+    padding: 20px;
+  }
+
+  .category-buttons {
+    gap: 8px;
+  }
+
+  .category-btn {
+    padding: 10px 16px;
+    font-size: 0.85rem;
+  }
+}
+
+/* 찜하기 섹션 (좌하단) */
+.like-section {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.like-btn {
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid #e9ecef;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+}
+
+.like-btn:hover {
+  background: white;
+  transform: scale(1.1);
+  border-color: #E87D7D;
+  box-shadow: 0 4px 12px rgba(232, 125, 125, 0.2);
+}
+
+.like-btn.liked {
+  background: #E87D7D;
+  color: white;
+  border-color: #E87D7D;
+}
+
+.like-btn:not(.liked) {
+  color: #6c757d;
+}
+
+/* 찜개수 스타일 제거 */
+
+/* 기존 찜하기 관련 스타일 제거 */
+.post-likes {
+  display: none;
+}
+
+.like-button-top,
+.like-button-inline {
+  display: none;
+}
+</style>

@@ -18,6 +18,7 @@ export const useAuthStore = defineStore('auth', () => {
   const refreshToken = ref(getToken('refreshToken') || null)
   const loading = ref(false)
   const isInitialized = ref(false)
+  const myPageInfo = ref(null) // 마이페이지 정보 (대표 반려동물 포함)
 
   // 계산된 속성
   const isAuthenticated = computed(() => {
@@ -81,7 +82,7 @@ export const useAuthStore = defineStore('auth', () => {
         throw new Error('리프레시 토큰이 없습니다.')
       }
       
-      const response = await userAPI.refreshToken(currentRefreshToken)
+      const response = await userAPI.refreshAT(currentRefreshToken)
       const { accessToken: at, refreshToken: rt } = response.data.data
       
       // 새 토큰 저장
@@ -98,6 +99,9 @@ export const useAuthStore = defineStore('auth', () => {
       // 토큰 자동 갱신 재설정
       setupTokenRefresh(refreshAccessToken)
       
+      // 마이페이지 정보 새로고침
+      await fetchMyPageInfo()
+      
       return at
     } catch (error) {
       logout()
@@ -113,6 +117,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await userAPI.getMyPage()
       user.value = response.data.data
+      myPageInfo.value = response.data.data // 마이페이지 정보도 함께 저장
       return response.data.data
     } catch (error) {
       if (error.response?.status === 401) {
@@ -199,6 +204,19 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  // 마이페이지 정보 가져오기 (대표 반려동물 포함)
+  const fetchMyPageInfo = async () => {
+    try {
+      const response = await userAPI.getMyPage()
+      if (response.data.isSuccess) {
+        myPageInfo.value = response.data.data
+        console.log('마이페이지 정보:', myPageInfo.value)
+      }
+    } catch (error) {
+      console.error('마이페이지 정보 가져오기 실패:', error)
+    }
+  }
+
   // 초기화 시 사용자 정보 가져오기
   const initialize = async () => {
     if (isInitialized.value) return
@@ -242,6 +260,7 @@ export const useAuthStore = defineStore('auth', () => {
     refreshToken,
     loading,
     isInitialized,
+    myPageInfo,
     
     // 계산된 속성
     isAuthenticated,
@@ -261,6 +280,7 @@ export const useAuthStore = defineStore('auth', () => {
     verifyEmailCheck,
     lostPassword,
     unlock,
+    fetchMyPageInfo,
     initialize
   }
 })
