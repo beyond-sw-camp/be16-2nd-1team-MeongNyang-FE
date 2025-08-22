@@ -40,6 +40,7 @@
       @dragover="handleDragOver"
       @dragleave="handleDragLeave"
       @drop="handleDrop"
+      @scroll="handleScroll"
     >
       <!-- 드래그 앤 드롭 오버레이 -->
       <div 
@@ -92,6 +93,20 @@
           </div>
         </div>
       </template>
+      
+      <!-- 맨 아래로 버튼 -->
+      <v-btn
+        v-show="showScrollToBottomButton"
+        @click="scrollToBottom"
+        class="scroll-to-bottom-btn"
+        color="primary"
+        icon
+        size="large"
+        elevation="4"
+        :ripple="false"
+      >
+        <v-icon>mdi-chevron-down</v-icon>
+      </v-btn>
     </v-card-text>
     <v-divider></v-divider>
     <v-card-actions class="chat-input-container pa-4">
@@ -567,6 +582,10 @@ export default {
     // 다중 선택 관련 상태
     const selectedUsers = ref(new Set())
     const selectAll = ref(false)
+    
+    // 스크롤 관련 상태
+    const showScrollToBottomButton = ref(false)
+    const isAtBottom = ref(true)
 
     // 계산된 속성
     const displayedMessages = computed(() => {
@@ -730,6 +749,14 @@ export default {
         newMessage.value = ''
         selectedFiles.value = []
         if (fileInput.value) fileInput.value.value = null
+        
+        // 메시지 전송 후 약간의 지연을 두고 최하단으로 스크롤
+        setTimeout(() => {
+          scrollToBottom()
+          // 하단 상태로 설정
+          isAtBottom.value = true
+          showScrollToBottomButton.value = false
+        }, 100)
       } catch (err) {
         error.value = '메시지 전송에 실패했습니다. 잠시 후 다시 시도해주세요.'
         console.error('메시지 전송 실패:', err)
@@ -740,10 +767,36 @@ export default {
     
     const scrollToBottom = () => {
       nextTick(() => {
-        if (chatBox.value) {
-          chatBox.value.scrollTop = chatBox.value.scrollHeight
+        const chatContainer = chatBox.value?.$el || chatBox.value
+        if (chatContainer) {
+          // 더 확실한 스크롤을 위해 scrollHeight보다 큰 값으로 설정
+          chatContainer.scrollTop = chatContainer.scrollHeight + 1000
+          
+          // 스크롤 후 하단 상태로 설정
+          isAtBottom.value = true
+          showScrollToBottomButton.value = false
         }
       })
+    }
+    
+    const handleScroll = () => {
+      const chatContainer = chatBox.value?.$el || chatBox.value
+      if (!chatContainer) return
+      
+      const { scrollTop, scrollHeight, clientHeight } = chatContainer
+      const threshold = 50 // 하단에서 50px 이내면 하단으로 간주 (더 민감하게)
+      
+      // 현재 스크롤 위치가 하단에 가까운지 확인
+      const atBottom = scrollTop + clientHeight >= scrollHeight - threshold
+      
+      // 하단 상태가 변경되었는지 확인
+      if (isAtBottom.value !== atBottom) {
+        isAtBottom.value = atBottom
+      }
+      
+      // 하단이 아니고 스크롤이 위로 올라갔을 때만 버튼 표시
+      const shouldShowButton = !atBottom && scrollTop > 50
+      showScrollToBottomButton.value = shouldShowButton
     }
     
     const triggerFileInput = () => {
@@ -1240,7 +1293,10 @@ export default {
     })
     
     watch(messages, () => {
-      scrollToBottom()
+      // 사용자가 하단에 있을 때만 자동으로 스크롤
+      if (isAtBottom.value) {
+        scrollToBottom()
+      }
     }, { deep: true })
     
     watch(showInviteDialog, (newValue) => {
@@ -1264,6 +1320,18 @@ export default {
       if (props.roomId) {
         await loadRoomData()
         connectWebsocket()
+        // 초기 로드 후 하단으로 스크롤
+        nextTick(() => {
+          scrollToBottom()
+          // 초기 스크롤 상태 설정
+          const chatContainer = chatBox.value?.$el || chatBox.value
+          if (chatContainer) {
+            const { scrollTop, scrollHeight, clientHeight } = chatContainer
+            const atBottom = scrollTop + clientHeight >= scrollHeight - 50
+            isAtBottom.value = atBottom
+            showScrollToBottomButton.value = false
+          }
+        })
       }
       window.addEventListener('beforeunload', disconnectWebsocket)
       
@@ -1302,6 +1370,7 @@ export default {
       disconnectWebsocket,
       sendMessage,
       scrollToBottom,
+      handleScroll,
       triggerFileInput,
       onFileChange,
       removeFile,
@@ -1351,7 +1420,10 @@ export default {
       toggleUserSelection,
       toggleSelectAll,
       getSelectedUsersCount,
-      isUserSelected
+      isUserSelected,
+      // 스크롤 관련
+      showScrollToBottomButton,
+      isAtBottom
     }
   }
 }
@@ -1378,6 +1450,7 @@ export default {
   height: calc(100vh - 180px); /* 헤더(64px) + 입력영역(116px) 제외 */
   max-height: calc(100vh - 180px);
   scroll-behavior: smooth;
+  position: relative; /* 버튼의 절대 위치 기준점 */
 }
 
 /* 입력 영역 고정 높이 */
@@ -1643,6 +1716,34 @@ export default {
   
   .file-size {
     font-size: 10px;
+  }
+}
+
+/* 맨 아래로 버튼 스타일 */
+.scroll-to-bottom-btn {
+  position: absolute !important;
+  bottom: 20px; /* 채팅 메시지 컨테이너 하단에서 20px 위 */
+  right: 20px;
+  z-index: 100;
+  border-radius: 50% !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
+  background-color: rgba(25, 118, 210, 0.9) !important;
+}
+
+.scroll-to-bottom-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(25, 118, 210, 0.3) !important;
+  background-color: rgba(25, 118, 210, 1) !important;
+}
+
+/* 모바일에서 버튼 위치 조정 */
+@media (max-width: 768px) {
+  .scroll-to-bottom-btn {
+    bottom: 16px;
+    right: 16px;
+    width: 48px !important;
+    height: 48px !important;
   }
 }
 </style>
