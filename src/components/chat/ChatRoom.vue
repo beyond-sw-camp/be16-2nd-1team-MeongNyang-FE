@@ -76,30 +76,95 @@
     </v-card-text>
     <v-divider></v-divider>
     <v-card-actions class="chat-input-container pa-4">
-      <v-btn icon @click="triggerFileInput" class="mr-2">
-        <v-icon>mdi-paperclip</v-icon>
-      </v-btn>
-      <input type="file" ref="fileInput" @change="onFileChange" multiple style="display: none;" />
-      
-      <v-textarea
-        v-model="newMessage"
-        label="메세지 입력"
-        @keyup.enter="sendMessage"
-        hide-details
-        outlined
-        dense
-        rows="1"
-        auto-grow
-        class="mr-2"
-        :disabled="!stompClient?.connected || isSending"
-      ></v-textarea>
-      <v-btn 
-        icon="mdi-send" 
-        color="primary" 
-        @click="sendMessage"
-        :disabled="!stompClient?.connected || isSending"
-        :loading="isSending"
-      ></v-btn>
+      <!-- 파일 선택 영역 -->
+      <div class="file-selection-area d-flex flex-column w-100">
+        <!-- 선택된 파일 미리보기 -->
+        <div v-if="selectedFiles.length > 0" class="selected-files-preview mb-3">
+          <div class="d-flex align-center mb-2">
+            <v-icon class="mr-2" color="primary">mdi-file-multiple</v-icon>
+            <span class="text-caption text-grey-darken-1">선택된 파일 ({{ selectedFiles.length }}개)</span>
+          </div>
+          <div class="selected-files-grid">
+            <div 
+              v-for="(file, index) in selectedFiles" 
+              :key="index"
+              class="file-preview-item"
+            >
+              <!-- 파일 타입별 아이콘 -->
+              <div class="file-icon-container">
+                <v-icon 
+                  :color="getFileIconColor(file.type)"
+                  size="24"
+                >
+                  {{ getFileIcon(file.type) }}
+                </v-icon>
+              </div>
+              
+              <!-- 파일 정보 -->
+              <div class="file-info">
+                <div class="file-name text-caption">{{ truncateFileName(file.name, 20) }}</div>
+                <div class="file-size text-caption text-grey-darken-1">{{ formatFileSize(file.size) }}</div>
+              </div>
+              
+              <!-- 삭제 버튼 -->
+              <v-btn 
+                icon 
+                size="x-small" 
+                color="error" 
+                variant="text"
+                @click="removeFile(index)"
+                class="remove-file-btn"
+              >
+                <v-icon size="16">mdi-close</v-icon>
+              </v-btn>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 입력 영역 -->
+        <div class="input-area d-flex align-end">
+          <v-btn 
+            icon 
+            @click="triggerFileInput" 
+            class="mr-2"
+            :disabled="!stompClient?.connected || isSending"
+            color="primary"
+            variant="outlined"
+          >
+            <v-icon>mdi-paperclip</v-icon>
+          </v-btn>
+          
+          <input 
+            type="file" 
+            ref="fileInput" 
+            @change="onFileChange" 
+            multiple 
+            style="display: none;" 
+          />
+          
+          <v-textarea
+            v-model="newMessage"
+            label="메세지 입력"
+            @keyup.enter="sendMessage"
+            hide-details
+            outlined
+            dense
+            rows="1"
+            auto-grow
+            class="mr-2 flex-grow-1"
+            :disabled="!stompClient?.connected || isSending"
+            placeholder="메시지를 입력하거나 파일을 첨부하세요"
+          ></v-textarea>
+          
+          <v-btn 
+            icon="mdi-send" 
+            color="primary" 
+            @click="sendMessage"
+            :disabled="!stompClient?.connected || isSending || (!newMessage.trim() && selectedFiles.length === 0)"
+            :loading="isSending"
+          ></v-btn>
+        </div>
+      </div>
     </v-card-actions>
   </v-card>
 
@@ -664,6 +729,50 @@ export default {
       selectedFiles.value = Array.from(event.target.files)
     }
     
+    const removeFile = (index) => {
+      selectedFiles.value.splice(index, 1)
+      // 파일 입력 필드 초기화
+      if (fileInput.value) fileInput.value.value = null
+    }
+    
+    const getFileIcon = (fileType) => {
+      if (fileType.startsWith('image/')) return 'mdi-image'
+      if (fileType.startsWith('video/')) return 'mdi-video'
+      if (fileType.startsWith('audio/')) return 'mdi-music'
+      if (fileType.includes('pdf')) return 'mdi-file-pdf-box'
+      if (fileType.includes('word') || fileType.includes('document')) return 'mdi-file-word-box'
+      if (fileType.includes('text')) return 'mdi-file-document'
+      if (fileType.includes('zip') || fileType.includes('rar')) return 'mdi-folder-zip'
+      return 'mdi-file'
+    }
+    
+    const getFileIconColor = (fileType) => {
+      if (fileType.startsWith('image/')) return 'green'
+      if (fileType.startsWith('video/')) return 'red'
+      if (fileType.startsWith('audio/')) return 'purple'
+      if (fileType.includes('pdf')) return 'red'
+      if (fileType.includes('word') || fileType.includes('document')) return 'blue'
+      if (fileType.includes('text')) return 'grey'
+      if (fileType.includes('zip') || fileType.includes('rar')) return 'orange'
+      return 'grey'
+    }
+    
+    const truncateFileName = (fileName, maxLength) => {
+      if (fileName.length <= maxLength) return fileName
+      const extension = fileName.split('.').pop()
+      const nameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.'))
+      const truncatedName = nameWithoutExt.substring(0, maxLength - 3)
+      return `${truncatedName}...${extension ? '.' + extension : ''}`
+    }
+    
+    const formatFileSize = (bytes) => {
+      if (bytes === 0) return '0 B'
+      const k = 1024
+      const sizes = ['B', 'KB', 'MB', 'GB']
+      const i = Math.floor(Math.log(bytes) / Math.log(k))
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
+    }
+    
     const uploadFiles = async () => {
       const formData = new FormData()
       selectedFiles.value.forEach(file => {
@@ -1094,6 +1203,11 @@ export default {
       scrollToBottom,
       triggerFileInput,
       onFileChange,
+      removeFile,
+      getFileIcon,
+      getFileIconColor,
+      truncateFileName,
+      formatFileSize,
       uploadFiles,
       formatTime,
       isSending,
@@ -1154,15 +1268,15 @@ export default {
 .chat-messages-container {
   overflow-y: auto;
   overflow-x: hidden;
-  height: calc(100vh - 140px); /* 헤더(64px) + 입력영역(76px) 제외 */
-  max-height: calc(100vh - 140px);
+  height: calc(100vh - 180px); /* 헤더(64px) + 입력영역(116px) 제외 */
+  max-height: calc(100vh - 180px);
   scroll-behavior: smooth;
 }
 
 /* 입력 영역 고정 높이 */
 .chat-input-container {
   flex-shrink: 0;
-  min-height: 76px;
+  min-height: 116px;
   background-color: white;
   border-top: 1px solid #e0e0e0;
 }
@@ -1280,8 +1394,8 @@ export default {
   }
   
   .chat-messages-container {
-    height: calc(100vh - 120px);
-    max-height: calc(100vh - 120px);
+    height: calc(100vh - 160px);
+    max-height: calc(100vh - 160px);
   }
   
   .message-bubble {
@@ -1296,5 +1410,105 @@ export default {
 
 .cursor-pointer {
   cursor: pointer;
+}
+
+/* 파일 선택 영역 스타일 */
+.file-selection-area {
+  width: 100%;
+}
+
+.selected-files-preview {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid #e9ecef;
+}
+
+.selected-files-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+}
+
+.file-preview-item {
+  display: flex;
+  align-items: center;
+  background-color: white;
+  border-radius: 6px;
+  padding: 8px;
+  border: 1px solid #dee2e6;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.file-preview-item:hover {
+  border-color: #adb5bd;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.file-icon-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.file-info {
+  flex: 1;
+  min-width: 0;
+  margin-right: 8px;
+}
+
+.file-name {
+  font-weight: 500;
+  color: #495057;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-size {
+  color: #6c757d;
+  margin-top: 2px;
+}
+
+.remove-file-btn {
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.remove-file-btn:hover {
+  opacity: 1;
+}
+
+.input-area {
+  width: 100%;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .selected-files-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .file-preview-item {
+    padding: 6px;
+  }
+  
+  .file-icon-container {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .file-name {
+    font-size: 11px;
+  }
+  
+  .file-size {
+    font-size: 10px;
+  }
 }
 </style>
