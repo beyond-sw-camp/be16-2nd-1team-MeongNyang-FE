@@ -707,6 +707,7 @@ export default {
       if (isSending.value) return
       if (newMessage.value.trim() === '' && selectedFiles.value.length === 0) return
 
+      // 중복 실행 방지를 위한 즉시 상태 설정
       isSending.value = true
       error.value = null
 
@@ -725,6 +726,7 @@ export default {
         const json = JSON.stringify(message)
         stompClient.value.send(`/publish/chat-rooms/${props.roomId}/chat-message`, json)
 
+        // 메시지 전송 후 입력창과 파일 선택 초기화
         newMessage.value = ''
         selectedFiles.value = []
         if (fileInput.value) fileInput.value.value = null
@@ -800,12 +802,18 @@ export default {
       // Enter 키만 눌렀을 때 (Shift나 Ctrl 없이)
       if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
         event.preventDefault() // 기본 동작 방지
-        sendMessage()
+        // 한글 입력 중일 때는 전송하지 않음 (isComposing 체크)
+        if (!event.isComposing) {
+          sendMessage()
+        }
       }
       // Ctrl+Enter 또는 Cmd+Enter로 강제 전송
       else if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
         event.preventDefault()
-        sendMessage()
+        // Ctrl+Enter도 한글 입력 중이면 전송하지 않음
+        if (!event.isComposing) {
+          sendMessage()
+        }
       }
       // Shift+Enter는 줄바꿈 허용 (기본 동작)
     }
