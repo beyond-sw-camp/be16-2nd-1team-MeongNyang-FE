@@ -196,6 +196,12 @@ export const userAPI = {
   // 팔로잉 목록 조회
   getFollowings: (pageable) => apiClient.get('/users/follows/followings', { params: pageable }),
   
+  // 팔로워 개수 조회 (프로필용)
+  getFollowersCount: () => apiClient.get('/users/follows/followers', { params: { page: 0, size: 1 } }),
+  
+  // 팔로잉 개수 조회 (프로필용)
+  getFollowingsCount: () => apiClient.get('/users/follows/followings', { params: { page: 0, size: 1 } }),
+  
   // 사용자 차단
   block: (userId) => apiClient.post(`/users/blocks/${userId}`),
   
@@ -203,7 +209,28 @@ export const userAPI = {
   unblock: (userId) => apiClient.delete(`/users/blocks/${userId}`),
   
   // 차단 목록 조회
-  getBlocks: (pageable, type) => apiClient.get('/users/blocks', { params: { ...pageable, type } })
+  getBlocks: (pageable, type) => apiClient.get('/users/blocks', { params: { ...pageable, type } }),
+  
+  // 다른 사용자 프로필 조회
+  getUserProfile: (userId) => apiClient.get(`/users/${userId}/profile`),
+  
+  // 팔로우 상태 확인
+  checkFollowStatus: (userId) => apiClient.get(`/users/follows/${userId}/status`),
+  
+  // 다른 사용자의 팔로워 개수 조회
+  getUserFollowersCount: (userId) => apiClient.get('/users/follows/followers', { params: { userId } }),
+  
+  // 다른 사용자의 팔로잉 개수 조회
+  getUserFollowingsCount: (userId) => apiClient.get('/users/follows/followings', { params: { userId } }),
+  
+  // 다른 사용자의 팔로워 목록 조회
+  getUserFollowers: (userId, pageable = { page: 0, size: 20 }) => apiClient.get('/users/follows/followers', { params: { userId, ...pageable } }),
+  
+  // 다른 사용자의 팔로잉 목록 조회
+  getUserFollowings: (userId, pageable = { page: 0, size: 20 }) => apiClient.get('/users/follows/followings', { params: { userId, ...pageable } }),
+  
+  // 다른 사용자의 게시물 개수 조회
+  getUserPostsCount: (userId) => apiClient.get('/posts', { params: { userId, page: 0, size: 1 } })
 }
 
 // 게시글 관련 API
@@ -211,10 +238,19 @@ export const postAPI = {
   // 내 일기 목록 조회 (대시보드용)
   getMyPosts: (pageable = { page: 0, size: 1 }) => apiClient.get('/posts', { params: pageable }),
   
+  // 내 게시물 개수 조회 (프로필용)
+  getMyPostsCount: () => apiClient.get('/posts', { params: { page: 0, size: 1 } }),
+  
   // 일기 작성
   create: (postData, files) => {
     const formData = new FormData()
-    formData.append('postCreateReq', JSON.stringify(postData))
+    
+    // JSON 데이터를 Blob으로 변환하여 Content-Type 설정
+    const jsonBlob = new Blob([JSON.stringify(postData)], {
+      type: 'application/json'
+    })
+    formData.append('postCreateRequest', jsonBlob)
+    
     if (files) {
       files.forEach(file => formData.append('files', file))
     }
@@ -224,10 +260,36 @@ export const postAPI = {
   // 일기 수정
   update: (postId, postData, files) => {
     const formData = new FormData()
-    formData.append('postEditReq', JSON.stringify(postData))
-    if (files) {
-      files.forEach(file => formData.append('files', file))
+    
+    console.log('API - postId:', postId)
+    console.log('API - postData:', postData)
+    console.log('API - files:', files)
+    
+    // JSON 데이터를 Blob으로 변환하여 Content-Type 설정
+    const jsonBlob = new Blob([JSON.stringify(postData)], {
+      type: 'application/json'
+    })
+    formData.append('postEditReq', jsonBlob)
+    
+    // files가 없거나 빈 배열이어도 빈 파일을 전송하여 백엔드 요구사항 충족
+    if (files && files.length > 0) {
+      files.forEach((file, index) => {
+        console.log(`API - 파일 ${index}:`, file.name, file.type, file.size)
+        formData.append('files', file)
+      })
+    } else {
+      // 빈 파일을 전송하여 'files' 파트가 존재하도록 함
+      console.log('API - 빈 파일 전송')
+      const emptyBlob = new Blob([], { type: 'application/octet-stream' })
+      const emptyFile = new File([emptyBlob], 'empty.txt', { type: 'text/plain' })
+      formData.append('files', emptyFile)
     }
+    
+    console.log('API - FormData entries:')
+    for (let [key, value] of formData.entries()) {
+      console.log(key, value)
+    }
+    
     return apiClient.patch(`/posts/${postId}`, formData)
   },
   
@@ -237,11 +299,14 @@ export const postAPI = {
   // 일기 목록 조회
   getList: (pageable) => apiClient.get('/posts', { params: pageable }),
   
+  // 다른 사용자의 일기 목록 조회
+  getUserPosts: (userId, pageable) => apiClient.get('/posts', { params: { ...pageable, userId } }),
+  
   // 일기 상세 조회
   getDetail: (postId) => apiClient.get(`/posts/${postId}`),
   
   // 좋아요
-  like: (postId) => apiClient.post('/posts/like', { postId }),
+  like: (postId) => apiClient.post(`/posts/${postId}/like`),
   
   // 좋아요 취소
   unlike: (postId) => apiClient.delete(`/posts/${postId}/like`),
@@ -253,8 +318,9 @@ export const postAPI = {
   createComment: (postId, content) => apiClient.post(`/posts/${postId}/comments`, { content }),
   
   // 대댓글 작성
-  createReply: (commentId, content, mentionUserId) => 
-    apiClient.post(`/posts/comments/${commentId}/reply`, { content, mentionUserId }),
+  createReply: (commentId, content, mentionUserId) => {
+    return apiClient.post(`/posts/comments/${commentId}/reply`, { content, mentionUserId })
+  },
   
   // 댓글 수정
   updateComment: (commentId, content) => apiClient.patch(`/posts/comments/${commentId}`, { content }),
@@ -416,7 +482,16 @@ export const petAPI = {
   },
   
   // 반려동물 목록 조회
-  getList: () => apiClient.get('/pets/list'),
+  getList: () => apiClient.get('/pets'),
+  
+  // 사용자 반려동물 목록 조회 (프로필용)
+  getUserPets: () => apiClient.get('/pets'),
+  
+  // 다른 사용자의 반려동물 목록 조회
+  getOtherUserPets: (userId) => apiClient.get('/pets', { params: { userId } }),
+  
+  // 대표 펫 설정
+  setMainPet: (petId) => apiClient.put(`/pets/${petId}/main`),
   
   // 대표 반려동물 설정
   setMainPet: (petId) => apiClient.put(`/users/my-page/${petId}/main-pet`),

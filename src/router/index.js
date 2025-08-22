@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import HomeView from '@/views/HomeView.vue'
 import DashboardView from '@/views/DashboardView.vue'
 import ThemeDemoView from '@/views/ThemeDemoView.vue'
+import SearchView from '@/views/SearchView.vue'
 
 // 라우터 모듈들
 import authRoutes from './modules/auth'
@@ -28,6 +29,12 @@ const baseRoutes = [
     path: '/dashboard',
     name: 'Dashboard',
     component: DashboardView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/search',
+    name: 'Search',
+    component: SearchView,
     meta: { requiresAuth: true }
   },
   {

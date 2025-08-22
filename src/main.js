@@ -1,5 +1,6 @@
 import { createApp } from 'vue'
 import App from './App.vue'
+// Axios 인터셉터 설정
 import router from './router'
 import { createPinia } from 'pinia'
 import vuetify from './plugins/vuetify'
@@ -45,6 +46,24 @@ axios.interceptors.response.use(
 )
 
 const app = createApp(App)
+
+// 전역 에러 핸들러 설정
+app.config.errorHandler = (error, instance, info) => {
+  console.error('전역 에러 발생:', error)
+  console.error('에러 정보:', info)
+  console.error('컴포넌트:', instance)
+  
+  // 사용자에게 에러 알림
+  handleError(error, router)
+}
+
+// 처리되지 않은 Promise 에러 핸들러
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('처리되지 않은 Promise 에러:', event.reason)
+  handleError(event.reason, router)
+  event.preventDefault()
+})
+
 const pinia = createPinia()
 
 app.use(pinia)

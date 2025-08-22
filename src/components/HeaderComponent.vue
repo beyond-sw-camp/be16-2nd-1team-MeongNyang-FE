@@ -43,8 +43,8 @@
         v-if="isLoggedIn" 
         variant="text" 
         class="nav-btn"
-        :class="{ 'active': $route.path === '/diary' }"
-        @click="$router.push('/diary')"
+                    :class="{ 'active': $route.path === '/diarys' }"
+            @click="$router.push('/diarys')"
       >
         <v-icon class="me-2">mdi-book-open</v-icon>
         다이어리
@@ -188,7 +188,7 @@
           <v-list-item-title>반려동물</v-list-item-title>
         </v-list-item>
         
-        <v-list-item @click="$router.push('/diary')">
+        <v-list-item @click="$router.push('/diarys')">
           <v-list-item-icon>
             <v-icon>mdi-book-open</v-icon>
           </v-list-item-icon>

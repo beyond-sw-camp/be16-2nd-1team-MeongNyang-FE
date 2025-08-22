@@ -1,12 +1,12 @@
 export default [
   {
-    path: '/diary',
+    path: '/diarys',
     name: 'Diary',
     component: () => import('@/views/post/DiaryListView.vue'),
     meta: { requiresAuth: true }
   },
   {
-    path: '/diary/new',
+    path: '/diary/create',
     name: 'DiaryCreate',
     component: () => import('@/views/post/DiaryCreateView.vue'),
     meta: { requiresAuth: true }
@@ -21,6 +21,12 @@ export default [
     path: '/diary/:id/edit',
     name: 'DiaryEdit',
     component: () => import('@/views/post/DiaryEditView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/diarys/:userId',
+    name: 'UserDiary',
+    component: () => import('@/views/post/UserDiaryListView.vue'),
     meta: { requiresAuth: true }
   }
 ]
