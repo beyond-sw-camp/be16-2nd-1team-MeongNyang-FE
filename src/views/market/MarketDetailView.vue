@@ -48,42 +48,42 @@
             />
           </button>
           
-          <!-- 이미지 네비게이션 -->
-          <div class="image-nav">
-            <button 
-              class="nav-btn prev"
-              @click="previousImage"
-              :disabled="currentImageIndex === 0"
-            >
-              <v-icon icon="mdi-chevron-left" size="24" />
-            </button>
-            <button 
-              class="nav-btn next"
-              @click="nextImage"
-              :disabled="currentImageIndex === (post.images?.length || 1) - 1"
-            >
-              <v-icon icon="mdi-chevron-right" size="24" />
-            </button>
-          </div>
-          
-          <!-- 이미지 인덱스 표시 -->
-          <div v-if="post.images && post.images.length > 1" class="image-counter">
-            {{ currentImageIndex + 1 }} / {{ post.images.length }}
-          </div>
+                     <!-- 이미지 네비게이션 -->
+           <div class="image-nav">
+             <button 
+               class="nav-btn prev"
+               @click="previousImage"
+               :disabled="currentImageIndex === 0"
+             >
+               <v-icon icon="mdi-chevron-left" size="24" />
+             </button>
+             <button 
+               class="nav-btn next"
+               @click="nextImage"
+               :disabled="currentImageIndex === (post.productImageList?.length || 1) - 1"
+             >
+               <v-icon icon="mdi-chevron-right" size="24" />
+             </button>
+           </div>
+           
+           <!-- 이미지 인덱스 표시 -->
+           <div v-if="post.productImageList && post.productImageList.length > 1" class="image-counter">
+             {{ currentImageIndex + 1 }} / {{ post.productImageList.length }}
+           </div>
         </div>
         
-        <!-- 이미지 썸네일 -->
-        <div v-if="post.images && post.images.length > 1" class="thumbnails">
-          <div 
-            v-for="(image, index) in post.images" 
-            :key="index"
-            class="thumbnail"
-            :class="{ active: index === currentImageIndex }"
-            @click="setCurrentImage(index)"
-          >
-            <img :src="image" :alt="`${post.title} ${index + 1}`" />
-          </div>
-        </div>
+                 <!-- 이미지 썸네일 -->
+         <div v-if="post.productImageList && post.productImageList.length > 1" class="thumbnails">
+           <div 
+             v-for="(image, index) in post.productImageList" 
+             :key="index"
+             class="thumbnail"
+             :class="{ active: index === currentImageIndex }"
+             @click="setCurrentImage(index)"
+           >
+             <img :src="image" :alt="`${post.title} ${index + 1}`" />
+           </div>
+         </div>
         <!-- 판매자 정보 -->
         <div class="seller-info">
           <div class="seller-header">
@@ -91,17 +91,26 @@
           </div>
           <div class="seller-profile">
             <div class="profile-image-container">
-              <img 
-                :src="post.pet?.petProfileUrl || '/default-profile.png'" 
-                :alt="post.pet?.nickname || '판매자'"
-                class="profile-image"
-              />
-              <!-- <div class="online-indicator"></div> -->
+                                            <img 
+                 v-if="getProfileImage(post.sellerProfileUrl)"
+                 :src="getProfileImage(post.sellerProfileUrl)" 
+                 :alt="post.sellerNickname || '판매자'"
+                 class="profile-image"
+                 @error="handleImageError"
+               />
+               <!-- 기본 프로필 아이콘 (이미지가 없거나 로드 실패 시 표시) -->
+               <v-icon 
+                 v-else
+                 icon="mdi-account-circle" 
+                 size="40" 
+                 class="default-profile-icon"
+               />
+               <!-- <div class="online-indicator"></div> -->
             </div>
-            <div class="seller-details">
-              <div class="seller-name">{{ post.pet?.nickname || '판매자' }}</div>
-              <!-- 위치정보와 별점 삭제 -->
-            </div>
+                         <div class="seller-details">
+               <div class="seller-name">{{ post.sellerNickname || '판매자' }}</div>
+               <!-- 위치정보와 별점 삭제 -->
+             </div>
           </div>
         </div>
         <!-- 채팅하기 버튼 -->
@@ -147,19 +156,15 @@
           </div>
         </div>
 
-        <!-- 거래 위치 -->
-        <div class="location-section">
-          <div class="location-header">
-            <h3>거래 위치</h3>
-            <span class="location-detail">{{ formatLocation(post.region) }}</span>
-          </div>
-          <div class="map-container" ref="mapContainer">
-            <div class="map-placeholder">
-              <v-icon icon="mdi-map-marker" size="48" color="#E87D7D" />
-              <p>지도 로딩 중...</p>
-              <small>위치 정보를 확인하려면 클릭하세요</small>
-            </div>
-          </div>
+                 <!-- 거래 위치 -->
+         <div class="location-section">
+           <div class="location-header">
+             <h3>거래 위치</h3>
+             <span class="location-detail">{{ formatLocation(post.regionSido, post.regionSigungu, post.regionDong) }}</span>
+           </div>
+                     <div class="map-container" ref="mapContainer">
+             <!-- 카카오맵이 여기에 렌더링됩니다 -->
+           </div>
         </div>
 
       </div>
@@ -168,16 +173,15 @@
 </template>
 
 <script>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
-import axios from 'axios'
-import { useAuthStore } from '@/stores/auth'
+import { marketAPI } from '@/services/api'
+import { getToken } from '@/utils/auth'
 
 export default {
   name: 'MarketDetailView',
   setup() {
-    const route = useRoute()
-    const authStore = useAuthStore()
+         const route = useRoute()
     
     // 반응형 데이터
     const post = ref(null)
@@ -194,70 +198,217 @@ export default {
       'OTHER': '기타'
     }
     
-    // 현재 이미지 (썸네일을 첫 번째 이미지로 설정)
-    const currentImage = computed(() => {
-      if (!post.value) return ''
-      if (post.value.images && post.value.images.length > 0) {
-        return post.value.images[currentImageIndex.value]
-      }
-      return post.value.thumbnailUrl || ''
-    })
+         // 현재 이미지 (썸네일을 첫 번째 이미지로 설정)
+     const currentImage = computed(() => {
+       if (!post.value) return ''
+       if (post.value.productImageList && post.value.productImageList.length > 0) {
+         return post.value.productImageList[currentImageIndex.value]
+       }
+       return post.value.thumbnailUrl || ''
+     })
     
-    // 거래글 상세 조회
-    const fetchPostDetail = async () => {
-      loading.value = true
-      error.value = null
-      
-      try {
-        const response = await axios.get(`http://localhost:8080/markets/posts/${route.params.id}`)
-        if (response.data && response.data.isSuccess) {
-          post.value = response.data.data
-          console.log('거래글 상세:', post.value)
-          
-          // 썸네일을 첫 번째 이미지로 설정
-          if (post.value.images && post.value.images.length > 0) {
-            currentImageIndex.value = 0
-          }
-          // 현재 로그인한 유저의 찜 상태 확인
-          await checkUserLikeStatus()
-        } else {
-          error.value = '거래글을 불러올 수 없습니다.'
-        }
-      } catch (err) {
-        console.error('거래글 상세 조회 오류:', err)
-        error.value = '거래글을 불러오는 중 오류가 발생했습니다.'
-      } finally {
-        loading.value = false
-      }
-    }
+         // 거래글 상세 조회
+     const fetchPostDetail = async () => {
+       loading.value = true
+       error.value = null
+       
+       try {
+         const response = await marketAPI.getDetail(route.params.id)
+                    if (response.data && response.data.isSuccess) {
+             post.value = response.data.data
+             
+             // 백엔드의 'liked' 필드를 'isLiked'로 매핑
+             if (post.value.liked !== undefined) {
+               post.value.isLiked = post.value.liked
+               console.log('백엔드 liked 필드를 isLiked로 매핑:', post.value.liked, '→', post.value.isLiked)
+             }
+             
+             console.log('거래글 상세:', post.value)
+             console.log('백엔드에서 받은 liked 값:', post.value.liked)
+             console.log('매핑된 isLiked 값:', post.value.isLiked)
+           
+           // 썸네일을 첫 번째 이미지로 설정
+           if (post.value.productImageList && post.value.productImageList.length > 0) {
+             currentImageIndex.value = 0
+           }
+           
+                        // 백엔드에서 이미 isLiked 값을 제공하므로 별도 확인 불필요
+             // post.value.isLiked가 이미 설정되어 있음
+             
+             // 카카오맵 초기화 (nextTick으로 DOM 업데이트 후 실행)
+             nextTick(() => {
+               // 카카오맵 API 로딩 대기
+               waitForKakaoMap().then(() => {
+                 initKakaoMap()
+               }).catch(() => {
+                 console.error('카카오맵 API 로딩 실패')
+               })
+             })
+         } else {
+           error.value = '거래글을 불러올 수 없습니다.'
+         }
+       } catch (err) {
+         console.error('거래글 상세 조회 오류:', err)
+         error.value = '거래글을 불러오는 중 오류가 발생했습니다.'
+       } finally {
+         loading.value = false
+       }
+     }
 
-    // 현재 유저의 찜 상태 확인
-    const checkUserLikeStatus = async () => {
-      try {
-        const token = authStore.getToken()
-        if (!token) return
-        
-        const response = await axios.get(`http://localhost:8080/markets/posts/likes/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        })
-        
-        if (response.data && response.data.isSuccess) {
-          const likedPosts = response.data.data
-          // 현재 거래글이 찜한 목록에 있는지 확인
-          post.value.isLiked = likedPosts.some(likedPost => likedPost.id === post.value.id)
-        }
-      } catch (err) {
-        console.error('찜 상태 확인 오류:', err)
-        post.value.isLiked = false
-      }
-    }
-    
-    // 찜하기 토글
+         // 백엔드에서 이미 isLiked 값을 제공하므로 별도 확인 함수 불필요
+     
+     // 프로필 이미지 처리
+     const getProfileImage = (profileUrl) => {
+       if (!profileUrl || profileUrl === 'null' || profileUrl === '') {
+         // 기본 프로필 이미지 반환 (Vuetify 아이콘 사용)
+         return null
+       }
+       return profileUrl
+     }
+     
+     // 이미지 로드 실패 시 처리
+     const handleImageError = (event) => {
+       console.log('프로필 이미지 로드 실패, 기본 아이콘으로 대체')
+       // 이미지 요소를 숨기고 기본 아이콘 표시
+       event.target.style.display = 'none'
+       const iconElement = event.target.nextElementSibling
+       if (iconElement) {
+         iconElement.style.display = 'block'
+       }
+     }
+     
+     // 카카오맵 API 로딩 대기
+     const waitForKakaoMap = () => {
+       return new Promise((resolve, reject) => {
+         // 이미 로드된 경우
+         if (typeof window.kakao !== 'undefined' && window.kakao.maps) {
+           resolve()
+           return
+         }
+         
+         // 로딩 대기 (최대 10초)
+         let attempts = 0
+         const maxAttempts = 100 // 100ms * 100 = 10초
+         
+         const checkKakaoMap = () => {
+           attempts++
+           
+           if (typeof window.kakao !== 'undefined' && window.kakao.maps) {
+             console.log('카카오맵 API 로딩 완료')
+             resolve()
+           } else if (attempts >= maxAttempts) {
+             console.error('카카오맵 API 로딩 시간 초과')
+             reject(new Error('카카오맵 API 로딩 시간 초과'))
+           } else {
+             setTimeout(checkKakaoMap, 100)
+           }
+         }
+         
+         checkKakaoMap()
+       })
+     }
+     
+     // 카카오맵 초기화
+     const initKakaoMap = () => {
+       if (!post.value || !mapContainer.value) return
+       
+       // 카카오맵 API 로딩 확인
+       if (typeof window.kakao === 'undefined' || !window.kakao.maps) {
+         console.error('카카오맵 API가 로드되지 않았습니다.')
+         // 지도 컨테이너에 에러 메시지 표시
+         mapContainer.value.innerHTML = `
+           <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #6c757d;">
+             <v-icon icon="mdi-map-marker-off" size="48" color="#E87D7D" />
+             <p style="margin: 10px 0 5px 0; font-size: 0.9rem;">지도를 불러올 수 없습니다</p>
+             <small style="color: #adb5bd; font-size: 0.8rem;">카카오맵 API 로딩 중...</small>
+           </div>
+         `
+         return
+       }
+       
+       try {
+         // 주소 정보 조합
+         const address = formatLocation(post.value.regionSido, post.value.regionSigungu, post.value.regionDong)
+         if (address === '위치 정보 없음') {
+           console.log('위치 정보가 없어 지도를 표시할 수 없습니다.')
+           mapContainer.value.innerHTML = `
+             <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #6c757d;">
+               <v-icon icon="mdi-map-marker-off" size="48" color="#E87D7D" />
+               <p style="margin: 10px 0 5px 0; font-size: 0.9rem;">위치 정보가 없습니다</p>
+               <small style="color: #adb5bd; font-size: 0.8rem;">거래 위치를 확인할 수 없습니다</small>
+             </div>
+           `
+           return
+         }
+         
+         console.log('지도 초기화 시작 - 주소:', address)
+         
+         // 카카오맵 생성
+         const map = new window.kakao.maps.Map(mapContainer.value, {
+           center: new window.kakao.maps.LatLng(37.5665, 126.9780), // 서울시청 기본 좌표
+           level: 3
+         })
+         
+         // 주소-좌표 변환 객체 생성
+         const geocoder = new window.kakao.maps.services.Geocoder()
+         
+         // 주소로 좌표 검색
+         geocoder.addressSearch(address, (result, status) => {
+           if (status === window.kakao.maps.services.Status.OK) {
+             const coords = new window.kakao.maps.LatLng(result[0].y, result[0].x)
+             
+             // 지도 중심 이동
+             map.setCenter(coords)
+             
+             // 마커 생성
+             const marker = new window.kakao.maps.Marker({
+               position: coords
+             })
+             
+             // 마커를 지도에 표시
+             marker.setMap(map)
+             
+             // 인포윈도우 생성
+             const infowindow = new window.kakao.maps.InfoWindow({
+               content: `<div style="padding:5px;font-size:12px;">${post.value.title}</div>`
+             })
+             
+             // 마커 클릭 시 인포윈도우 표시
+             window.kakao.maps.event.addListener(marker, 'click', () => {
+               infowindow.open(map, marker)
+             })
+             
+             console.log('카카오맵 초기화 완료:', address, coords)
+           } else {
+             console.error('주소 검색 실패:', status)
+             // 에러 메시지 표시
+             mapContainer.value.innerHTML = `
+               <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #6c757d;">
+                 <v-icon icon="mdi-map-marker-off" size="48" color="#E87D7D" />
+                 <p style="margin: 10px 0 5px 0; font-size: 0.9rem;">위치를 찾을 수 없습니다</p>
+                 <small style="color: #adb5bd; font-size: 0.8rem;">주소: ${address}</small>
+               </div>
+             `
+           }
+         })
+         
+       } catch (error) {
+         console.error('카카오맵 초기화 오류:', error)
+         // 에러 메시지 표시
+         mapContainer.value.innerHTML = `
+           <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #6c757d;">
+             <v-icon icon="mdi-map-marker-off" size="48" color="#E87D7D" />
+             <p style="margin: 10px 0 5px 0; font-size: 0.9rem;">지도 로딩 오류</p>
+             <small style="color: #adb5bd; font-size: 0.8rem;">${error.message}</small>
+           </div>
+         `
+       }
+     }
+     
+     // 찜하기 토글
     const toggleLike = async () => {
       try {
-        const token = authStore.getToken()
+        const token = getToken('accessToken')
         if (!token) {
           alert('로그인이 필요합니다.')
           return
@@ -266,24 +417,23 @@ export default {
         const postId = post.value.id
         const isLiked = post.value.isLiked
         
+        console.log('찜하기 토글 시작 - postId:', postId, '현재 상태:', isLiked)
+        
         if (isLiked) {
           // 찜 취소
-          await axios.delete(`http://localhost:8080/markets/${postId}/like`, {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          })
+          console.log('찜 취소 시도...')
+          await marketAPI.unlike(postId)
+          console.log('찜 취소 성공')
         } else {
           // 찜하기
-          await axios.post(`http://localhost:8080/markets/${postId}/like`, {}, {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          })
+          console.log('찜하기 시도...')
+          await marketAPI.like(postId)
+          console.log('찜하기 성공')
         }
         
         // 상태 토글
         post.value.isLiked = !isLiked
+        console.log('찜 상태 업데이트 완료:', post.value.isLiked)
         
         // 찜 개수 업데이트 (백엔드에서 받아온 데이터 사용)
         if (post.value.likeCount !== undefined) {
@@ -303,11 +453,11 @@ export default {
       }
     }
     
-    const nextImage = () => {
-      if (post.value?.images && currentImageIndex.value < post.value.images.length - 1) {
-        currentImageIndex.value++
-      }
-    }
+         const nextImage = () => {
+       if (post.value?.productImageList && currentImageIndex.value < post.value.productImageList.length - 1) {
+         currentImageIndex.value++
+       }
+     }
     
     const setCurrentImage = (index) => {
       currentImageIndex.value = index
@@ -330,33 +480,39 @@ export default {
       return new Date(dateString).toLocaleDateString('ko-KR')
     }
     
-    const formatLocation = (region) => {
-      if (!region) return '위치 정보 없음'
-      return region
-    }
+         const formatLocation = (sido, sigungu, dong) => {
+       if (!sido && !sigungu && !dong) return '위치 정보 없음'
+       const parts = [sido, sigungu, dong].filter(Boolean)
+       return parts.join(' ')
+     }
     
-    onMounted(() => {
-      fetchPostDetail()
-    })
+         onMounted(() => {
+       console.log('MarketDetailView 마운트됨')
+       console.log('카카오맵 API 상태:', typeof window.kakao, window.kakao?.maps)
+       fetchPostDetail()
+     })
     
-    return {
-      post,
-      loading,
-      error,
-      currentImageIndex,
-      currentImage,
-      mapContainer,
-      fetchPostDetail,
-      toggleLike,
-      previousImage,
-      nextImage,
-      setCurrentImage,
-      getCategoryLabel,
-      getStatusLabel,
-      formatPrice,
-      formatDate,
-      formatLocation
-    }
+         return {
+       post,
+       loading,
+       error,
+       currentImageIndex,
+       currentImage,
+       mapContainer,
+       fetchPostDetail,
+       toggleLike,
+       previousImage,
+       nextImage,
+       setCurrentImage,
+       getCategoryLabel,
+       getStatusLabel,
+       formatPrice,
+       formatDate,
+       formatLocation,
+       initKakaoMap,
+       getProfileImage,
+       handleImageError
+     }
   }
 }
 </script>
@@ -583,7 +739,7 @@ export default {
   margin: 0;
   line-height: 1.3;
   flex: 1;
-  text-align: ;
+  text-align: left;
 }
 
 .category-badge {
@@ -685,18 +841,69 @@ export default {
   gap: 18px;
 }
 
-.profile-image-container {
-  position: relative;
-}
+ .profile-image-container {
+   position: relative;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+ }
+ 
+ .profile-image-container::after {
+   content: '';
+   position: absolute;
+   top: -2px;
+   left: -2px;
+   right: -2px;
+   bottom: -2px;
+   background: linear-gradient(45deg, #E87D7D, #FF6B6B, #E87D7D);
+   border-radius: 50%;
+   z-index: -1;
+   opacity: 0;
+   transition: opacity 0.3s ease;
+ }
+ 
+ .profile-image-container:hover::after {
+   opacity: 1;
+ }
 
-.profile-image {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 3px solid #E87D7D;
-  box-shadow: 0 4px 15px rgba(232, 125, 125, 0.3);
-}
+ .profile-image {
+   width: 48px;
+   height: 48px;
+   border-radius: 50%;
+   object-fit: cover;
+   border: 3px solid white;
+   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+   transition: all 0.3s ease;
+   cursor: pointer;
+ }
+ 
+ .profile-image:hover {
+   transform: scale(1.05);
+   box-shadow: 0 12px 35px rgba(232, 125, 125, 0.25);
+   border-color: #E87D7D;
+ }
+ 
+ .default-profile-icon {
+   width: 48px;
+   height: 48px;
+   border-radius: 50%;
+   background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+   border: 3px solid white;
+   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   color: #E87D7D;
+   transition: all 0.3s ease;
+   cursor: pointer;
+ }
+ 
+ .default-profile-icon:hover {
+   transform: scale(1.05);
+   background: linear-gradient(135deg, #E87D7D, #FF6B6B);
+   color: white;
+   box-shadow: 0 12px 35px rgba(232, 125, 125, 0.3);
+ }
 
 /* .online-indicator {
   position: absolute;
@@ -791,16 +998,13 @@ export default {
 }
 
 .map-container {
-  height: 200px;
-  background: #f8f9fa;
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px dashed #dee2e6;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
+   height: 300px;
+   background: #f8f9fa;
+   border-radius: 20px;
+   border: 2px solid #dee2e6;
+   overflow: hidden;
+   position: relative;
+ }
 
 .map-container:hover {
   border-color: #E87D7D;
