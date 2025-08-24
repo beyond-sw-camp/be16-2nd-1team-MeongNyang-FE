@@ -169,9 +169,19 @@
       <div class="file-selection-area d-flex flex-column w-100">
         <!-- 선택된 파일 미리보기 -->
         <div v-if="selectedFiles.length > 0" class="selected-files-preview mb-3">
-          <div class="d-flex align-center mb-2">
-            <v-icon class="mr-2" color="primary">mdi-file-multiple</v-icon>
-            <span class="text-caption text-grey-darken-1">선택된 파일 ({{ selectedFiles.length }}개)</span>
+          <div class="d-flex align-center mb-3">
+            <div class="files-header-icon">
+              <v-icon size="20" color="primary">mdi-file-multiple</v-icon>
+            </div>
+            <span class="files-header-text">선택된 파일 ({{ selectedFiles.length }}개)</span>
+            <v-chip 
+              color="primary" 
+              variant="tonal" 
+              size="small" 
+              class="ml-2 files-count-chip"
+            >
+              {{ selectedFiles.length }}
+            </v-chip>
           </div>
           <div class="selected-files-grid">
             <div 
@@ -183,7 +193,7 @@
               <div class="file-icon-container">
                 <v-icon 
                   :color="getFileIconColor(file.type)"
-                  size="24"
+                  size="28"
                 >
                   {{ getFileIcon(file.type) }}
                 </v-icon>
@@ -198,13 +208,13 @@
               <!-- 삭제 버튼 -->
               <v-btn 
                 icon 
-                size="x-small" 
+                size="small" 
                 color="error" 
                 variant="text"
                 @click="removeFile(index)"
                 class="remove-file-btn"
               >
-                <v-icon size="16">mdi-close</v-icon>
+                <v-icon size="18">mdi-close</v-icon>
               </v-btn>
             </div>
           </div>
@@ -215,12 +225,13 @@
           <v-btn 
             icon 
             @click="triggerFileInput" 
-            class="mr-2"
+            class="mr-2 file-attach-btn"
             :disabled="!stompClient?.connected || isSending"
             color="primary"
             variant="outlined"
+            size="large"
           >
-            <v-icon>mdi-paperclip</v-icon>
+            <v-icon size="24">mdi-paperclip</v-icon>
           </v-btn>
           
           <input 
@@ -240,7 +251,7 @@
             dense
             rows="1"
             auto-grow
-            class="mr-2 flex-grow-1"
+            class="mr-2 flex-grow-1 message-input"
             :disabled="!stompClient?.connected || isSending"
             placeholder="메시지를 입력하거나 파일을 첨부하세요 (Enter: 전송, Shift+Enter: 줄바꿈)"
           ></v-textarea>
@@ -251,6 +262,8 @@
             @click="sendMessage"
             :disabled="!stompClient?.connected || isSending || (!newMessage.trim() && selectedFiles.length === 0)"
             :loading="isSending"
+            class="send-btn"
+            size="large"
           ></v-btn>
         </div>
       </div>
@@ -1833,117 +1846,439 @@ export default {
 }
 
 .selected-files-preview {
-  background: var(--mm-surface-variant);
-  border-radius: var(--mm-radius-lg);
-  padding: 16px;
-  border: 1px solid var(--mm-border-light);
-  margin-bottom: 16px;
+  background: linear-gradient(135deg, rgba(232, 125, 125, 0.05) 0%, rgba(255, 255, 255, 0.1) 100%);
+  border-radius: 20px;
+  padding: 20px;
+  border: 1px solid rgba(232, 125, 125, 0.15);
+  margin-bottom: 20px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  transition: all var(--mm-transition-normal);
+}
+
+.selected-files-preview:hover {
+  border-color: rgba(232, 125, 125, 0.25);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.files-header-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, rgba(232, 125, 125, 0.1) 0%, rgba(255, 107, 107, 0.1) 100%);
+  border-radius: 12px;
+  margin-right: 12px;
+  border: 1px solid rgba(232, 125, 125, 0.2);
+}
+
+.files-header-text {
+  font-weight: 600;
+  color: var(--mm-on-surface);
+  font-size: 14px;
+  flex: 1;
+}
+
+.files-count-chip {
+  font-weight: 600;
+  border-radius: 12px !important;
 }
 
 .selected-files-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
 }
 
 .file-preview-item {
   display: flex;
   align-items: center;
-  background: var(--mm-surface);
-  border-radius: var(--mm-radius-md);
-  padding: 12px;
-  border: 1px solid var(--mm-border);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.6) 100%);
+  border-radius: 16px;
+  padding: 16px;
+  border: 1px solid rgba(232, 125, 125, 0.2);
   position: relative;
   transition: all var(--mm-transition-normal);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
 }
 
 .file-preview-item:hover {
-  border-color: var(--mm-primary);
-  box-shadow: var(--mm-shadow-sm);
-  transform: translateY(-1px);
+  border-color: rgba(232, 125, 125, 0.4);
+  box-shadow: 0 8px 24px rgba(232, 125, 125, 0.15);
+  transform: translateY(-2px);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
 }
 
 .file-icon-container {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  margin-right: 12px;
+  width: 48px;
+  height: 48px;
+  margin-right: 16px;
   flex-shrink: 0;
-  background: var(--mm-surface-variant);
-  border-radius: var(--mm-radius-md);
+  background: linear-gradient(135deg, rgba(232, 125, 125, 0.1) 0%, rgba(255, 107, 107, 0.1) 100%);
+  border-radius: 14px;
+  border: 1px solid rgba(232, 125, 125, 0.2);
+  transition: all var(--mm-transition-normal);
+}
+
+.file-preview-item:hover .file-icon-container {
+  background: linear-gradient(135deg, rgba(232, 125, 125, 0.2) 0%, rgba(255, 107, 107, 0.2) 100%);
+  border-color: rgba(232, 125, 125, 0.4);
+  transform: scale(1.05);
 }
 
 .file-info {
   flex: 1;
   min-width: 0;
-  margin-right: 12px;
+  margin-right: 16px;
 }
 
 .file-name {
-  font-weight: 500;
+  font-weight: 600;
   color: var(--mm-on-surface);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--mm-text-sm);
+  font-size: 13px;
+  line-height: 1.4;
+  margin-bottom: 4px;
 }
 
 .file-size {
   color: var(--mm-on-surface-variant);
-  margin-top: 4px;
-  font-size: var(--mm-text-xs);
+  font-size: 11px;
+  font-weight: 500;
+  opacity: 0.8;
 }
 
 .remove-file-btn {
-  opacity: 0.7;
+  opacity: 0.6;
   transition: all var(--mm-transition-fast);
+  border-radius: 12px !important;
+  background: rgba(239, 68, 68, 0.1) !important;
+  color: #ef4444 !important;
+  min-width: 36px !important;
+  height: 36px !important;
 }
 
 .remove-file-btn:hover {
   opacity: 1;
   transform: scale(1.1);
+  background: rgba(239, 68, 68, 0.2) !important;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.remove-file-btn:active {
+  transform: scale(0.95);
 }
 
 .input-area {
   width: 100%;
   display: flex;
   align-items: flex-end;
-  gap: 12px;
+  gap: 16px;
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border-radius: 24px;
+  border: 1px solid rgba(232, 125, 125, 0.1);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  transition: all var(--mm-transition-normal);
+}
+
+/* 입력 영역 포커스 시 전체 효과 */
+.input-area:focus-within {
+  border-color: rgba(232, 125, 125, 0.4);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
 }
 
 .file-attach-btn {
-  border-radius: var(--mm-radius-lg);
+  border-radius: 16px !important;
+  border: 2px solid rgba(232, 125, 125, 0.3) !important;
+  background: linear-gradient(135deg, rgba(232, 125, 125, 0.1) 0%, rgba(255, 107, 107, 0.1) 100%) !important;
+  color: #E87D7D !important;
   transition: all var(--mm-transition-normal);
+  min-width: 56px !important;
+  height: 56px !important;
+  box-shadow: 0 4px 16px rgba(232, 125, 125, 0.2);
 }
 
-.file-attach-btn:hover {
-  transform: scale(1.05);
-  box-shadow: var(--mm-shadow-sm);
+.file-attach-btn:hover:not(:disabled) {
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: 0 8px 24px rgba(232, 125, 125, 0.4);
+  border-color: rgba(232, 125, 125, 0.6) !important;
+  background: linear-gradient(135deg, rgba(232, 125, 125, 0.2) 0%, rgba(255, 107, 107, 0.2) 100%) !important;
+}
+
+.file-attach-btn:active {
+  transform: scale(0.95);
+}
+
+.file-attach-btn .v-icon {
+  transition: all var(--mm-transition-fast);
+}
+
+.file-attach-btn:hover .v-icon {
+  transform: scale(1.2);
+  color: #FF6B6B !important;
 }
 
 .message-input {
-  border-radius: var(--mm-radius-lg);
+  border-radius: 20px !important;
   transition: all var(--mm-transition-normal);
+  background: rgba(255, 255, 255, 0.8) !important;
+  border: 2px solid rgba(232, 125, 125, 0.2) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(10px);
 }
 
 .message-input:focus-within {
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 0 0 3px rgba(232, 125, 125, 0.2), 0 8px 24px rgba(0, 0, 0, 0.1);
+  border-color: rgba(232, 125, 125, 0.6) !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  transform: translateY(-1px);
+}
+
+.message-input .v-field__outline {
+  display: none !important;
+}
+
+.message-input .v-field__input {
+  padding: 16px 20px !important;
+  font-size: 16px !important;
+  line-height: 1.5 !important;
+  color: #2c3e50 !important;
+}
+
+.message-input .v-field__input::placeholder {
+  color: rgba(44, 62, 80, 0.6) !important;
+  font-style: italic;
 }
 
 .send-btn {
-  border-radius: var(--mm-radius-lg);
+  border-radius: 16px !important;
+  background: linear-gradient(135deg, #E87D7D 0%, #FF6B6B 100%) !important;
+  color: white !important;
   transition: all var(--mm-transition-normal);
+  min-width: 56px !important;
+  height: 56px !important;
+  box-shadow: 0 4px 16px rgba(232, 125, 125, 0.3);
+  border: none !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.send-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
 }
 
 .send-btn:hover:not(:disabled) {
-  transform: scale(1.05);
-  box-shadow: var(--mm-shadow-md);
+  transform: scale(1.1) translateY(-2px);
+  box-shadow: 0 12px 32px rgba(232, 125, 125, 0.5);
+  background: linear-gradient(135deg, #FF6B6B 0%, #E87D7D 100%) !important;
+}
+
+.send-btn:hover::before {
+  left: 100%;
+}
+
+.send-btn:active {
+  transform: scale(0.95);
 }
 
 .send-btn:disabled {
   opacity: 0.6;
+  transform: none !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+}
+
+.send-btn .v-icon {
+  transition: all var(--mm-transition-fast);
+  font-size: 24px !important;
+}
+
+.send-btn:hover .v-icon {
+  transform: scale(1.1);
+}
+
+/* 입력 영역 배경 그라데이션 효과 */
+.chat-input-container {
+  background: linear-gradient(180deg, var(--mm-surface) 0%, rgba(232, 125, 125, 0.02) 100%);
+  border-top: 1px solid rgba(232, 125, 125, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.chat-input-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(232, 125, 125, 0.3), transparent);
+}
+
+/* 파일 첨부 버튼 특별 효과 */
+.file-attach-btn .v-icon {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+/* 전송 버튼 특별 효과 */
+.send-btn .v-icon {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+/* 입력 영역 포커스 시 전체 효과 */
+.input-area:focus-within {
+  border-color: rgba(232, 125, 125, 0.4);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+}
+
+/* 반응형 디자인 개선 */
+@media (max-width: 768px) {
+  .input-area {
+    padding: 16px;
+    gap: 12px;
+    border-radius: 20px;
+  }
+  
+  .file-attach-btn,
+  .send-btn {
+    min-width: 48px !important;
+    height: 48px !important;
+  }
+  
+  .file-attach-btn .v-icon,
+  .send-btn .v-icon {
+    font-size: 20px !important;
+  }
+  
+  .message-input .v-field__input {
+    padding: 12px 16px !important;
+    font-size: 14px !important;
+  }
+  
+  .selected-files-preview {
+    padding: 16px;
+    border-radius: 16px;
+  }
+  
+  .selected-files-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .file-preview-item {
+    padding: 12px;
+    border-radius: 14px;
+  }
+  
+  .file-icon-container {
+    width: 40px;
+    height: 40px;
+    margin-right: 12px;
+  }
+  
+  .file-icon-container .v-icon {
+    font-size: 20px !important;
+  }
+  
+  .file-name {
+    font-size: 12px;
+  }
+  
+  .file-size {
+    font-size: 10px;
+  }
+  
+  .remove-file-btn {
+    min-width: 32px !important;
+    height: 32px !important;
+  }
+  
+  .remove-file-btn .v-icon {
+    font-size: 16px !important;
+  }
+  
+  .files-header-icon {
+    width: 28px;
+    height: 28px;
+    margin-right: 10px;
+  }
+  
+  .files-header-text {
+    font-size: 13px;
+  }
+  
+  .files-count-chip {
+    font-size: 11px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .input-area {
+    padding: 12px;
+    gap: 8px;
+    border-radius: 16px;
+  }
+  
+  .file-attach-btn,
+  .send-btn {
+    min-width: 44px !important;
+    height: 44px !important;
+  }
+  
+  .file-attach-btn .v-icon,
+  .send-btn .v-icon {
+    font-size: 18px !important;
+  }
+  
+  .message-input .v-field__input {
+    padding: 10px 14px !important;
+    font-size: 13px !important;
+  }
+  
+  .selected-files-preview {
+    padding: 12px;
+    border-radius: 14px;
+  }
+  
+  .file-preview-item {
+    padding: 10px;
+    border-radius: 12px;
+  }
+  
+  .file-icon-container {
+    width: 36px;
+    height: 36px;
+    margin-right: 10px;
+  }
+  
+  .file-icon-container .v-icon {
+    font-size: 18px !important;
+  }
+  
+  .remove-file-btn {
+    min-width: 28px !important;
+    height: 28px !important;
+  }
+  
+  .remove-file-btn .v-icon {
+    font-size: 14px !important;
+  }
 }
 
 /* 스크롤바 스타일링 */
@@ -2147,67 +2482,6 @@ export default {
   border-top: 1px solid var(--mm-border-light);
 }
 
-/* 반응형 디자인 */
-@media (max-width: 768px) {
-  .chat-room-container {
-    height: 100vh;
-  }
-  
-  .chat-messages-container {
-    height: calc(100vh - 180px);
-    max-height: calc(100vh - 180px);
-  }
-  
-  .message-bubble {
-    max-width: 85%;
-  }
-  
-  .media-bubble {
-    min-width: 240px;
-    max-width: 85%;
-  }
-  
-  .selected-files-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .file-preview-item {
-    padding: 8px;
-  }
-  
-  .file-icon-container {
-    width: 32px;
-    height: 32px;
-  }
-  
-  .file-name {
-    font-size: 12px;
-  }
-  
-  .file-size {
-    font-size: 11px;
-  }
-  
-  .scroll-to-bottom-button-sticky {
-    bottom: 16px;
-    right: 16px;
-  }
-  
-  .scroll-to-bottom-btn {
-    width: 48px !important;
-    height: 48px !important;
-  }
-  
-  .room-title {
-    font-size: var(--mm-text-base);
-  }
-  
-  .room-status {
-    font-size: var(--mm-text-xs);
-    gap: 8px;
-  }
-}
-
 /* 다크 모드 지원 */
 @media (prefers-color-scheme: dark) {
   .chat-room-container {
@@ -2300,6 +2574,46 @@ export default {
   }
   to {
     opacity: 1;
+  }
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .chat-room-container {
+    height: 100vh;
+  }
+  
+  .chat-messages-container {
+    height: calc(100vh - 180px);
+    max-height: calc(100vh - 180px);
+  }
+  
+  .message-bubble {
+    max-width: 85%;
+  }
+  
+  .media-bubble {
+    min-width: 240px;
+    max-width: 85%;
+  }
+  
+  .scroll-to-bottom-button-sticky {
+    bottom: 16px;
+    right: 16px;
+  }
+  
+  .scroll-to-bottom-btn {
+    width: 48px !important;
+    height: 48px !important;
+  }
+  
+  .room-title {
+    font-size: var(--mm-text-base);
+  }
+  
+  .room-status {
+    font-size: var(--mm-text-xs);
+    gap: 8px;
   }
 }
 </style>
