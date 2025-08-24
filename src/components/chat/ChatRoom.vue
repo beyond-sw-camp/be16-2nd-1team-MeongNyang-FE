@@ -353,223 +353,12 @@
   </v-dialog>
 
   <!-- 초대하기 모달 -->
-  <v-dialog v-model="showInviteDialog" max-width="700" @click:outside="showInviteDialog = false">
-    <v-card class="invite-dialog">
-      <!-- 헤더 -->
-      <div class="dialog-header invite-header">
-        <div class="header-content">
-          <div class="header-icon">
-            <v-icon size="28" color="white">mdi-account-plus</v-icon>
-          </div>
-          <div class="header-text">
-            <h3 class="dialog-title">새 참여자 초대</h3>
-            <p class="dialog-subtitle">채팅방에 함께할 사용자를 선택하세요</p>
-          </div>
-          <div class="header-actions" v-if="getSelectedUsersCount() > 0">
-            <v-chip color="white" variant="outlined" class="selection-chip">
-              {{ getSelectedUsersCount() }}명 선택됨
-            </v-chip>
-            <v-btn 
-              color="white" 
-              variant="outlined"
-              @click="inviteSelectedUsers"
-              :disabled="getSelectedUsersCount() === 0"
-              class="invite-selected-btn"
-              prepend-icon="mdi-send"
-            >
-              선택된 사용자 초대
-            </v-btn>
-          </div>
-          <v-btn 
-            icon 
-            variant="outlined"
-            @click="showInviteDialog = false"
-            class="close-btn"
-            size="large"
-            color="white"
-          >
-            <v-icon size="24">mdi-close</v-icon>
-          </v-btn>
-        </div>
-      </div>
-      <div class="invite-content">
-        <!-- 탭 네비게이션 -->
-        <div class="tab-navigation">
-          <v-tabs v-model="inviteTab" color="primary" @change="onTabChange" class="custom-tabs">
-            <v-tab value="followers" class="custom-tab">
-              <v-icon size="20" class="mr-2">mdi-account-heart</v-icon>
-              팔로워
-            </v-tab>
-            <v-tab value="followings" class="custom-tab">
-              <v-icon size="20" class="mr-2">mdi-account-star</v-icon>
-              팔로잉
-            </v-tab>
-          </v-tabs>
-        </div>
-
-        <v-window v-model="inviteTab">
-
-          <!-- 팔로워 탭 -->
-          <v-window-item value="followers">
-              <div class="d-flex align-center mb-3">
-                <v-text-field
-                  v-model="followerSearchQuery"
-                  label="팔로워 검색"
-                  placeholder="이름이나 이메일로 검색하세요"
-                  prepend-inner-icon="mdi-magnify"
-                  clearable
-                  @input="searchFollowers"
-                  class="flex-grow-1 mr-2"
-                ></v-text-field>
-              <v-btn icon @click="loadFollowers" :loading="loadingFollowers">
-                  <v-icon>mdi-refresh</v-icon>
-                </v-btn>
-              </div>
-              <div class="d-flex align-center mb-3" v-if="filteredFollowers.length > 0">
-                <v-checkbox
-                  v-model="selectAll"
-                  label="전체 선택"
-                  @change="toggleSelectAll"
-                  hide-details
-                  class="mr-4"
-                ></v-checkbox>
-              </div>
-            <div v-if="loadingFollowers" class="text-center py-4">
-                <v-progress-circular indeterminate color="primary"></v-progress-circular>
-                <div class="mt-2">팔로워 목록을 불러오는 중...</div>
-              </div>
-            <v-list v-else-if="filteredFollowers.length > 0">
-                <v-list-item 
-                  v-for="user in filteredFollowers" 
-                  :key="user.userEmail"
-                  @click="toggleUserSelection(user)"
-                class="cursor-pointer"
-                >
-                  <template v-slot:prepend>
-                    <v-checkbox
-                      :model-value="isUserSelected(user)"
-                      @click.stop
-                      @change="toggleUserSelection(user)"
-                      :disabled="isAlreadyParticipant(user.userEmail)"
-                      hide-details
-                    ></v-checkbox>
-                  <v-avatar size="32">
-                    <v-img src="https://cdn.vuetifyjs.com/images/john.jpg" alt="avatar"></v-img>
-                    </v-avatar>
-                  </template>
-                  <v-list-item-title>{{ user.userEmail }}</v-list-item-title>
-                  <v-list-item-subtitle v-if="user.userName">{{ user.userName }}</v-list-item-subtitle>
-                  <template v-slot:append>
-                    <v-btn 
-                      size="small" 
-                      color="primary" 
-                      variant="outlined"
-                      :disabled="isAlreadyParticipant(user.userEmail)"
-                      @click.stop="inviteUser(user)"
-                    >
-                      {{ isAlreadyParticipant(user.userEmail) ? '이미 참여중' : '초대' }}
-                    </v-btn>
-                  </template>
-                </v-list-item>
-              </v-list>
-              <v-alert 
-                v-else-if="followerSearchQuery" 
-                type="info" 
-                variant="tonal"
-              >
-                검색 결과가 없습니다.
-              </v-alert>
-              <v-alert 
-                v-else-if="!loadingFollowers && filteredFollowers.length === 0" 
-                type="info" 
-                variant="tonal"
-              >
-                팔로워가 없습니다. 다른 사용자에게 팔로우를 받아보세요.
-              </v-alert>
-          </v-window-item>
-
-          <!-- 팔로잉 탭 -->
-          <v-window-item value="followings">
-              <div class="d-flex align-center mb-3">
-                <v-text-field
-                  v-model="followingSearchQuery"
-                  label="팔로잉 검색"
-                  placeholder="이름이나 이메일로 검색하세요"
-                  prepend-inner-icon="mdi-magnify"
-                  clearable
-                  @input="searchFollowings"
-                  class="flex-grow-1 mr-2"
-                ></v-text-field>
-              <v-btn icon @click="loadFollowings" :loading="loadingFollowings">
-                  <v-icon>mdi-refresh</v-icon>
-                </v-btn>
-              </div>
-              <div class="d-flex align-center mb-3" v-if="filteredFollowings.length > 0">
-                <v-checkbox
-                  v-model="selectAll"
-                  label="전체 선택"
-                  @change="toggleSelectAll"
-                  hide-details
-                  class="mr-4"
-                ></v-checkbox>
-              </div>
-            <div v-if="loadingFollowings" class="text-center py-4">
-                <v-progress-circular indeterminate color="primary"></v-progress-circular>
-                <div class="mt-2">팔로잉 목록을 불러오는 중...</div>
-              </div>
-            <v-list v-else-if="filteredFollowings.length > 0">
-                <v-list-item 
-                  v-for="user in filteredFollowings" 
-                  :key="user.userEmail"
-                  @click="toggleUserSelection(user)"
-                class="cursor-pointer"
-                >
-                  <template v-slot:prepend>
-                    <v-checkbox
-                      :model-value="isUserSelected(user)"
-                      @click.stop
-                      @change="toggleUserSelection(user)"
-                      :disabled="isAlreadyParticipant(user.userEmail)"
-                      hide-details
-                    ></v-checkbox>
-                  <v-avatar size="32">
-                    <v-img src="https://cdn.vuetifyjs.com/images/john.jpg" alt="avatar"></v-img>
-                    </v-avatar>
-                  </template>
-                  <v-list-item-title>{{ user.userEmail }}</v-list-item-title>
-                  <v-list-item-subtitle v-if="user.userName">{{ user.userName }}</v-list-item-subtitle>
-                  <template v-slot:append>
-                    <v-btn 
-                      size="small" 
-                      color="primary" 
-                      variant="outlined"
-                      :disabled="isAlreadyParticipant(user.userEmail)"
-                      @click.stop="inviteUser(user)"
-                    >
-                      {{ isAlreadyParticipant(user.userEmail) ? '이미 참여중' : '초대' }}
-                    </v-btn>
-                  </template>
-                </v-list-item>
-              </v-list>
-              <v-alert 
-                v-else-if="followingSearchQuery" 
-                type="info" 
-                variant="tonal"
-              >
-                검색 결과가 없습니다.
-              </v-alert>
-              <v-alert 
-                v-else-if="!loadingFollowings && filteredFollowings.length === 0" 
-                type="info" 
-                variant="tonal"
-              >
-                팔로잉이 없습니다. 다른 사용자를 팔로우해보세요.
-              </v-alert>
-          </v-window-item>
-        </v-window>
-      </div>
-    </v-card>
-  </v-dialog>
+  <UserSelectionModal
+    v-model="showInviteDialog"
+    mode="invite"
+    :existingParticipants="participants"
+    @users-selected="inviteSelectedUsers"
+  />
 
   <!-- 채팅방 나가기 확인 다이얼로그 -->
   <v-dialog v-model="showLeaveConfirmDialog" max-width="400">
@@ -599,14 +388,15 @@ import SockJS from 'sockjs-client'
 import Stomp from 'webstomp-client'
 import axios from 'axios'
 import FileGrid from './FileGrid.vue'
-import { userAPI } from '@/services/api'
+import UserSelectionModal from './UserSelectionModal.vue'
 import { useRouter } from 'vue-router'
 import { inject } from 'vue'
 
 export default {
   name: 'ChatRoom',
   components: {
-    FileGrid
+    FileGrid,
+    UserSelectionModal
   },
   props: {
     roomId: {
@@ -645,21 +435,7 @@ export default {
     const showInviteDialog = ref(false)
     const showLeaveConfirmDialog = ref(false)
 
-    // 초대 관련 상태
-    const inviteTab = ref('followers') // 탭 모델
-    const inviteSearchQuery = ref('')
-    const searchResults = ref([])
-    const searching = ref(false)
-    const followerSearchQuery = ref('')
-    const followingSearchQuery = ref('')
-    const loadingFollowers = ref(false)
-    const loadingFollowings = ref(false)
-    const filteredFollowers = ref([])
-    const filteredFollowings = ref([])
-    
-    // 다중 선택 관련 상태
-    const selectedUsers = ref(new Set())
-    const selectAll = ref(false)
+
     
     // 스크롤 관련 상태
     const showScrollToBottomButton = ref(false)
@@ -1075,275 +851,37 @@ export default {
 
     const inviteParticipants = () => {
       showInviteDialog.value = true;
-      inviteTab.value = 'followers'; // 기본적으로 팔로워 탭 선택
-      // 팔로워와 팔로잉 데이터가 없으면 로드
-      if (filteredFollowers.value.length === 0) {
-        loadFollowers();
-      }
-      if (filteredFollowings.value.length === 0) {
-        loadFollowings();
-      }
     }
 
-    const searchUsers = async () => {
-      if (!inviteSearchQuery.value) {
-        searchResults.value = [];
-        return;
-      }
-      searching.value = true;
-      try {
-        const res = await userAPI.searchUsersByEmail(inviteSearchQuery.value);
-        searchResults.value = res.data.data;
-      } catch (error) {
-        console.error('사용자 검색 실패:', error);
-        searchResults.value = [];
-      } finally {
-        searching.value = false;
-      }
-    }
-
-    // 팔로워 로드
-    const loadFollowers = async () => {
-      loadingFollowers.value = true;
-      try {
-        const res = await userAPI.getFollowers({ page: 0, size: 100 });
-        const followers = res.data.data.content || [];
-        if (Array.isArray(followers)) {
-          filteredFollowers.value = followers;
-        } else {
-          console.warn('팔로워 데이터가 배열이 아닙니다:', followers);
-          filteredFollowers.value = [];
-        }
-      } catch (error) {
-        console.error('팔로워 로드 실패:', error);
-        filteredFollowers.value = [];
-      } finally {
-        loadingFollowers.value = false;
-      }
-    }
-
-    // 팔로잉 로드
-    const loadFollowings = async () => {
-      loadingFollowings.value = true;
-      try {
-        const res = await userAPI.getFollowings({ page: 0, size: 100 });
-        const followings = res.data.data.content || [];
-        if (Array.isArray(followings)) {
-          filteredFollowings.value = followings;
-        } else {
-          console.warn('팔로잉 데이터가 배열이 아닙니다:', followings);
-          filteredFollowings.value = [];
-        }
-      } catch (error) {
-        console.error('팔로잉 로드 실패:', error);
-        filteredFollowings.value = [];
-      } finally {
-        loadingFollowings.value = false;
-      }
-    }
-
-    // 팔로워 검색
-    const searchFollowers = () => {
-      if (!followerSearchQuery.value) {
-        // 검색어가 없으면 원본 데이터로 복원
-        loadFollowers();
-        return;
-      }
-      const query = followerSearchQuery.value.toLowerCase();
-      // 원본 데이터에서 필터링 (API에서 다시 로드하지 않음)
-      userAPI.getFollowers({ page: 0, size: 100 }).then(res => {
-        const allFollowers = res.data.data.content || [];
-        if (Array.isArray(allFollowers)) {
-          filteredFollowers.value = allFollowers.filter(user => 
-            (user.userEmail && user.userEmail.toLowerCase().includes(query)) || 
-            (user.userName && user.userName.toLowerCase().includes(query))
-          );
-        } else {
-          console.warn('팔로워 데이터가 배열이 아닙니다:', allFollowers);
-          filteredFollowers.value = [];
-        }
-      }).catch(error => {
-        console.error('팔로워 검색 중 오류:', error);
-        filteredFollowers.value = [];
-      });
-    }
-
-    // 팔로잉 검색
-    const searchFollowings = () => {
-      if (!followingSearchQuery.value) {
-        // 검색어가 없으면 원본 데이터로 복원
-        loadFollowings();
-        return;
-      }
-      const query = followingSearchQuery.value.toLowerCase();
-      // 원본 데이터에서 필터링 (API에서 다시 로드하지 않음)
-      userAPI.getFollowings({ page: 0, size: 100 }).then(res => {
-        const allFollowings = res.data.data.content || [];
-        console.log(allFollowings);
-        if (Array.isArray(allFollowings)) {
-          filteredFollowings.value = allFollowings.filter(user => 
-            (user.userEmail && user.userEmail.toLowerCase().includes(query)) || 
-            (user.userName && user.userName.toLowerCase().includes(query))
-          );
-        } else {
-          console.warn('팔로잉 데이터가 배열이 아닙니다:', allFollowings);
-          filteredFollowings.value = [];
-        }
-      }).catch(error => {
-        console.error('팔로잉 검색 중 오류:', error);
-        filteredFollowings.value = [];
-      });
-    }
-
-    // 다중 선택 관련 함수들
-    const toggleUserSelection = (user) => {
-      const userEmail = user.userEmail || user.email;
-      
-      // 이미 참여중인 사용자는 선택할 수 없음
-      if (isAlreadyParticipant(userEmail)) {
-        return;
-      }
-      
-      if (selectedUsers.value.has(userEmail)) {
-        selectedUsers.value.delete(userEmail);
-      } else {
-        selectedUsers.value.add(userEmail);
-      }
-    }
-
-    const toggleSelectAll = () => {
-      if (selectAll.value) {
-        // 모든 사용자 선택 (이미 참여중인 사용자 제외)
-        const currentUsers = getCurrentTabUsers();
-        currentUsers.forEach(user => {
-          const userEmail = user.userEmail || user.email;
-          if (!isAlreadyParticipant(userEmail)) {
-            selectedUsers.value.add(userEmail);
-          }
-        });
-      } else {
-        // 모든 선택 해제
-        selectedUsers.value.clear();
-      }
-    }
-
-    const getCurrentTabUsers = () => {
-      let users = [];
-      switch (inviteTab.value) {
-        case 'followers':
-          users = filteredFollowers.value;
-          break;
-        case 'followings':
-          users = filteredFollowings.value;
-          break;
-        case 'search':
-          users = searchResults.value;
-          break;
-        default:
-          return [];
-      }
-      
-      // 이미 참여중인 사용자 제외
-      return users.filter(user => {
-        const userEmail = user.userEmail || user.email;
-        return !isAlreadyParticipant(userEmail);
-      });
-    }
-
-    const getSelectedUsersCount = () => {
-      // 이미 참여중인 사용자는 카운트에서 제외
-      let count = 0;
-      selectedUsers.value.forEach(email => {
-        if (!isAlreadyParticipant(email)) {
-          count++;
-        }
-      });
-      return count;
-    }
-
-    const isUserSelected = (user) => {
-      const userEmail = user.userEmail || user.email;
-      return selectedUsers.value.has(userEmail);
-    }
-
-    // 탭 변경 시 데이터 로드
-    const onTabChange = (newTab) => {
-      if (newTab === 'followers') {
-        // 팔로워 데이터가 없으면 로드
-        if (filteredFollowers.value.length === 0) {
-          loadFollowers();
-        }
-      } else if (newTab === 'followings') {
-        // 팔로잉 데이터가 없으면 로드
-        if (filteredFollowings.value.length === 0) {
-          loadFollowings();
-        }
-      }
-    }
-
-         const inviteUser = async (user) => {
-       // 사용자 객체에서 이메일 추출 (팔로워/팔로잉은 userEmail, 검색결과는 email)
-       const userEmail = user.userEmail || user.email;
-       if (isAlreadyParticipant(userEmail)) {
-         console.warn(`${userEmail}는 이미 참여자입니다.`);
-         return;
-       }
-       try {
-         const inviteData = [{ inviteeEmail: userEmail }];
-         await axios.post(`${process.env.VUE_APP_API_BASE_URL}/chat-rooms/${props.roomId}/participants`, inviteData, {
-           headers: {
-             'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-           }
-         });
-         console.log(`${userEmail}에게 초대 메시지를 보냈습니다.`);
-         showInviteDialog.value = false;
-         inviteSearchQuery.value = '';
-         searchResults.value = [];
-         followerSearchQuery.value = '';
-         followingSearchQuery.value = '';
-         filteredFollowers.value = [];
-         filteredFollowings.value = [];
-         selectedUsers.value.clear();
-       } catch (error) {
-         console.error('초대 실패:', error);
-         if (error.response && error.response.data && error.response.data.message) {
-           alert(error.response.data.message);
-         } else {
-           alert('초대에 실패했습니다.');
-         }
-       }
-     }
-
-    // 다중 초대 함수
-    const inviteSelectedUsers = async () => {
-      // 이미 참여중인 사용자 제외하고 실제 초대 가능한 사용자만 필터링
-      const validUsers = Array.from(selectedUsers.value).filter(email => !isAlreadyParticipant(email));
-      
-      if (validUsers.length === 0) {
+    const inviteSelectedUsers = async (selectedUsersArray) => {
+      if (!selectedUsersArray || selectedUsersArray.length === 0) {
         alert('초대할 사용자를 선택해주세요.');
         return;
       }
 
       try {
-        const inviteData = validUsers.map(email => ({ inviteeEmail: email }));
+        const inviteData = selectedUsersArray.map(user => ({ inviteeEmail: user.userEmail }));
         await axios.post(`${process.env.VUE_APP_API_BASE_URL}/chat-rooms/${props.roomId}/participants`, inviteData, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
           }
         });
         
-        console.log(`${validUsers.length}명의 사용자에게 초대 메시지를 보냈습니다.`);
+        console.log(`${selectedUsersArray.length}명의 사용자에게 초대 메시지를 보냈습니다.`);
         showInviteDialog.value = false;
         
-        // 초기화
-        inviteSearchQuery.value = '';
-        searchResults.value = [];
-        followerSearchQuery.value = '';
-        followingSearchQuery.value = '';
-        filteredFollowers.value = [];
-        filteredFollowings.value = [];
-        selectedUsers.value.clear();
-        selectAll.value = false;
+        // 성공 메시지를 부모 컴포넌트로 전달
+        if (showMessage) {
+          showMessage({
+            type: 'success',
+            text: `${selectedUsersArray.length}명의 사용자를 초대했습니다.`
+          });
+        }
+        
+        // 참여자 목록 새로고침
+        await chatStore.getParticipants(props.roomId);
+        participants.value = chatStore.participants;
+        
       } catch (error) {
         console.error('다중 초대 실패:', error);
         if (error.response && error.response.data && error.response.data.message) {
@@ -1417,16 +955,7 @@ export default {
     watch(showInviteDialog, (newValue) => {
       if (!newValue) {
         // 다이얼로그가 닫힐 때 초기화
-        inviteSearchQuery.value = '';
-        searchResults.value = [];
-        followerSearchQuery.value = '';
-        followingSearchQuery.value = '';
-        filteredFollowers.value = [];
-        filteredFollowings.value = [];
-        inviteTab.value = 'followers';
-        // 선택 상태 초기화
-        selectedUsers.value.clear();
-        selectAll.value = false;
+        // 필요한 초기화 로직은 UserSelectionModal 컴포넌트에서 처리됨
       }
     })
     
@@ -1507,39 +1036,15 @@ export default {
       showParticipantsDialog,
       showInviteDialog,
       showLeaveConfirmDialog,
-      inviteTab,
-      inviteSearchQuery,
-      searchResults,
-      searching,
-      followerSearchQuery,
-      followingSearchQuery,
-      loadingFollowers,
-      loadingFollowings,
-      filteredFollowers,
-      filteredFollowings,
       isOnline,
       getInitials,
       viewProfile,
       showParticipants,
       inviteParticipants,
-      searchUsers,
-      loadFollowers,
-      loadFollowings,
-      searchFollowers,
-      searchFollowings,
-      onTabChange,
-      inviteUser,
       inviteSelectedUsers,
       isAlreadyParticipant,
       confirmLeaveRoom,
       leaveRoom,
-      // 다중 선택 관련
-      selectedUsers,
-      selectAll,
-      toggleUserSelection,
-      toggleSelectAll,
-      getSelectedUsersCount,
-      isUserSelected,
       // 스크롤 관련
       showScrollToBottomButton,
       isAtBottom,
