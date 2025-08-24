@@ -260,37 +260,90 @@
   </v-card>
 
   <!-- 참여자 목록 모달 -->
-  <v-dialog v-model="showParticipantsDialog" max-width="400">
-    <v-card>
-      <v-card-title class="d-flex align-center">
-        <v-icon class="mr-2">mdi-account-group</v-icon>
-        참여자 목록
-        <v-spacer></v-spacer>
-        <v-btn icon @click="showParticipantsDialog = false">
-          <v-icon>mdi-close</v-icon>
+  <v-dialog v-model="showParticipantsDialog" max-width="500" persistent>
+    <v-card class="participants-dialog">
+      <!-- 헤더 -->
+      <div class="dialog-header">
+        <div class="header-content">
+          <div class="header-icon">
+            <v-icon size="28" color="white">mdi-account-group</v-icon>
+          </div>
+          <div class="header-text">
+            <h3 class="dialog-title">참여자 목록</h3>
+            <p class="dialog-subtitle">{{ participants.length }}명이 참여 중</p>
+          </div>
+        </div>
+        <v-btn 
+          icon 
+          variant="text" 
+          @click="showParticipantsDialog = false"
+          class="close-btn"
+          size="large"
+        >
+          <v-icon size="24">mdi-close</v-icon>
         </v-btn>
-      </v-card-title>
-      <v-card-text>
-        <v-list>
-          <v-list-item v-for="participant in participants" :key="participant.email">
-            <template v-slot:prepend>
-              <v-avatar size="32">
-                <v-img src="https://cdn.vuetifyjs.com/images/john.jpg" alt="avatar"></v-img>
-              </v-avatar>
-            </template>
-            <v-list-item-title>{{ participant.email }}</v-list-item-title>
-            <template v-slot:append>
-              <v-chip 
-                :color="isOnline(participant.email) ? 'green' : 'grey'" 
-                size="small"
-                variant="outlined"
-              >
+      </div>
+
+      <!-- 참여자 목록 -->
+      <div class="participants-content">
+        <div class="participants-list">
+          <div 
+            v-for="participant in participants" 
+            :key="participant.email"
+            class="participant-item"
+            :class="{ 'online': isOnline(participant.email) }"
+          >
+            <div class="participant-avatar">
+              <div class="avatar-circle">
+                <span class="avatar-text">{{ getInitials(participant.email) }}</span>
+              </div>
+              <div 
+                class="online-indicator"
+                :class="{ 'active': isOnline(participant.email) }"
+              ></div>
+            </div>
+            
+            <div class="participant-info">
+              <div class="participant-name">{{ participant.email }}</div>
+              <div class="participant-status">
                 {{ isOnline(participant.email) ? '온라인' : '오프라인' }}
-              </v-chip>
-            </template>
-          </v-list-item>
-        </v-list>
-      </v-card-text>
+              </div>
+            </div>
+
+            <div class="participant-actions">
+              <v-btn
+                icon
+                variant="text"
+                size="small"
+                class="action-icon"
+                @click="viewProfile(participant)"
+                title="프로필 보기"
+              >
+                <v-icon size="18">mdi-account</v-icon>
+              </v-btn>
+            </div>
+          </div>
+        </div>
+
+        <!-- 빈 상태 -->
+        <div v-if="participants.length === 0" class="empty-state">
+          <div class="empty-icon">👥</div>
+          <div class="empty-text">아직 참여자가 없습니다</div>
+        </div>
+      </div>
+
+      <!-- 푸터 -->
+      <div class="dialog-footer">
+        <v-btn
+          color="primary"
+          variant="outlined"
+          @click="inviteParticipants"
+          class="invite-btn"
+          prepend-icon="mdi-account-plus"
+        >
+          새 참여자 초대
+        </v-btn>
+      </div>
     </v-card>
   </v-dialog>
 
@@ -1034,6 +1087,20 @@ export default {
       return onlineParticipants.value.some(p => p.email === email);
     }
 
+    const getInitials = (email) => {
+      if (!email) return '?';
+      const parts = email.split('@')[0];
+      if (parts.length >= 2) {
+        return parts.substring(0, 2).toUpperCase();
+      }
+      return parts.substring(0, 1).toUpperCase();
+    }
+
+    const viewProfile = (participant) => {
+      // 프로필 보기 로직 (나중에 구현)
+      console.log('프로필 보기:', participant);
+    }
+
     const showParticipants = () => {
       showParticipantsDialog.value = true;
     }
@@ -1483,6 +1550,8 @@ export default {
       filteredFollowers,
       filteredFollowings,
       isOnline,
+      getInitials,
+      viewProfile,
       showParticipants,
       inviteParticipants,
       searchUsers,
@@ -2584,6 +2653,231 @@ export default {
   to {
     opacity: 1;
   }
+}
+
+/* 참여자 목록 다이얼로그 스타일 */
+.participants-dialog {
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.dialog-header {
+  background: linear-gradient(135deg, #E87D7D 0%, #FF6B6B 100%);
+  padding: 24px;
+  color: white;
+  position: relative;
+}
+
+.dialog-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+  opacity: 0.3;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+  z-index: 1;
+}
+
+.header-icon {
+  width: 56px;
+  height: 56px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+}
+
+.header-text {
+  flex: 1;
+}
+
+.dialog-title {
+  font-size: var(--mm-text-xl);
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  color: white;
+}
+
+.dialog-subtitle {
+  font-size: var(--mm-text-sm);
+  margin: 0;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 400;
+}
+
+.close-btn {
+  color: white !important;
+  position: relative;
+  z-index: 1;
+}
+
+.participants-content {
+  padding: 24px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.participants-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.participant-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--mm-surface);
+  border: 1px solid var(--mm-border-light);
+  transition: all var(--mm-transition-normal);
+  position: relative;
+}
+
+.participant-item:hover {
+  background: var(--mm-surface-variant);
+  border-color: #FF6B6B;
+  transform: translateY(-2px);
+  box-shadow: var(--mm-shadow-md);
+}
+
+.participant-item.online {
+  border-left: 4px solid #E87D7D;
+}
+
+.participant-avatar {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.avatar-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #E87D7D 0%, #FF6B6B 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: var(--mm-text-lg);
+  position: relative;
+}
+
+.online-indicator {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ccc;
+  border: 2px solid white;
+  transition: all var(--mm-transition-normal);
+}
+
+.online-indicator.active {
+  background: #E87D7D;
+  box-shadow: 0 0 8px rgba(232, 125, 125, 0.4);
+}
+
+.participant-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.participant-name {
+  font-weight: 600;
+  font-size: var(--mm-text-base);
+  color: var(--mm-on-surface);
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.participant-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--mm-text-sm);
+  color: var(--mm-on-surface-variant);
+  font-weight: 500;
+}
+
+.participant-item.online .participant-status {
+  color: #E87D7D;
+  font-weight: 600;
+}
+
+
+
+.participant-actions {
+  flex-shrink: 0;
+}
+
+.action-icon {
+  color: var(--mm-on-surface-variant) !important;
+  transition: all var(--mm-transition-normal);
+}
+
+.action-icon:hover {
+  color: var(--mm-primary) !important;
+  transform: scale(1.1);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--mm-on-surface-variant);
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.empty-text {
+  font-size: var(--mm-text-base);
+  font-weight: 500;
+}
+
+.dialog-footer {
+  padding: 24px;
+  border-top: 1px solid var(--mm-border-light);
+  background: var(--mm-surface);
+  display: flex;
+  justify-content: center;
+}
+
+.invite-btn {
+  border-radius: 16px !important;
+  border: 2px solid rgba(232, 125, 125, 0.3) !important;
+  background: linear-gradient(135deg, rgba(232, 125, 125, 0.1) 0%, rgba(255, 107, 107, 0.1) 100%) !important;
+  color: #E87D7D !important;
+  transition: all var(--mm-transition-normal);
+  min-width: 200px !important;
+  height: 48px !important;
+  box-shadow: 0 4px 16px rgba(232, 125, 125, 0.2);
+}
+
+.invite-btn:hover:not(:disabled) {
+  transform: scale(1.05);
+  box-shadow: 0 8px 24px rgba(232, 125, 125, 0.4);
+  border-color: rgba(232, 125, 125, 0.6) !important;
+  background: linear-gradient(135deg, rgba(232, 125, 125, 0.2) 0%, rgba(255, 107, 107, 0.2) 100%) !important;
 }
 
 /* 반응형 디자인 */
