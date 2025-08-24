@@ -11,7 +11,7 @@
             <h3 class="dialog-title">{{ mode === 'create' ? '새 채팅방 만들기' : '새 참여자 초대' }}</h3>
             <p class="dialog-subtitle">{{ mode === 'create' ? '함께 채팅할 사용자를 선택하세요' : '채팅방에 함께할 사용자를 선택하세요' }}</p>
           </div>
-          <div class="header-actions" v-if="mode === 'invite' && selectedUsers.length > 0">
+          <div class="header-actions" v-if="selectedUsers.length > 0">
             <v-chip color="white" variant="outlined" class="selection-chip">
               {{ selectedUsers.length }}명 선택됨
             </v-chip>
@@ -23,7 +23,7 @@
               class="invite-selected-btn"
               prepend-icon="mdi-send"
             >
-              선택된 사용자 초대
+              {{ mode === 'create' ? '채팅방 생성' : '선택된 사용자 초대' }}
             </v-btn>
           </div>
           <v-btn 
@@ -338,25 +338,6 @@
           </div>
         </div>
       </div>
-      
-      <v-card-actions class="pa-4" v-if="mode === 'create'">
-        <v-spacer></v-spacer>
-        <v-btn 
-          color="grey-darken-1" 
-          variant="text" 
-          @click="closeModal"
-        >
-          취소
-        </v-btn>
-        <v-btn 
-          color="primary" 
-          variant="flat" 
-          @click="confirmSelection"
-          :disabled="selectedUsers.length === 0"
-        >
-          선택 완료 ({{ selectedUsers.length }}명)
-        </v-btn>
-      </v-card-actions>
     </v-card>
   </v-dialog>
 </template>
