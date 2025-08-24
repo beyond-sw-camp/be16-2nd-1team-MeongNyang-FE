@@ -435,11 +435,14 @@ export default {
     const showInviteDialog = ref(false)
     const showLeaveConfirmDialog = ref(false)
 
-
-    
     // 스크롤 관련 상태
     const showScrollToBottomButton = ref(false)
     const isAtBottom = ref(true)
+
+    // 미디어 로딩 상태 추적
+    const mediaLoadingStates = ref(new Map())
+    const mediaLoadPromises = ref([])
+    const resizeObserver = ref(null)
 
     // 계산된 속성
     const displayedMessages = computed(() => {
@@ -623,7 +626,19 @@ export default {
         
         // 메시지 전송 후 약간의 지연을 두고 최하단으로 스크롤
         setTimeout(() => {
-          scrollToBottom()
+          // 파일이 첨부된 메시지라면 미디어 로딩 완료 후 스크롤
+          if (fileUrls.length > 0) {
+            // 새로 전송된 메시지의 미디어 로딩 등록
+            const sentMessage = {
+              fileUrls: fileUrls
+            }
+            registerMessageMediaLoad(sentMessage)
+            scrollToBottomAfterMediaLoad()
+          } else {
+            // 텍스트만 있는 메시지는 즉시 스크롤
+            scrollToBottom()
+          }
+          
           // 하단 상태로 설정
           isAtBottom.value = true
           showScrollToBottomButton.value = false
@@ -636,7 +651,12 @@ export default {
       }
     }
     
-    const scrollToBottom = () => {
+    const scrollToBottom = (force = false) => {
+      // 강제 스크롤이 아니고 사용자가 위로 스크롤한 상태라면 자동 스크롤하지 않음
+      if (!force && !isAtBottom.value) {
+        return
+      }
+      
       nextTick(() => {
         const chatContainer = chatBox.value?.$el || chatBox.value
         if (chatContainer) {
@@ -648,6 +668,27 @@ export default {
           showScrollToBottomButton.value = false
         }
       })
+    }
+    
+    // 미디어 로딩 완료 후 스크롤
+    const scrollToBottomAfterMediaLoad = async () => {
+      try {
+        // 모든 미디어 로딩 완료 대기
+        if (mediaLoadPromises.value.length > 0) {
+          await Promise.all(mediaLoadPromises.value)
+        }
+        
+        // 약간의 지연 후 스크롤 실행 (레이아웃 안정화를 위해)
+        setTimeout(() => {
+          scrollToBottom(true)
+        }, 100)
+      } catch (error) {
+        console.warn('미디어 로딩 중 오류 발생:', error)
+        // 오류 발생 시에도 스크롤 실행
+        setTimeout(() => {
+          scrollToBottom(true)
+        }, 200)
+      }
     }
     
     const handleScroll = () => {
@@ -948,7 +989,23 @@ export default {
     watch(messages, () => {
       // 사용자가 하단에 있을 때만 자동으로 스크롤
       if (isAtBottom.value) {
-        scrollToBottom()
+        // 새 메시지가 추가되었을 때만 처리
+        if (messages.value.length > 0) {
+          const lastMessage = messages.value[messages.value.length - 1]
+          
+          // 새 메시지의 미디어 로딩 등록
+          if (lastMessage.fileUrls && lastMessage.fileUrls.length > 0) {
+            registerMessageMediaLoad(lastMessage)
+            
+            // 미디어가 포함된 메시지라면 로딩 완료 후 스크롤
+            scrollToBottomAfterMediaLoad()
+          } else {
+            // 미디어가 없는 메시지는 즉시 스크롤
+            scrollToBottom()
+          }
+        } else {
+          scrollToBottom()
+        }
       }
     }, { deep: true })
     
@@ -964,9 +1021,23 @@ export default {
       if (props.roomId) {
         await loadRoomData()
         connectWebsocket()
-        // 초기 로드 후 하단으로 스크롤
+        
+        // 초기 메시지들의 미디어 로딩 등록
+        messages.value.forEach(message => {
+          registerMessageMediaLoad(message)
+        })
+        
+        // ResizeObserver 설정
         nextTick(() => {
-          scrollToBottom()
+          setupResizeObserver()
+          
+          // 모든 미디어 로딩 완료 후 초기 스크롤
+          if (mediaLoadPromises.value.length > 0) {
+            scrollToBottomAfterMediaLoad()
+          } else {
+            scrollToBottom()
+          }
+          
           // 초기 스크롤 상태 설정
           const chatContainer = chatBox.value?.$el || chatBox.value
           if (chatContainer) {
@@ -993,7 +1064,104 @@ export default {
       // 전체 페이지 드래그 이벤트 리스너 제거
       window.removeEventListener('dragover', preventDefault)
       window.removeEventListener('drop', preventDefault)
+      
+      // ResizeObserver 정리
+      cleanupResizeObserver()
     })
+    
+    // 미디어 로딩 상태 등록
+    const registerMediaLoad = (mediaUrl, mediaType) => {
+      if (!mediaUrl) return
+      
+      const loadPromise = new Promise((resolve) => {
+        if (mediaType === 'image') {
+          const img = new Image()
+          img.onload = () => {
+            mediaLoadingStates.value.set(mediaUrl, 'loaded')
+            resolve()
+          }
+          img.onerror = () => {
+            mediaLoadingStates.value.set(mediaUrl, 'error')
+            resolve() // 에러가 발생해도 로딩 완료로 간주
+          }
+          img.src = mediaUrl
+        } else if (mediaType === 'video') {
+          const video = document.createElement('video')
+          video.onloadedmetadata = () => {
+            mediaLoadingStates.value.set(mediaUrl, 'loaded')
+            resolve()
+          }
+          video.onerror = () => {
+            mediaLoadingStates.value.set(mediaUrl, 'error')
+            resolve() // 에러가 발생해도 로딩 완료로 간주
+          }
+          video.src = mediaUrl
+        } else {
+          // 기타 파일은 즉시 로딩 완료로 간주
+          mediaLoadingStates.value.set(mediaUrl, 'loaded')
+          resolve()
+        }
+      })
+      
+      mediaLoadPromises.value.push(loadPromise)
+      return loadPromise
+    }
+    
+    // 메시지의 모든 미디어 로딩 등록
+    const registerMessageMediaLoad = (message) => {
+      if (!message.fileUrls || message.fileUrls.length === 0) return
+      
+      message.fileUrls.forEach(fileUrl => {
+        if (isImageFile(fileUrl)) {
+          registerMediaLoad(fileUrl, 'image')
+        } else if (isVideoFile(fileUrl)) {
+          registerMediaLoad(fileUrl, 'video')
+        }
+      })
+    }
+    
+    // 파일 타입 체크 함수들
+    const isImageFile = (url) => {
+      if (!url) return false
+      const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp']
+      const extension = url.split('.').pop().toLowerCase()
+      return imageExtensions.includes(extension)
+    }
+    
+    const isVideoFile = (url) => {
+      if (!url) return false
+      const videoExtensions = ['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv', 'm4v', '3gp', 'flv']
+      const extension = url.split('.').pop().toLowerCase()
+      return videoExtensions.includes(extension)
+    }
+    
+    // ResizeObserver 설정
+    const setupResizeObserver = () => {
+      if (!chatBox.value) return
+      
+      const chatContainer = chatBox.value.$el || chatBox.value
+      if (!chatContainer) return
+      
+      resizeObserver.value = new ResizeObserver(() => {
+        // 사용자가 하단에 있을 때만 자동 스크롤 조정
+        if (isAtBottom.value) {
+          // 약간의 지연 후 스크롤 조정 (레이아웃 안정화를 위해)
+          setTimeout(() => {
+            scrollToBottom(true)
+          }, 50)
+        }
+      })
+      
+      resizeObserver.value.observe(chatContainer)
+    }
+    
+    // ResizeObserver 정리
+    const cleanupResizeObserver = () => {
+      if (resizeObserver.value) {
+        resizeObserver.value.disconnect()
+        resizeObserver.value = null
+      }
+    }
     
     return {
       participants,
@@ -1048,7 +1216,15 @@ export default {
       // 스크롤 관련
       showScrollToBottomButton,
       isAtBottom,
-      adjustButtonPosition
+      adjustButtonPosition,
+      // 새로운 함수들
+      scrollToBottomAfterMediaLoad,
+      registerMediaLoad,
+      registerMessageMediaLoad,
+      isImageFile,
+      isVideoFile,
+      setupResizeObserver,
+      cleanupResizeObserver
     }
   }
 }
