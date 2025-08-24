@@ -278,10 +278,11 @@
           </div>
           <v-btn 
             icon 
-            variant="text" 
+            variant="outlined"
             @click="showParticipantsDialog = false"
             class="close-btn"
             size="large"
+            color="white"
           >
             <v-icon size="24">mdi-close</v-icon>
           </v-btn>
@@ -2724,10 +2725,38 @@ export default {
 
 .close-btn {
   color: white !important;
+  border: 2px solid rgba(255, 255, 255, 0.3) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  transition: all var(--mm-transition-normal);
+  border-radius: 16px !important;
+  min-width: 56px !important;
+  height: 56px !important;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   position: relative;
   z-index: 1;
   flex-shrink: 0;
   margin-left: auto;
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+  transform: scale(1.1);
+  border-color: rgba(255, 255, 255, 0.6) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.close-btn:active {
+  transform: scale(0.95);
+}
+
+.close-btn .v-icon {
+  transition: all var(--mm-transition-fast);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.close-btn:hover .v-icon {
+  transform: scale(1.1);
 }
 
 .participants-content {
