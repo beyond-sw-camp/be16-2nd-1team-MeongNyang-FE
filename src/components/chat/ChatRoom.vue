@@ -1,18 +1,13 @@
 <template>
   <v-card class="chat-room-container d-flex flex-column" flat tile>
     <!-- 채팅방 헤더 -->
-    <v-toolbar 
-      color="transparent" 
-      flat 
-      class="chat-header"
-      :elevation="0"
-    >
+    <div class="chat-header">
       <div class="header-content">
         <div class="room-info">
-          <v-toolbar-title class="room-title">{{ currentRoom?.roomName || '채팅' }}</v-toolbar-title>
+          <h2 class="room-title">{{ currentRoom?.roomName || '채팅' }}</h2>
         </div>
         
-        <v-spacer></v-spacer>
+        <div class="header-spacer"></div>
         
         <div class="header-actions">
           <v-btn 
@@ -77,7 +72,7 @@
           </v-menu>
         </div>
       </div>
-    </v-toolbar>
+    </div>
     <v-divider></v-divider>
     <v-card-text 
       class="chat-messages-container flex-grow-1 pa-4" 
@@ -1561,10 +1556,16 @@ export default {
   min-height: 72px;
 }
 
+.header-spacer {
+  flex: 1;
+}
+
 .room-info {
   display: flex;
   align-items: center;
   height: 100%;
+  /* 제목이 너무 왼쪽에 붙지 않도록 여백 추가 */
+  padding-left: 24px;
 }
 
 .room-title {
@@ -1577,6 +1578,9 @@ export default {
   align-items: center;
   height: 100%;
   margin: 0;
+  /* h2 기본 스타일 제거 */
+  font-size: inherit;
+  font-weight: inherit;
 }
 
 .room-status {
