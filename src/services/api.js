@@ -235,8 +235,11 @@ export const userAPI = {
 
 // 게시글 관련 API
 export const postAPI = {
+  // 전체 일기 목록 조회
+  getAllPosts: (pageable = { page: 0, size: 9 }) => apiClient.get('/posts', { params: pageable }),
+  
   // 내 일기 목록 조회 (대시보드용)
-  getMyPosts: (pageable = { page: 0, size: 1 }) => apiClient.get('/posts', { params: pageable }),
+  getMyPosts: (pageable = { page: 0, size: 1 }) => apiClient.get('/posts/me', { params: pageable }),
   
   // 내 게시물 개수 조회 (프로필용)
   getMyPostsCount: () => apiClient.get('/posts', { params: { page: 0, size: 1 } }),
@@ -258,7 +261,7 @@ export const postAPI = {
   getList: (pageable) => apiClient.get('/posts', { params: pageable }),
   
   // 다른 사용자의 일기 목록 조회
-  getUserPosts: (userId, pageable) => apiClient.get('/posts', { params: { ...pageable, userId } }),
+  getUserPosts: (userId, pageable) => apiClient.get(`/users/${userId}/posts`, { params: pageable }),
   
   // 일기 상세 조회
   getDetail: (postId) => apiClient.get(`/posts/${postId}`),
@@ -559,7 +562,10 @@ export const petAPI = {
   },
   
   // 반려동물 삭제
-  delete: (petId) => apiClient.delete(`/pets/${petId}`)
+  delete: (petId) => apiClient.delete(`/pets/${petId}`),
+  
+  // 펫 등록 여부 확인
+  checkExist: () => apiClient.get('/pets/exist')
 }
 
 // 종류 관련 API

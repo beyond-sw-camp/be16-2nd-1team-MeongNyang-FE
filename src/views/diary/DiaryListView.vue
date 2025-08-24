@@ -140,6 +140,7 @@
 
 <script>
             import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
+import { validatePetAndRedirect } from '@/utils/petValidation'
 import { useRouter } from 'vue-router'
 import { postAPI, userAPI, petAPI } from '@/services/api'
 import SearchComponent from '@/components/SearchComponent.vue'
@@ -312,13 +313,13 @@ export default {
                 
                 // 검색 처리
                 const handleSearch = (searchData) => {
-                  searchType.value = searchData.type
+                  searchType.value = searchData.searchType
                   searchKeyword.value = searchData.keyword
                   // 검색 시 새로운 검색 페이지로 이동
                   $router.push({
                     path: '/search',
                     query: {
-                      type: searchData.type,
+                      searchType: searchData.searchType,
                       keyword: searchData.keyword
                     }
                   })
@@ -388,7 +389,11 @@ export default {
     }
     
     // 컴포넌트 마운트 시 데이터 가져오기
-                onMounted(() => {
+                onMounted(async () => {
+                  // 펫 등록 여부 확인
+                  const hasPet = await validatePetAndRedirect($router)
+                  if (!hasPet) return
+                  
                   // 초기화를 nextTick으로 지연
                   nextTick(() => {
                     fetchPostsCount()

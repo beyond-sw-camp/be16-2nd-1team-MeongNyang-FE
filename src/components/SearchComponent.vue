@@ -151,7 +151,7 @@ export default {
     handleSearch() {
       if (this.searchKeyword && this.searchKeyword.trim()) {
         this.$emit('search', {
-          type: this.localSearchType,
+          searchType: this.localSearchType,
           keyword: this.searchKeyword.trim()
         })
         this.hideAutocomplete()

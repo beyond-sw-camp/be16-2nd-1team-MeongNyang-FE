@@ -25,6 +25,7 @@ const baseRoutes = [
     component: HomeView,
     meta: { requiresAuth: false }
   },
+
   {
     path: '/dashboard',
     name: 'Dashboard',
@@ -68,6 +69,7 @@ router.beforeEach(async (to, from, next) => {
    if (to.path.startsWith('/oauth/')) return next()
 
   const authStore = useAuthStore()
+
 
   
   // 인증이 필요한 페이지인지 확인

@@ -152,6 +152,8 @@
 </template>
 
 <script>
+import { checkPetExist } from '@/utils/petValidation'
+
 export default {
   name: 'CommentsModal',
   props: {
@@ -222,6 +224,13 @@ export default {
     async addComment() {
       if (this.newComment.trim() && !this.isSubmitting) {
         try {
+          // 펫 등록 여부 확인
+          const hasPet = await checkPetExist()
+          if (!hasPet) {
+            this.$router.back()
+            return
+          }
+          
           this.isSubmitting = true
           console.log('=== addComment 메서드 시작 ===')
           console.log('댓글 내용:', this.newComment)
@@ -345,7 +354,11 @@ export default {
     replyToComment(comment) {
       // 부모 댓글에 대한 답글 모드 설정
       this.replyingTo = comment
-      this.newComment = `@${comment.userName || comment.username} `
+      
+      // 사용자 이름을 다양한 필드에서 찾기
+      const userName = comment.userName || comment.username || comment.petName || comment.user?.name || comment.user?.petName || '사용자'
+      this.newComment = `@${userName} `
+      
       // 포커스를 입력 필드로 이동
       this.$nextTick(() => {
         if (this.$refs.commentInput && this.$refs.commentInput.$el) {
@@ -371,7 +384,11 @@ export default {
         replyId: reply.id,
         id: reply.id
       }
-      this.newComment = `@${reply.replyUserName} `
+      
+      // 답글 작성자 이름을 다양한 필드에서 찾기
+      const replyUserName = reply.replyUserName || reply.replyPetName || reply.userName || reply.username || reply.petName || reply.user?.name || reply.user?.petName || '사용자'
+      this.newComment = `@${replyUserName} `
+      
       // 포커스를 입력 필드로 이동
       this.$nextTick(() => {
         if (this.$refs.commentInput && this.$refs.commentInput.$el) {
@@ -384,7 +401,14 @@ export default {
     },
     
     // 댓글 수정
-    editComment(comment) {
+    async editComment(comment) {
+      // 펫 등록 여부 확인
+      const hasPet = await checkPetExist()
+      if (!hasPet) {
+        this.$router.back()
+        return
+      }
+      
       this.$emit('edit-comment', {
         commentId: comment.commentId || comment.id,
         content: comment.content
@@ -392,14 +416,28 @@ export default {
     },
     
     // 댓글 삭제
-    deleteComment(comment) {
+    async deleteComment(comment) {
+      // 펫 등록 여부 확인
+      const hasPet = await checkPetExist()
+      if (!hasPet) {
+        this.$router.back()
+        return
+      }
+      
       this.$emit('delete-comment', {
         commentId: comment.commentId || comment.id
       })
     },
     
     // 답글 수정
-    editReply(reply) {
+    async editReply(reply) {
+      // 펫 등록 여부 확인
+      const hasPet = await checkPetExist()
+      if (!hasPet) {
+        this.$router.back()
+        return
+      }
+      
       this.$emit('edit-reply', {
         replyId: reply.id,
         content: reply.content
@@ -407,7 +445,14 @@ export default {
     },
     
     // 답글 삭제
-    deleteReply(reply) {
+    async deleteReply(reply) {
+      // 펫 등록 여부 확인
+      const hasPet = await checkPetExist()
+      if (!hasPet) {
+        this.$router.back()
+        return
+      }
+      
       console.log('=== deleteReply 메서드 실행 ===')
       console.log('받은 reply 객체:', reply)
       console.log('reply.id:', reply?.id)
@@ -443,7 +488,14 @@ export default {
     },
     
     // 수정 처리
-    handleEdit() {
+    async handleEdit() {
+      // 펫 등록 여부 확인
+      const hasPet = await checkPetExist()
+      if (!hasPet) {
+        this.$router.back()
+        return
+      }
+      
       console.log('=== 수정 처리 시작 ===')
       console.log('컨텍스트 메뉴 타입:', this.contextMenuType)
       console.log('컨텍스트 메뉴 데이터:', this.contextMenuData)
@@ -477,7 +529,14 @@ export default {
     },
     
     // 삭제 처리
-    handleDelete() {
+    async handleDelete() {
+      // 펫 등록 여부 확인
+      const hasPet = await checkPetExist()
+      if (!hasPet) {
+        this.$router.back()
+        return
+      }
+      
       console.log('=== 삭제 처리 시작 ===')
       console.log('컨텍스트 메뉴 타입:', this.contextMenuType)
       console.log('컨텍스트 메뉴 데이터:', this.contextMenuData)
@@ -625,12 +684,21 @@ export default {
 }
 
 .close-btn {
-  color: #64748B;
+  color: #FF8B8B !important;
+  background-color: #FF8B8B !important;
   transition: all 0.3s ease;
 }
 
+.close-btn :deep(.v-btn__content) {
+  color: white !important;
+}
+
+.close-btn :deep(.v-icon) {
+  color: white !important;
+}
+
 .close-btn:hover {
-  color: #1E293B;
+  background-color: #FF6B6B !important;
   transform: scale(1.1);
 }
 
@@ -989,11 +1057,27 @@ export default {
 /* 반응형 */
 @media (max-width: 768px) {
   .comments-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     width: 100%;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   
   .comments-modal {
+    width: 95%;
+    max-width: none;
+    max-height: 90vh;
     border-left: none;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.15);
   }
   
   .modal-header,

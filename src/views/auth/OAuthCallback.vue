@@ -51,7 +51,7 @@ onMounted(async () => {
       auth.accessToken = at
       if (rt) auth.refreshToken = rt
       try { await auth.getCurrentUser() } catch(e) {void e}
-      router.replace({ name: 'Dashboard' })
+      router.replace({ name: 'Home' })
       return
     }
 

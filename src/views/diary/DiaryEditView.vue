@@ -1,9 +1,9 @@
 <template>
-  <div class="diary-create-page">
+  <div class="diary-edit-page">
     <!-- 헤더 -->
     <div class="header">
       <div class="header-left">
-        <h1 class="page-title">새 일기</h1>
+        <h1 class="page-title">일기 수정</h1>
       </div>
       <div class="header-right">
         <v-btn 
@@ -12,7 +12,7 @@
           @click="handleSubmit"
           :disabled="!canSubmit"
         >
-          작성
+          수정
         </v-btn>
       </div>
     </div>
@@ -135,14 +135,16 @@
 
 <script>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { validatePetAndRedirect } from '@/utils/petValidation'
+import { useRouter, useRoute } from 'vue-router'
 import { postAPI } from '@/services/api'
 import { handleApiError } from '@/utils/errorHandler'
 
 export default {
-  name: 'DiaryCreateView',
+  name: 'DiaryEditView',
   setup() {
     const $router = useRouter()
+    const $route = useRoute()
     const fileInput = ref(null)
     
     // 폼 데이터
@@ -153,19 +155,61 @@ export default {
     const isDragging = ref(false)
     const dragStartX = ref(0)
     const dragStartIndex = ref(0)
+    const isLoading = ref(true)
+    
+    // 기존 미디어 데이터 (URL만 저장)
+    const existingMedia = ref([])
     
     // 현재 미디어
     const currentMedia = computed(() => {
       if (mediaList.value.length === 0) return null
       return mediaList.value[currentMediaIndex.value]
     })
-        
-
     
     // 제출 가능 여부
     const canSubmit = computed(() => {
       return title.value.trim() && content.value.trim() && mediaList.value.length > 0
     })
+    
+    // 포스트 데이터 가져오기
+    const fetchPostData = async () => {
+      try {
+        isLoading.value = true
+        const postId = $route.params.id
+        console.log('포스트 데이터 조회 시작 - postId:', postId)
+        
+        const response = await postAPI.getDetail(postId)
+        console.log('포스트 데이터 응답:', response)
+        
+        if (response.data && response.data.data) {
+          const post = response.data.data
+          title.value = post.title || ''
+          content.value = post.content || ''
+          
+          // 기존 미디어 설정
+          if (post.mediaList && post.mediaList.length > 0) {
+            existingMedia.value = post.mediaList.map((media, index) => ({
+              url: media,
+              type: media.includes('.mp4') ? 'video' : 'image',
+              isExisting: true,
+              index: index
+            }))
+            mediaList.value = [...existingMedia.value]
+          }
+          
+          console.log('포스트 데이터 설정 완료')
+        } else {
+          console.error('포스트 데이터가 없음')
+          throw new Error('포스트 데이터를 찾을 수 없습니다.')
+        }
+      } catch (error) {
+        console.error('포스트 데이터 조회 실패:', error)
+        handleApiError(error, $router, '포스트를 불러오는데 실패했습니다.')
+        $router.push('/diarys')
+      } finally {
+        isLoading.value = false
+      }
+    }
     
     // 미디어 추가
     const addImage = () => {
@@ -193,7 +237,8 @@ export default {
             mediaList.value.push({
               url: e.target.result,
               type: mediaType,
-              file: file
+              file: file,
+              isExisting: false
             })
           }
           reader.readAsDataURL(file)
@@ -246,14 +291,12 @@ export default {
       
       const dragEndX = event.clientX || (event.changedTouches && event.changedTouches[0].clientX)
       const dragDistance = dragStartX.value - dragEndX
-      const threshold = 100 // 드래그 임계값 증가
+      const threshold = 100
       
       if (Math.abs(dragDistance) > threshold) {
         if (dragDistance > 0 && currentMediaIndex.value < mediaList.value.length - 1) {
-          // 왼쪽으로 드래그 - 다음 미디어
           nextMedia()
         } else if (dragDistance < 0 && currentMediaIndex.value > 0) {
-          // 오른쪽으로 드래그 - 이전 미디어
           previousMedia()
         }
       }
@@ -263,7 +306,6 @@ export default {
     
     // 콘텐츠 입력 처리
     const handleContentInput = () => {
-      // 해시태그 실시간 강조를 위한 추가 처리
       // v-model이 자동으로 처리하므로 별도 로직 불필요
     }
     
@@ -283,8 +325,6 @@ export default {
       }
     }
     
-
-    
     // 제출 처리
     const handleSubmit = async () => {
       if (!title.value.trim()) {
@@ -297,13 +337,8 @@ export default {
         return
       }
       
-      if (mediaList.value.length === 0) {
-        alert('최소 하나의 이미지나 비디오를 업로드해주세요.')
-        return
-      }
-      
       try {
-        console.log('=== 다이어리 작성 시작 ===')
+        console.log('=== 다이어리 수정 시작 ===')
         console.log('제목:', title.value)
         console.log('내용:', content.value)
         console.log('미디어 개수:', mediaList.value.length)
@@ -345,16 +380,22 @@ export default {
           formData.append('files', file)
         })
         
+        // 파일이 없으면 빈 파일 추가 (백엔드 요구사항)
+        if (mediaList.value.length === 0) {
+          const emptyFile = new File([''], 'empty.txt', { type: 'text/plain' })
+          formData.append('files', emptyFile)
+        }
+        
         // JSON 데이터를 별도의 RequestPart로 추가
-        const postCreateRequest = {
+        const postEditReq = {
           title: title.value.trim(),
           content: content.value.trim()
         }
         
-        const jsonBlob = new Blob([JSON.stringify(postCreateRequest)], {
+        const jsonBlob = new Blob([JSON.stringify(postEditReq)], {
           type: 'application/json'
         })
-        formData.append('postCreateRequest', jsonBlob)
+        formData.append('postEditReq', jsonBlob)
         
         console.log('FormData 구성 완료')
         console.log('FormData 내용:')
@@ -362,20 +403,21 @@ export default {
           console.log(`${key}:`, value)
         }
         
-        const response = await postAPI.create(formData)
-        console.log('다이어리 작성 응답:', response)
+        const postId = $route.params.id
+        const response = await postAPI.update(postId, formData)
+        console.log('다이어리 수정 응답:', response)
         
-        if (response.status === 201) {
-          console.log('다이어리 작성 성공')
-          alert('다이어리 작성에 성공했습니다!')
-          $router.push('/diarys')
+        if (response.status === 200) {
+          console.log('다이어리 수정 성공')
+          alert('다이어리 수정에 성공했습니다!')
+          $router.push(`/diary/${postId}`)
         } else {
-          console.error('다이어리 작성 실패 - 예상치 못한 응답:', response)
-          throw new Error('다이어리 작성에 실패했습니다.')
+          console.error('다이어리 수정 실패 - 예상치 못한 응답:', response)
+          throw new Error('다이어리 수정에 실패했습니다.')
         }
       } catch (error) {
-        console.error('다이어리 작성 실패:', error)
-        handleApiError(error, $router, '다이어리 작성에 실패했습니다.')
+        console.error('다이어리 수정 실패:', error)
+        handleApiError(error, $router, '다이어리 수정에 실패했습니다.')
       }
     }
     
@@ -401,7 +443,8 @@ export default {
             mediaList.value.push({
               url: e.target.result,
               type: mediaType,
-              file: file
+              file: file,
+              isExisting: false
             })
           }
           reader.readAsDataURL(file)
@@ -409,7 +452,14 @@ export default {
       })
     }
     
-    onMounted(() => {
+    onMounted(async () => {
+      // 펫 등록 여부 확인
+      const hasPet = await validatePetAndRedirect($router)
+      if (!hasPet) return
+      
+      // 기존 데이터 불러오기
+      fetchPostData()
+      
       // 드래그 앤 드롭 이벤트 리스너 추가
       const imageContainer = document.querySelector('.image-container')
       if (imageContainer) {
@@ -426,31 +476,32 @@ export default {
       document.removeEventListener('keydown', handleKeydown)
     })
     
-          return {
-        fileInput,
-        title,
-        content,
-        mediaList,
-        currentMediaIndex,
-        currentMedia,
-        canSubmit,
-        addImage,
-        handleFileSelect,
-        removeCurrentMedia,
-        previousMedia,
-        nextMedia,
-        startDrag,
-        onDrag,
-        endDrag,
-        handleContentInput,
-        handleSubmit
-      }
+    return {
+      fileInput,
+      title,
+      content,
+      mediaList,
+      currentMediaIndex,
+      currentMedia,
+      canSubmit,
+      isLoading,
+      addImage,
+      handleFileSelect,
+      removeCurrentMedia,
+      previousMedia,
+      nextMedia,
+      startDrag,
+      onDrag,
+      endDrag,
+      handleContentInput,
+      handleSubmit
+    }
   }
 }
 </script>
 
 <style scoped>
-.diary-create-page {
+.diary-edit-page {
   min-height: 100vh;
   background: #FFFAF0;
   padding: 20px;
@@ -524,8 +575,6 @@ export default {
   padding: 60px 20px;
   text-align: center;
 }
-
-
 
 .upload-text {
   margin-top: 16px;
@@ -642,6 +691,7 @@ export default {
 .content-input {
   background: white;
   border-radius: 12px;
+  min-height: 200px;
 }
 
 .content-input :deep(.v-field) {
@@ -654,7 +704,7 @@ export default {
 
 /* 반응형 */
 @media (max-width: 768px) {
-  .diary-create-page {
+  .diary-edit-page {
     padding: 16px;
   }
   
