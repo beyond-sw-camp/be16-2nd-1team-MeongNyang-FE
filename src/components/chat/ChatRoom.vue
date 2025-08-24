@@ -1,36 +1,88 @@
 <template>
   <v-card class="chat-room-container d-flex flex-column" flat tile>
-    <v-toolbar color="white" flat class="chat-header">
-      <v-toolbar-title>{{ currentRoom?.roomName || '채팅' }}</v-toolbar-title>
-      <v-spacer></v-spacer>
-      <v-menu>
-        <template v-slot:activator="{ props }">
-          <v-btn icon v-bind="props">
-            <v-icon>mdi-dots-vertical</v-icon>
+    <!-- 채팅방 헤더 -->
+    <v-toolbar 
+      color="transparent" 
+      flat 
+      class="chat-header"
+      :elevation="0"
+    >
+      <div class="header-content">
+        <div class="room-info">
+          <v-avatar size="40" color="primary" class="room-avatar">
+            <v-icon size="20" color="white">mdi-chat-group</v-icon>
+          </v-avatar>
+          <div class="room-details">
+            <v-toolbar-title class="room-title">{{ currentRoom?.roomName || '채팅' }}</v-toolbar-title>
+            <div class="room-status">
+              <span class="participant-count">{{ participants.length }}명 참여</span>
+              <span class="online-indicator" v-if="onlineParticipants.length > 0">
+                <v-icon size="12" color="success">mdi-circle</v-icon>
+                {{ onlineParticipants.length }}명 온라인
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        <v-spacer></v-spacer>
+        
+        <div class="header-actions">
+          <v-btn 
+            icon 
+            variant="text"
+            @click="showParticipants"
+            class="action-btn"
+            title="참여자 목록"
+          >
+            <v-icon>mdi-account-group</v-icon>
           </v-btn>
-        </template>
-        <v-list>
-          <v-list-item @click="showParticipants">
-            <v-list-item-title>
-              <v-icon start>mdi-account-group</v-icon>
-              참여자 목록 ({{ participants.length }})
-            </v-list-item-title>
-          </v-list-item>
-          <v-list-item @click="inviteParticipants">
-            <v-list-item-title>
-              <v-icon start>mdi-account-plus</v-icon>
-              초대하기
-            </v-list-item-title>
-          </v-list-item>
-          <v-divider></v-divider>
-          <v-list-item @click="confirmLeaveRoom" color="error">
-            <v-list-item-title class="text-error">
-              <v-icon start>mdi-exit-to-app</v-icon>
-              채팅방 나가기
-            </v-list-item-title>
-          </v-list-item>
-        </v-list>
-      </v-menu>
+          
+          <v-btn 
+            icon 
+            variant="text"
+            @click="inviteParticipants"
+            class="action-btn"
+            title="초대하기"
+          >
+            <v-icon>mdi-account-plus</v-icon>
+          </v-btn>
+          
+          <v-menu>
+            <template v-slot:activator="{ props }">
+              <v-btn 
+                icon 
+                v-bind="props"
+                variant="text"
+                class="action-btn"
+                title="더보기"
+              >
+                <v-icon>mdi-dots-vertical</v-icon>
+              </v-btn>
+            </template>
+            <v-list class="room-options-menu">
+              <v-list-item @click="showParticipants" class="menu-item">
+                <template v-slot:prepend>
+                  <v-icon color="primary">mdi-account-group</v-icon>
+                </template>
+                <v-list-item-title>참여자 목록 ({{ participants.length }})</v-list-item-title>
+              </v-list-item>
+              <v-list-item @click="inviteParticipants" class="menu-item">
+                <template v-slot:prepend>
+                  <v-icon color="info">mdi-account-plus</v-icon>
+                </template>
+                <v-list-item-title>초대하기</v-list-item-title>
+              </v-list-item>
+              <v-divider></v-divider>
+              <v-list-item @click="confirmLeaveRoom" class="menu-item leave-item">
+                <template v-slot:prepend>
+                  <v-icon color="error">mdi-exit-to-app</v-icon>
+                </template>
+                <v-list-item-title class="text-error">채팅방 나가기</v-list-item-title>
+              </v-list-item>
+            </v-list>
+          </v-menu>
+        </div>
+      </div>
     </v-toolbar>
     <v-divider></v-divider>
     <v-card-text 
@@ -54,31 +106,31 @@
         </div>
       </div>
       
-      <template v-for="item in messagesWithDateSeparators" :key="item.id">
+        <template v-for="item in messagesWithDateSeparators" :key="item.id">
         <div v-if="item.type === 'date-separator'" class="text-center my-4">
           <v-chip small>{{ item.date }}</v-chip>
-        </div>
+          </div>
         <div v-else :class="['message-row', 'mb-2', item.senderEmail === senderEmail ? 'sent-message' : 'received-message']">
-          <!-- 아바타 영역 -->
-          <div class="avatar-area">
+            <!-- 아바타 영역 -->
+            <div class="avatar-area">
             <v-avatar v-if="item.senderEmail !== senderEmail && item.showAvatarAndEmail" size="40">
               <v-img src="https://cdn.vuetifyjs.com/images/john.jpg" alt="avatar"></v-img>
-            </v-avatar>
-          </div>
-          
-          <!-- 메시지 내용 영역 -->
-          <div class="message-content">
+              </v-avatar>
+            </div>
+            
+            <!-- 메시지 내용 영역 -->
+            <div class="message-content">
             <div class="font-weight-bold mb-1 text-left" v-if="item.senderEmail !== senderEmail && item.showAvatarAndEmail">{{ item.senderEmail }}</div>
-            <div class="message-bubble-container">
+              <div class="message-bubble-container">
               <div :class="['message-bubble', item.senderEmail === senderEmail ? 'sent' : 'received', { 'media-bubble': item.fileUrls && item.fileUrls.length > 0 }]">
                 <div v-if="item.message">{{ item.message }}</div>
                 
                 <!-- 파일 표시 - 종류별 그룹화된 그리드 -->
                 <div v-if="item.fileUrls && item.fileUrls.length > 0" class="mt-2">
-                  <FileGrid :files="item.fileUrls" />
+                    <FileGrid :files="item.fileUrls" />
+                  </div>
                 </div>
-              </div>
-              <div class="message-meta">
+                <div class="message-meta">
                 <div class="d-flex align-end mx-2" v-if="item.senderEmail !== senderEmail">
                   <div class="text-caption text-grey-darken-1" :style="{ visibility: item.unreadCount > 0 ? 'visible' : 'hidden' }">{{ item.unreadCount }}</div>
                   <div class="text-caption text-grey-darken-1 ml-1" :style="{ visibility: item.showTimestamp ? 'visible' : 'hidden' }">{{ formatTime(item.sendTime) }}</div>
@@ -87,12 +139,12 @@
                   <div class="text-caption text-grey-darken-1" :style="{ visibility: item.unreadCount && item.showTimestamp > 0 ? 'visible' : 'hidden' }">{{ item.unreadCount }}</div>
                   <div class="text-caption text-grey-darken-1 ml-1" :style="{ visibility: item.showTimestamp ? 'visible' : 'hidden' }">{{ formatTime(item.sendTime) }}</div>
                   <div class="text-caption text-grey-darken-1" :style="{ visibility: item.unreadCount && !item.showTimestamp > 0 ? 'visible' : 'hidden' }">{{ item.unreadCount }}</div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </template>
+        </template>
       
       <!-- 맨 아래로 버튼 - 스크롤과 함께 움직이는 고정 버튼 -->
       <div v-show="showScrollToBottomButton" class="scroll-to-bottom-button-sticky">
@@ -275,221 +327,221 @@
         <!-- 이메일 검색 탭 -->
         <v-window v-model="inviteTab">
           <v-window-item value="search">
-            <div class="d-flex align-center mb-3" v-if="searchResults.length > 0">
-              <v-checkbox
-                v-model="selectAll"
-                label="전체 선택"
-                @change="toggleSelectAll"
-                hide-details
-                class="mr-4"
-              ></v-checkbox>
-            </div>
-            <v-text-field
-              v-model="inviteSearchQuery"
-              label="사용자 검색"
-              placeholder="이메일로 검색하세요"
-              prepend-inner-icon="mdi-magnify"
-              clearable
-              @input="searchUsers"
-            ></v-text-field>
+              <div class="d-flex align-center mb-3" v-if="searchResults.length > 0">
+                <v-checkbox
+                  v-model="selectAll"
+                  label="전체 선택"
+                  @change="toggleSelectAll"
+                  hide-details
+                  class="mr-4"
+                ></v-checkbox>
+              </div>
+              <v-text-field
+                v-model="inviteSearchQuery"
+                label="사용자 검색"
+                placeholder="이메일로 검색하세요"
+                prepend-inner-icon="mdi-magnify"
+                clearable
+                @input="searchUsers"
+              ></v-text-field>
             <v-list v-if="searchResults.length > 0">
-              <v-list-item 
-                v-for="user in searchResults" 
-                :key="user.email"
-                @click="toggleUserSelection(user)"
+                <v-list-item 
+                  v-for="user in searchResults" 
+                  :key="user.email"
+                  @click="toggleUserSelection(user)"
                 class="cursor-pointer"
-              >
-                <template v-slot:prepend>
-                  <v-checkbox
-                    :model-value="isUserSelected(user)"
-                    @click.stop
-                    @change="toggleUserSelection(user)"
-                    :disabled="isAlreadyParticipant(user.email)"
-                    hide-details
-                  ></v-checkbox>
+                >
+                  <template v-slot:prepend>
+                    <v-checkbox
+                      :model-value="isUserSelected(user)"
+                      @click.stop
+                      @change="toggleUserSelection(user)"
+                      :disabled="isAlreadyParticipant(user.email)"
+                      hide-details
+                    ></v-checkbox>
                   <v-avatar size="32">
                     <v-img src="https://cdn.vuetifyjs.com/images/john.jpg" alt="avatar"></v-img>
-                  </v-avatar>
-                </template>
-                <v-list-item-title>{{ user.email }}</v-list-item-title>
-                <template v-slot:append>
-                  <v-btn 
-                    size="small" 
-                    color="primary" 
-                    variant="outlined"
-                    :disabled="isAlreadyParticipant(user.email)"
-                    @click.stop="inviteUser(user)"
-                  >
-                    {{ isAlreadyParticipant(user.email) ? '이미 참여중' : '초대' }}
-                  </v-btn>
-                </template>
-              </v-list-item>
-            </v-list>
-            <v-alert 
-              v-else-if="inviteSearchQuery && !searching" 
-              type="info" 
-              variant="tonal"
-            >
-              검색 결과가 없습니다.
-            </v-alert>
+                    </v-avatar>
+                  </template>
+                  <v-list-item-title>{{ user.email }}</v-list-item-title>
+                  <template v-slot:append>
+                    <v-btn 
+                      size="small" 
+                      color="primary" 
+                      variant="outlined"
+                      :disabled="isAlreadyParticipant(user.email)"
+                      @click.stop="inviteUser(user)"
+                    >
+                      {{ isAlreadyParticipant(user.email) ? '이미 참여중' : '초대' }}
+                    </v-btn>
+                  </template>
+                </v-list-item>
+              </v-list>
+              <v-alert 
+                v-else-if="inviteSearchQuery && !searching" 
+                type="info" 
+                variant="tonal"
+              >
+                검색 결과가 없습니다.
+              </v-alert>
           </v-window-item>
 
           <!-- 팔로워 탭 -->
           <v-window-item value="followers">
-            <div class="d-flex align-center mb-3">
-              <v-text-field
-                v-model="followerSearchQuery"
-                label="팔로워 검색"
-                placeholder="이름이나 이메일로 검색하세요"
-                prepend-inner-icon="mdi-magnify"
-                clearable
-                @input="searchFollowers"
-                class="flex-grow-1 mr-2"
-              ></v-text-field>
+              <div class="d-flex align-center mb-3">
+                <v-text-field
+                  v-model="followerSearchQuery"
+                  label="팔로워 검색"
+                  placeholder="이름이나 이메일로 검색하세요"
+                  prepend-inner-icon="mdi-magnify"
+                  clearable
+                  @input="searchFollowers"
+                  class="flex-grow-1 mr-2"
+                ></v-text-field>
               <v-btn icon @click="loadFollowers" :loading="loadingFollowers">
-                <v-icon>mdi-refresh</v-icon>
-              </v-btn>
-            </div>
-            <div class="d-flex align-center mb-3" v-if="filteredFollowers.length > 0">
-              <v-checkbox
-                v-model="selectAll"
-                label="전체 선택"
-                @change="toggleSelectAll"
-                hide-details
-                class="mr-4"
-              ></v-checkbox>
-            </div>
+                  <v-icon>mdi-refresh</v-icon>
+                </v-btn>
+              </div>
+              <div class="d-flex align-center mb-3" v-if="filteredFollowers.length > 0">
+                <v-checkbox
+                  v-model="selectAll"
+                  label="전체 선택"
+                  @change="toggleSelectAll"
+                  hide-details
+                  class="mr-4"
+                ></v-checkbox>
+              </div>
             <div v-if="loadingFollowers" class="text-center py-4">
-              <v-progress-circular indeterminate color="primary"></v-progress-circular>
-              <div class="mt-2">팔로워 목록을 불러오는 중...</div>
-            </div>
+                <v-progress-circular indeterminate color="primary"></v-progress-circular>
+                <div class="mt-2">팔로워 목록을 불러오는 중...</div>
+              </div>
             <v-list v-else-if="filteredFollowers.length > 0">
-              <v-list-item 
-                v-for="user in filteredFollowers" 
-                :key="user.userEmail"
-                @click="toggleUserSelection(user)"
+                <v-list-item 
+                  v-for="user in filteredFollowers" 
+                  :key="user.userEmail"
+                  @click="toggleUserSelection(user)"
                 class="cursor-pointer"
-              >
-                <template v-slot:prepend>
-                  <v-checkbox
-                    :model-value="isUserSelected(user)"
-                    @click.stop
-                    @change="toggleUserSelection(user)"
-                    :disabled="isAlreadyParticipant(user.userEmail)"
-                    hide-details
-                  ></v-checkbox>
+                >
+                  <template v-slot:prepend>
+                    <v-checkbox
+                      :model-value="isUserSelected(user)"
+                      @click.stop
+                      @change="toggleUserSelection(user)"
+                      :disabled="isAlreadyParticipant(user.userEmail)"
+                      hide-details
+                    ></v-checkbox>
                   <v-avatar size="32">
                     <v-img src="https://cdn.vuetifyjs.com/images/john.jpg" alt="avatar"></v-img>
-                  </v-avatar>
-                </template>
-                <v-list-item-title>{{ user.userEmail }}</v-list-item-title>
-                <v-list-item-subtitle v-if="user.userName">{{ user.userName }}</v-list-item-subtitle>
-                <template v-slot:append>
-                  <v-btn 
-                    size="small" 
-                    color="primary" 
-                    variant="outlined"
-                    :disabled="isAlreadyParticipant(user.userEmail)"
-                    @click.stop="inviteUser(user)"
-                  >
-                    {{ isAlreadyParticipant(user.userEmail) ? '이미 참여중' : '초대' }}
-                  </v-btn>
-                </template>
-              </v-list-item>
-            </v-list>
-            <v-alert 
-              v-else-if="followerSearchQuery" 
-              type="info" 
-              variant="tonal"
-            >
-              검색 결과가 없습니다.
-            </v-alert>
-            <v-alert 
-              v-else-if="!loadingFollowers && filteredFollowers.length === 0" 
-              type="info" 
-              variant="tonal"
-            >
-              팔로워가 없습니다. 다른 사용자에게 팔로우를 받아보세요.
-            </v-alert>
+                    </v-avatar>
+                  </template>
+                  <v-list-item-title>{{ user.userEmail }}</v-list-item-title>
+                  <v-list-item-subtitle v-if="user.userName">{{ user.userName }}</v-list-item-subtitle>
+                  <template v-slot:append>
+                    <v-btn 
+                      size="small" 
+                      color="primary" 
+                      variant="outlined"
+                      :disabled="isAlreadyParticipant(user.userEmail)"
+                      @click.stop="inviteUser(user)"
+                    >
+                      {{ isAlreadyParticipant(user.userEmail) ? '이미 참여중' : '초대' }}
+                    </v-btn>
+                  </template>
+                </v-list-item>
+              </v-list>
+              <v-alert 
+                v-else-if="followerSearchQuery" 
+                type="info" 
+                variant="tonal"
+              >
+                검색 결과가 없습니다.
+              </v-alert>
+              <v-alert 
+                v-else-if="!loadingFollowers && filteredFollowers.length === 0" 
+                type="info" 
+                variant="tonal"
+              >
+                팔로워가 없습니다. 다른 사용자에게 팔로우를 받아보세요.
+              </v-alert>
           </v-window-item>
 
           <!-- 팔로잉 탭 -->
           <v-window-item value="followings">
-            <div class="d-flex align-center mb-3">
-              <v-text-field
-                v-model="followingSearchQuery"
-                label="팔로잉 검색"
-                placeholder="이름이나 이메일로 검색하세요"
-                prepend-inner-icon="mdi-magnify"
-                clearable
-                @input="searchFollowings"
-                class="flex-grow-1 mr-2"
-              ></v-text-field>
+              <div class="d-flex align-center mb-3">
+                <v-text-field
+                  v-model="followingSearchQuery"
+                  label="팔로잉 검색"
+                  placeholder="이름이나 이메일로 검색하세요"
+                  prepend-inner-icon="mdi-magnify"
+                  clearable
+                  @input="searchFollowings"
+                  class="flex-grow-1 mr-2"
+                ></v-text-field>
               <v-btn icon @click="loadFollowings" :loading="loadingFollowings">
-                <v-icon>mdi-refresh</v-icon>
-              </v-btn>
-            </div>
-            <div class="d-flex align-center mb-3" v-if="filteredFollowings.length > 0">
-              <v-checkbox
-                v-model="selectAll"
-                label="전체 선택"
-                @change="toggleSelectAll"
-                hide-details
-                class="mr-4"
-              ></v-checkbox>
-            </div>
+                  <v-icon>mdi-refresh</v-icon>
+                </v-btn>
+              </div>
+              <div class="d-flex align-center mb-3" v-if="filteredFollowings.length > 0">
+                <v-checkbox
+                  v-model="selectAll"
+                  label="전체 선택"
+                  @change="toggleSelectAll"
+                  hide-details
+                  class="mr-4"
+                ></v-checkbox>
+              </div>
             <div v-if="loadingFollowings" class="text-center py-4">
-              <v-progress-circular indeterminate color="primary"></v-progress-circular>
-              <div class="mt-2">팔로잉 목록을 불러오는 중...</div>
-            </div>
+                <v-progress-circular indeterminate color="primary"></v-progress-circular>
+                <div class="mt-2">팔로잉 목록을 불러오는 중...</div>
+              </div>
             <v-list v-else-if="filteredFollowings.length > 0">
-              <v-list-item 
-                v-for="user in filteredFollowings" 
-                :key="user.userEmail"
-                @click="toggleUserSelection(user)"
+                <v-list-item 
+                  v-for="user in filteredFollowings" 
+                  :key="user.userEmail"
+                  @click="toggleUserSelection(user)"
                 class="cursor-pointer"
-              >
-                <template v-slot:prepend>
-                  <v-checkbox
-                    :model-value="isUserSelected(user)"
-                    @click.stop
-                    @change="toggleUserSelection(user)"
-                    :disabled="isAlreadyParticipant(user.userEmail)"
-                    hide-details
-                  ></v-checkbox>
+                >
+                  <template v-slot:prepend>
+                    <v-checkbox
+                      :model-value="isUserSelected(user)"
+                      @click.stop
+                      @change="toggleUserSelection(user)"
+                      :disabled="isAlreadyParticipant(user.userEmail)"
+                      hide-details
+                    ></v-checkbox>
                   <v-avatar size="32">
                     <v-img src="https://cdn.vuetifyjs.com/images/john.jpg" alt="avatar"></v-img>
-                  </v-avatar>
-                </template>
-                <v-list-item-title>{{ user.userEmail }}</v-list-item-title>
-                <v-list-item-subtitle v-if="user.userName">{{ user.userName }}</v-list-item-subtitle>
-                <template v-slot:append>
-                  <v-btn 
-                    size="small" 
-                    color="primary" 
-                    variant="outlined"
-                    :disabled="isAlreadyParticipant(user.userEmail)"
-                    @click.stop="inviteUser(user)"
-                  >
-                    {{ isAlreadyParticipant(user.userEmail) ? '이미 참여중' : '초대' }}
-                  </v-btn>
-                </template>
-              </v-list-item>
-            </v-list>
-            <v-alert 
-              v-else-if="followingSearchQuery" 
-              type="info" 
-              variant="tonal"
-            >
-              검색 결과가 없습니다.
-            </v-alert>
-            <v-alert 
-              v-else-if="!loadingFollowings && filteredFollowings.length === 0" 
-              type="info" 
-              variant="tonal"
-            >
-              팔로잉이 없습니다. 다른 사용자를 팔로우해보세요.
-            </v-alert>
+                    </v-avatar>
+                  </template>
+                  <v-list-item-title>{{ user.userEmail }}</v-list-item-title>
+                  <v-list-item-subtitle v-if="user.userName">{{ user.userName }}</v-list-item-subtitle>
+                  <template v-slot:append>
+                    <v-btn 
+                      size="small" 
+                      color="primary" 
+                      variant="outlined"
+                      :disabled="isAlreadyParticipant(user.userEmail)"
+                      @click.stop="inviteUser(user)"
+                    >
+                      {{ isAlreadyParticipant(user.userEmail) ? '이미 참여중' : '초대' }}
+                    </v-btn>
+                  </template>
+                </v-list-item>
+              </v-list>
+              <v-alert 
+                v-else-if="followingSearchQuery" 
+                type="info" 
+                variant="tonal"
+              >
+                검색 결과가 없습니다.
+              </v-alert>
+              <v-alert 
+                v-else-if="!loadingFollowings && filteredFollowings.length === 0" 
+                type="info" 
+                variant="tonal"
+              >
+                팔로잉이 없습니다. 다른 사용자를 팔로우해보세요.
+              </v-alert>
           </v-window-item>
         </v-window>
       </v-card-text>
@@ -1447,49 +1499,135 @@ export default {
   height: 100vh;
   max-height: 100vh;
   overflow: hidden;
+  background: var(--mm-surface);
+  border-radius: 0;
 }
 
 /* 채팅 헤더 고정 높이 */
 .chat-header {
   flex-shrink: 0;
-  min-height: 64px;
+  min-height: 72px;
+  background: linear-gradient(135deg, #E87D7D 0%, #FF6B6B 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.chat-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+  opacity: 0.3;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+.room-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.room-avatar {
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  transition: all var(--mm-transition-normal);
+}
+
+.room-avatar:hover {
+  border-color: rgba(255, 255, 255, 0.6);
+  transform: scale(1.05);
+}
+
+.room-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.room-title {
+  color: white;
+  font-weight: 600;
+  font-size: var(--mm-text-lg);
+  line-height: 1.3;
+}
+
+.room-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: var(--mm-text-sm);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.participant-count {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.online-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.action-btn {
+  color: white;
+  transition: all var(--mm-transition-fast);
+}
+
+.action-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1);
+}
+
+/* 헤더 구분선 */
+.header-divider {
+  border-color: rgba(255, 255, 255, 0.2);
+  margin: 0;
 }
 
 /* 메시지 컨테이너 스크롤 영역 */
 .chat-messages-container {
   overflow-y: auto;
   overflow-x: hidden;
-  height: calc(100vh - 180px); /* 헤더(64px) + 입력영역(116px) 제외 */
-  max-height: calc(100vh - 180px);
+  height: calc(100vh - 200px);
+  max-height: calc(100vh - 200px);
   scroll-behavior: smooth;
-  position: relative; /* 버튼의 절대 위치 기준점 */
+  position: relative;
+  background: var(--mm-surface);
 }
 
-/* 입력 영역 고정 높이 */
-.chat-input-container {
-  flex-shrink: 0;
-  min-height: 116px;
-  background-color: white;
-  border-top: 1px solid #e0e0e0;
+.messages-wrapper {
+  padding: 16px 0;
 }
 
-/* 스크롤바 스타일링 */
-.chat-messages-container::-webkit-scrollbar {
-  width: 6px;
+/* 날짜 구분선 */
+.date-separator {
+  text-align: center;
+  margin: 24px 0;
 }
 
-.chat-messages-container::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
-}
-
-.chat-messages-container::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
-}
-
-.chat-messages-container::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+.date-chip {
+  background: rgba(232, 125, 125, 0.1);
+  border-color: #E87D7D;
+  color: #E87D7D;
+  font-weight: 500;
 }
 
 /* Grid 레이아웃 기반 메시지 구조 */
@@ -1497,15 +1635,16 @@ export default {
   display: grid;
   gap: 12px;
   align-items: start;
+  margin-bottom: 16px;
 }
 
 .received-message {
-  grid-template-columns: 40px 1fr;
+  grid-template-columns: 36px 1fr;
   justify-items: start;
 }
 
 .sent-message {
-  grid-template-columns: 1fr 40px;
+  grid-template-columns: 1fr 36px;
   justify-items: end;
 }
 
@@ -1521,10 +1660,28 @@ export default {
 .avatar-area {
   display: flex;
   justify-content: center;
+  align-items: flex-start;
+}
+
+.message-avatar {
+  border: 2px solid var(--mm-border);
+  transition: all var(--mm-transition-normal);
 }
 
 .message-content {
-  min-width: 0; /* Grid에서 텍스트 오버플로우 방지 */
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.sender-info {
+  margin-bottom: 6px;
+}
+
+.sender-name {
+  font-size: var(--mm-text-sm);
+  font-weight: 500;
+  color: var(--mm-on-surface-variant);
 }
 
 .message-bubble-container {
@@ -1539,45 +1696,455 @@ export default {
 
 .message-bubble {
   padding: 12px 18px;
-  border-radius: 25px;
-  max-width: 60%;
+  border-radius: 20px;
+  max-width: 70%;
   word-wrap: break-word;
   word-break: break-all;
   overflow-wrap: break-word;
   white-space: pre-wrap;
   text-align: left;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: var(--mm-shadow-sm);
+  transition: all var(--mm-transition-normal);
+  position: relative;
+}
+
+.message-bubble::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 20px;
+  opacity: 0;
+  transition: opacity var(--mm-transition-normal);
+}
+
+.message-bubble:hover::before {
+  opacity: 0.05;
 }
 
 .media-bubble {
-  min-width: 250px;
-  max-width: 60%;
+  min-width: 280px;
+  max-width: 70%;
 }
 
 .media-bubble video,
 .media-bubble img {
   max-width: 100%;
   height: auto;
+  border-radius: 12px;
+}
+
+.message-text {
+  line-height: 1.5;
+  font-size: var(--mm-text-base);
 }
 
 .sent {
-  background-color: #42a5f5;
+  background: linear-gradient(135deg, #E87D7D 0%, #FF6B6B 100%);
   color: white;
-  border-top-right-radius: 4px;
+  border-top-right-radius: 6px;
+}
+
+.sent::before {
+  background: linear-gradient(135deg, #d65a5a 0%, #E87D7D 100%);
 }
 
 .received {
-  background-color: #f1f3f4;
-  color: black;
-  border-top-left-radius: 4px;
+  background: var(--mm-surface-variant);
+  color: var(--mm-on-surface);
+  border-top-left-radius: 6px;
+  border: 1px solid var(--mm-border-light);
+}
+
+.received::before {
+  background: var(--mm-border);
+}
+
+.message-files {
+  margin-top: 12px;
 }
 
 .message-meta {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
   min-width: fit-content;
+}
+
+.meta-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--mm-text-xs);
+  color: var(--mm-on-surface-variant);
+}
+
+.unread-count {
+  background: #FF6B6B;
+  color: white;
+  border-radius: var(--mm-radius-full);
+  min-width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 0 6px;
+}
+
+.timestamp {
+  opacity: 0.8;
+}
+
+/* 입력 영역 고정 높이 */
+.chat-input-container {
+  flex-shrink: 0;
+  min-height: 128px;
+  background: var(--mm-surface);
+  border-top: 1px solid var(--mm-border);
+  position: relative;
+}
+
+.input-divider {
+  border-color: var(--mm-border);
+  margin: 0;
+}
+
+/* 파일 선택 영역 스타일 */
+.file-selection-area {
+  width: 100%;
+}
+
+.files-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: var(--mm-text-sm);
+  color: var(--mm-on-surface-variant);
+  font-weight: 500;
+}
+
+.files-count {
+  margin-left: 8px;
+}
+
+.selected-files-preview {
+  background: var(--mm-surface-variant);
+  border-radius: var(--mm-radius-lg);
+  padding: 16px;
+  border: 1px solid var(--mm-border-light);
+  margin-bottom: 16px;
+}
+
+.selected-files-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.file-preview-item {
+  display: flex;
+  align-items: center;
+  background: var(--mm-surface);
+  border-radius: var(--mm-radius-md);
+  padding: 12px;
+  border: 1px solid var(--mm-border);
+  position: relative;
+  transition: all var(--mm-transition-normal);
+}
+
+.file-preview-item:hover {
+  border-color: var(--mm-primary);
+  box-shadow: var(--mm-shadow-sm);
+  transform: translateY(-1px);
+}
+
+.file-icon-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin-right: 12px;
+  flex-shrink: 0;
+  background: var(--mm-surface-variant);
+  border-radius: var(--mm-radius-md);
+}
+
+.file-info {
+  flex: 1;
+  min-width: 0;
+  margin-right: 12px;
+}
+
+.file-name {
+  font-weight: 500;
+  color: var(--mm-on-surface);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--mm-text-sm);
+}
+
+.file-size {
+  color: var(--mm-on-surface-variant);
+  margin-top: 4px;
+  font-size: var(--mm-text-xs);
+}
+
+.remove-file-btn {
+  opacity: 0.7;
+  transition: all var(--mm-transition-fast);
+}
+
+.remove-file-btn:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.input-area {
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.file-attach-btn {
+  border-radius: var(--mm-radius-lg);
+  transition: all var(--mm-transition-normal);
+}
+
+.file-attach-btn:hover {
+  transform: scale(1.05);
+  box-shadow: var(--mm-shadow-sm);
+}
+
+.message-input {
+  border-radius: var(--mm-radius-lg);
+  transition: all var(--mm-transition-normal);
+}
+
+.message-input:focus-within {
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.send-btn {
+  border-radius: var(--mm-radius-lg);
+  transition: all var(--mm-transition-normal);
+}
+
+.send-btn:hover:not(:disabled) {
+  transform: scale(1.05);
+  box-shadow: var(--mm-shadow-md);
+}
+
+.send-btn:disabled {
+  opacity: 0.6;
+}
+
+/* 스크롤바 스타일링 */
+.chat-messages-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-messages-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-messages-container::-webkit-scrollbar-thumb {
+  background: var(--mm-border);
+  border-radius: var(--mm-radius-full);
+  transition: background var(--mm-transition-fast);
+}
+
+.chat-messages-container::-webkit-scrollbar-thumb:hover {
+  background: var(--mm-on-surface-variant);
+}
+
+/* 맨 아래로 버튼 */
+.scroll-to-bottom-button-sticky {
+  position: sticky;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1000;
+  display: flex;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+
+.scroll-to-bottom-btn {
+  pointer-events: auto;
+  border-radius: 50% !important;
+  transition: all var(--mm-transition-normal);
+  backdrop-filter: blur(10px);
+  background: rgba(232, 125, 125, 0.95) !important;
+  border: 2px solid rgba(255, 255, 255, 0.9) !important;
+  animation: pulse 2s infinite;
+}
+
+.scroll-to-bottom-btn:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 8px 25px rgba(232, 125, 125, 0.4) !important;
+  background: rgba(232, 125, 125, 1) !important;
+  animation: none;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(232, 125, 125, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(232, 125, 125, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(232, 125, 125, 0);
+  }
+}
+
+/* 드래그 앤 드롭 스타일 */
+.drag-drop-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(232, 125, 125, 0.1);
+  border: 3px dashed #E87D7D;
+  border-radius: var(--mm-radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  backdrop-filter: blur(4px);
+}
+
+.drag-drop-content {
+  text-align: center;
+  color: #E87D7D;
+}
+
+/* 모달 스타일 */
+.participants-dialog,
+.invite-dialog,
+.leave-dialog {
+  border-radius: var(--mm-radius-lg);
+}
+
+.dialog-header {
+  background: var(--mm-surface-variant);
+  border-bottom: 1px solid var(--mm-border-light);
+  padding: 20px 24px;
+}
+
+.participants-content,
+.invite-content,
+.leave-content {
+  padding: 24px;
+}
+
+.participant-item {
+  border-radius: var(--mm-radius-md);
+  margin: 4px 0;
+  transition: all var(--mm-transition-fast);
+}
+
+.participant-item:hover {
+  background: var(--mm-surface-variant);
+}
+
+.status-chip {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.invite-tabs {
+  border-bottom: 1px solid var(--mm-border-light);
+}
+
+.invite-tab {
+  font-weight: 500;
+  text-transform: none;
+}
+
+.search-section,
+.followers-section,
+.followings-section {
+  padding: 16px 0;
+}
+
+.search-input {
+  margin-bottom: 16px;
+}
+
+.search-results,
+.followers-list,
+.followings-list {
+  background: transparent;
+}
+
+.search-result-item,
+.follower-item,
+.following-item {
+  border-radius: var(--mm-radius-md);
+  margin: 4px 0;
+  transition: all var(--mm-transition-fast);
+}
+
+.search-result-item:hover,
+.follower-item:hover,
+.following-item:hover {
+  background: var(--mm-surface-variant);
+}
+
+.invite-user-btn {
+  border-radius: var(--mm-radius-md);
+  font-weight: 500;
+  transition: all var(--mm-transition-fast);
+}
+
+.invite-user-btn:hover:not(:disabled) {
+  transform: scale(1.02);
+}
+
+.loading-state {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--mm-on-surface-variant);
+}
+
+.no-results-alert,
+.no-followers-alert,
+.no-followings-alert {
+  border-radius: var(--mm-radius-lg);
+  margin: 16px 0;
+}
+
+.room-options-menu {
+  border-radius: var(--mm-radius-lg);
+  box-shadow: var(--mm-shadow-lg);
+}
+
+.menu-item {
+  border-radius: var(--mm-radius-md);
+  margin: 4px;
+  transition: all var(--mm-transition-fast);
+}
+
+.menu-item:hover {
+  background: var(--mm-surface-variant);
+}
+
+.leave-item:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.leave-actions {
+  padding: 20px 24px;
+  border-top: 1px solid var(--mm-border-light);
 }
 
 /* 반응형 디자인 */
@@ -1587,205 +2154,152 @@ export default {
   }
   
   .chat-messages-container {
-    height: calc(100vh - 160px);
-    max-height: calc(100vh - 160px);
+    height: calc(100vh - 180px);
+    max-height: calc(100vh - 180px);
   }
   
   .message-bubble {
-    max-width: 80%;
+    max-width: 85%;
   }
   
   .media-bubble {
-    min-width: 200px;
-    max-width: 80%;
+    min-width: 240px;
+    max-width: 85%;
   }
-}
-
-.cursor-pointer {
-  cursor: pointer;
-}
-
-/* 드래그 앤 드롭 스타일 */
-.drag-over {
-  position: relative;
-}
-
-.drag-drop-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(33, 150, 243, 0.15);
-  border: 3px dashed #2196f3;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
-  backdrop-filter: blur(2px);
-}
-
-.drag-drop-content {
-  text-align: center;
-  color: #1976d2;
-}
-
-/* 파일 선택 영역 스타일 */
-.file-selection-area {
-  width: 100%;
-}
-
-.selected-files-preview {
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  padding: 12px;
-  border: 1px solid #e9ecef;
-}
-
-.selected-files-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 8px;
-}
-
-.file-preview-item {
-  display: flex;
-  align-items: center;
-  background-color: white;
-  border-radius: 6px;
-  padding: 8px;
-  border: 1px solid #dee2e6;
-  position: relative;
-  transition: all 0.2s ease;
-}
-
-.file-preview-item:hover {
-  border-color: #adb5bd;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.file-icon-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  margin-right: 8px;
-  flex-shrink: 0;
-}
-
-.file-info {
-  flex: 1;
-  min-width: 0;
-  margin-right: 8px;
-}
-
-.file-name {
-  font-weight: 500;
-  color: #495057;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.file-size {
-  color: #6c757d;
-  margin-top: 2px;
-}
-
-.remove-file-btn {
-  opacity: 0.7;
-  transition: opacity 0.2s ease;
-}
-
-.remove-file-btn:hover {
-  opacity: 1;
-}
-
-.input-area {
-  width: 100%;
-}
-
-/* 반응형 디자인 */
-@media (max-width: 768px) {
+  
   .selected-files-grid {
     grid-template-columns: 1fr;
   }
   
   .file-preview-item {
-    padding: 6px;
+    padding: 8px;
   }
   
   .file-icon-container {
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
   }
   
   .file-name {
-    font-size: 11px;
+    font-size: 12px;
   }
   
   .file-size {
-    font-size: 10px;
+    font-size: 11px;
   }
-}
-
-/* 맨 아래로 버튼 - 스크롤과 함께 움직이는 고정 버튼 */
-.scroll-to-bottom-button-sticky {
-  position: sticky;
-  bottom: 20px;
-  right: 20px;
-  z-index: 1000;
-  display: flex;
-  justify-content: flex-end;
-  pointer-events: none; /* 컨테이너는 클릭 이벤트를 통과시킴 */
-}
-
-/* 모바일에서 버튼 위치 조정 */
-@media (max-width: 768px) {
+  
   .scroll-to-bottom-button-sticky {
-    bottom: 0px;
-    right: 10px;
+    bottom: 16px;
+    right: 16px;
   }
-}
-
-/* 맨 아래로 버튼 스타일 */
-.scroll-to-bottom-btn {
-  pointer-events: auto; /* 버튼만 클릭 가능 */
-  border-radius: 50% !important;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(10px);
-  background-color: rgba(25, 118, 210, 0.95) !important;
-  border: 2px solid rgba(255, 255, 255, 0.8) !important;
-  animation: pulse 2s infinite;
-}
-
-.scroll-to-bottom-btn:hover {
-  transform: translateY(-2px) scale(1.05);
-  box-shadow: 0 8px 25px rgba(25, 118, 210, 0.4) !important;
-  background-color: rgba(25, 118, 210, 1) !important;
-  animation: none;
-}
-
-/* 펄스 애니메이션 */
-@keyframes pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(25, 118, 210, 0.7);
-  }
-  70% {
-    box-shadow: 0 0 0 10px rgba(25, 118, 210, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(25, 118, 210, 0);
-  }
-}
-
-/* 모바일에서 버튼 크기 조정 */
-@media (max-width: 768px) {
+  
   .scroll-to-bottom-btn {
     width: 48px !important;
     height: 48px !important;
+  }
+  
+  .room-title {
+    font-size: var(--mm-text-base);
+  }
+  
+  .room-status {
+    font-size: var(--mm-text-xs);
+    gap: 8px;
+  }
+}
+
+/* 다크 모드 지원 */
+@media (prefers-color-scheme: dark) {
+  .chat-room-container {
+    background: #2d2d2d;
+  }
+  
+  .chat-messages-container {
+    background: #2d2d2d;
+  }
+  
+  .chat-input-container {
+    background: #2d2d2d;
+    border-top-color: #404040;
+  }
+  
+  .selected-files-preview {
+    background: #404040;
+    border-color: #505050;
+  }
+  
+  .file-preview-item {
+    background: #404040;
+    border-color: #505050;
+  }
+  
+  .file-preview-item:hover {
+    background: #505050;
+  }
+  
+  .file-icon-container {
+    background: #505050;
+  }
+  
+  .message-bubble.received {
+    background: #404040;
+    border-color: #505050;
+    color: #e0e0e0;
+  }
+  
+  .date-chip {
+    background: rgba(232, 125, 125, 0.15);
+    border-color: #E87D7D;
+    color: #FFB3B3;
+  }
+}
+
+/* 애니메이션 */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message-row {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+.message-bubble {
+  animation: fadeInUp 0.2s ease-out;
+}
+
+/* 호버 효과 개선 */
+.message-bubble:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--mm-shadow-md);
+}
+
+.chat-room-item:hover {
+  transform: translateX(4px);
+}
+
+/* 포커스 상태 */
+.message-input:focus-within {
+  border-color: var(--mm-primary);
+}
+
+/* 로딩 상태 */
+.loading-state {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 </style>
