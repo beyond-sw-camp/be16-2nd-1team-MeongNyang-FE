@@ -260,7 +260,11 @@
   </v-card>
 
   <!-- 참여자 목록 모달 -->
-  <v-dialog v-model="showParticipantsDialog" max-width="500" persistent>
+  <v-dialog 
+    v-model="showParticipantsDialog" 
+    max-width="500"
+    @click:outside="showParticipantsDialog = false"
+  >
     <v-card class="participants-dialog">
       <!-- 헤더 -->
       <div class="dialog-header">
@@ -272,16 +276,16 @@
             <h3 class="dialog-title">참여자 목록</h3>
             <p class="dialog-subtitle">{{ participants.length }}명이 참여 중</p>
           </div>
+          <v-btn 
+            icon 
+            variant="text" 
+            @click="showParticipantsDialog = false"
+            class="close-btn"
+            size="large"
+          >
+            <v-icon size="24">mdi-close</v-icon>
+          </v-btn>
         </div>
-        <v-btn 
-          icon 
-          variant="text" 
-          @click="showParticipantsDialog = false"
-          class="close-btn"
-          size="large"
-        >
-          <v-icon size="24">mdi-close</v-icon>
-        </v-btn>
       </div>
 
       <!-- 참여자 목록 -->
@@ -2685,6 +2689,7 @@ export default {
   gap: 16px;
   position: relative;
   z-index: 1;
+  width: 100%;
 }
 
 .header-icon {
@@ -2700,6 +2705,7 @@ export default {
 
 .header-text {
   flex: 1;
+  min-width: 0;
 }
 
 .dialog-title {
@@ -2720,6 +2726,8 @@ export default {
   color: white !important;
   position: relative;
   z-index: 1;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .participants-content {
