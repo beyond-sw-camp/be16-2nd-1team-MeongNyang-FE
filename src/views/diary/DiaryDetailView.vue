@@ -171,10 +171,7 @@
             #{{ tag }}
           </span>
         </div>
-        <!-- 디버깅용 해시태그 데이터 출력 -->
-        <div v-if="postData?.hashTagList && postData.hashTagList.length > 0" style="font-size: 10px; color: #999;">
-          Debug: {{ JSON.stringify(postData.hashTagList) }}
-        </div>
+
       </div>
     </div>
 

@@ -168,10 +168,7 @@
             #{{ tag }}
           </span>
         </div>
-        <!-- 디버깅용 해시태그 데이터 출력 -->
-        <div v-if="post.hashTagList && post.hashTagList.length > 0" style="font-size: 10px; color: #999;">
-          Debug: {{ JSON.stringify(post.hashTagList) }}
-        </div>
+
       </div>
     </div>
 
@@ -863,22 +860,22 @@ export default {
 }
 
 .hashtag {
-  color: #1E293B;
-  font-size: 0.9rem;
-  cursor: pointer;
+  color: #FF8B8B;
+  font-size: 0.85rem;
   font-weight: 500;
-  background: #FCE7F3;
-  border: 1px solid #FBCFE8;
-  border-radius: 16px;
-  padding: 4px 12px;
-  display: inline-block;
+  cursor: pointer;
   transition: all 0.3s ease;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: rgba(255, 139, 139, 0.05);
+  border: 1px solid rgba(255, 139, 139, 0.1);
 }
 
 .hashtag:hover {
-  background: #F9A8D4;
-  border-color: #F472B6;
+  background: rgba(255, 139, 139, 0.1);
+  border-color: rgba(255, 139, 139, 0.3);
   transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(255, 139, 139, 0.2);
 }
 
 .empty-state {
