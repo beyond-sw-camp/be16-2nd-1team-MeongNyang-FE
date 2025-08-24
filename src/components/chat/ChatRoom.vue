@@ -9,19 +9,7 @@
     >
       <div class="header-content">
         <div class="room-info">
-          <v-avatar size="40" color="primary" class="room-avatar">
-            <v-icon size="20" color="white">mdi-chat-group</v-icon>
-          </v-avatar>
-          <div class="room-details">
-            <v-toolbar-title class="room-title">{{ currentRoom?.roomName || '채팅' }}</v-toolbar-title>
-            <div class="room-status">
-              <span class="participant-count">{{ participants.length }}명 참여</span>
-              <span class="online-indicator" v-if="onlineParticipants.length > 0">
-                <v-icon size="12" color="success">mdi-circle</v-icon>
-                {{ onlineParticipants.length }}명 온라인
-              </span>
-            </div>
-          </div>
+          <v-toolbar-title class="room-title">{{ currentRoom?.roomName || '채팅' }}</v-toolbar-title>
         </div>
         
         <v-spacer></v-spacer>
@@ -600,7 +588,7 @@ export default {
   },
   props: {
     roomId: {
-      type: String,
+      type: Number,
       required: true
     }
   },
@@ -702,11 +690,28 @@ export default {
     
     const loadRoomData = async () => {
       try {
-        // 채팅방 정보는 기본값으로 설정 (백엔드 API 불필요)
-        currentRoom.value = {
-          id: props.roomId,
-          roomName: `채팅방 #${props.roomId}`,
-          createdAt: new Date().toISOString()
+        // 채팅방 목록이 비어있으면 먼저 가져오기
+        if (chatStore.chatRoomList.length === 0) {
+          await chatStore.fetchChatRoomList()
+        }
+        
+        // 스토어에서 채팅방 정보 찾기
+        const roomFromStore = chatStore.getChatRoomById(props.roomId)
+        console.log('roomFromStore!!!', roomFromStore)
+        if (roomFromStore) {
+          // 스토어에 있는 정보 사용
+          currentRoom.value = {
+            id: roomFromStore.id,
+            roomName: roomFromStore.roomName,
+            createdAt: roomFromStore.lastMessageTime || new Date().toISOString()
+          }
+        } else {
+          // 스토어에 없으면 기본값 설정
+          currentRoom.value = {
+            id: props.roomId,
+            roomName: `채팅방 #${props.roomId}`,
+            createdAt: new Date().toISOString()
+          }
         }
         
         // 메시지와 참여자는 채팅 스토어를 통해 로드
@@ -1547,23 +1552,6 @@ export default {
 .room-info {
   display: flex;
   align-items: center;
-  gap: 16px;
-}
-
-.room-avatar {
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  transition: all var(--mm-transition-normal);
-}
-
-.room-avatar:hover {
-  border-color: rgba(255, 255, 255, 0.6);
-  transform: scale(1.05);
-}
-
-.room-details {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
 }
 
 .room-title {

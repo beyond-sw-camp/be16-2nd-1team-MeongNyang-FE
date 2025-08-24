@@ -14,7 +14,7 @@ export const useChatStore = defineStore('chat', {
 
   getters: {
     getChatRoomById: (state) => (roomId) => {
-      return state.chatRoomList.find(room => room.id === roomId)
+      return state.chatRoomList.find(room => room.id == roomId)
     },
     
     getUnreadCount: (state) => (roomId) => {
