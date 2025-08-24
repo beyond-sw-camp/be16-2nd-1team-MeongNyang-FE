@@ -353,98 +353,61 @@
   </v-dialog>
 
   <!-- 초대하기 모달 -->
-  <v-dialog v-model="showInviteDialog" max-width="600">
-    <v-card>
-      <v-card-title class="d-flex align-center">
-        <v-icon class="mr-2">mdi-account-plus</v-icon>
-        초대하기
-        <v-spacer></v-spacer>
-        <div class="d-flex align-center mr-4" v-if="getSelectedUsersCount() > 0">
-          <v-chip color="primary" variant="outlined" class="mr-2">
-            {{ getSelectedUsersCount() }}명 선택됨
-          </v-chip>
+  <v-dialog v-model="showInviteDialog" max-width="700" @click:outside="showInviteDialog = false">
+    <v-card class="invite-dialog">
+      <!-- 헤더 -->
+      <div class="dialog-header invite-header">
+        <div class="header-content">
+          <div class="header-icon">
+            <v-icon size="28" color="white">mdi-account-plus</v-icon>
+          </div>
+          <div class="header-text">
+            <h3 class="dialog-title">새 참여자 초대</h3>
+            <p class="dialog-subtitle">채팅방에 함께할 사용자를 선택하세요</p>
+          </div>
+          <div class="header-actions" v-if="getSelectedUsersCount() > 0">
+            <v-chip color="white" variant="outlined" class="selection-chip">
+              {{ getSelectedUsersCount() }}명 선택됨
+            </v-chip>
+            <v-btn 
+              color="white" 
+              variant="outlined"
+              @click="inviteSelectedUsers"
+              :disabled="getSelectedUsersCount() === 0"
+              class="invite-selected-btn"
+              prepend-icon="mdi-send"
+            >
+              선택된 사용자 초대
+            </v-btn>
+          </div>
           <v-btn 
-            color="primary" 
-            size="small"
-            @click="inviteSelectedUsers"
-            :disabled="getSelectedUsersCount() === 0"
+            icon 
+            variant="outlined"
+            @click="showInviteDialog = false"
+            class="close-btn"
+            size="large"
+            color="white"
           >
-            선택된 사용자 초대
+            <v-icon size="24">mdi-close</v-icon>
           </v-btn>
         </div>
-        <v-btn icon @click="showInviteDialog = false">
-          <v-icon>mdi-close</v-icon>
-        </v-btn>
-      </v-card-title>
-      <v-card-text>
+      </div>
+      <div class="invite-content">
         <!-- 탭 네비게이션 -->
-        <v-tabs v-model="inviteTab" color="primary" class="mb-4" @change="onTabChange">
-          <v-tab value="search">이메일 검색</v-tab>
-          <v-tab value="followers">팔로워</v-tab>
-          <v-tab value="followings">팔로잉</v-tab>
-        </v-tabs>
+        <div class="tab-navigation">
+          <v-tabs v-model="inviteTab" color="primary" @change="onTabChange" class="custom-tabs">
+            <v-tab value="followers" class="custom-tab">
+              <v-icon size="20" class="mr-2">mdi-account-heart</v-icon>
+              팔로워
+            </v-tab>
+            <v-tab value="followings" class="custom-tab">
+              <v-icon size="20" class="mr-2">mdi-account-star</v-icon>
+              팔로잉
+            </v-tab>
+          </v-tabs>
+        </div>
 
-        <!-- 이메일 검색 탭 -->
         <v-window v-model="inviteTab">
-          <v-window-item value="search">
-              <div class="d-flex align-center mb-3" v-if="searchResults.length > 0">
-                <v-checkbox
-                  v-model="selectAll"
-                  label="전체 선택"
-                  @change="toggleSelectAll"
-                  hide-details
-                  class="mr-4"
-                ></v-checkbox>
-              </div>
-              <v-text-field
-                v-model="inviteSearchQuery"
-                label="사용자 검색"
-                placeholder="이메일로 검색하세요"
-                prepend-inner-icon="mdi-magnify"
-                clearable
-                @input="searchUsers"
-              ></v-text-field>
-            <v-list v-if="searchResults.length > 0">
-                <v-list-item 
-                  v-for="user in searchResults" 
-                  :key="user.email"
-                  @click="toggleUserSelection(user)"
-                class="cursor-pointer"
-                >
-                  <template v-slot:prepend>
-                    <v-checkbox
-                      :model-value="isUserSelected(user)"
-                      @click.stop
-                      @change="toggleUserSelection(user)"
-                      :disabled="isAlreadyParticipant(user.email)"
-                      hide-details
-                    ></v-checkbox>
-                  <v-avatar size="32">
-                    <v-img src="https://cdn.vuetifyjs.com/images/john.jpg" alt="avatar"></v-img>
-                    </v-avatar>
-                  </template>
-                  <v-list-item-title>{{ user.email }}</v-list-item-title>
-                  <template v-slot:append>
-                    <v-btn 
-                      size="small" 
-                      color="primary" 
-                      variant="outlined"
-                      :disabled="isAlreadyParticipant(user.email)"
-                      @click.stop="inviteUser(user)"
-                    >
-                      {{ isAlreadyParticipant(user.email) ? '이미 참여중' : '초대' }}
-                    </v-btn>
-                  </template>
-                </v-list-item>
-              </v-list>
-              <v-alert 
-                v-else-if="inviteSearchQuery && !searching" 
-                type="info" 
-                variant="tonal"
-              >
-                검색 결과가 없습니다.
-              </v-alert>
-          </v-window-item>
 
           <!-- 팔로워 탭 -->
           <v-window-item value="followers">
@@ -604,7 +567,7 @@
               </v-alert>
           </v-window-item>
         </v-window>
-      </v-card-text>
+      </div>
     </v-card>
   </v-dialog>
 
@@ -683,7 +646,7 @@ export default {
     const showLeaveConfirmDialog = ref(false)
 
     // 초대 관련 상태
-    const inviteTab = ref('search') // 탭 모델
+    const inviteTab = ref('followers') // 탭 모델
     const inviteSearchQuery = ref('')
     const searchResults = ref([])
     const searching = ref(false)
@@ -1460,7 +1423,7 @@ export default {
         followingSearchQuery.value = '';
         filteredFollowers.value = [];
         filteredFollowings.value = [];
-        inviteTab.value = 'search';
+        inviteTab.value = 'followers';
         // 선택 상태 초기화
         selectedUsers.value.clear();
         selectAll.value = false;
@@ -2915,6 +2878,83 @@ export default {
   box-shadow: 0 8px 24px rgba(232, 125, 125, 0.4);
   border-color: rgba(232, 125, 125, 0.6) !important;
   background: linear-gradient(135deg, rgba(232, 125, 125, 0.2) 0%, rgba(255, 107, 107, 0.2) 100%) !important;
+}
+
+/* 초대하기 모달 스타일 */
+.invite-dialog {
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.invite-header {
+  background: linear-gradient(135deg, #E87D7D 0%, #FF6B6B 100%);
+}
+
+.invite-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+  opacity: 0.3;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+  margin-right: 16px;
+}
+
+.selection-chip {
+  border-color: rgba(255, 255, 255, 0.6) !important;
+  color: white !important;
+  font-weight: 600;
+}
+
+.invite-selected-btn {
+  border-color: rgba(255, 255, 255, 0.6) !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: white !important;
+  transition: all var(--mm-transition-normal);
+  border-radius: 16px !important;
+  height: 40px !important;
+  backdrop-filter: blur(10px);
+}
+
+.invite-selected-btn:hover {
+  background: rgba(255, 255, 255, 0.25) !important;
+  transform: scale(1.05);
+  border-color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.invite-content {
+  padding: 24px;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.tab-navigation {
+  margin-bottom: 24px;
+}
+
+.custom-tabs {
+  background: var(--mm-surface-variant);
+  border-radius: 16px;
+  padding: 4px;
+}
+
+.custom-tab {
+  border-radius: 12px !important;
+  margin: 4px !important;
+  transition: all var(--mm-transition-normal);
+}
+
+.custom-tab:hover {
+  background: rgba(232, 125, 125, 0.1);
 }
 
 /* 반응형 디자인 */
