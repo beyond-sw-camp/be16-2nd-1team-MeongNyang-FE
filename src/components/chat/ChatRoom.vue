@@ -17,22 +17,26 @@
         <div class="header-actions">
           <v-btn 
             icon 
-            variant="text"
+            variant="outlined"
             @click="showParticipants"
             class="action-btn"
             title="참여자 목록"
+            size="large"
+            color="white"
           >
-            <v-icon>mdi-account-group</v-icon>
+            <v-icon size="24">mdi-account-group</v-icon>
           </v-btn>
           
           <v-btn 
             icon 
-            variant="text"
+            variant="outlined"
             @click="inviteParticipants"
             class="action-btn"
             title="초대하기"
+            size="large"
+            color="white"
           >
-            <v-icon>mdi-account-plus</v-icon>
+            <v-icon size="24">mdi-account-plus</v-icon>
           </v-btn>
           
           <v-menu>
@@ -40,11 +44,13 @@
               <v-btn 
                 icon 
                 v-bind="props"
-                variant="text"
+                variant="outlined"
                 class="action-btn"
                 title="더보기"
+                size="large"
+                color="white"
               >
-                <v-icon>mdi-dots-vertical</v-icon>
+                <v-icon size="24">mdi-dots-vertical</v-icon>
               </v-btn>
             </template>
             <v-list class="room-options-menu">
@@ -1528,6 +1534,9 @@ export default {
   background: linear-gradient(135deg, #E87D7D 0%, #FF6B6B 100%);
   position: relative;
   overflow: hidden;
+  /* Vuetify toolbar의 기본 정렬 문제 해결 */
+  display: flex;
+  align-items: center;
 }
 
 .chat-header::before {
@@ -1547,11 +1556,15 @@ export default {
   width: 100%;
   position: relative;
   z-index: 1;
+  /* 더 정확한 세로 중앙 정렬 */
+  height: 100%;
+  min-height: 72px;
 }
 
 .room-info {
   display: flex;
   align-items: center;
+  height: 100%;
 }
 
 .room-title {
@@ -1559,6 +1572,11 @@ export default {
   font-weight: 600;
   font-size: var(--mm-text-lg);
   line-height: 1.3;
+  /* 제목의 세로 중앙 정렬 개선 */
+  display: flex;
+  align-items: center;
+  height: 100%;
+  margin: 0;
 }
 
 .room-status {
@@ -1584,16 +1602,43 @@ export default {
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
+  height: 100%;
 }
 
 .action-btn {
-  color: white;
-  transition: all var(--mm-transition-fast);
+  color: white !important;
+  border: 2px solid rgba(255, 255, 255, 0.3) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  transition: all var(--mm-transition-normal);
+  border-radius: 16px !important;
+  min-width: 56px !important;
+  height: 56px !important;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  /* 버튼 내부 아이콘의 세로 중앙 정렬 개선 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .action-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.2) !important;
+  transform: scale(1.1);
+  border-color: rgba(255, 255, 255, 0.6) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.action-btn:active {
+  transform: scale(0.95);
+}
+
+.action-btn .v-icon {
+  transition: all var(--mm-transition-fast);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.action-btn:hover .v-icon {
   transform: scale(1.1);
 }
 

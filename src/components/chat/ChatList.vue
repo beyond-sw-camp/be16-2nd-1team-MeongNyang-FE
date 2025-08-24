@@ -6,12 +6,12 @@
       <v-btn 
         icon 
         color="primary" 
-        variant="text"
+        variant="outlined"
         @click="showUserSelectionModal = true"
         class="new-chat-btn"
-        size="small"
+        size="large"
       >
-        <v-icon>mdi-plus</v-icon>
+        <v-icon size="24">mdi-plus</v-icon>
       </v-btn>
     </div>
     
@@ -57,7 +57,7 @@
           color="primary" 
           variant="outlined" 
           @click="showUserSelectionModal = true"
-          size="small"
+          size="large"
           class="empty-action-btn"
         >
           첫 채팅방 만들기
@@ -200,51 +200,56 @@ export default {
   flex-direction: column;
 }
 
-/* 채팅 목록 헤더 */
+/* 헤더 스타일 */
 .chat-list-header {
-  flex-shrink: 0;
-  min-height: 72px;
-  padding: 0 24px;
-  background: linear-gradient(135deg, #E87D7D 0%, #FF6B6B 100%);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  position: relative;
-  overflow: hidden;
-}
-
-.chat-list-header::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-  opacity: 0.3;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--mm-border-light);
+  background: var(--mm-surface);
+  flex-shrink: 0;
+  min-height: 72px;
 }
 
 .header-title {
-  margin: 0;
-  color: white;
   font-size: var(--mm-text-xl);
   font-weight: 700;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-  position: relative;
-  z-index: 1;
+  color: var(--mm-on-surface);
+  margin: 0;
 }
 
-/* 새 채팅방 버튼 */
+/* 새 채팅 버튼 */
 .new-chat-btn {
-  color: white;
+  border-radius: 16px !important;
+  border: 2px solid rgba(232, 125, 125, 0.3) !important;
+  background: linear-gradient(135deg, rgba(232, 125, 125, 0.1) 0%, rgba(255, 107, 107, 0.1) 100%) !important;
+  color: #E87D7D !important;
   transition: all var(--mm-transition-normal);
-  position: relative;
-  z-index: 1;
+  min-width: 56px !important;
+  height: 56px !important;
+  box-shadow: 0 4px 16px rgba(232, 125, 125, 0.2);
 }
 
-.new-chat-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  transform: scale(1.1);
+.new-chat-btn:hover:not(:disabled) {
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: 0 8px 24px rgba(232, 125, 125, 0.4);
+  border-color: rgba(232, 125, 125, 0.6) !important;
+  background: linear-gradient(135deg, rgba(232, 125, 125, 0.2) 0%, rgba(255, 107, 107, 0.2) 100%) !important;
+}
+
+.new-chat-btn:active {
+  transform: scale(0.95);
+}
+
+.new-chat-btn .v-icon {
+  transition: all var(--mm-transition-fast);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.new-chat-btn:hover .v-icon {
+  transform: scale(1.2);
+  color: #FF6B6B !important;
 }
 
 /* 채팅방 목록 */
@@ -405,9 +410,27 @@ export default {
   line-height: 1.5;
 }
 
+/* 빈 상태 액션 버튼 */
 .empty-action-btn {
-  border-radius: var(--mm-radius-lg);
-  font-weight: 500;
+  border-radius: 20px !important;
+  border: 2px solid rgba(232, 125, 125, 0.3) !important;
+  background: linear-gradient(135deg, rgba(232, 125, 125, 0.1) 0%, rgba(255, 107, 107, 0.1) 100%) !important;
+  color: #E87D7D !important;
+  font-weight: 600 !important;
+  padding: 12px 24px !important;
+  transition: all var(--mm-transition-normal);
+  box-shadow: 0 4px 16px rgba(232, 125, 125, 0.2);
+}
+
+.empty-action-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(232, 125, 125, 0.4);
+  border-color: rgba(232, 125, 125, 0.6) !important;
+  background: linear-gradient(135deg, rgba(232, 125, 125, 0.2) 0%, rgba(255, 107, 107, 0.2) 100%) !important;
+}
+
+.empty-action-btn:active {
+  transform: translateY(0);
 }
 
 /* 스크롤바 스타일링 */
