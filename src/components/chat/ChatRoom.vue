@@ -1813,36 +1813,173 @@ export default {
   opacity: 0.8;
 }
 
-/* 입력 영역 고정 높이 */
+/* ===== 채팅 입력 영역 스타일 ===== */
+
+/* 입력 컨테이너 */
 .chat-input-container {
   flex-shrink: 0;
   min-height: 128px;
-  background: var(--mm-surface);
-  border-top: 1px solid var(--mm-border);
+  background: linear-gradient(180deg, var(--mm-surface) 0%, rgba(232, 125, 125, 0.02) 100%);
+  border-top: 1px solid rgba(232, 125, 125, 0.1);
   position: relative;
+  overflow: hidden;
 }
 
-.input-divider {
-  border-color: var(--mm-border);
-  margin: 0;
+.chat-input-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(232, 125, 125, 0.3), transparent);
 }
 
-/* 파일 선택 영역 스타일 */
+/* 입력 영역 */
+.input-area {
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border-radius: 24px;
+  border: 1px solid rgba(232, 125, 125, 0.1);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  transition: all var(--mm-transition-normal);
+}
+
+.input-area:focus-within {
+  border-color: rgba(232, 125, 125, 0.4);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+}
+
+/* 파일 첨부 버튼 */
+.file-attach-btn {
+  border-radius: 16px !important;
+  border: 2px solid rgba(232, 125, 125, 0.3) !important;
+  background: linear-gradient(135deg, rgba(232, 125, 125, 0.1) 0%, rgba(255, 107, 107, 0.1) 100%) !important;
+  color: #E87D7D !important;
+  transition: all var(--mm-transition-normal);
+  min-width: 56px !important;
+  height: 56px !important;
+  box-shadow: 0 4px 16px rgba(232, 125, 125, 0.2);
+}
+
+.file-attach-btn:hover:not(:disabled) {
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: 0 8px 24px rgba(232, 125, 125, 0.4);
+  border-color: rgba(232, 125, 125, 0.6) !important;
+  background: linear-gradient(135deg, rgba(232, 125, 125, 0.2) 0%, rgba(255, 107, 107, 0.2) 100%) !important;
+}
+
+.file-attach-btn:active {
+  transform: scale(0.95);
+}
+
+.file-attach-btn .v-icon {
+  transition: all var(--mm-transition-fast);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.file-attach-btn:hover .v-icon {
+  transform: scale(1.2);
+  color: #FF6B6B !important;
+}
+
+/* 메시지 입력창 */
+.message-input {
+  border-radius: 20px !important;
+  transition: all var(--mm-transition-normal);
+  background: rgba(255, 255, 255, 0.8) !important;
+  border: 2px solid rgba(232, 125, 125, 0.2) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(10px);
+}
+
+.message-input:focus-within {
+  box-shadow: 0 0 0 3px rgba(232, 125, 125, 0.2), 0 8px 24px rgba(0, 0, 0, 0.1);
+  border-color: rgba(232, 125, 125, 0.6) !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  transform: translateY(-1px);
+}
+
+.message-input .v-field__outline {
+  display: none !important;
+}
+
+.message-input .v-field__input {
+  padding: 16px 20px !important;
+  font-size: 16px !important;
+  line-height: 1.5 !important;
+  color: #2c3e50 !important;
+}
+
+.message-input .v-field__input::placeholder {
+  color: rgba(44, 62, 80, 0.6) !important;
+  font-style: italic;
+}
+
+/* 전송 버튼 */
+.send-btn {
+  border-radius: 16px !important;
+  background: linear-gradient(135deg, #E87D7D 0%, #FF6B6B 100%) !important;
+  color: white !important;
+  transition: all var(--mm-transition-normal);
+  min-width: 56px !important;
+  height: 56px !important;
+  box-shadow: 0 4px 16px rgba(232, 125, 125, 0.3);
+  border: none !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.send-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.send-btn:hover:not(:disabled) {
+  transform: scale(1.1) translateY(-2px);
+  box-shadow: 0 12px 32px rgba(232, 125, 125, 0.5);
+  background: linear-gradient(135deg, #FF6B6B 0%, #E87D7D 100%) !important;
+}
+
+.send-btn:hover::before {
+  left: 100%;
+}
+
+.send-btn:active {
+  transform: scale(0.95);
+}
+
+.send-btn:disabled {
+  opacity: 0.6;
+  transform: none !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+}
+
+.send-btn .v-icon {
+  transition: all var(--mm-transition-fast);
+  font-size: 24px !important;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.send-btn:hover .v-icon {
+  transform: scale(1.1);
+}
+
+/* ===== 파일 선택 영역 스타일 ===== */
+
 .file-selection-area {
   width: 100%;
-}
-
-.files-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 12px;
-  font-size: var(--mm-text-sm);
-  color: var(--mm-on-surface-variant);
-  font-weight: 500;
-}
-
-.files-count {
-  margin-left: 8px;
 }
 
 .selected-files-preview {
@@ -1862,6 +1999,7 @@ export default {
   transform: translateY(-1px);
 }
 
+/* 파일 헤더 */
 .files-header-icon {
   display: flex;
   align-items: center;
@@ -1886,12 +2024,14 @@ export default {
   border-radius: 12px !important;
 }
 
+/* 파일 그리드 */
 .selected-files-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 16px;
 }
 
+/* 파일 아이템 */
 .file-preview-item {
   display: flex;
   align-items: center;
@@ -1956,6 +2096,7 @@ export default {
   opacity: 0.8;
 }
 
+/* 파일 삭제 버튼 */
 .remove-file-btn {
   opacity: 0.6;
   transition: all var(--mm-transition-fast);
@@ -1977,177 +2118,8 @@ export default {
   transform: scale(0.95);
 }
 
-.input-area {
-  width: 100%;
-  display: flex;
-  align-items: flex-end;
-  gap: 16px;
-  padding: 20px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
-  border-radius: 24px;
-  border: 1px solid rgba(232, 125, 125, 0.1);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  transition: all var(--mm-transition-normal);
-}
+/* ===== 반응형 디자인 ===== */
 
-/* 입력 영역 포커스 시 전체 효과 */
-.input-area:focus-within {
-  border-color: rgba(232, 125, 125, 0.4);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
-}
-
-.file-attach-btn {
-  border-radius: 16px !important;
-  border: 2px solid rgba(232, 125, 125, 0.3) !important;
-  background: linear-gradient(135deg, rgba(232, 125, 125, 0.1) 0%, rgba(255, 107, 107, 0.1) 100%) !important;
-  color: #E87D7D !important;
-  transition: all var(--mm-transition-normal);
-  min-width: 56px !important;
-  height: 56px !important;
-  box-shadow: 0 4px 16px rgba(232, 125, 125, 0.2);
-}
-
-.file-attach-btn:hover:not(:disabled) {
-  transform: scale(1.1) rotate(5deg);
-  box-shadow: 0 8px 24px rgba(232, 125, 125, 0.4);
-  border-color: rgba(232, 125, 125, 0.6) !important;
-  background: linear-gradient(135deg, rgba(232, 125, 125, 0.2) 0%, rgba(255, 107, 107, 0.2) 100%) !important;
-}
-
-.file-attach-btn:active {
-  transform: scale(0.95);
-}
-
-.file-attach-btn .v-icon {
-  transition: all var(--mm-transition-fast);
-}
-
-.file-attach-btn:hover .v-icon {
-  transform: scale(1.2);
-  color: #FF6B6B !important;
-}
-
-.message-input {
-  border-radius: 20px !important;
-  transition: all var(--mm-transition-normal);
-  background: rgba(255, 255, 255, 0.8) !important;
-  border: 2px solid rgba(232, 125, 125, 0.2) !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
-  backdrop-filter: blur(10px);
-}
-
-.message-input:focus-within {
-  box-shadow: 0 0 0 3px rgba(232, 125, 125, 0.2), 0 8px 24px rgba(0, 0, 0, 0.1);
-  border-color: rgba(232, 125, 125, 0.6) !important;
-  background: rgba(255, 255, 255, 0.95) !important;
-  transform: translateY(-1px);
-}
-
-.message-input .v-field__outline {
-  display: none !important;
-}
-
-.message-input .v-field__input {
-  padding: 16px 20px !important;
-  font-size: 16px !important;
-  line-height: 1.5 !important;
-  color: #2c3e50 !important;
-}
-
-.message-input .v-field__input::placeholder {
-  color: rgba(44, 62, 80, 0.6) !important;
-  font-style: italic;
-}
-
-.send-btn {
-  border-radius: 16px !important;
-  background: linear-gradient(135deg, #E87D7D 0%, #FF6B6B 100%) !important;
-  color: white !important;
-  transition: all var(--mm-transition-normal);
-  min-width: 56px !important;
-  height: 56px !important;
-  box-shadow: 0 4px 16px rgba(232, 125, 125, 0.3);
-  border: none !important;
-  position: relative;
-  overflow: hidden;
-}
-
-.send-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s;
-}
-
-.send-btn:hover:not(:disabled) {
-  transform: scale(1.1) translateY(-2px);
-  box-shadow: 0 12px 32px rgba(232, 125, 125, 0.5);
-  background: linear-gradient(135deg, #FF6B6B 0%, #E87D7D 100%) !important;
-}
-
-.send-btn:hover::before {
-  left: 100%;
-}
-
-.send-btn:active {
-  transform: scale(0.95);
-}
-
-.send-btn:disabled {
-  opacity: 0.6;
-  transform: none !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
-}
-
-.send-btn .v-icon {
-  transition: all var(--mm-transition-fast);
-  font-size: 24px !important;
-}
-
-.send-btn:hover .v-icon {
-  transform: scale(1.1);
-}
-
-/* 입력 영역 배경 그라데이션 효과 */
-.chat-input-container {
-  background: linear-gradient(180deg, var(--mm-surface) 0%, rgba(232, 125, 125, 0.02) 100%);
-  border-top: 1px solid rgba(232, 125, 125, 0.1);
-  position: relative;
-  overflow: hidden;
-}
-
-.chat-input-container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(232, 125, 125, 0.3), transparent);
-}
-
-/* 파일 첨부 버튼 특별 효과 */
-.file-attach-btn .v-icon {
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-}
-
-/* 전송 버튼 특별 효과 */
-.send-btn .v-icon {
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
-}
-
-/* 입력 영역 포커스 시 전체 효과 */
-.input-area:focus-within {
-  border-color: rgba(232, 125, 125, 0.4);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
-}
-
-/* 반응형 디자인 개선 */
 @media (max-width: 768px) {
   .input-area {
     padding: 16px;
@@ -2615,5 +2587,7 @@ export default {
     font-size: var(--mm-text-xs);
     gap: 8px;
   }
+
+  
 }
 </style>
