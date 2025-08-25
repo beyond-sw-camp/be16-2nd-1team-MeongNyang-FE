@@ -36,6 +36,18 @@
         @success="handleFinalRegistrationSuccess"
       />
       
+      <!-- OAuth 추가정보 모달 -->
+      <FinalRegistrationModal
+        :show="showOAuthExtraModal"
+        @update:show="showOAuthExtraModal = $event"
+        :email="oauthExtraData?.email || ''"
+        :password="''"
+        :is-oauth="true"
+        :oauth-data="oauthExtraData"
+        @close="handleOAuthExtraClose"
+        @success="handleOAuthExtraSuccess"
+      />
+      
       <!-- OAuth 연동 확인 모달 -->
       <v-dialog
         v-model="showOAuthLinkModal"
@@ -190,9 +202,17 @@ export default {
     // 최종 등록 모달 상태 관리
     const showFinalRegistrationModal = ref(false)
     
+    // OAuth 추가정보 모달 상태 관리
+    const showOAuthExtraModal = ref(false)
+    const oauthExtraData = ref(null)
+    
     // OAuth 연동 모달 상태 관리
     const showOAuthLinkModal = ref(false)
     const oauthLinkData = ref(null)
+    
+    // 소셜 계정 중복 모달 상태 관리
+    const showSocialDuplicateModal = ref(false)
+    const socialDuplicateData = ref(null)
     
     // HeaderComponent에서 호출할 함수들
     const openAuthModal = (tab = 'login') => {
@@ -252,9 +272,32 @@ export default {
       uiStore.showSnackbar('성공', '회원가입이 완료되었습니다!', 'success')
     }
     
+    // OAuth 추가정보 모달 이벤트 핸들러들
+    const handleOAuthExtraClose = () => {
+      showOAuthExtraModal.value = false
+    }
+    
+    const handleOAuthExtraSuccess = (result) => {
+      console.log('OAuth 추가정보 성공:', result)
+      showOAuthExtraModal.value = false
+      
+      // 성공 메시지 표시
+      uiStore.showSnackbar('성공', '소셜 계정 연동이 완료되었습니다!', 'success')
+      
+      // 홈으로 이동
+      router.push('/')
+    }
+    
     const handleAuthSuccess = (type) => {
       console.log(`${type} 성공!`)
       showAuthModal.value = false
+    }
+    
+    // OAuth 추가정보 모달 열기 (HomeView에서 호출)
+    const openOAuthExtraModal = (data) => {
+      console.log('OAuth 추가정보 모달 열기:', data)
+      oauthExtraData.value = data
+      showOAuthExtraModal.value = true
     }
     
     // OAuth 연동 모달 열기 (HomeView에서 호출)
@@ -324,6 +367,7 @@ export default {
     // provide를 통해 HeaderComponent에 함수 전달
     provide('openAuthModal', openAuthModal)
     provide('openOtpModal', openOtpModal)
+    provide('openOAuthExtraModal', openOAuthExtraModal)
     provide('openOAuthLinkModal', openOAuthLinkModal)
     
     return {
@@ -334,6 +378,8 @@ export default {
       otpModalEmail,
       otpModalPassword,
       showFinalRegistrationModal,
+      showOAuthExtraModal,
+      oauthExtraData,
       showOAuthLinkModal,
       oauthLinkData,
       handleAuthSuccess,
@@ -343,6 +389,8 @@ export default {
       handleOtpResend,
       handleFinalRegistrationClose,
       handleFinalRegistrationSuccess,
+      handleOAuthExtraClose,
+      handleOAuthExtraSuccess,
       handleOAuthLink
     }
   }

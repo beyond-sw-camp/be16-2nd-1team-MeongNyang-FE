@@ -196,6 +196,21 @@ export default {
         // URL에서 쿼리 파라미터 제거
         window.history.replaceState({}, document.title, '/')
       }
+      
+      // OAuth 추가정보 모달
+      const { openOAuthExtra: extraFlag, provider: extraProvider, email: extraEmail, signupTicket: extraTicket } = route.query
+      if (extraFlag === 'true' && extraProvider && extraEmail && extraTicket) {
+        const openOAuthExtraModal = inject('openOAuthExtraModal')
+        if (openOAuthExtraModal) {
+          openOAuthExtraModal({
+            provider: extraProvider,
+            email: extraEmail,
+            signupTicket: extraTicket
+          })
+        }
+        // URL에서 쿼리 파라미터 제거
+        window.history.replaceState({}, document.title, '/')
+      }
     })
     
     return {

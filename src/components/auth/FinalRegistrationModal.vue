@@ -9,16 +9,20 @@
       </div>
       
       <!-- 체크 아이콘 -->
-      <div class="final-registration-icon">
-        <v-icon size="48" color="white">mdi-check-circle</v-icon>
+      <div class="final-registration-icon" :class="{ 'oauth': isOAuth }">
+        <v-icon size="48" color="white">
+          {{ isOAuth ? 'mdi-account-plus' : 'mdi-check-circle' }}
+        </v-icon>
       </div>
       
       <!-- 제목 -->
-      <h2 class="final-registration-title">이메일 인증 완료!</h2>
+      <h2 class="final-registration-title">
+        {{ isOAuth ? '소셜 계정 추가정보' : '이메일 인증 완료!' }}
+      </h2>
       
       <!-- 설명 -->
       <p class="final-registration-description">
-        마지막으로 기본 정보를 입력해주세요
+        {{ isOAuth ? '소셜 계정 연동을 위해 이름과 닉네임을 입력해주세요' : '마지막으로 기본 정보를 입력해주세요' }}
       </p>
       
       <!-- 에러 메시지 -->
@@ -35,20 +39,39 @@
           class="final-input-field"
           :disabled="isBusy"
         />
-        <input
-          v-model="form.nickname"
-          type="text"
-          placeholder="닉네임을 입력하세요"
-          class="final-input-field"
-          :disabled="isBusy"
-        />
+        
+        <!-- 닉네임 입력 및 중복확인 -->
+        <div class="nickname-input-group">
+          <input
+            v-model="form.nickname"
+            type="text"
+            placeholder="닉네임을 입력하세요"
+            class="final-input-field"
+            :disabled="isBusy"
+            @input="handleNicknameInput"
+          />
+          <button
+            type="button"
+            class="duplicate-check-btn"
+            @click="checkNicknameDuplicate"
+            :disabled="isBusy || !form.nickname.trim() || nicknameChecked"
+          >
+            {{ nicknameChecked ? '확인됨' : '중복확인' }}
+          </button>
+        </div>
+        
+        <!-- 닉네임 중복확인 결과 메시지 -->
+        <div v-if="nicknameMessage" class="nickname-message" :class="nicknameMessageType">
+          {{ nicknameMessage }}
+        </div>
+        
         <button
           type="button"
           class="final-submit-btn"
           @click="handleSubmit"
           :disabled="isBusy || !canSubmit"
         >
-          {{ isBusy ? '처리 중...' : '회원가입 완료' }}
+          {{ isBusy ? '처리 중...' : (isOAuth ? '소셜 계정 연동 완료' : '회원가입 완료') }}
         </button>
       </div>
     </div>
@@ -57,6 +80,7 @@
 
 <script>
 import { ref, computed, watch } from 'vue'
+import { userAPI } from '@/services/api'
 
 export default {
   name: 'FinalRegistrationModal',
@@ -71,7 +95,15 @@ export default {
     },
     password: {
       type: String,
-      required: true
+      default: ''
+    },
+    isOAuth: {
+      type: Boolean,
+      default: false
+    },
+    oauthData: {
+      type: Object,
+      default: () => ({})
     }
   },
   emits: ['close', 'success'],
@@ -86,11 +118,98 @@ export default {
     const isBusy = ref(false)
     const errorMessage = ref('')
     
+    // 닉네임 중복확인 상태
+    const nicknameChecked = ref(false)
+    const nicknameMessage = ref('')
+    const nicknameMessageType = ref('')
+    
     // computed 속성들
     const canSubmit = computed(() => {
-      return form.value.name.trim().length >= 2 && 
-             form.value.nickname.trim().length >= 2
+      console.log('canSubmit 계산 시작 - props.isOAuth:', props.isOAuth, '타입:', typeof props.isOAuth)
+      
+      // OAuth 데이터가 있으면 OAuth로 인식 (임시 해결책)
+      const isOAuthMode = props.isOAuth || (props.oauthData && props.oauthData.signupTicket)
+      console.log('OAuth 모드 판단:', isOAuthMode)
+      
+      // OAuth일 때는 이름과 닉네임만 검증 (닉네임 중복확인 우회 - 임시)
+      if (isOAuthMode) {
+        const result = form.value.name.trim().length >= 2 && 
+                      form.value.nickname.trim().length >= 2
+                      // && nicknameChecked.value  // 임시로 중복확인 우회
+        console.log('OAuth canSubmit 계산:', {
+          nameLength: form.value.name.trim().length,
+          nicknameLength: form.value.nickname.trim().length,
+          nicknameChecked: nicknameChecked.value,
+          result
+        })
+        return result
+      }
+      
+      // 일반 회원가입일 때는 이름, 닉네임, 비밀번호 검증 (닉네임 중복확인 포함)
+      const result = form.value.name.trim().length >= 2 && 
+                    form.value.nickname.trim().length >= 2 &&
+                    props.password.length >= 8 &&
+                    nicknameChecked.value
+      console.log('일반 회원가입 canSubmit 계산:', {
+        nameLength: form.value.name.trim().length,
+        nicknameLength: form.value.nickname.trim().length,
+        passwordLength: props.password.length,
+        nicknameChecked: nicknameChecked.value,
+        result
+      })
+      return result
     })
+    
+    // 닉네임 입력 시 중복확인 초기화
+    const handleNicknameInput = () => {
+      if (nicknameChecked.value) {
+        nicknameChecked.value = false
+        nicknameMessage.value = ''
+        nicknameMessageType.value = ''
+      }
+    }
+    
+    // 닉네임 중복확인
+    const checkNicknameDuplicate = async () => {
+      if (!form.value.nickname.trim()) return
+      
+      console.log('🔍 닉네임 중복확인 시작:', form.value.nickname.trim())
+      
+      try {
+        const response = await userAPI.checkNickname(form.value.nickname.trim())
+        console.log('📡 중복확인 API 응답:', response)
+        console.log('📡 응답 데이터:', response.data)
+        
+        const result = response.data
+        
+        if (result.isSuccess) {
+          console.log('✅ API 성공 응답:', result)
+          if (result.data.available) {
+            nicknameChecked.value = true
+            nicknameMessage.value = '사용 가능한 닉네임입니다.'
+            nicknameMessageType.value = 'success'
+            console.log('✅ 닉네임 사용 가능!')
+          } else {
+            nicknameChecked.value = false
+            nicknameMessage.value = '이미 사용 중인 닉네임입니다.'
+            nicknameMessageType.value = 'error'
+            console.log('❌ 닉네임 중복!')
+          }
+        } else {
+          nicknameChecked.value = false
+          nicknameMessage.value = result.status?.message || '중복확인에 실패했습니다.'
+          nicknameMessageType.value = 'error'
+          console.log('❌ API 실패 응답:', result)
+        }
+      } catch (error) {
+        console.error('❌ 닉네임 중복확인 실패:', error)
+        console.error('❌ 에러 응답:', error.response?.data)
+        console.error('❌ 에러 상태:', error.response?.status)
+        nicknameChecked.value = false
+        nicknameMessage.value = '중복확인 중 오류가 발생했습니다.'
+        nicknameMessageType.value = 'error'
+      }
+    }
     
     // 제출 처리
     const handleSubmit = async () => {
@@ -100,36 +219,50 @@ export default {
       errorMessage.value = ''
       
       try {
-        // 백엔드 API 호출하여 최종 회원가입
-        const response = await fetch('/users/sign', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
+        let result
+        
+        // OAuth 데이터가 있으면 OAuth로 인식 (임시 해결책)
+        const isOAuthMode = props.isOAuth || (props.oauthData && props.oauthData.signupTicket)
+        
+        if (isOAuthMode) {
+          // OAuth 추가정보 처리 - 기존 API 사용
+          const response = await userAPI.signupExtra({
+            signupTicket: props.oauthData.signupTicket,
+            name: form.value.name.trim(),
+            nickname: form.value.nickname.trim()
+          })
+          
+          result = response.data
+        } else {
+          // 일반 회원가입 처리
+          const response = await userAPI.signup({
             email: props.email,
             password: props.password,
             name: form.value.name.trim(),
             nickname: form.value.nickname.trim()
           })
-        })
-        
-        const result = await response.json()
+          
+          result = response.data
+        }
         
         if (result.isSuccess === true) {
           // 성공 시 부모 컴포넌트에 알림
           emit('success', result)
         } else {
           // 실패 시 에러 메시지 표시
-          errorMessage.value = result.status?.message || '회원가입에 실패했습니다.'
+          errorMessage.value = result.status?.message || '처리에 실패했습니다.'
         }
-      } catch (error) {
-        console.error('최종 등록 실패:', error)
-        errorMessage.value = '회원가입 중 오류가 발생했습니다. 다시 시도해주세요.'
-      } finally {
-        isBusy.value = false
+              } catch (error) {
+          console.error('최종 등록 실패:', error)
+          if (props.isOAuth) {
+            errorMessage.value = '소셜 계정 연동 중 오류가 발생했습니다. 다시 시도해주세요.'
+          } else {
+            errorMessage.value = '회원가입 중 오류가 발생했습니다. 다시 시도해주세요.'
+          }
+        } finally {
+          isBusy.value = false
+        }
       }
-    }
     
     // 모달 닫기
     const handleClose = () => {
@@ -139,11 +272,24 @@ export default {
     // 모달이 열릴 때마다 초기화
     watch(() => props.show, (newVal) => {
       if (newVal) {
+        console.log('FinalRegistrationModal 열림:', {
+          isOAuth: props.isOAuth,
+          email: props.email,
+          oauthData: props.oauthData
+        })
+        console.log('props.isOAuth 타입:', typeof props.isOAuth)
+        console.log('props.isOAuth 값:', props.isOAuth)
+        
         // 폼 초기화
         form.value.name = ''
         form.value.nickname = ''
         errorMessage.value = ''
         isBusy.value = false
+        
+        // 닉네임 중복확인 상태 초기화
+        nicknameChecked.value = false
+        nicknameMessage.value = ''
+        nicknameMessageType.value = ''
       }
     })
     
@@ -152,13 +298,18 @@ export default {
       form,
       isBusy,
       errorMessage,
+      nicknameChecked,
+      nicknameMessage,
+      nicknameMessageType,
       
       // computed
       canSubmit,
       
       // 메서드
       handleSubmit,
-      handleClose
+      handleClose,
+      handleNicknameInput,
+      checkNicknameDuplicate
     }
   }
 }
@@ -178,7 +329,6 @@ export default {
 
 .final-registration-header {
   background: #ffffff;
-  border-bottom: 1px solid #e9ecef;
   padding: 32px 32px 20px;
   display: flex;
   align-items: center;
@@ -210,6 +360,10 @@ export default {
   align-items: center;
   justify-content: center;
   margin: 0 auto 24px;
+}
+
+.final-registration-icon.oauth {
+  background: #3b82f6;
 }
 
 .final-registration-title {
@@ -288,5 +442,59 @@ export default {
 .final-submit-btn:disabled {
   background: #9ca3af;
   cursor: not-allowed;
+}
+
+/* 닉네임 입력 그룹 */
+.nickname-input-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.nickname-input-group .final-input-field {
+  flex: 1;
+}
+
+.duplicate-check-btn {
+  padding: 12px 16px;
+  background: #6b7280;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+  min-width: 80px;
+}
+
+.duplicate-check-btn:hover:not(:disabled) {
+  background: #4b5563;
+}
+
+.duplicate-check-btn:disabled {
+  background: #d1d5db;
+  cursor: not-allowed;
+}
+
+/* 닉네임 메시지 */
+.nickname-message {
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.nickname-message.success {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.nickname-message.error {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
 }
 </style>
