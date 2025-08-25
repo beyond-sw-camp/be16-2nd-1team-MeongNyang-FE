@@ -31,6 +31,33 @@
               <span class="date">{{ getDateField(post) ? formatDate(getDateField(post)) : '날짜 없음' }}</span>
             </div>
           </div>
+          <!-- 팔로우/언팔로우 버튼 (내 게시글이 아닌 경우에만) -->
+          <div v-if="post.userId !== currentUserId" class="follow-section">
+            <v-btn
+              v-if="!post.isFollowing"
+              size="small"
+              variant="filled"
+              color="#FF8B8B"
+              class="follow-btn"
+              @click="followUser(post.userId)"
+              :disabled="isFollowProcessing(post.userId)"
+              :loading="isFollowProcessing(post.userId)"
+            >
+              팔로우
+            </v-btn>
+            <v-btn
+              v-else
+              size="small"
+              variant="outlined"
+              color="#6c757d"
+              class="unfollow-btn"
+              @click="unfollowUser(post.userId)"
+              :disabled="isFollowProcessing(post.userId)"
+              :loading="isFollowProcessing(post.userId)"
+            >
+              언팔로우
+            </v-btn>
+          </div>
           <!-- 더보기 메뉴 -->
           <v-menu offset-y>
             <template v-slot:activator="{ props }">
@@ -57,7 +84,7 @@
             </v-list>
             <!-- 디버깅용 로그 -->
             <div style="display: none;">
-              {{ console.log('post.userId:', post.userId, 'currentUserId:', currentUserId, 'isMyPost:', post.userId === currentUserId) }}
+              {{ console.log('post.userId:', post.userId, 'currentUserId:', currentUserId, 'isMyPost:', post.userId === currentUserId, 'isFollowing:', post.isFollowing) }}
             </div>
           </v-menu>
         </div>
@@ -214,7 +241,7 @@
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { postAPI } from '@/services/api'
+import { postAPI, userAPI } from '@/services/api'
 import LikesModal from '@/components/LikesModal.vue'
 import { checkPetExist } from '@/utils/petValidation'
 
@@ -239,6 +266,7 @@ export default {
     const isLoadingLikes = ref(false)
     const currentPostId = ref(null)
     const likeProcessingPosts = ref(new Set()) // 좋아요 처리 중인 포스트 ID들
+    const followProcessingUsers = ref(new Set()) // 팔로우 처리 중인 사용자 ID들
 
     // 현재 사용자 ID
     const currentUserId = computed(() => {
@@ -253,6 +281,65 @@ export default {
     }
 
 
+
+    // 모든 포스트의 팔로우 상태 가져오기
+    const fetchAllFollowStatus = async () => {
+      try {
+        console.log('=== 모든 포스트 팔로우 상태 조회 시작 ===')
+        
+        // 현재 로그인한 사용자가 있는 경우에만 실행
+        if (!currentUserId.value) {
+          console.log('로그인한 사용자가 없어 팔로우 상태 조회 건너뜀')
+          return
+        }
+        
+        // 현재 로드된 모든 포스트에 대해 팔로우 상태 조회
+        const promises = posts.value.map(async (post) => {
+          // 내 게시글이면 팔로우 상태 조회 불필요
+          if (post.userId === currentUserId.value) {
+            return { postId: post.id, isFollowing: null }
+          }
+          
+          try {
+            console.log(`=== 포스트 ${post.id} 팔로우 상태 조회 ===`)
+            console.log('post 객체:', post)
+            console.log('post.userId:', post.userId, '타입:', typeof post.userId)
+            console.log('post.userId 값이 유효한지:', post.userId && post.userId > 0)
+            
+            if (!post.userId || post.userId <= 0) {
+              console.error(`포스트 ${post.id}의 userId가 유효하지 않음:`, post.userId)
+              post.isFollowing = false
+              return { postId: post.id, isFollowing: false }
+            }
+            
+            console.log(`API 호출 시작: userAPI.checkFollowStatus(${post.userId})`)
+            const response = await userAPI.checkFollowStatus(post.userId)
+            console.log(`포스트 ${post.id} 팔로우 상태 API 응답:`, response)
+            console.log(`포스트 ${post.id} 팔로우 상태 API 응답 데이터:`, response.data)
+            console.log(`포스트 ${post.id} 팔로우 상태 API 응답 전체 구조:`, JSON.stringify(response, null, 2))
+            
+            const isFollowing = response.data?.data?.isFollowing || false
+            console.log(`포스트 ${post.id} 팔로우 상태 추출:`, isFollowing)
+            console.log(`response.data?.data?.isFollowing 값:`, response.data?.data?.isFollowing)
+            
+            // 포스트 객체에 팔로우 상태 업데이트
+            post.isFollowing = isFollowing
+            console.log(`포스트 ${post.id} 객체 업데이트 후:`, post.isFollowing)
+            return { postId: post.id, isFollowing }
+          } catch (error) {
+            console.error(`포스트 ${post.id} 팔로우 상태 조회 실패:`, error)
+            post.isFollowing = false
+            return { postId: post.id, isFollowing: false }
+          }
+        })
+        
+        const results = await Promise.all(promises)
+        console.log('=== 모든 포스트 팔로우 상태 조회 완료 ===', results)
+        
+      } catch (error) {
+        console.error('전체 팔로우 상태 조회 실패:', error)
+      }
+    }
 
     // 모든 포스트의 댓글 수 가져오기
     const fetchAllCommentsCount = async () => {
@@ -625,6 +712,73 @@ export default {
       }
     }
 
+    // 팔로우 처리 중인지 확인하는 함수
+    const isFollowProcessing = (userId) => {
+      return followProcessingUsers.value?.has(userId) || false
+    }
+
+    // 팔로우하기
+    const followUser = async (userId) => {
+      if (isFollowProcessing(userId)) return
+      
+      console.log(`팔로우 시작 - userId: ${userId}`)
+      followProcessingUsers.value.add(userId)
+      try {
+        const response = await userAPI.follow(userId)
+        console.log('팔로우 API 응답:', response)
+        
+        // 팔로우 상태 다시 조회
+        const followStatusResponse = await userAPI.checkFollowStatus(userId)
+        const isFollowing = followStatusResponse.data?.data?.isFollowing || false
+        
+        // 포스트 상태 업데이트
+        const post = posts.value.find(p => p.userId === userId)
+        if (post) {
+          post.isFollowing = isFollowing
+          console.log(`포스트 ${post.id} 팔로우 상태 업데이트:`, post.isFollowing)
+        } else {
+          console.error('팔로우할 포스트를 찾을 수 없음:', userId)
+        }
+      } catch (error) {
+        console.error('팔로우 실패:', error)
+        alert('팔로우에 실패했습니다.')
+      } finally {
+        followProcessingUsers.value.delete(userId)
+        console.log(`팔로우 처리 완료 - userId: ${userId}`)
+      }
+    }
+
+    // 언팔로우하기
+    const unfollowUser = async (userId) => {
+      if (isFollowProcessing(userId)) return
+      
+      console.log(`언팔로우 시작 - userId: ${userId}`)
+      followProcessingUsers.value.add(userId)
+      try {
+        const response = await userAPI.unfollow(userId)
+        console.log('언팔로우 API 응답:', response)
+        
+        // 팔로우 상태 다시 조회
+        const followStatusResponse = await userAPI.checkFollowStatus(userId)
+        const isFollowing = followStatusResponse.data?.data?.isFollowing || false
+        
+        // 포스트 상태 업데이트
+        const post = posts.value.find(p => p.userId === userId)
+        if (post) {
+          post.isFollowing = isFollowing
+          console.log(`포스트 ${post.id} 언팔로우 상태 업데이트:`, post.isFollowing)
+        } else {
+          console.error('언팔로우할 포스트를 찾을 수 없음:', userId)
+        }
+      } catch (error) {
+        console.error('언팔로우 실패:', error)
+        alert('언팔로우에 실패했습니다.')
+      } finally {
+        followProcessingUsers.value.delete(userId)
+        console.log(`언팔로우 처리 완료 - userId: ${userId}`)
+      }
+    }
+
     // 신고하기
     const reportPost = (postId) => {
       if (confirm('이 게시글을 신고하시겠습니까?')) {
@@ -671,8 +825,11 @@ export default {
     // 라우트 변경 감지
     watch(() => route.path, async (newPath, oldPath) => {
       if (newPath === '/diarys' && oldPath !== newPath) {
-        console.log('AllDiaryView로 이동 감지, 댓글 수 새로고침')
-        await fetchAllCommentsCount()
+        console.log('AllDiaryView로 이동 감지, 댓글 수와 팔로우 상태 새로고침')
+        await Promise.all([
+          fetchAllCommentsCount(),
+          fetchAllFollowStatus()
+        ])
       }
     })
 
@@ -682,8 +839,11 @@ export default {
       console.log('authStore.isLoggedIn:', authStore.isLoggedIn)
       
       await fetchPosts(0, false)
-      // 포스트 로딩 완료 후 댓글 수 조회
-      await fetchAllCommentsCount()
+      // 포스트 로딩 완료 후 댓글 수와 팔로우 상태 조회
+      await Promise.all([
+        fetchAllCommentsCount(),
+        fetchAllFollowStatus()
+      ])
       window.addEventListener('scroll', handleScroll)
     })
 
@@ -710,6 +870,9 @@ export default {
       editPost,
       deletePost,
       reportPost,
+      followUser,
+      unfollowUser,
+      isFollowProcessing,
       previousImage,
       nextImage,
       setImageIndex,
@@ -719,7 +882,8 @@ export default {
       handleLikesModalToggle,
       getDateField,
       formatDate,
-      isLikeProcessing
+      isLikeProcessing,
+      fetchAllFollowStatus
     }
   }
 }
@@ -884,6 +1048,31 @@ export default {
 .profile-avatar {
   border: 2px solid #E5E7EB;
   cursor: pointer;
+}
+
+.follow-section {
+  margin-right: 4px;
+  margin-left: 450px;
+}
+
+.follow-btn {
+  font-size: 0.8rem;
+  font-weight: 500;
+  border-radius: 20px;
+  text-transform: none;
+  color: white !important;
+  background-color: #FF8B8B !important;
+}
+
+.follow-btn :deep(.v-btn__content) {
+  color: white !important;
+}
+
+.unfollow-btn {
+  font-size: 0.8rem;
+  font-weight: 500;
+  border-radius: 20px;
+  text-transform: none;
 }
 
 .user-info {
