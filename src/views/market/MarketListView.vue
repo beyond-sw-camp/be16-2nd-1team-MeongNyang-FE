@@ -33,6 +33,7 @@
             </button>
           </div>
 
+          
           <!-- 정렬 선택 -->
           <div class="filter-group">
             <div class="dropdown-container">
@@ -94,10 +95,16 @@
             <!-- 이미지 -->
             <div class="post-image">
               <img 
-                :src="post.thumbnailUrl || 'https://via.placeholder.com/400x300/f0f0f0/cccccc?text=이미지+없음'" 
+                v-if="post.thumbnailUrl"
+                :src="post.thumbnailUrl" 
                 :alt="post.title"
                 @error="handleImageError"
               />
+              <!-- 이미지가 없는 경우 기본 이미지 표시 -->
+              <div v-else class="default-image">
+                <v-icon icon="mdi-image-off" size="48" color="#E87D7D" />
+                <span class="default-image-text">이미지 없음</span>
+              </div>
               <!-- 판매상태 배지 -->
               <div class="status-badge" :class="getStatusClass(post.saleStatus)">
                 {{ getStatusText(post.saleStatus) }}
@@ -253,9 +260,17 @@ export default {
           this.totalElements = response.data.data?.totalElements || 0
           this.totalPages = response.data.data?.totalPages || 0
           
-          // 각 포스트에 isLiked 속성 추가 (로컬스토리지에서 가져온 정보 사용)
+          // 각 포스트에 isLiked 속성 추가 (백엔드에서 받은 liked 필드 사용)
           this.posts.forEach(post => {
-            post.isLiked = this.isPostLiked(post.id)
+            // 백엔드의 'liked' 필드를 'isLiked'로 매핑
+            if (post.liked !== undefined) {
+              post.isLiked = post.liked
+              console.log(`게시글 ${post.id} liked 필드를 isLiked로 매핑:`, post.liked, '→', post.isLiked)
+            } else {
+              // 백엔드에서 liked 필드가 없는 경우 로컬스토리지 정보 사용
+              post.isLiked = this.isPostLiked(post.id)
+            }
+            
             if (!post.createdAt) {
               post.createdAt = new Date().toISOString()
             }
@@ -277,19 +292,28 @@ export default {
         const post = this.posts.find(p => p.id === postId)
         if (!post) return
 
+        console.log('찜하기 토글 시작 - postId:', postId, '현재 상태:', post.isLiked)
+
         if (post.isLiked) {
           // 찜 취소
+          console.log('찜 취소 시도...')
           await marketAPI.unlike(postId)
+          console.log('찜 취소 성공')
           post.likeCount = Math.max(0, (post.likeCount || 0) - 1)
           this.removeLikedPost(postId)
         } else {
           // 찜하기
+          console.log('찜하기 시도...')
           await marketAPI.like(postId)
+          console.log('찜하기 성공')
           post.likeCount = (post.likeCount || 0) + 1
           this.addLikedPost(postId)
         }
         
+        // 상태 토글
         post.isLiked = !post.isLiked
+        console.log('찜 상태 업데이트 완료:', post.isLiked)
+        
       } catch (error) {
         console.error('찜하기/취소 오류:', error)
         // 에러 발생 시 사용자에게 알림
@@ -400,8 +424,18 @@ export default {
     },
 
     handleImageError(event) {
-      // 이미지 로드 실패 시 플레이스홀더로 대체
-      event.target.src = 'https://via.placeholder.com/400x300/f0f0f0/cccccc?text=이미지+없음'
+      // 이미지 로드 실패 시 기본 이미지로 대체
+      const postImage = event.target.parentElement
+      if (postImage) {
+        // 기존 이미지 숨기기
+        event.target.style.display = 'none'
+        
+        // 기본 이미지 표시
+        const defaultImage = postImage.querySelector('.default-image')
+        if (defaultImage) {
+          defaultImage.style.display = 'flex'
+        }
+      }
     },
 
     changePage(page) {
@@ -430,6 +464,18 @@ export default {
           
           // localStorage 업데이트 (사용자별로 구분)
           this.saveLikedPosts()
+          
+          // posts가 로드된 후에만 isLiked 상태 업데이트
+          if (this.posts.length > 0) {
+            this.posts.forEach(post => {
+              // 백엔드의 liked 필드가 있으면 그것을 사용, 없으면 localStorage 정보 사용
+              if (post.liked !== undefined) {
+                post.isLiked = post.liked
+              } else {
+                post.isLiked = this.isPostLiked(post.id)
+              }
+            })
+          }
         } else {
           console.log('백엔드에서 찜한 게시글을 가져올 수 없음, localStorage 사용')
           this.loadLikedPosts()
@@ -540,18 +586,25 @@ export default {
       // posts가 로드된 후에만 isLiked 상태 업데이트
       if (this.posts.length > 0) {
         this.posts.forEach(post => {
-          post.isLiked = this.isPostLiked(post.id)
+          // 백엔드의 liked 필드가 있으면 그것을 사용, 없으면 localStorage 정보 사용
+          if (post.liked !== undefined) {
+            post.isLiked = post.liked
+            console.log(`게시글 ${post.id} 백엔드 liked 필드 사용:`, post.liked)
+          } else {
+            post.isLiked = this.isPostLiked(post.id)
+            console.log(`게시글 ${post.id} localStorage 정보 사용:`, post.isLiked)
+          }
         })
       }
     },
   },
 
   mounted() {
-    // 백엔드와 찜하기 상태 동기화
-    this.syncLikeStatus()
-    
-    // 초기 데이터 로드
+    // 초기 데이터 로드 (백엔드에서 liked 필드 포함)
     this.fetchMarketPosts()
+    
+    // 백엔드와 찜하기 상태 동기화 (데이터 로드 후)
+    this.syncLikeStatus()
 
     // 드롭다운 외부 클릭 시 닫기
     document.addEventListener('click', (e) => {
@@ -1246,5 +1299,36 @@ export default {
 .like-button-top,
 .like-button-inline {
   display: none;
+}
+
+/* 기본 이미지 스타일 */
+.default-image {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
+  color: #6c757d;
+  min-height: 200px;
+}
+
+.default-image-text {
+  margin-top: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #6c757d;
+}
+
+/* 포스트 이미지 컨테이너 */
+.post-image {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f8f9fa;
 }
 </style>
