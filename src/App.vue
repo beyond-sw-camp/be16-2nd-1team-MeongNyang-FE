@@ -48,7 +48,163 @@
         @success="handleOAuthExtraSuccess"
       />
       
-      <!-- OAuth 연동 확인 모달 -->
+      <!-- 소셜 계정 중복 모달 -->
+      <v-dialog
+        v-model="showSocialDuplicateModal"
+        max-width="500"
+        persistent
+        class="social-duplicate-modal"
+        :retain-focus="false"
+      >
+        <v-card class="pa-6" rounded="lg">
+          <v-card-title class="text-h5 text-center mb-4">
+            <div class="d-flex align-center justify-center">
+              <v-icon size="32" color="warning" class="me-3">
+                mdi-alert-circle
+              </v-icon>
+              소셜 계정 중복
+            </div>
+          </v-card-title>
+
+          <v-card-text class="text-center pa-0">
+            <div class="mb-6 px-4">
+              <p class="text-body-1 mb-3">
+                <strong class="text-warning">{{ socialDuplicateData?.email }}</strong>으로 가입된 계정이 이미 존재합니다.
+              </p>
+              <p class="text-body-2 text-medium-emphasis">
+                이미 다른 소셜 계정으로 가입되어 있어요!
+              </p>
+              <p class="text-body-2 text-medium-emphasis">
+                다른 소셜 로그인 버튼을 눌러서 로그인해주세요.
+              </p>
+            </div>
+
+            <v-alert
+              type="warning"
+              variant="tonal"
+              density="compact"
+              rounded="lg"
+              class="mb-6 mx-4"
+            >
+              <template #prepend>
+                <v-icon size="16" color="warning">mdi-information</v-icon>
+              </template>
+              <span class="text-caption">
+                <strong>해결 방법:</strong> 기존에 가입한 소셜 계정으로 로그인하세요.
+              </span>
+            </v-alert>
+          </v-card-text>
+
+          <v-card-actions class="pa-0 px-4 pb-4">
+            <div class="d-flex flex-column w-100">
+              <v-btn
+                color="primary"
+                block
+                size="large"
+                @click="handleSocialDuplicateLogin"
+                height="48"
+                rounded="lg"
+                class="font-weight-medium"
+              >
+                로그인으로 이동
+              </v-btn>
+              
+              <v-btn
+                variant="text"
+                block
+                size="large"
+                @click="handleSocialDuplicateClose"
+                height="40"
+                rounded="lg"
+                color="grey-darken-1"
+                class="text-caption"
+                style="text-decoration: underline; font-weight: 500;"
+              >
+                닫기
+              </v-btn>
+            </div>
+          </v-card-actions>
+        </v-card>
+              </v-dialog>
+        
+        <!-- 삭제된 계정 모달 -->
+        <v-dialog
+          v-model="showDeletedAccountModal"
+          max-width="500"
+          persistent
+          class="deleted-account-modal"
+          :retain-focus="false"
+        >
+          <v-card class="pa-6" rounded="lg">
+            <v-card-title class="text-h5 text-center mb-4">
+              <div class="d-flex align-center justify-center">
+                <v-icon size="32" color="error" class="me-3">
+                  mdi-account-remove
+                </v-icon>
+                계정 삭제됨
+              </div>
+            </v-card-title>
+
+            <v-card-text class="text-center pa-0">
+              <div class="mb-6 px-4">
+                <p class="text-body-1 mb-3">
+                  <span class="text-error">😩</span>
+                  <strong class="text-error">{{ deletedAccountData?.email || '이 계정' }}</strong>은 삭제되었습니다.
+                </p>
+                <p class="text-body-2 text-medium-emphasis">
+                  새로운 계정으로 가입해주세요!
+                </p>
+              </div>
+
+              <v-alert
+                type="error"
+                variant="tonal"
+                density="compact"
+                rounded="lg"
+                class="mb-6 mx-4"
+              >
+                <template #prepend>
+                  <v-icon size="16" color="error">mdi-information</v-icon>
+                </template>
+                <span class="text-caption">
+                  <strong>안내:</strong> 삭제된 계정은 복구할 수 없습니다. 새로운 계정으로 가입해주세요.
+                </span>
+              </v-alert>
+            </v-card-text>
+
+            <v-card-actions class="pa-0 px-4 pb-4">
+              <div class="d-flex flex-column w-100">
+                <v-btn
+                  color="primary"
+                  block
+                  size="large"
+                  @click="handleDeletedAccountRegister"
+                  height="48"
+                  rounded="lg"
+                  class="font-weight-medium"
+                >
+                  새 계정 만들기
+                </v-btn>
+                
+                <v-btn
+                  variant="text"
+                  block
+                  size="large"
+                  @click="handleDeletedAccountClose"
+                  height="40"
+                  rounded="lg"
+                  color="grey-darken-1"
+                  class="text-caption"
+                  style="text-decoration: underline; font-weight: 500;"
+                >
+                  닫기
+                </v-btn>
+              </div>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
+        
+        <!-- OAuth 연동 확인 모달 -->
       <v-dialog
         v-model="showOAuthLinkModal"
         max-width="500"
@@ -214,6 +370,10 @@ export default {
     const showSocialDuplicateModal = ref(false)
     const socialDuplicateData = ref(null)
     
+    // 삭제된 계정 모달 상태 관리
+    const showDeletedAccountModal = ref(false)
+    const deletedAccountData = ref(null)
+    
     // HeaderComponent에서 호출할 함수들
     const openAuthModal = (tab = 'login') => {
       authModalTab.value = tab
@@ -288,6 +448,28 @@ export default {
       router.push('/')
     }
     
+    // 소셜 계정 중복 모달 이벤트 핸들러들
+    const handleSocialDuplicateClose = () => {
+      showSocialDuplicateModal.value = false
+    }
+    
+    const handleSocialDuplicateLogin = () => {
+      showSocialDuplicateModal.value = false
+      // 로그인 모달 열기
+      openAuthModal('login')
+    }
+    
+    // 삭제된 계정 모달 이벤트 핸들러들
+    const handleDeletedAccountClose = () => {
+      showDeletedAccountModal.value = false
+    }
+    
+    const handleDeletedAccountRegister = () => {
+      showDeletedAccountModal.value = false
+      // 회원가입 모달 열기
+      openAuthModal('register')
+    }
+    
     const handleAuthSuccess = (type) => {
       console.log(`${type} 성공!`)
       showAuthModal.value = false
@@ -298,6 +480,20 @@ export default {
       console.log('OAuth 추가정보 모달 열기:', data)
       oauthExtraData.value = data
       showOAuthExtraModal.value = true
+    }
+    
+    // 소셜 계정 중복 모달 열기 (HomeView에서 호출)
+    const openSocialDuplicateModal = (data) => {
+      console.log('소셜 계정 중복 모달 열기:', data)
+      socialDuplicateData.value = data
+      showSocialDuplicateModal.value = true
+    }
+    
+    // 삭제된 계정 모달 열기 (HomeView에서 호출)
+    const openDeletedAccountModal = (data) => {
+      console.log('삭제된 계정 모달 열기:', data)
+      deletedAccountData.value = data
+      showDeletedAccountModal.value = true
     }
     
     // OAuth 연동 모달 열기 (HomeView에서 호출)
@@ -368,6 +564,8 @@ export default {
     provide('openAuthModal', openAuthModal)
     provide('openOtpModal', openOtpModal)
     provide('openOAuthExtraModal', openOAuthExtraModal)
+    provide('openSocialDuplicateModal', openSocialDuplicateModal)
+    provide('openDeletedAccountModal', openDeletedAccountModal)
     provide('openOAuthLinkModal', openOAuthLinkModal)
     
     return {
@@ -382,6 +580,10 @@ export default {
       oauthExtraData,
       showOAuthLinkModal,
       oauthLinkData,
+      showSocialDuplicateModal,
+      socialDuplicateData,
+      showDeletedAccountModal,
+      deletedAccountData,
       handleAuthSuccess,
       handleOtpBack,
       handleOtpClose,
@@ -391,6 +593,10 @@ export default {
       handleFinalRegistrationSuccess,
       handleOAuthExtraClose,
       handleOAuthExtraSuccess,
+      handleSocialDuplicateClose,
+      handleSocialDuplicateLogin,
+      handleDeletedAccountClose,
+      handleDeletedAccountRegister,
       handleOAuthLink
     }
   }
@@ -462,6 +668,96 @@ export default {
 }
 
 .oauth-link-modal .v-card-actions {
+  margin-top: auto !important;
+}
+
+/* 소셜 계정 중복 모달 스타일 */
+.social-duplicate-modal .v-card {
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+.social-duplicate-modal .v-card-title {
+  color: #1f2937;
+  font-weight: 600;
+  font-size: 1.5rem;
+  line-height: 1.4;
+}
+
+.social-duplicate-modal .v-card-text {
+  color: #4b5563;
+}
+
+.social-duplicate-modal .v-btn {
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0.025em;
+}
+
+.social-duplicate-modal .v-alert {
+  border: 1px solid #fef3c7;
+  background-color: #fffbeb;
+}
+
+.social-duplicate-modal .v-btn.variant-text {
+  background-color: transparent !important;
+  border: none !important;
+  color: #6b7280 !important;
+  transition: color 0.2s ease;
+  min-height: 40px !important;
+}
+
+.social-duplicate-modal .v-btn.variant-text:hover {
+  color: #374151 !important;
+  background-color: #f3f4f6 !important;
+}
+
+.social-duplicate-modal .v-card-actions {
+  margin-top: auto !important;
+}
+
+/* 삭제된 계정 모달 스타일 */
+.deleted-account-modal .v-card {
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+.deleted-account-modal .v-card-title {
+  color: #1f2937;
+  font-weight: 600;
+  font-size: 1.5rem;
+  line-height: 1.4;
+}
+
+.deleted-account-modal .v-card-text {
+  color: #4b5563;
+}
+
+.deleted-account-modal .v-btn {
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0.025em;
+}
+
+.deleted-account-modal .v-alert {
+  border: 1px solid #fecaca;
+  background-color: #fef2f2;
+}
+
+.deleted-account-modal .v-btn.variant-text {
+  background-color: transparent !important;
+  border: none !important;
+  color: #6b7280 !important;
+  transition: color 0.2s ease;
+  min-height: 40px !important;
+}
+
+.deleted-account-modal .v-btn.variant-text:hover {
+  color: #374151 !important;
+  background-color: #f3f4f6 !important;
+}
+
+.deleted-account-modal .v-card-actions {
   margin-top: auto !important;
 }
 </style>
