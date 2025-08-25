@@ -12,6 +12,9 @@
         <h2 class="drawer-title">
           <v-icon size="24" color="#E87D7D" class="mr-2">mdi-bell</v-icon>
           알림
+          <span v-if="alarmStore.unreadCount > 0" class="unread-badge">
+            {{ alarmStore.unreadCount }}
+          </span>
         </h2>
         <v-btn
           icon
@@ -25,9 +28,34 @@
       </div>
     </div>
 
+    <!-- 로딩 상태 -->
+    <div v-if="alarmStore.loading" class="loading-state">
+      <v-progress-circular
+        indeterminate
+        color="#E87D7D"
+        size="32"
+      ></v-progress-circular>
+      <p class="loading-text">알림을 불러오는 중...</p>
+    </div>
+
+    <!-- 에러 상태 -->
+    <div v-else-if="alarmStore.error" class="error-state">
+      <v-icon size="64" color="error" class="mb-4">mdi-alert-circle</v-icon>
+      <h3 class="error-title">알림 로드 실패</h3>
+      <p class="error-text">{{ alarmStore.error }}</p>
+      <v-btn
+        @click="retryLoad"
+        color="primary"
+        variant="outlined"
+        class="mt-3"
+      >
+        다시 시도
+      </v-btn>
+    </div>
+
     <!-- 알림 목록 -->
-    <div class="notification-list">
-      <div v-if="notifications.length === 0" class="empty-state">
+    <div v-else class="notification-list">
+      <div v-if="alarmStore.alarms.length === 0" class="empty-state">
         <v-icon size="64" color="grey-lighten-1" class="mb-4">mdi-bell-off</v-icon>
         <h3 class="empty-title">알림이 없습니다</h3>
         <p class="empty-text">새로운 알림이 오면 여기에 표시됩니다.</p>
@@ -35,28 +63,40 @@
 
       <div v-else class="notifications">
         <div
-          v-for="notification in notifications"
-          :key="notification.id"
+          v-for="alarm in alarmStore.alarms"
+          :key="alarm.id"
           class="notification-item"
-          :class="{ 'unread': !notification.read }"
-          @click="markAsRead(notification.id)"
+          :class="{ 'unread': !alarm.isRead }"
+          @click="handleAlarmClick(alarm)"
         >
           <div class="notification-icon">
             <v-icon 
-              :color="getNotificationIconColor(notification.type)"
+              :color="getAlarmIconColor(alarm.alarmType)"
               size="20"
             >
-              {{ getNotificationIcon(notification.type) }}
+              {{ getAlarmIcon(alarm.alarmType) }}
             </v-icon>
           </div>
           
           <div class="notification-content">
-            <div class="notification-title">{{ notification.title }}</div>
-            <div class="notification-message">{{ notification.message }}</div>
-            <div class="notification-time">{{ formatTime(notification.createdAt) }}</div>
+            <div class="notification-title">{{ alarm.content }}</div>
+            <div class="notification-type">{{ getAlarmTypeText(alarm.alarmType) }}</div>
+            <div class="notification-time">{{ formatTime(alarm.createdAt) }}</div>
           </div>
           
-          <div v-if="!notification.read" class="unread-indicator"></div>
+          <div v-if="!alarm.isRead" class="unread-indicator"></div>
+          
+          <!-- 삭제 버튼 -->
+          <v-btn
+            icon
+            variant="text"
+            size="small"
+            color="grey"
+            class="delete-btn"
+            @click.stop="deleteAlarm(alarm.id)"
+          >
+            <v-icon size="16">mdi-close</v-icon>
+          </v-btn>
         </div>
       </div>
     </div>
@@ -70,10 +110,19 @@
             variant="text"
             color="grey"
             @click="markAllAsRead"
-            :disabled="!hasUnreadNotifications"
+            :disabled="!alarmStore.hasUnreadAlarms"
             class="simple-text-btn"
           >
             모두 읽음 처리
+          </v-btn>
+          <v-btn
+            variant="text"
+            color="error"
+            @click="deleteAllAlarms"
+            :disabled="alarmStore.alarms.length === 0"
+            class="simple-text-btn"
+          >
+            모두 삭제
           </v-btn>
         </div>
       </div>
@@ -82,7 +131,9 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue'
+import { computed, watch } from 'vue'
+import { useAlarmStore } from '@/stores/alarm'
+import { useSnackbar } from '@/composables/useSnackbar'
 
 export default {
   name: 'NotificationDrawer',
@@ -94,70 +145,85 @@ export default {
   },
   emits: ['update:modelValue'],
   setup(props, { emit }) {
+    const alarmStore = useAlarmStore()
+    const { showSnackbar } = useSnackbar()
+
     const isOpen = computed({
       get: () => props.modelValue,
       set: (value) => emit('update:modelValue', value)
     })
 
-    // 샘플 알림 데이터 (실제로는 API에서 가져올 예정)
-    const notifications = ref([
-      {
-        id: 1,
-        title: '새 메시지',
-        message: 'admin님이 메시지를 보냈습니다.',
-        type: 'chat',
-        read: false,
-        createdAt: new Date(Date.now() - 5 * 60 * 1000) // 5분 전
-      },
-      {
-        id: 2,
-        title: '다이어리 좋아요',
-        message: '사용자님이 당신의 다이어리에 좋아요를 눌렀습니다.',
-        type: 'like',
-        read: true,
-        createdAt: new Date(Date.now() - 30 * 60 * 1000) // 30분 전
-      },
-      {
-        id: 3,
-        title: '새 팔로워',
-        message: '새로운 사용자가 당신을 팔로우했습니다.',
-        type: 'follow',
-        read: false,
-        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000) // 2시간 전
+    // 드로워가 열릴 때 알림 데이터 로드
+    watch(isOpen, (newValue) => {
+      if (newValue) {
+        loadAlarms()
       }
-    ])
-
-    const hasUnreadNotifications = computed(() => {
-      return notifications.value.some(notification => !notification.read)
     })
+
+    const loadAlarms = async () => {
+      try {
+        await alarmStore.fetchAlarms()
+      } catch (error) {
+        showSnackbar({
+          title: '알림 로드 실패',
+          message: '알림을 불러오는데 실패했습니다.',
+          type: 'error'
+        })
+      }
+    }
+
+    const retryLoad = () => {
+      alarmStore.clearError()
+      loadAlarms()
+    }
 
     const closeDrawer = () => {
       isOpen.value = false
     }
 
-    const getNotificationIcon = (type) => {
+    const getAlarmIcon = (alarmType) => {
       const icons = {
-        chat: 'mdi-chat',
-        like: 'mdi-heart',
-        follow: 'mdi-account-plus',
-        comment: 'mdi-comment',
-        system: 'mdi-information'
+        CHAT: 'mdi-chat',
+        LIKE: 'mdi-heart',
+        FOLLOW: 'mdi-account-plus',
+        COMMENT: 'mdi-comment',
+        SYSTEM: 'mdi-information',
+        MARKET: 'mdi-store',
+        PET: 'mdi-paw'
       }
-      return icons[type] || 'mdi-bell'
+      return icons[alarmType] || 'mdi-bell'
     }
 
-    const getNotificationIconColor = (type) => {
+    const getAlarmIconColor = (alarmType) => {
       const colors = {
-        chat: '#2196F3',
-        like: '#E91E63',
-        follow: '#4CAF50',
-        comment: '#FF9800',
-        system: '#9C27B0'
+        CHAT: '#2196F3',
+        LIKE: '#E91E63',
+        FOLLOW: '#4CAF50',
+        COMMENT: '#FF9800',
+        SYSTEM: '#9C27B0',
+        MARKET: '#FF5722',
+        PET: '#795548'
       }
-      return colors[type] || '#6C757D'
+      return colors[alarmType] || '#6C757D'
     }
 
-    const formatTime = (date) => {
+    const getAlarmTypeText = (alarmType) => {
+      const types = {
+        CHAT: '채팅',
+        LIKE: '좋아요',
+        FOLLOW: '팔로우',
+        COMMENT: '댓글',
+        SYSTEM: '시스템',
+        MARKET: '마켓',
+        PET: '반려동물'
+      }
+      return types[alarmType] || '알림'
+    }
+
+    const formatTime = (dateString) => {
+      if (!dateString) return ''
+      
+      const date = new Date(dateString)
       const now = new Date()
       const diff = now - date
       const minutes = Math.floor(diff / (1000 * 60))
@@ -171,29 +237,113 @@ export default {
       return date.toLocaleDateString('ko-KR')
     }
 
-    const markAsRead = (notificationId) => {
-      const notification = notifications.value.find(n => n.id === notificationId)
-      if (notification) {
-        notification.read = true
+    const handleAlarmClick = async (alarm) => {
+      try {
+        // 읽지 않은 알림인 경우 읽음 처리
+        if (!alarm.isRead) {
+          await alarmStore.markAlarmAsRead(alarm.id)
+        }
+
+        // 알림 타입에 따른 네비게이션 처리
+        if (alarm.targetId) {
+          switch (alarm.alarmType) {
+            case 'CHAT':
+              // 채팅방으로 이동
+              // router.push(`/chat/${alarm.targetId}`)
+              break
+            case 'LIKE':
+            case 'COMMENT':
+              // 게시글 상세로 이동
+              // router.push(`/post/${alarm.targetId}`)
+              break
+            case 'FOLLOW':
+              // 사용자 프로필로 이동
+              // router.push(`/profile/${alarm.targetId}`)
+              break
+            case 'MARKET':
+              // 마켓 상세로 이동
+              // router.push(`/market/${alarm.targetId}`)
+              break
+            case 'PET':
+              // 반려동물 상세로 이동
+              // router.push(`/pet/${alarm.targetId}`)
+              break
+          }
+        }
+      } catch (error) {
+        showSnackbar({
+          title: '알림 처리 실패',
+          message: '알림을 처리하는데 실패했습니다.',
+          type: 'error'
+        })
       }
     }
 
-    const markAllAsRead = () => {
-      notifications.value.forEach(notification => {
-        notification.read = true
-      })
+    const markAllAsRead = async () => {
+      try {
+        await alarmStore.markAllAlarmsAsRead()
+        showSnackbar({
+          title: '알림 처리 완료',
+          message: '모든 알림을 읽음 처리했습니다.',
+          type: 'success'
+        })
+      } catch (error) {
+        showSnackbar({
+          title: '알림 처리 실패',
+          message: '알림을 처리하는데 실패했습니다.',
+          type: 'error'
+        })
+      }
+    }
+
+    const deleteAllAlarms = async () => {
+      try {
+        await alarmStore.deleteAllAlarms()
+        showSnackbar({
+          title: '알림 삭제 완료',
+          message: '모든 알림을 삭제했습니다.',
+          type: 'success'
+        })
+      } catch (error) {
+        showSnackbar({
+          title: '알림 삭제 실패',
+          message: '알림을 삭제하는데 실패했습니다.',
+          type: 'error'
+        })
+      }
+    }
+
+    const deleteAlarm = async (alarmId) => {
+      try {
+        await alarmStore.deleteAlarm(alarmId)
+        showSnackbar({
+          title: '알림 삭제 완료',
+          message: '알림을 삭제했습니다.',
+          type: 'success'
+        })
+      } catch (error) {
+        showSnackbar({
+          title: '알림 삭제 실패',
+          message: '알림을 삭제하는데 실패했습니다.',
+          type: 'error'
+        })
+      }
     }
 
     return {
+      alarmStore,
       isOpen,
-      notifications,
-      hasUnreadNotifications,
       closeDrawer,
-      getNotificationIcon,
-      getNotificationIconColor,
+      loadAlarms,
+      retryLoad,
+      getAlarmIcon,
+      getAlarmIconColor,
+      getAlarmTypeText,
       formatTime,
-      markAsRead,
-      markAllAsRead
+      handleAlarmClick,
+      markAllAsRead,
+      deleteAllAlarms,
+      deleteAlarm
     }
   }
 }
@@ -224,6 +374,18 @@ export default {
   margin: 0;
   display: flex;
   align-items: center;
+  gap: 8px;
+}
+
+.unread-badge {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  min-width: 20px;
+  text-align: center;
 }
 
 .close-btn {
@@ -236,6 +398,30 @@ export default {
 .close-btn:hover {
   background: rgba(255, 255, 255, 0.2) !important;
   transform: scale(1.1) !important;
+}
+
+.loading-state,
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  text-align: center;
+  color: #6C757D;
+}
+
+.loading-text,
+.error-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 16px 0 8px 0;
+}
+
+.error-text {
+  font-size: 0.9rem;
+  color: #9CA3AF;
+  margin: 0;
 }
 
 .notification-list {
@@ -320,11 +506,11 @@ export default {
   line-height: 1.3;
 }
 
-.notification-message {
-  font-size: 0.85rem;
-  color: #6C757D;
-  margin-bottom: 8px;
-  line-height: 1.4;
+.notification-type {
+  font-size: 0.8rem;
+  color: #E87D7D;
+  font-weight: 500;
+  margin-bottom: 4px;
 }
 
 .notification-time {
@@ -341,6 +527,18 @@ export default {
   border-radius: 50%;
   background: #E87D7D;
   animation: pulse 2s infinite;
+}
+
+.delete-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.notification-item:hover .delete-btn {
+  opacity: 1;
 }
 
 @keyframes pulse {
@@ -362,7 +560,8 @@ export default {
 
 .action-buttons {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .simple-text-btn {
@@ -383,8 +582,6 @@ export default {
 .simple-text-btn:hover {
   background: transparent !important;
 }
-
-
 
 .simple-text-btn:disabled {
   color: #ADB5BD !important;
@@ -446,8 +643,8 @@ export default {
     color: #F8F9FA;
   }
   
-  .notification-message {
-    color: #ADB5BD;
+  .notification-type {
+    color: #E87D7D;
   }
   
   .notification-time {

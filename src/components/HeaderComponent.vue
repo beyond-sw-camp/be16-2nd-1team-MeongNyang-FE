@@ -107,9 +107,14 @@
         density="compact"
       >
         <template v-slot:prepend>
-          <v-icon size="20" :color="showNotificationDrawer ? '#E87D7D' : '#6c757d'">
-            mdi-bell
-          </v-icon>
+          <div class="notification-icon-wrapper">
+            <v-icon size="20" :color="showNotificationDrawer ? '#E87D7D' : '#6c757d'">
+              mdi-bell
+            </v-icon>
+            <span v-if="alarmStore.unreadCount > 0" class="notification-badge">
+              {{ alarmStore.unreadCount > 99 ? '99+' : alarmStore.unreadCount }}
+            </span>
+          </div>
         </template>
         <v-list-item-title>알림</v-list-item-title>
       </v-list-item>
@@ -197,6 +202,7 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useAlarmStore } from '@/stores/alarm'
 import NotificationDrawer from './NotificationDrawer.vue'
 
 export default {
@@ -207,6 +213,7 @@ export default {
   setup() {
     const router = useRouter()
     const authStore = useAuthStore()
+    const alarmStore = useAlarmStore()
     
     const isLoggedIn = computed(() => authStore.isAuthenticated)
     const user = computed(() => authStore.user)
@@ -237,6 +244,7 @@ export default {
       isLoggedIn,
       user,
       isAdmin,
+      alarmStore,
       showNotificationDrawer,
       handleLogout,
       openNotificationDrawer,
@@ -417,5 +425,26 @@ export default {
     color: #f8f9fa;
   }
 
+}
+
+.notification-icon-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #E87D7D;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+  line-height: 1;
+  border: 2px solid white;
 }
 </style>

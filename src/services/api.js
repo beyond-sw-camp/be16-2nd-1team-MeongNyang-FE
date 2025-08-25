@@ -631,4 +631,22 @@ export const adminAPI = {
   processReport: (reportId, resultData) => apiClient.post(`/admin/reports/${reportId}`, resultData)
 }
 
+// 알림 관련 API
+export const alarmAPI = {
+  // 내 알림 목록 조회
+  getMyAlarms: () => apiClient.get('/alarms'),
+  
+  // 알림 읽음 처리
+  markAsRead: (alarmId) => apiClient.patch(`/alarms/${alarmId}`),
+  
+  // 모든 알림 읽음 처리
+  markAllAsRead: () => apiClient.patch('/alarms'),
+  
+  // 알림 삭제
+  deleteAlarm: (alarmId) => apiClient.delete(`/alarms/${alarmId}`),
+  
+  // 모든 알림 삭제
+  deleteAllAlarms: () => apiClient.delete('/alarms')
+}
+
 export default apiClient
