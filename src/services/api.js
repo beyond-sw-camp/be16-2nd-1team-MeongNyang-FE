@@ -144,7 +144,7 @@ export const userAPI = {
   lostPassword: (userData) => apiClient.post('/users/lost-password', userData),
   
   // 계정 잠금 해제
-  unlock: (userData) => apiClient.post('/users/unlock', userData),
+      unlock: (userData) => apiClient.post('/users/lost-password', userData),
   
   // 비밀번호 변경
   changePassword: (passwordData) => apiClient.put('/users/change/password', passwordData),
