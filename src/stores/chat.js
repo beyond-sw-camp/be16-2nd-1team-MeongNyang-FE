@@ -173,6 +173,15 @@ export const useChatStore = defineStore('chat', {
         // 마지막 메시지 업데이트
         room.lastMessage = messageData.message
         
+        // 마지막 메시지 시간 업데이트 (messageData에 있으면 사용, 없으면 현재 시간)
+        if (messageData.createdAt) {
+          room.lastMessageTime = messageData.createdAt
+        } else if (messageData.timestamp) {
+          room.lastMessageTime = messageData.timestamp
+        } else {
+          room.lastMessageTime = new Date().toISOString()
+        }
+        
         // 현재 사용자가 보낸 메시지가 아니고, 현재 접속 중인 채팅방이 아닌 경우에만 새 메시지 카운트 증가
         const currentUserEmail = localStorage.getItem('email')
         const isCurrentRoom = this.currentRoom && this.currentRoom.id == roomId
@@ -188,7 +197,7 @@ export const useChatStore = defineStore('chat', {
         this.chatRoomList = this.chatRoomList.filter(r => r.id != roomId)
         this.chatRoomList.unshift(room)
         
-        console.log('채팅방 목록 업데이트됨:', room.roomName, room.lastMessage, isCurrentRoom ? '(현재 접속 중)' : '')
+        console.log('채팅방 목록 업데이트됨:', room.roomName, room.lastMessage, room.lastMessageTime, isCurrentRoom ? '(현재 접속 중)' : '')
       } else {
         console.warn(`채팅방 ${roomId}를 찾을 수 없어서 메시지를 업데이트할 수 없습니다.`)
       }
@@ -236,6 +245,7 @@ export const useChatStore = defineStore('chat', {
         // 업데이트 가능한 필드들만 업데이트
         if (updateData.roomName) room.roomName = updateData.roomName
         if (updateData.lastMessage) room.lastMessage = updateData.lastMessage
+        if (updateData.lastMessageTime) room.lastMessageTime = updateData.lastMessageTime
         if (updateData.newMessageCount !== undefined) room.newMessageCount = updateData.newMessageCount
         
         console.log('채팅방 정보가 SSE로 업데이트되었습니다:', room)

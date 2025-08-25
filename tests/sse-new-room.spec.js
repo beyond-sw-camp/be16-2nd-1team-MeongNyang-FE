@@ -60,6 +60,54 @@ test.describe('SSE New Room Event Tests', () => {
     expect(finalRoomCount).toBe(initialRoomCount + 1);
   });
 
+  test('새 메시지가 들어왔을 때 lastMessageTime이 업데이트되는지 확인', async ({ page }) => {
+    // 채팅 페이지로 이동
+    await page.goto('http://localhost:3000/chat');
+    
+    // 채팅방 목록이 로드될 때까지 대기
+    await page.waitForSelector('[data-testid="chat-room-list"]', { timeout: 10000 });
+    
+    // 첫 번째 채팅방 클릭하여 선택
+    const firstRoom = page.locator('[data-testid="chat-room-item"]').first();
+    await firstRoom.click();
+    
+    // 채팅방 ID 가져오기
+    const roomId = await page.evaluate(() => {
+      const chatStore = window.__VUE_APP__?.config?.globalProperties?.$pinia?.state?.value?.chat;
+      return chatStore?.currentRoom?.id || chatStore?.chatRoomList[0]?.id;
+    });
+    
+    expect(roomId).toBeTruthy();
+    
+    // 새 메시지 시뮬레이션
+    await page.evaluate((roomId) => {
+      import('@/stores/chat').then(({ useChatStore }) => {
+        const chatStore = useChatStore();
+        
+        const messageData = {
+          chatRoomId: roomId,
+          message: "테스트 메시지입니다!",
+          senderEmail: "other@example.com",
+          createdAt: new Date().toISOString()
+        };
+        
+        // updateChatRoomLastMessage 메서드 호출
+        chatStore.updateChatRoomLastMessage(roomId, messageData);
+      });
+    }, roomId);
+    
+    // lastMessageTime이 업데이트되었는지 확인
+    await page.waitForFunction((roomId) => {
+      const chatStore = window.__VUE_APP__?.config?.globalProperties?.$pinia?.state?.value?.chat;
+      const room = chatStore?.chatRoomList?.find(r => r.id == roomId);
+      return room && room.lastMessageTime && room.lastMessage === "테스트 메시지입니다!";
+    }, roomId, { timeout: 5000 });
+    
+    // 업데이트된 메시지가 표시되는지 확인
+    const updatedRoom = page.locator('[data-testid="chat-room-item"]').filter({ hasText: '테스트 메시지입니다!' });
+    await expect(updatedRoom).toBeVisible();
+  });
+
   test('중복 채팅방이 추가되지 않는지 확인', async ({ page }) => {
     // 채팅 페이지로 이동
     await page.goto('http://localhost:3000/chat');
