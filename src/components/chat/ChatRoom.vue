@@ -331,20 +331,17 @@
         
         <!-- 입력 영역 -->
         <div class="input-area d-flex align-end">
-          <div class="file-attach-container">
-            <v-btn 
-              icon 
-              @click="triggerFileInput" 
-              class="file-attach-btn"
-              :disabled="!stompClient?.connected || isSending"
-              color="primary"
-              variant="outlined"
-              size="large"
-            >
-              <v-icon size="24">mdi-paperclip</v-icon>
-            </v-btn>
-            <div class="file-size-limit text-caption text-grey-darken-2">50MB</div>
-          </div>
+          <v-btn 
+            icon 
+            @click="triggerFileInput" 
+            class="file-attach-btn mr-2"
+            :disabled="!stompClient?.connected || isSending"
+            color="primary"
+            variant="outlined"
+            size="large"
+          >
+            <v-icon size="24">mdi-paperclip</v-icon>
+          </v-btn>
           
           <input 
             type="file" 
@@ -2138,23 +2135,7 @@ export default {
   width: 100%;
 }
 
-/* 파일 첨부 버튼 컨테이너 */
-.file-attach-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-right: 12px;
-}
 
-.file-attach-btn {
-  margin-bottom: 4px;
-}
-
-.file-size-limit {
-  font-size: 10px;
-  line-height: 1;
-  opacity: 0.7;
-}
 
 .selected-files-preview {
   background: linear-gradient(135deg, rgba(232, 125, 125, 0.05) 0%, rgba(255, 255, 255, 0.1) 100%);
