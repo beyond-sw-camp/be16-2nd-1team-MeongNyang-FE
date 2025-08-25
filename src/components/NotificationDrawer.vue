@@ -71,20 +71,10 @@
             size="small"
             @click="markAllAsRead"
             :disabled="!hasUnreadNotifications"
+            class="full-width-btn"
           >
             <v-icon size="16" class="mr-1">mdi-check-all</v-icon>
             모두 읽음 처리
-          </v-btn>
-          
-          <v-btn
-            variant="outlined"
-            color="error"
-            size="small"
-            @click="clearAllNotifications"
-            :disabled="notifications.length === 0"
-          >
-            <v-icon size="16" class="mr-1">mdi-delete-sweep</v-icon>
-            모두 삭제
           </v-btn>
         </div>
       </div>
@@ -195,10 +185,6 @@ export default {
       })
     }
 
-    const clearAllNotifications = () => {
-      notifications.value = []
-    }
-
     return {
       isOpen,
       notifications,
@@ -208,8 +194,7 @@ export default {
       getNotificationIconColor,
       formatTime,
       markAsRead,
-      markAllAsRead,
-      clearAllNotifications
+      markAllAsRead
     }
   }
 }
@@ -370,11 +355,11 @@ export default {
 
 .action-buttons {
   display: flex;
-  gap: 8px;
+  justify-content: center;
 }
 
-.action-buttons .v-btn {
-  flex: 1;
+.full-width-btn {
+  width: 100%;
   font-size: 0.8rem;
 }
 
