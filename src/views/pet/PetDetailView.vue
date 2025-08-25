@@ -58,7 +58,7 @@
           <v-btn
             v-if="!isRepresentative"
             variant="elevated"
-            color="amber"
+            background="linear-gradient(135deg, #6366f1, #8b5cf6)"
             rounded="xl"
             size="large"
             prepend-icon="mdi-star"
@@ -532,7 +532,7 @@ onMounted(async () => {
 <style scoped>
 .pet-detail-container {
   min-height: 100vh;
-  background-color: var(--v-theme-surface);
+  background-color: #fafafa;
   padding: 20px 0;
   display: flex;
   flex-direction: column;
@@ -547,7 +547,7 @@ onMounted(async () => {
   justify-content: center;
   height: 100vh;
   width: 100%;
-  background-color: var(--v-theme-surface);
+  background-color: #fafafa;
 }
 
 .loading-spinner {
@@ -556,7 +556,7 @@ onMounted(async () => {
 
 .loading-text {
   font-size: 1.2rem;
-  color: var(--v-theme-on-surface-variant);
+  color: #6b7280;
 }
 
 .pet-detail-content {
@@ -577,7 +577,8 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--mm-primary), var(--mm-secondary));
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
 }
 
 .hero-background {
@@ -586,8 +587,8 @@ onMounted(async () => {
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, var(--mm-primary), var(--mm-secondary));
-  opacity: 0.9;
+  background: #ffffff;
+  opacity: 1;
   z-index: -1;
 }
 
@@ -599,7 +600,7 @@ onMounted(async () => {
   justify-content: center;
   width: 100%;
   height: 100%;
-  background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.5));
+  background: transparent;
 }
 
 .pet-avatar-container {
@@ -631,21 +632,21 @@ onMounted(async () => {
   position: absolute;
   top: 10px;
   right: 10px;
-  background: rgba(var(--v-theme-primary), 0.9);
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
   color: white;
-  border-radius: 15px;
-  padding: 5px 10px;
+  border-radius: 16px;
+  padding: 6px 12px;
   font-size: 0.7rem;
   font-weight: 600;
   display: flex;
   align-items: center;
   gap: 4px;
-  box-shadow: 0 2px 8px rgba(var(--v-theme-primary), 0.3);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
 }
 
 .pet-info-header {
   text-align: center;
-  color: white;
+  color: #374151;
   padding: 0 20px;
 }
 
@@ -653,7 +654,7 @@ onMounted(async () => {
   font-size: 3.5rem;
   font-weight: 900;
   margin-bottom: 10px;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  color: #111827;
 }
 
 .pet-species {
@@ -670,8 +671,7 @@ onMounted(async () => {
 .pet-description {
   font-size: 1.1rem;
   margin-top: 15px;
-  color: var(--v-theme-on-surface-variant);
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  color: #6b7280;
 }
 
 .action-section {
@@ -743,8 +743,8 @@ onMounted(async () => {
 }
 
 .info-card {
-  background: rgba(var(--v-theme-primary), 0.05);
-  border: 1px solid rgba(var(--v-theme-primary), 0.1);
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
   border-radius: 15px;
   padding: 20px;
   display: flex;
@@ -759,7 +759,7 @@ onMounted(async () => {
 }
 
 .card-icon {
-  background: rgba(var(--v-theme-primary), 0.1);
+  background: rgba(99, 102, 241, 0.1);
   border-radius: 10px;
   padding: 10px;
   display: flex;
@@ -769,7 +769,7 @@ onMounted(async () => {
 
 .card-icon .v-icon {
   font-size: 2.5rem;
-  color: var(--v-theme-primary);
+  color: #6366f1;
 }
 
 .card-content {
@@ -806,7 +806,7 @@ onMounted(async () => {
 
 .back-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(var(--v-theme-primary), 0.2);
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);
 }
 
 .edit-mode-container {

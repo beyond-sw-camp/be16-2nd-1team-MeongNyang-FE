@@ -45,14 +45,7 @@
             @click="$emit('set-representative', pet)"
             density="comfortable"
           />
-          <v-btn
-            icon="mdi-eye"
-            variant="text"
-            size="small"
-            color="primary"
-            @click="$emit('view-details', pet)"
-            density="comfortable"
-          />
+
           <v-btn
             icon="mdi-pencil"
             variant="text"
