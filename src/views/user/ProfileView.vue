@@ -178,6 +178,7 @@ import { computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { usePetStore } from '@/stores/pet'
+import { userAPI } from '@/services/api'
 
 export default {
   name: 'ProfileView',
@@ -414,9 +415,31 @@ export default {
     }
     
     // 계정 삭제
-    const deleteAccount = () => {
-      if (confirm('정말로 계정을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+    const deleteAccount = async () => {
+      if (!confirm('정말로 계정을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+        return
+      }
+
+      try {
         console.log('계정 삭제 요청')
+        
+        // 백엔드에서 현재 로그인한 사용자를 자동으로 삭제
+        const refreshToken = localStorage.getItem('refreshToken')
+        await userAPI.delete(refreshToken)
+        
+        alert('계정이 성공적으로 삭제되었습니다.')
+        
+        // 로그아웃 처리
+        await authStore.logout()
+        router.push('/login')
+        
+      } catch (error) {
+        console.error('계정 삭제 실패:', error)
+        if (error.response?.status === 401) {
+          alert('인증이 만료되었습니다. 다시 로그인해주세요.')
+        } else {
+          alert('계정 삭제에 실패했습니다. 잠시 후 다시 시도해주세요.')
+        }
       }
     }
 
