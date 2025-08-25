@@ -34,7 +34,7 @@
             <v-icon size="24">mdi-account-plus</v-icon>
           </v-btn>
           
-          <v-menu>
+          <v-menu offset="8">
             <template v-slot:activator="{ props }">
               <v-btn 
                 icon 
@@ -51,22 +51,28 @@
             <v-list class="room-options-menu">
               <v-list-item @click="showParticipants" class="menu-item">
                 <template v-slot:prepend>
-                  <v-icon color="primary">mdi-account-group</v-icon>
+                  <v-icon color="primary" size="22" class="menu-icon">mdi-account-group</v-icon>
                 </template>
-                <v-list-item-title>참여자 목록 ({{ participants.length }})</v-list-item-title>
+                <v-list-item-title class="menu-title">참여자 목록</v-list-item-title>
+                <v-list-item-subtitle class="menu-subtitle">{{ participants.length }}명 참여</v-list-item-subtitle>
               </v-list-item>
+              
               <v-list-item @click="inviteParticipants" class="menu-item">
                 <template v-slot:prepend>
-                  <v-icon color="info">mdi-account-plus</v-icon>
+                  <v-icon color="info" size="22" class="menu-icon">mdi-account-plus</v-icon>
                 </template>
-                <v-list-item-title>초대하기</v-list-item-title>
+                <v-list-item-title class="menu-title">초대하기</v-list-item-title>
+                <v-list-item-subtitle class="menu-subtitle">새 멤버 초대</v-list-item-subtitle>
               </v-list-item>
-              <v-divider></v-divider>
+              
+              <v-divider class="menu-divider"></v-divider>
+              
               <v-list-item @click="confirmLeaveRoom" class="menu-item leave-item">
                 <template v-slot:prepend>
-                  <v-icon color="error">mdi-exit-to-app</v-icon>
+                  <v-icon color="error" size="22" class="menu-icon">mdi-exit-to-app</v-icon>
                 </template>
-                <v-list-item-title class="text-error">채팅방 나가기</v-list-item-title>
+                <v-list-item-title class="menu-title text-error">채팅방 나가기</v-list-item-title>
+                <v-list-item-subtitle class="menu-subtitle text-error">채팅방에서 나가기</v-list-item-subtitle>
               </v-list-item>
             </v-list>
           </v-menu>
@@ -2784,20 +2790,74 @@ export default {
 .room-options-menu {
   border-radius: var(--mm-radius-lg);
   box-shadow: var(--mm-shadow-lg);
+  background: var(--mm-surface);
+  min-width: 220px;
+  border: 1px solid var(--mm-border-light);
 }
 
 .menu-item {
   border-radius: var(--mm-radius-md);
-  margin: 4px;
+  margin: var(--mm-space-1) var(--mm-space-2);
+  padding: var(--mm-space-3) var(--mm-space-4);
   transition: all var(--mm-transition-fast);
+  cursor: pointer;
 }
 
 .menu-item:hover {
   background: var(--mm-surface-variant);
+  transform: translateY(-1px);
 }
 
 .leave-item:hover {
-  background: rgba(239, 68, 68, 0.1);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.menu-icon {
+  margin-right: var(--mm-space-3);
+}
+
+.menu-title {
+  font-weight: var(--mm-font-weight-semibold);
+  font-size: var(--mm-text-sm);
+  color: var(--mm-on-surface);
+  line-height: 1.4;
+}
+
+.menu-subtitle {
+  font-size: var(--mm-text-xs);
+  color: var(--mm-on-surface-variant);
+  font-weight: var(--mm-font-weight-normal);
+  line-height: 1.3;
+}
+
+.menu-divider {
+  margin: var(--mm-space-2) var(--mm-space-4);
+  border-color: var(--mm-border-light);
+}
+
+/* 다크 모드 지원 */
+@media (prefers-color-scheme: dark) {
+  .room-options-menu {
+    background: #2d2d2d;
+    border-color: #404040;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  }
+  
+  .menu-item:hover {
+    background: #404040;
+  }
+  
+  .menu-title {
+    color: #ecf0f1;
+  }
+  
+  .menu-subtitle {
+    color: #bdc3c7;
+  }
+  
+  .menu-divider {
+    border-color: #404040;
+  }
 }
 
 .leave-actions {
