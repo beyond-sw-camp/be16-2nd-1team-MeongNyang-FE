@@ -825,17 +825,30 @@ export default {
         return
       }
       
-      nextTick(() => {
+      // DOM 업데이트와 레이아웃 안정화를 위해 더 긴 지연 사용
+      setTimeout(() => {
         const chatContainer = chatBox.value?.$el || chatBox.value
         if (chatContainer) {
+          // 스크롤 위치를 정확하게 계산
+          const scrollHeight = chatContainer.scrollHeight
+          const clientHeight = chatContainer.clientHeight
+          
           // 더 확실한 스크롤을 위해 scrollHeight보다 큰 값으로 설정
-          chatContainer.scrollTop = chatContainer.scrollHeight + 1000
+          chatContainer.scrollTop = scrollHeight + 1000
+          
+          // 스크롤이 실제로 적용되었는지 확인
+          setTimeout(() => {
+            if (chatContainer.scrollTop < scrollHeight - clientHeight) {
+              // 스크롤이 제대로 적용되지 않았다면 다시 시도
+              chatContainer.scrollTop = chatContainer.scrollHeight + 1000
+            }
+          }, 50)
           
           // 스크롤 후 하단 상태로 설정
           isAtBottom.value = true
           showScrollToBottomButton.value = false
         }
-      })
+      }, 150) // DOM 업데이트를 위한 충분한 시간
     }
     
     // 미디어 로딩 완료 후 스크롤
@@ -846,16 +859,16 @@ export default {
           await Promise.all(mediaLoadPromises.value)
         }
         
-        // 약간의 지연 후 스크롤 실행 (레이아웃 안정화를 위해)
+        // 레이아웃 안정화를 위해 더 긴 지연 사용
         setTimeout(() => {
           scrollToBottom(true)
-        }, 100)
+        }, 200)
       } catch (error) {
         console.warn('미디어 로딩 중 오류 발생:', error)
         // 오류 발생 시에도 스크롤 실행
         setTimeout(() => {
           scrollToBottom(true)
-        }, 200)
+        }, 300)
       }
     }
     
@@ -1212,13 +1225,6 @@ export default {
         nextTick(() => {
           setupResizeObserver()
           
-          // 모든 미디어 로딩 완료 후 초기 스크롤
-          if (mediaLoadPromises.value.length > 0) {
-            scrollToBottomAfterMediaLoad()
-          } else {
-            scrollToBottom()
-          }
-          
           // 초기 스크롤 상태 설정
           const chatContainer = chatBox.value?.$el || chatBox.value
           if (chatContainer) {
@@ -1227,6 +1233,15 @@ export default {
             isAtBottom.value = atBottom
             showScrollToBottomButton.value = false
           }
+          
+          // 모든 미디어 로딩 완료 후 초기 스크롤 (더 안정적인 타이밍)
+          setTimeout(() => {
+            if (mediaLoadPromises.value.length > 0) {
+              scrollToBottomAfterMediaLoad()
+            } else {
+              scrollToBottom()
+            }
+          }, 300) // DOM과 레이아웃이 완전히 안정화될 때까지 대기
         })
       }
       window.addEventListener('beforeunload', disconnectWebsocket)
