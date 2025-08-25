@@ -155,7 +155,8 @@
                       
                       <template v-slot:append>
                         <v-avatar size="32" class="ml-2">
-                          <v-icon>mdi-account-circle</v-icon>
+                          <v-img v-if="user.profileImage" :src="user.profileImage" alt="프로필 이미지"></v-img>
+                          <v-icon v-else>mdi-account-circle</v-icon>
                         </v-avatar>
                       </template>
                     </v-list-item>
@@ -198,7 +199,8 @@
                           참여 중
                         </v-chip>
                         <v-avatar size="32" class="ml-2">
-                          <v-icon color="grey">mdi-account-circle</v-icon>
+                          <v-img v-if="user.profileImage" :src="user.profileImage" alt="프로필 이미지"></v-img>
+                          <v-icon v-else color="grey">mdi-account-circle</v-icon>
                         </v-avatar>
                       </template>
                     </v-list-item>
@@ -284,7 +286,8 @@
                       
                       <template v-slot:append>
                         <v-avatar size="32" class="ml-2">
-                          <v-icon>mdi-account-circle</v-icon>
+                          <v-img v-if="user.profileImage" :src="user.profileImage" alt="프로필 이미지"></v-img>
+                          <v-icon v-else>mdi-account-circle</v-icon>
                         </v-avatar>
                       </template>
                     </v-list-item>
@@ -327,7 +330,8 @@
                           참여 중
                         </v-chip>
                         <v-avatar size="32" class="ml-2">
-                          <v-icon color="grey">mdi-account-circle</v-icon>
+                          <v-img v-if="user.profileImage" :src="user.profileImage" alt="프로필 이미지"></v-img>
+                          <v-icon v-else color="grey">mdi-account-circle</v-icon>
                         </v-avatar>
                       </template>
                     </v-list-item>
