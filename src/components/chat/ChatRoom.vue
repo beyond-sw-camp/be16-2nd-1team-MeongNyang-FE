@@ -95,45 +95,130 @@
         </div>
       </div>
       
-        <template v-for="item in messagesWithDateSeparators" :key="item.id">
-        <div v-if="item.type === 'date-separator'" class="text-center my-4">
-          <v-chip small>{{ item.date }}</v-chip>
-          </div>
-        <div v-else :class="['message-row', 'mb-2', item.senderEmail === senderEmail ? 'sent-message' : 'received-message']">
-            <!-- 아바타 영역 -->
-            <div class="avatar-area">
-            <v-avatar v-if="item.senderEmail !== senderEmail && item.showAvatarAndEmail" size="40">
-              <v-img src="https://cdn.vuetifyjs.com/images/john.jpg" alt="avatar"></v-img>
-              </v-avatar>
+        <!-- 메시지 목록 - 로딩이 완료되었을 때만 표시 -->
+        <div v-if="!loading && !error">
+          <template v-for="item in messagesWithDateSeparators" :key="item.id">
+            <div v-if="item.type === 'date-separator'" class="text-center my-4">
+              <v-chip small>{{ item.date }}</v-chip>
             </div>
-            
-            <!-- 메시지 내용 영역 -->
-            <div class="message-content">
-            <div class="font-weight-bold mb-1 text-left" v-if="item.senderEmail !== senderEmail && item.showAvatarAndEmail">{{ item.senderEmail }}</div>
-              <div class="message-bubble-container">
-              <div :class="['message-bubble', item.senderEmail === senderEmail ? 'sent' : 'received', { 'media-bubble': item.fileUrls && item.fileUrls.length > 0 }]">
-                <div v-if="item.message">{{ item.message }}</div>
-                
-                <!-- 파일 표시 - 종류별 그룹화된 그리드 -->
-                <div v-if="item.fileUrls && item.fileUrls.length > 0" class="mt-2">
-                    <FileGrid :files="item.fileUrls" />
+            <div v-else :class="['message-row', 'mb-2', item.senderEmail === senderEmail ? 'sent-message' : 'received-message']">
+              <!-- 아바타 영역 -->
+              <div class="avatar-area">
+                <v-avatar v-if="item.senderEmail !== senderEmail && item.showAvatarAndEmail" size="40">
+                  <v-img src="https://cdn.vuetifyjs.com/images/john.jpg" alt="avatar"></v-img>
+                </v-avatar>
+              </div>
+              
+              <!-- 메시지 내용 영역 -->
+              <div class="message-content">
+                <div class="font-weight-bold mb-1 text-left" v-if="item.senderEmail !== senderEmail && item.showAvatarAndEmail">{{ item.senderEmail }}</div>
+                <div class="message-bubble-container">
+                  <div :class="['message-bubble', item.senderEmail === senderEmail ? 'sent' : 'received', { 'media-bubble': item.fileUrls && item.fileUrls.length > 0 }]">
+                    <div v-if="item.message">{{ item.message }}</div>
+                    
+                    <!-- 파일 표시 - 종류별 그룹화된 그리드 -->
+                    <div v-if="item.fileUrls && item.fileUrls.length > 0" class="mt-2">
+                      <FileGrid :files="item.fileUrls" />
+                    </div>
                   </div>
-                </div>
-                <div class="message-meta">
-                <div class="d-flex align-end mx-2" v-if="item.senderEmail !== senderEmail">
-                  <div class="text-caption text-grey-darken-1" :style="{ visibility: item.unreadCount > 0 ? 'visible' : 'hidden' }">{{ item.unreadCount }}</div>
-                  <div class="text-caption text-grey-darken-1 ml-1" :style="{ visibility: item.showTimestamp ? 'visible' : 'hidden' }">{{ formatTime(item.sendTime) }}</div>
-                </div>
-                <div class="d-flex align-end mx-2" v-if="item.senderEmail === senderEmail">
-                  <div class="text-caption text-grey-darken-1" :style="{ visibility: item.unreadCount && item.showTimestamp > 0 ? 'visible' : 'hidden' }">{{ item.unreadCount }}</div>
-                  <div class="text-caption text-grey-darken-1 ml-1" :style="{ visibility: item.showTimestamp ? 'visible' : 'hidden' }">{{ formatTime(item.sendTime) }}</div>
-                  <div class="text-caption text-grey-darken-1" :style="{ visibility: item.unreadCount && !item.showTimestamp > 0 ? 'visible' : 'hidden' }">{{ item.unreadCount }}</div>
+                  <div class="message-meta">
+                    <div class="d-flex align-end mx-2" v-if="item.senderEmail !== senderEmail">
+                      <div class="text-caption text-grey-darken-1" :style="{ visibility: item.unreadCount > 0 ? 'visible' : 'hidden' }">{{ item.unreadCount }}</div>
+                      <div class="text-caption text-grey-darken-1 ml-1" :style="{ visibility: item.showTimestamp ? 'visible' : 'hidden' }">{{ formatTime(item.sendTime) }}</div>
+                    </div>
+                    <div class="d-flex align-end mx-2" v-if="item.senderEmail === senderEmail">
+                      <div class="text-caption text-grey-darken-1" :style="{ visibility: item.unreadCount && item.showTimestamp > 0 ? 'visible' : 'hidden' }">{{ item.unreadCount }}</div>
+                      <div class="text-caption text-grey-darken-1 ml-1" :style="{ visibility: item.showTimestamp ? 'visible' : 'hidden' }">{{ formatTime(item.sendTime) }}</div>
+                      <div class="text-caption text-grey-darken-1" :style="{ visibility: item.unreadCount && !item.showTimestamp > 0 ? 'visible' : 'hidden' }">{{ item.unreadCount }}</div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
+          </template>
+        </div>
+      
+      <!-- 빈 채팅방 상태 - 메시지가 없고 로딩이 완료되었을 때만 -->
+      <div v-if="!loading && messages.length === 0 && !error" class="empty-chat-state">
+        <div class="empty-chat-content">
+          <div class="welcome-icon">💬</div>
+          <h3 class="welcome-title">{{ currentRoom?.roomName || '새로운 채팅방' }}에 오신 것을 환영합니다!</h3>
+          <p class="welcome-message">
+            이제 대화를 시작해보세요. 메시지를 보내거나 파일을 공유할 수 있습니다.
+          </p>
+          
+          <!-- 대화 시작 팁 -->
+          <div class="conversation-tips">
+            <h4 class="tips-title">💡 대화 시작하기</h4>
+            <div class="tips-grid">
+              <div class="tip-item">
+                <div class="tip-icon">👋</div>
+                <div class="tip-text">간단한 인사말로 시작</div>
+              </div>
+              <div class="tip-item">
+                <div class="tip-icon">📷</div>
+                <div class="tip-text">사진이나 파일 공유</div>
+              </div>
+              <div class="tip-item">
+                <div class="tip-icon">❓</div>
+                <div class="tip-text">질문이나 의견 나누기</div>
+              </div>
+              <div class="tip-item">
+                <div class="tip-icon">🎉</div>
+                <div class="tip-text">즐거운 대화 시작하기</div>
+              </div>
+            </div>
           </div>
-        </template>
+          
+          <!-- 빠른 메시지 버튼들 -->
+          <div class="quick-message-buttons">
+            <v-btn
+              v-for="(quickMsg, index) in quickMessages"
+              :key="index"
+              @click="sendQuickMessage(quickMsg)"
+              variant="outlined"
+              color="primary"
+              size="small"
+              class="quick-msg-btn"
+            >
+              {{ quickMsg }}
+            </v-btn>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 로딩 상태 -->
+      <div v-if="loading" class="loading-chat-state">
+        <div class="loading-content">
+          <div class="loading-spinner">
+            <v-progress-circular
+              indeterminate
+              color="primary"
+              size="64"
+              width="6"
+            ></v-progress-circular>
+          </div>
+          <div class="loading-text">채팅방을 불러오는 중...</div>
+        </div>
+      </div>
+      
+      <!-- 에러 상태 -->
+      <div v-if="error && !loading" class="error-chat-state">
+        <div class="error-content">
+          <div class="error-icon">⚠️</div>
+          <h3 class="error-title">채팅방을 불러올 수 없습니다</h3>
+          <p class="error-message">{{ error }}</p>
+          <v-btn
+            @click="retryLoad"
+            color="primary"
+            variant="outlined"
+            size="large"
+            class="retry-btn"
+          >
+            다시 시도
+          </v-btn>
+        </div>
+      </div>
       
       <!-- 맨 아래로 버튼 - 스크롤과 함께 움직이는 고정 버튼 -->
       <div v-show="showScrollToBottomButton" class="scroll-to-bottom-button-sticky">
@@ -422,6 +507,15 @@ export default {
     const currentRoom = ref(null)
     const isSending = ref(false)
     
+    // 빠른 메시지 옵션
+    const quickMessages = ref([
+      '안녕하세요! 👋',
+      '반갑습니다 😊',
+      '오늘 날씨가 좋네요 ☀️',
+      '무슨 일 하시나요? 🤔',
+      '좋은 하루 되세요! ✨'
+    ])
+    
     // 파일 입력 참조
     const fileInput = ref(null)
     const chatBox = ref(null)
@@ -491,6 +585,11 @@ export default {
     
     const loadRoomData = async () => {
       try {
+        // 로딩 시작
+        loading.value = true
+        error.value = null
+        console.log('🔄 채팅방 데이터 로딩 시작, loading:', loading.value)
+        
         // 채팅방 목록이 비어있으면 먼저 가져오기
         if (chatStore.chatRoomList.length === 0) {
           await chatStore.fetchChatRoomList()
@@ -523,9 +622,11 @@ export default {
         messages.value = chatStore.messages
         participants.value = chatStore.participants
         
+        // 로딩 완료
         loading.value = false
+        console.log('✅ 채팅방 데이터 로딩 완료, loading:', loading.value, 'messages count:', messages.value.length)
       } catch (err) {
-        console.error('채팅방 데이터 로드 실패:', err)
+        console.error('❌ 채팅방 데이터 로드 실패:', err)
         error.value = '채팅방 데이터를 불러오는데 실패했습니다.'
         loading.value = false
       }
@@ -649,6 +750,14 @@ export default {
       } finally {
         isSending.value = false
       }
+    }
+    
+    // 빠른 메시지 전송
+    const sendQuickMessage = (messageText) => {
+      if (!stompClient.value?.connected) return
+      
+      newMessage.value = messageText
+      sendMessage()
     }
     
     const scrollToBottom = (force = false) => {
@@ -980,6 +1089,12 @@ export default {
     
     watch(() => props.roomId, async (newRoomId, oldRoomId) => {
       if (newRoomId && newRoomId !== oldRoomId) {
+        // 새 채팅방으로 이동할 때 로딩 상태 설정
+        loading.value = true
+        error.value = null
+        messages.value = []
+        participants.value = []
+        
         disconnectWebsocket()
         await loadRoomData()
         connectWebsocket()
@@ -1019,6 +1134,9 @@ export default {
     onMounted(async () => {
       senderEmail.value = localStorage.getItem('email')
       if (props.roomId) {
+        // 초기 로딩 상태 설정
+        loading.value = true
+        
         await loadRoomData()
         connectWebsocket()
         
@@ -1224,7 +1342,10 @@ export default {
       isImageFile,
       isVideoFile,
       setupResizeObserver,
-      cleanupResizeObserver
+      cleanupResizeObserver,
+      // 빠른 메시지 관련
+      quickMessages,
+      sendQuickMessage
     }
   }
 }
@@ -2027,6 +2148,248 @@ export default {
   background: var(--mm-on-surface-variant);
 }
 
+/* 빈 채팅방 상태 */
+.empty-chat-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+/* 로딩 상태 */
+.loading-chat-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.loading-spinner {
+  animation: pulse 2s infinite;
+}
+
+.loading-text {
+  font-size: var(--mm-text-lg);
+  font-weight: 500;
+  color: var(--mm-on-surface-variant);
+  animation: fadeInOut 2s infinite;
+}
+
+@keyframes fadeInOut {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* 에러 상태 */
+.error-chat-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.error-content {
+  max-width: 500px;
+  width: 100%;
+}
+
+.error-icon {
+  font-size: 80px;
+  margin-bottom: 24px;
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+.error-title {
+  font-size: var(--mm-text-xl);
+  font-weight: 700;
+  color: var(--mm-error);
+  margin-bottom: 16px;
+  line-height: 1.4;
+}
+
+.error-message {
+  font-size: var(--mm-text-base);
+  color: var(--mm-on-surface-variant);
+  margin-bottom: 32px;
+  line-height: 1.6;
+}
+
+.retry-btn {
+  border-radius: 20px !important;
+  border: 2px solid rgba(232, 125, 125, 0.3) !important;
+  background: linear-gradient(135deg, rgba(232, 125, 125, 0.1) 0%, rgba(255, 107, 107, 0.1) 100%) !important;
+  color: #E87D7D !important;
+  font-weight: 600 !important;
+  transition: all var(--mm-transition-normal);
+  box-shadow: 0 4px 16px rgba(232, 125, 125, 0.2);
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+
+.retry-btn:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 8px 24px rgba(232, 125, 125, 0.4);
+  border-color: rgba(232, 125, 125, 0.6) !important;
+  background: linear-gradient(135deg, rgba(232, 125, 125, 0.2) 0%, rgba(255, 107, 107, 0.2) 100%) !important;
+}
+
+.retry-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.empty-chat-content {
+  max-width: 500px;
+  width: 100%;
+}
+
+.welcome-icon {
+  font-size: 80px;
+  margin-bottom: 24px;
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-10px);
+  }
+  60% {
+    transform: translateY(-5px);
+  }
+}
+
+.welcome-title {
+  font-size: var(--mm-text-xl);
+  font-weight: 700;
+  color: var(--mm-on-surface);
+  margin-bottom: 16px;
+  line-height: 1.4;
+}
+
+.welcome-message {
+  font-size: var(--mm-text-base);
+  color: var(--mm-on-surface-variant);
+  margin-bottom: 32px;
+  line-height: 1.6;
+}
+
+.conversation-tips {
+  background: linear-gradient(135deg, rgba(232, 125, 125, 0.05) 0%, rgba(255, 255, 255, 0.1) 100%);
+  border-radius: 20px;
+  padding: 24px;
+  margin-bottom: 32px;
+  border: 1px solid rgba(232, 125, 125, 0.15);
+  backdrop-filter: blur(10px);
+}
+
+.tips-title {
+  font-size: var(--mm-text-lg);
+  font-weight: 600;
+  color: var(--mm-on-surface);
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.tips-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 16px;
+}
+
+.tip-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 16px;
+  border: 1px solid rgba(232, 125, 125, 0.2);
+  transition: all var(--mm-transition-normal);
+  backdrop-filter: blur(10px);
+}
+
+.tip-item:hover {
+  transform: translateY(-2px);
+  border-color: rgba(232, 125, 125, 0.4);
+  box-shadow: 0 8px 24px rgba(232, 125, 125, 0.15);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.tip-icon {
+  font-size: 32px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.tip-text {
+  font-size: var(--mm-text-sm);
+  font-weight: 500;
+  color: var(--mm-on-surface);
+  text-align: center;
+  line-height: 1.3;
+}
+
+.quick-message-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+
+.quick-msg-btn {
+  border-radius: 20px !important;
+  border: 2px solid rgba(232, 125, 125, 0.3) !important;
+  background: linear-gradient(135deg, rgba(232, 125, 125, 0.1) 0%, rgba(255, 107, 107, 0.1) 100%) !important;
+  color: #E87D7D !important;
+  font-weight: 600 !important;
+  transition: all var(--mm-transition-normal);
+  box-shadow: 0 4px 16px rgba(232, 125, 125, 0.2);
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+
+.quick-msg-btn:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 8px 24px rgba(232, 125, 125, 0.4);
+  border-color: rgba(232, 125, 125, 0.6) !important;
+  background: linear-gradient(135deg, rgba(232, 125, 125, 0.2) 0%, rgba(255, 107, 107, 0.2) 100%) !important;
+}
+
+.quick-msg-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
 /* 맨 아래로 버튼 */
 .scroll-to-bottom-button-sticky {
   position: sticky;
@@ -2252,6 +2615,36 @@ export default {
     background: rgba(232, 125, 125, 0.15);
     border-color: #E87D7D;
     color: #FFB3B3;
+  }
+  
+  /* 빈 채팅방 상태 다크 모드 */
+  .conversation-tips {
+    background: linear-gradient(135deg, rgba(232, 125, 125, 0.1) 0%, rgba(64, 64, 64, 0.2) 100%);
+    border-color: #505050;
+  }
+  
+  .tip-item {
+    background: #404040;
+    border-color: #505050;
+    color: #e0e0e0;
+  }
+  
+  .tip-item:hover {
+    background: #505050;
+    border-color: #E87D7D;
+  }
+  
+  .tip-text {
+    color: #e0e0e0;
+  }
+  
+  /* 에러 상태 다크 모드 */
+  .error-title {
+    color: #ff6b6b;
+  }
+  
+  .error-message {
+    color: #b0b0b0;
   }
 }
 
@@ -2676,7 +3069,103 @@ export default {
     font-size: var(--mm-text-xs);
     gap: 8px;
   }
-
   
+  /* 빈 채팅방 상태 반응형 */
+  .empty-chat-state {
+    min-height: 300px;
+    padding: 20px 16px;
+  }
+  
+  .welcome-icon {
+    font-size: 60px;
+    margin-bottom: 20px;
+  }
+  
+  .welcome-title {
+    font-size: var(--mm-text-lg);
+    margin-bottom: 12px;
+  }
+  
+  .welcome-message {
+    font-size: var(--mm-text-sm);
+    margin-bottom: 24px;
+  }
+  
+  .conversation-tips {
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+  
+  .tips-title {
+    font-size: var(--mm-text-base);
+    margin-bottom: 16px;
+  }
+  
+  .tips-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  
+  .tip-item {
+    padding: 12px;
+  }
+  
+  .tip-icon {
+    font-size: 24px;
+  }
+  
+  .tip-text {
+    font-size: 11px;
+  }
+  
+  .quick-message-buttons {
+    gap: 8px;
+  }
+  
+  .quick-msg-btn {
+    font-size: 12px !important;
+    padding: 8px 16px !important;
+  }
+  
+  /* 로딩 상태 반응형 */
+  .loading-chat-state {
+    min-height: 300px;
+    padding: 20px 16px;
+  }
+  
+  .loading-spinner .v-progress-circular {
+    width: 48px !important;
+    height: 48px !important;
+  }
+  
+  .loading-text {
+    font-size: var(--mm-text-base);
+  }
+  
+  /* 에러 상태 반응형 */
+  .error-chat-state {
+    min-height: 300px;
+    padding: 20px 16px;
+  }
+  
+  .error-icon {
+    font-size: 60px;
+    margin-bottom: 20px;
+  }
+  
+  .error-title {
+    font-size: var(--mm-text-lg);
+    margin-bottom: 12px;
+  }
+  
+  .error-message {
+    font-size: var(--mm-text-sm);
+    margin-bottom: 24px;
+  }
+  
+  .retry-btn {
+    font-size: 14px !important;
+    padding: 12px 24px !important;
+  }
 }
 </style>
