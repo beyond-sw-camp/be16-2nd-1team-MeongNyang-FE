@@ -22,7 +22,10 @@
         :key="chatRoom.id"
         @click="selectChatRoom(chatRoom.id)"
         class="chat-room-item"
-        :class="{ 'has-unread': chatRoom.newMessageCount > 0 }"
+        :class="{ 
+          'has-unread': chatRoom.newMessageCount > 0,
+          'selected': selectedChatRoomId == chatRoom.id
+        }"
       >
         <!-- 채팅방 아바타 -->
         <div class="room-avatar">
@@ -44,6 +47,11 @@
             <span class="last-message">{{ chatRoom.lastMessage || '파일' }}</span>
             <span class="last-message-time">{{ formatLastMessageTime(chatRoom.lastMessageTime || chatRoom.updatedAt || new Date()) }}</span>
           </div>
+        </div>
+        
+        <!-- 선택 표시 아이콘 -->
+        <div v-if="selectedChatRoomId === chatRoom.id" class="selection-indicator">
+          <v-icon size="20" color="#E87D7D">mdi-check-circle</v-icon>
         </div>
       </div>
       
@@ -84,6 +92,12 @@ export default {
   components: {
     UserSelectionModal
   },
+  props: {
+    selectedChatRoomId: {
+      type: [String, Number],
+      default: null
+    }
+  },
   setup() {
     const chatStore = useChatStore();
     const { chatRoomList } = storeToRefs(chatStore);
@@ -102,6 +116,7 @@ export default {
   },
   methods: {
     selectChatRoom(roomId) {
+      // 선택된 채팅방에 시각적 피드백 제공
       this.$emit('chat-selected', roomId);
     },
     
@@ -291,6 +306,43 @@ export default {
   background: rgba(232, 125, 125, 0.02);
 }
 
+/* 선택된 채팅방 스타일 */
+.chat-room-item.selected {
+  background: linear-gradient(135deg, rgba(232, 125, 125, 0.08) 0%, rgba(255, 107, 107, 0.08) 100%);
+  border: 2px solid #E87D7D;
+  box-shadow: 0 4px 16px rgba(232, 125, 125, 0.3);
+  transform: translateY(-2px);
+}
+
+.chat-room-item.selected:hover {
+  background: linear-gradient(135deg, rgba(232, 125, 125, 0.12) 0%, rgba(255, 107, 107, 0.12) 100%);
+  box-shadow: 0 6px 20px rgba(232, 125, 125, 0.4);
+}
+
+/* 선택 표시 아이콘 */
+.selection-indicator {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  animation: selectionPulse 0.6s ease-out;
+}
+
+@keyframes selectionPulse {
+  0% {
+    opacity: 0;
+    transform: translateY(-50%) scale(0.5);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-50%) scale(1.2);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
+}
+
 /* 채팅방 아바타 */
 .room-avatar {
   position: relative;
@@ -313,6 +365,12 @@ export default {
 .chat-room-item:hover .avatar-circle {
   border-color: #E87D7D;
   transform: scale(1.05);
+}
+
+.chat-room-item.selected .avatar-circle {
+  border-color: #E87D7D;
+  transform: scale(1.1);
+  box-shadow: 0 0 0 4px rgba(232, 125, 125, 0.2);
 }
 
 .unread-badge {
@@ -368,6 +426,11 @@ export default {
   margin-bottom: 4px;
   text-align: left;
   width: 100%;
+}
+
+.chat-room-item.selected .room-name {
+  color: #E87D7D;
+  font-weight: 700;
 }
 
 .room-meta {
@@ -501,6 +564,10 @@ export default {
     text-align: left;
     min-width: 0;
   }
+  
+  .selection-indicator {
+    right: 12px;
+  }
 }
 
 /* 다크 모드 지원 */
@@ -520,6 +587,11 @@ export default {
   
   .chat-room-item.has-unread {
     background: rgba(232, 125, 125, 0.05);
+  }
+  
+  .chat-room-item.selected {
+    background: linear-gradient(135deg, rgba(232, 125, 125, 0.15) 0%, rgba(255, 107, 107, 0.15) 100%);
+    border-color: #E87D7D;
   }
   
   .room-info {
@@ -558,5 +630,19 @@ export default {
 
 .chat-room-item.has-unread:hover {
   transform: translateY(-1px) translateX(2px);
+}
+
+.chat-room-item.selected:hover {
+  transform: translateY(-2px);
+}
+
+/* 클릭 애니메이션 */
+.chat-room-item:active {
+  transform: scale(0.98);
+  transition: transform 0.1s ease;
+}
+
+.chat-room-item.selected:active {
+  transform: scale(0.98) translateY(-1px);
 }
 </style>

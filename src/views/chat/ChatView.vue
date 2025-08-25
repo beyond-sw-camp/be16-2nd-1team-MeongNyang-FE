@@ -10,6 +10,7 @@
         ]"
       >
         <chat-list 
+          :selected-chat-room-id="selectedChatRoomId"
           @chat-selected="onChatSelected" 
           @show-message="showMessage"
         />
@@ -36,7 +37,8 @@
 import ChatList from '@/components/chat/ChatList.vue'
 import GlobalSnackbar from '@/components/ui/global/GlobalSnackbar.vue'
 import { useSnackbar } from '@/composables/useSnackbar'
-import { provide } from 'vue'
+import { provide, ref, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 
 export default {
   name: 'ChatView',
@@ -46,6 +48,9 @@ export default {
   },
   setup() {
     const { showSnackbar } = useSnackbar()
+    const selectedChatRoomId = ref(null)
+    const router = useRouter()
+    const route = useRoute()
     
     // showMessage 함수를 provide로 제공
     const showMessage = (message) => {
@@ -55,22 +60,14 @@ export default {
     // provide를 통해 showMessage 함수 제공
     provide('showMessage', showMessage)
     
-    return {
-      showSnackbar
-    }
-  },
-  mounted() {
-    // 컴포넌트 마운트 시 채팅방 나가기 메시지 확인
-    // this.checkLeaveMessage() // Removed as per edit hint
-  },
-  methods: {
-    onChatSelected(roomId) {
+    // 채팅방 선택 처리
+    const onChatSelected = (roomId) => {
       // roomId 유효성 검사
       console.log('ChatView에서 받은 roomId:', roomId, typeof roomId);
       
       if (!roomId || roomId === null || roomId === undefined) {
         console.error('유효하지 않은 roomId:', roomId);
-        this.showMessage({
+        showMessage({
           type: 'error',
           text: '채팅방 ID가 유효하지 않습니다.'
         });
@@ -84,7 +81,7 @@ export default {
           actualRoomId = roomId.id;
         } else {
           console.error('roomId 객체에 id 필드가 없습니다:', roomId);
-          this.showMessage({
+          showMessage({
             type: 'error',
             text: '채팅방 ID를 찾을 수 없습니다.'
           });
@@ -96,10 +93,23 @@ export default {
       actualRoomId = String(actualRoomId);
       console.log('라우터로 이동할 roomId:', actualRoomId);
       
-      this.$router.push({ name: 'ChatRoom', params: { roomId: actualRoomId } });
-    },
-    showMessage(message) {
-      this.showSnackbar(message.text, message.type);
+      // 선택된 채팅방 ID 업데이트
+      selectedChatRoomId.value = actualRoomId;
+      
+      router.push({ name: 'ChatRoom', params: { roomId: actualRoomId } });
+    }
+    
+    // 라우트 변경 시 선택된 채팅방 ID 업데이트
+    watch(() => route.params.roomId, (newRoomId) => {
+      if (newRoomId) {
+        selectedChatRoomId.value = newRoomId;
+      }
+    }, { immediate: true })
+    
+    return {
+      selectedChatRoomId,
+      onChatSelected,
+      showMessage
     }
   }
 }
