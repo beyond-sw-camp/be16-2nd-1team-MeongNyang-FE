@@ -272,23 +272,19 @@ export default {
       if (userInfo.value?.mainPetId && petStore.pets.length > 0) {
         const representativePet = petStore.pets.find(pet => pet.id === userInfo.value.mainPetId)
         console.log('🔍 찾은 대표 펫:', representativePet)
+        console.log('🔍 대표 펫 ID:', representativePet?.id)
+        console.log('🔍 대표 펫 URL:', representativePet?.url)
         if (representativePet?.url) {
-          console.log('✅ 펫 정보에서 URL 찾음:', representativePet.url)
+          console.log('✅ 대표 펫 이미지 사용:', representativePet.url)
           return representativePet.url
+        } else {
+          console.log('❌ 대표 펫에 이미지 없음, 기본 이미지 표시')
+          return null // 대표 펫에 이미지가 없으면 기본 아이콘 표시
         }
       }
       
-      // 3순위: 첫 번째 펫의 이미지 사용
-      if (petStore.pets.length > 0) {
-        const firstPet = petStore.pets[0]
-        if (firstPet?.url) {
-          console.log('✅ 첫 번째 펫 이미지 사용:', firstPet.url)
-          return firstPet.url
-        }
-      }
-      
-      // 4순위: 기본 이미지 (동물을 등록하지 않았을 때)
-      console.log('❌ 펫 이미지 없음, 기본 이미지 사용')
+      // 3순위: 기본 이미지 (대표 펫이 없거나 펫이 등록되지 않았을 때)
+      console.log('❌ 대표 펫 없음, 기본 이미지 사용')
       return null // null이면 v-avatar에서 기본 아이콘 표시
     })
 
@@ -311,20 +307,16 @@ export default {
         const representativePet = petStore.pets.find(pet => pet.id === userInfo.value.mainPetId)
         console.log('🔍 찾은 대표 펫 (강제):', representativePet)
         if (representativePet?.url) {
-          console.log('✅ 펫 정보에서 URL 찾음 (강제):', representativePet.url)
+          console.log('✅ 대표 펫 이미지 사용 (강제):', representativePet.url)
           return representativePet.url
+        } else {
+          console.log('❌ 대표 펫에 이미지 없음, 기본 이미지 표시 (강제)')
+          return null // 대표 펫에 이미지가 없으면 기본 아이콘 표시
         }
       }
       
-      // 3순위: 첫 번째 펫의 이미지 사용
-      if (petStore.pets.length > 0) {
-        const firstPet = petStore.pets[0]
-        console.log('✅ 첫 번째 펫 이미지 사용 (강제):', firstPet.url)
-        return firstPet.url
-      }
-      
-      // 4순위: 기본 이미지 (동물을 등록하지 않았을 때)
-      console.log('❌ 펫 이미지 없음, 기본 이미지 사용 (강제)')
+      // 3순위: 기본 이미지 (대표 펫이 없거나 펫이 등록되지 않았을 때)
+      console.log('❌ 대표 펫 없음, 기본 이미지 사용 (강제)')
       return null // null이면 v-avatar에서 기본 아이콘 표시
     })
     
@@ -866,3 +858,4 @@ export default {
   }
 }
 </style>
+

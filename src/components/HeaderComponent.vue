@@ -167,7 +167,7 @@
          <v-divider class="mb-3"></v-divider>
          <div class="user-info">
            <v-avatar size="40" class="user-avatar">
-             <v-img v-if="user?.profileImage" :src="user.profileImage"></v-img>
+             <v-img v-if="representativePetImage" :src="representativePetImage"></v-img>
              <v-icon v-else size="20">mdi-account</v-icon>
            </v-avatar>
            <div class="user-details">
@@ -191,29 +191,53 @@
 </template>
 
 <script>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { usePetStore } from '@/stores/pet'
 
 export default {
   name: 'HeaderComponent',
   setup() {
     const router = useRouter()
     const authStore = useAuthStore()
+    const petStore = usePetStore()
     
     const isLoggedIn = computed(() => authStore.isAuthenticated)
     const user = computed(() => authStore.user)
     const isAdmin = computed(() => user.value?.role === 'ADMIN')
+    
+    // 대표 반려동물 이미지 가져오기
+    const representativePetImage = computed(() => {
+      const mainPetId = authStore.myPageInfo?.mainPetId
+      if (!mainPetId) return null
+      
+      const representativePet = petStore.pets.find(pet => pet.id === mainPetId)
+      // 대표 펫에 이미지가 있을 때만 반환, 없으면 기본 아이콘 표시
+      return representativePet?.url || null
+    })
     
     const handleLogout = () => {
       authStore.logout()
       router.push('/')
     }
     
+    // 컴포넌트 마운트시 펫 데이터 가져오기
+    onMounted(async () => {
+      if (authStore.isAuthenticated) {
+        try {
+          await petStore.fetchPets()
+        } catch (error) {
+          console.error('HeaderComponent: 펫 데이터 로드 실패:', error)
+        }
+      }
+    })
+    
     return {
       isLoggedIn,
       user,
       isAdmin,
+      representativePetImage,
       handleLogout
     }
   }

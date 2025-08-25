@@ -169,7 +169,22 @@ export const userAPI = {
     apiClient.post('/users/logout', null, { headers: { [RT_HEADER_RAW]: refreshToken } }),
 
   // 대표 동물 설정
-  setMainPet: (petId) => apiClient.put(`/users/my-page/${petId}/main-pet`),
+  setMainPet: async (petId) => {
+    try {
+      console.log('🔄 petAPI.setMainPet 시작:', petId)
+      console.log('🔍 API 호출 URL:', `/users/my-page/${petId}/main-pet`)
+      
+      const response = await apiClient.put(`/users/my-page/${petId}/main-pet`)
+      console.log('✅ petAPI.setMainPet 성공:', response)
+      return response
+    } catch (error) {
+      console.error('❌ petAPI.setMainPet 에러:', error)
+      console.error('❌ 에러 상세:', error.response?.data)
+      console.error('❌ 에러 상태:', error.response?.status)
+      console.error('❌ 에러 메시지:', error.message)
+      throw error
+    }
+  },
   
   // 마이페이지 정보 조회
   getMyPage: () => apiClient.get('/users/my-page'),
@@ -418,18 +433,21 @@ export const petAPI = {
   // 다른 사용자의 반려동물 목록 조회
   getOtherUserPets: (userId) => apiClient.get('/pets', { params: { userId } }),
   
-  // 대표 펫 설정
-  setMainPet: (petId) => apiClient.put(`/pets/${petId}/main`),
+  // // 대표 펫 설정
+  // setMainPet: (petId) => apiClient.put(`/pets/${petId}/main`),
   
-  // 대표 반려동물 설정 (다른 엔드포인트)
-  setMainPetAlt: (petId) => apiClient.put(`/users/my-page/${petId}/main-pet`),
+  // // 대표 반려동물 설정 (다른 엔드포인트)
+  // setMainPetAlt: (petId) => apiClient.put(`/users/my-page/${petId}/main-pet`),
   
   // 반려동물 수정
   update: async (petId, petData, petImg) => {
-    console.log('=== 반려동물 수정 시작 ===')
-    console.log('petId:', petId)
-    console.log('petData:', petData)
-    console.log('petImg:', petImg)
+    console.log('🔥🔥🔥 === 반려동물 수정 API 호출 시작 === 🔥🔥🔥')
+    console.log('🔍 petId:', petId)
+    console.log('🔍 petData:', petData)
+    console.log('🔍 petImg:', petImg)
+    console.log('🔍 petImg 타입:', typeof petImg)
+    console.log('🔍 petImg === null:', petImg === null)
+    console.log('🔍 petImg === "REMOVE_IMAGE":', petImg === 'REMOVE_IMAGE')
     
     // 백엔드가 기대하는 multipart/form-data 구조로 전송
     const formData = new FormData()
@@ -440,27 +458,65 @@ export const petAPI = {
     })
     formData.append('PetRegisterReq', petDataBlob)
     
-    // 이미지 파일 추가 (선택사항) - 다시 활성화
-    if (petImg) {
-      // 백엔드 Pet.java의 @RequestPart 어노테이션에 맞는 필드명 시도
-      formData.append('url', petImg)  // Pet.java에서 petProfileUrl = req.getUrl()이므로
-      console.log('✅ 수정 시 이미지 파일 추가됨 (url 필드):', petImg.name, petImg.size, 'bytes')
+    // 🚨 이미지 처리 로직 분석
+    console.log('🚨🚨🚨 이미지 처리 분기 시작 🚨🚨🚨')
+    if (petImg === 'REMOVE_IMAGE') {
+      // 이미지 제거 요청: url 필드를 아예 보내지 않음 (file == null 조건)
+      console.log('🗑️🗑️🗑️ 이미지 제거 요청 - url 필드 미전송으로 백엔드에서 삭제 처리!')
+    } else if (petImg && petImg !== null && typeof petImg === 'object' && petImg instanceof File) {
+      // 새 이미지 파일 업로드 (File 객체인 경우에만)
+      formData.append('url', petImg)
+      console.log('📷📷📷 새 이미지 파일 업로드:', petImg.name, petImg.size, 'bytes')
+    } else {
+      // petImg가 null이면 백엔드에 "기존 이미지 유지" 신호를 보내야 함
+      console.log('🛡️🛡️🛡️ 기존 이미지 유지 - 빈 파일 전송으로 백엔드에 KEEP 신호!')
+      console.log('   🔍 petImg 값:', petImg)
+      console.log('   🔍 petImg 타입:', typeof petImg)
+      console.log('   🔍 petImg instanceof File:', petImg instanceof File)
+      
+      // 🔥 백엔드 로직에 맞춰 빈 파일을 전송 (file != null && file.isEmpty() 조건)
+      const emptyFile = new File([''], 'keep_existing.txt', { type: 'text/plain' })
+      formData.append('url', emptyFile)
+      console.log('📤 백엔드에 빈 파일 전송 - 기존 이미지 유지됨!')
     }
+    console.log('🚨🚨🚨 이미지 처리 분기 완료 🚨🚨🚨')
     
     // FormData 디버깅
-    console.log('=== FormData 구조 (UPDATE) ===')
+    console.log('📦📦📦 === FormData 최종 구조 확인 === 📦📦📦')
+    let hasUrlField = false
     for (let [key, value] of formData.entries()) {
-      console.log(`${key}:`, value)
+      console.log(`🔍 ${key}:`, value)
+      if (key === 'url') {
+        hasUrlField = true
+        console.log('🚨 URL 필드 발견! 백엔드로 이미지 처리 신호가 전송됩니다!')
+        if (value instanceof File && value.size === 0) {
+          console.log('  → 빈 파일 = 기존 이미지 유지 요청!')
+        } else if (value instanceof File && value.size > 0) {
+          console.log('  → 새 파일 = 이미지 업로드 요청!')
+        }
+      }
       if (value instanceof Blob) {
         console.log(`  - Blob type: ${value.type}`)
         console.log(`  - Blob size: ${value.size}`)
+        if (key === 'url' && value.size === 0) {
+          console.log('  🗑️ 빈 Blob = 이미지 삭제 요청!')
+        }
       }
       if (value instanceof File) {
         console.log(`  - File name: ${value.name}`)
         console.log(`  - File type: ${value.type}`)
         console.log(`  - File size: ${value.size}`)
+        if (key === 'url') {
+          console.log('  📷 새 이미지 파일 업로드!')
+        }
       }
     }
+    if (!hasUrlField) {
+      console.log('🗑️ URL 필드 없음 = 백엔드에서 이미지 삭제됨!')
+    } else {
+      console.log('⚠️ URL 필드 있음 = 이미지 처리 요청!')
+    }
+    console.log('📦📦📦 === FormData 구조 확인 완료 === 📦📦📦')
     
     try {
       const response = await apiClient.put(`/pets/${petId}`, formData, {

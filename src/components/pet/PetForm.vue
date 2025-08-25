@@ -17,12 +17,21 @@
               :color="getSpeciesIconColor()" 
               :icon="getSpeciesIcon()" 
             />
-            <!-- 이미지가 있는 경우: 이미지 표시 -->
+            <!-- 이미지가 있고 제거되지 않은 경우: 이미지 표시 -->
             <v-img 
-              v-else
+              v-else-if="previewImage && !imageRemoved"
               :src="previewImage" 
-              cover 
+              :alt="`${petData.name || '반려동물'} 사진`"
+              cover
+              :key="`preview-${previewImage}`"
             />
+            <!-- 예상치 못한 상태: 디버그용 -->
+            <div v-else class="debug-state">
+              <v-icon size="32" color="warning">mdi-alert</v-icon>
+              <p>디버그: 예상치 못한 상태</p>
+              <p>imageRemoved: {{ imageRemoved }}</p>
+              <p>previewImage: {{ previewImage }}</p>
+            </div>
           </v-avatar>
           
           <div class="image-actions">
@@ -38,7 +47,7 @@
             </v-btn>
             
             <v-btn
-              v-if="previewImage"
+              v-if="previewImage && !imageRemoved"
               color="error"
               variant="outlined"
               size="small"
@@ -447,6 +456,10 @@ export default {
     
     // 수정 모드일 때 기존 데이터 로드
     watch(() => props.pet, (newPet) => {
+      console.log('🔄 watch props.pet 트리거됨')
+      console.log('새 펫 데이터:', newPet)
+      console.log('props.isEdit:', props.isEdit)
+      
       if (newPet) {
         console.log('🔍 수정 모드 - 기존 펫 데이터:', newPet)
         
@@ -475,19 +488,62 @@ export default {
         petData.birthday = newPet.birthday || null
         petData.introduce = newPet.introduce || ''
         
-        // 기존 이미지가 있으면 미리보기 설정
-        if (newPet.url) {
-          previewImage.value = newPet.url
-          imageRemoved.value = false // 🔥 이미지 제거 상태 초기화
+        // 기존 이미지 상태 초기화
+        console.log('🖼️ 이미지 상태 초기화 시작')
+        console.log('기존 펫 이미지 URL:', newPet.url)
+        console.log('수정 모드 여부:', props.isEdit)
+        console.log('현재 previewImage:', previewImage.value)
+        console.log('현재 imageFile:', imageFile.value)
+        console.log('현재 imageRemoved:', imageRemoved.value)
+        
+        // 수정 모드일 때만 기존 이미지 보존
+        if (props.isEdit) {
+          // 🚨 수정 모드: 기존 이미지 절대 삭제하지 않음!
+          imageFile.value = null  // 새 파일은 없음
+          imageRemoved.value = false  // 🔥 제거 상태를 false로 강제 설정
+          
+          // 기존 이미지가 있으면 미리보기 설정
+          if (newPet.url && newPet.url.trim() !== '') {
+            previewImage.value = newPet.url
+            console.log('✅ 수정 모드 - 기존 이미지 미리보기 유지:', newPet.url)
+            console.log('🔥 imageRemoved 강제 false 설정:', imageRemoved.value)
+          } else {
+            previewImage.value = null
+            console.log('✅ 수정 모드 - 기존 이미지 없음')
+          }
         } else {
-          imageRemoved.value = false // 🔥 이미지가 없어도 상태 초기화
+          // 새 등록 모드: 모든 상태 초기화
+          imageFile.value = null
+          imageRemoved.value = false
+          previewImage.value = null
+          console.log('✅ 새 등록 모드 - 모든 이미지 상태 초기화')
         }
         
         // 강제로 상태 동기화
         nextTick(() => {
-          imageRemoved.value = false
+          console.log('🔄 nextTick - 이미지 상태 최종 확인:', {
+            previewImage: previewImage.value,
+            imageFile: imageFile.value,
+            imageRemoved: imageRemoved.value,
+            isEdit: props.isEdit
+          })
         })
+      } else {
+        console.log('🔄 펫 데이터가 null - 새 등록 모드로 추정')
+        // 펫 데이터가 없으면 새 등록 모드
+        imageFile.value = null
+        imageRemoved.value = false
+        previewImage.value = null
+        console.log('✅ 새 등록 모드 (null) - 모든 이미지 상태 초기화')
       }
+    }, { immediate: true })
+
+    // isEdit 상태 변화 감지
+    watch(() => props.isEdit, (newIsEdit, oldIsEdit) => {
+      console.log('🔄 watch props.isEdit 트리거됨')
+      console.log('이전 isEdit:', oldIsEdit, '→ 새 isEdit:', newIsEdit)
+      console.log('현재 pet:', props.pet)
+      console.log('현재 previewImage:', previewImage.value)
     }, { immediate: true })
 
     // 생일 변경 시 나이 자동 계산
@@ -571,16 +627,21 @@ export default {
       }
     }
     
-    // 이미지 제거
+    // 이미지 제거 - 사용자가 명시적으로 삭제 버튼을 클릭했을 때만 호출
     const clearImage = () => {
-      console.log('🗑️ 이미지 제거 함수 호출됨')
+      console.log('🗑️ 사용자 의도적 이미지 제거 버튼 클릭됨')
+      console.log('제거 전 상태:', {
+        imageFile: imageFile.value,
+        previewImage: previewImage.value,
+        imageRemoved: imageRemoved.value
+      })
       
-      // 모든 이미지 관련 상태 완전 초기화
+      // 사용자가 명시적으로 이미지 삭제를 요청한 상태로 설정
       imageFile.value = null
       previewImage.value = null
-      imageRemoved.value = true
+      imageRemoved.value = true  // 🔥 사용자 의도적 삭제 표시
       
-      console.log('✅ 이미지 제거 완료:', {
+      console.log('🗑️ 사용자 의도적 이미지 제거 완료:', {
         imageFile: imageFile.value,
         previewImage: previewImage.value,
         imageRemoved: imageRemoved.value
@@ -648,7 +709,39 @@ export default {
         let result
         if (props.isEdit) {
           // 수정 모드
-          result = await petStore.updatePet(props.pet.id, submitData, imageFile.value)
+          console.log('🔄 펫 수정 모드')
+          console.log('이미지 제거 상태:', imageRemoved.value)
+          console.log('새 이미지 파일:', imageFile.value)
+          
+          // 이미지 처리 로직:
+          // 1. imageRemoved가 true이고 imageFile이 null이면 → 이미지 제거
+          // 2. imageFile이 있으면 → 새 이미지로 교체
+          // 3. 둘 다 없으면 → 기존 이미지 유지 (백엔드에 이미지 필드를 보내지 않음)
+          let imageToSend = null
+          
+          console.log('🔍 이미지 처리 상태 분석:')
+          console.log('  - imageRemoved.value:', imageRemoved.value)
+          console.log('  - imageFile.value:', imageFile.value)
+          console.log('  - previewImage.value:', previewImage.value)
+          
+          // 🚨 이미지 처리 로직 강화 - 의도하지 않은 삭제 방지
+          if (imageRemoved.value === true && !imageFile.value) {
+            // 사용자가 명시적으로 이미지 제거 버튼을 클릭한 경우만
+            imageToSend = 'REMOVE_IMAGE'
+            console.log('🗑️ 사용자 의도적 이미지 제거 요청 - 삭제 버튼 클릭됨')
+          } else if (imageFile.value && imageFile.value instanceof File) {
+            // 사용자가 새 이미지를 선택한 경우
+            imageToSend = imageFile.value
+            console.log('📷 새 이미지 업로드:', imageFile.value.name)
+          } else {
+            // 🔥 기존 이미지 유지 (아무 변경 없음) - 가장 안전한 옵션
+            imageToSend = null
+            console.log('🛡️ 기존 이미지 보존 - 백엔드에 이미지 필드 전송하지 않음')
+            console.log('   → imageRemoved:', imageRemoved.value)
+            console.log('   → imageFile:', imageFile.value)
+          }
+          
+          result = await petStore.updatePet(props.pet.id, submitData, imageToSend)
         } else {
           // 등록 모드
           result = await petStore.registerPet(submitData, imageFile.value)
@@ -670,6 +763,11 @@ export default {
     
     // 컴포넌트 마운트 시 종류 목록 로드
     onMounted(async () => {
+      console.log('🔄 PetForm 마운트됨')
+      console.log('마운트 시 props.pet:', props.pet)
+      console.log('마운트 시 props.isEdit:', props.isEdit)
+      console.log('마운트 시 previewImage:', previewImage.value)
+      
       if (petStore.getSpecies.length === 0) {
         console.log('fetchSpecies', await petStore.fetchSpecies())
       }
@@ -1033,5 +1131,20 @@ export default {
   .form-actions {
     padding: var(--mm-space-3);
   }
+}
+
+.debug-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 1rem;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.debug-state p {
+  margin: 0.2rem 0;
 }
 </style>
