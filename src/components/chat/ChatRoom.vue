@@ -190,15 +190,29 @@
       <!-- 로딩 상태 -->
       <div v-if="loading" class="loading-chat-state">
         <div class="loading-content">
-          <div class="loading-spinner">
-            <v-progress-circular
-              indeterminate
-              color="primary"
-              size="64"
-              width="6"
-            ></v-progress-circular>
+          <!-- 메인 로딩 애니메이션 -->
+          <div class="loading-animation">
+            <div class="chat-bubble-loader">
+              <div class="bubble bubble-1"></div>
+              <div class="bubble bubble-2"></div>
+              <div class="bubble bubble-3"></div>
+            </div>
           </div>
-          <div class="loading-text">채팅방을 불러오는 중...</div>
+          
+          <!-- 로딩 텍스트 -->
+          <div class="loading-text">
+            <span class="loading-dots">
+              채팅방을 불러오는 중<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>
+            </span>
+          </div>
+          
+          <!-- 부가 정보 -->
+          <div class="loading-info">
+            <div class="loading-tip">
+              <v-icon size="16" color="primary" class="tip-icon">mdi-lightbulb-outline</v-icon>
+              <span>잠시만 기다려주세요</span>
+            </div>
+          </div>
         </div>
       </div>
       
@@ -2166,34 +2180,153 @@ export default {
   min-height: 400px;
   padding: 40px 20px;
   text-align: center;
+  background: linear-gradient(135deg, rgba(232, 125, 125, 0.02) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border-radius: 24px;
+  margin: 20px;
+  backdrop-filter: blur(10px);
 }
 
 .loading-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
+  gap: 32px;
 }
 
-.loading-spinner {
-  animation: pulse 2s infinite;
+/* 채팅 버블 로더 애니메이션 */
+.loading-animation {
+  position: relative;
+  width: 120px;
+  height: 80px;
 }
 
-.loading-text {
-  font-size: var(--mm-text-lg);
-  font-weight: 500;
-  color: var(--mm-on-surface-variant);
-  animation: fadeInOut 2s infinite;
+.chat-bubble-loader {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-@keyframes fadeInOut {
+.bubble {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #E87D7D 0%, #FF6B6B 100%);
+  position: absolute;
+  animation: bubbleFloat 2s ease-in-out infinite;
+  box-shadow: 0 4px 16px rgba(232, 125, 125, 0.3);
+}
+
+.bubble-1 {
+  left: 20px;
+  animation-delay: 0s;
+}
+
+.bubble-2 {
+  left: 50px;
+  animation-delay: 0.3s;
+}
+
+.bubble-3 {
+  left: 80px;
+  animation-delay: 0.6s;
+}
+
+@keyframes bubbleFloat {
   0%, 100% {
-    opacity: 0.6;
+    transform: translateY(0) scale(1);
+    opacity: 0.7;
   }
-  50% {
+  25% {
+    transform: translateY(-20px) scale(1.1);
     opacity: 1;
   }
+  50% {
+    transform: translateY(-10px) scale(1.05);
+    opacity: 0.9;
+  }
+  75% {
+    transform: translateY(-15px) scale(1.15);
+    opacity: 0.8;
+  }
 }
+
+/* 로딩 텍스트 */
+.loading-text {
+  font-size: var(--mm-text-xl);
+  font-weight: 600;
+  color: var(--mm-on-surface);
+  text-align: center;
+}
+
+.loading-dots {
+  position: relative;
+}
+
+.dot {
+  display: inline-block;
+  animation: dotPulse 1.4s infinite;
+  opacity: 0;
+}
+
+.dot:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes dotPulse {
+  0%, 60%, 100% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-4px);
+  }
+}
+
+/* 부가 정보 */
+.loading-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.loading-tip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, rgba(232, 125, 125, 0.1) 0%, rgba(255, 107, 107, 0.1) 100%);
+  border-radius: 20px;
+  border: 1px solid rgba(232, 125, 125, 0.2);
+  color: var(--mm-on-surface-variant);
+  font-size: var(--mm-text-sm);
+  font-weight: 500;
+  backdrop-filter: blur(10px);
+  animation: tipGlow 3s ease-in-out infinite;
+}
+
+@keyframes tipGlow {
+  0%, 100% {
+    box-shadow: 0 4px 16px rgba(232, 125, 125, 0.1);
+  }
+  50% {
+    box-shadow: 0 8px 24px rgba(232, 125, 125, 0.2);
+  }
+}
+
+
 
 /* 에러 상태 */
 .error-chat-state {
@@ -2635,6 +2768,17 @@ export default {
   }
   
   .tip-text {
+    color: #e0e0e0;
+  }
+  
+  /* 로딩 상태 다크 모드 */
+  .loading-chat-state {
+    background: linear-gradient(135deg, rgba(232, 125, 125, 0.05) 0%, rgba(64, 64, 64, 0.1) 100%);
+  }
+  
+  .loading-tip {
+    background: linear-gradient(135deg, rgba(232, 125, 125, 0.15) 0%, rgba(64, 64, 64, 0.2) 100%);
+    border-color: #505050;
     color: #e0e0e0;
   }
   
@@ -3131,15 +3275,39 @@ export default {
   .loading-chat-state {
     min-height: 300px;
     padding: 20px 16px;
+    margin: 16px;
+    border-radius: 20px;
   }
   
-  .loading-spinner .v-progress-circular {
-    width: 48px !important;
-    height: 48px !important;
+  .loading-animation {
+    width: 100px;
+    height: 70px;
+  }
+  
+  .bubble {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .bubble-1 {
+    left: 16px;
+  }
+  
+  .bubble-2 {
+    left: 42px;
+  }
+  
+  .bubble-3 {
+    left: 68px;
   }
   
   .loading-text {
-    font-size: var(--mm-text-base);
+    font-size: var(--mm-text-lg);
+  }
+  
+  .loading-tip {
+    padding: 10px 16px;
+    font-size: 12px;
   }
   
   /* 에러 상태 반응형 */
