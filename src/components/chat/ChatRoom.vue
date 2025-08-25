@@ -98,6 +98,7 @@
           <v-icon size="64" color="primary">mdi-cloud-upload</v-icon>
           <div class="text-h6 mt-4">파일을 여기에 놓아주세요</div>
           <div class="text-body-2 text-grey-darken-1">이미지, 문서, 미디어 파일 등을 첨부할 수 있습니다</div>
+          <div class="text-caption text-grey-darken-2 mt-2">파일 크기는 50MB 이하여야 합니다</div>
         </div>
       </div>
       
@@ -324,17 +325,20 @@
         
         <!-- 입력 영역 -->
         <div class="input-area d-flex align-end">
-          <v-btn 
-            icon 
-            @click="triggerFileInput" 
-            class="mr-2 file-attach-btn"
-            :disabled="!stompClient?.connected || isSending"
-            color="primary"
-            variant="outlined"
-            size="large"
-          >
-            <v-icon size="24">mdi-paperclip</v-icon>
-          </v-btn>
+          <div class="file-attach-container">
+            <v-btn 
+              icon 
+              @click="triggerFileInput" 
+              class="file-attach-btn"
+              :disabled="!stompClient?.connected || isSending"
+              color="primary"
+              variant="outlined"
+              size="large"
+            >
+              <v-icon size="24">mdi-paperclip</v-icon>
+            </v-btn>
+            <div class="file-size-limit text-caption text-grey-darken-2">50MB</div>
+          </div>
           
           <input 
             type="file" 
@@ -948,8 +952,58 @@ export default {
       if (fileInput.value) fileInput.value.click()
     }
     
+    // 파일 크기 제한 (50MB)
+    const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB in bytes
+    
+    const validateFileSize = (file) => {
+      if (file.size > MAX_FILE_SIZE) {
+        throw new Error(`파일 크기가 50MB를 초과합니다: ${file.name} (${formatFileSize(file.size)})`)
+      }
+      return true
+    }
+    
     const onFileChange = (event) => {
-      selectedFiles.value = Array.from(event.target.files)
+      const files = Array.from(event.target.files)
+      const validFiles = []
+      const invalidFiles = []
+      
+      files.forEach(file => {
+        try {
+          validateFileSize(file)
+          validFiles.push(file)
+        } catch (error) {
+          invalidFiles.push(file.name)
+          console.error('파일 크기 검증 실패:', error.message)
+        }
+      })
+      
+      // 유효한 파일들만 추가
+      if (validFiles.length > 0) {
+        selectedFiles.value = [...selectedFiles.value, ...validFiles]
+        
+        // 성공 메시지 표시
+        if (showMessage && validFiles.length > 0) {
+          showMessage({
+            type: 'success',
+            text: `${validFiles.length}개 파일이 첨부되었습니다.`
+          })
+        }
+      }
+      
+      // 크기 초과 파일이 있으면 경고 메시지 표시
+      if (invalidFiles.length > 0) {
+        if (showMessage) {
+          showMessage({
+            type: 'error',
+            text: `다음 파일들은 50MB를 초과하여 제외되었습니다: ${invalidFiles.join(', ')}`
+          })
+        } else {
+          alert(`다음 파일들은 50MB를 초과하여 제외되었습니다: ${invalidFiles.join(', ')}`)
+        }
+      }
+      
+      // 파일 입력 필드 초기화
+      if (fileInput.value) fileInput.value.value = null
     }
     
     const removeFile = (index) => {
@@ -1045,15 +1099,42 @@ export default {
       
       const files = Array.from(event.dataTransfer.files)
       if (files.length > 0) {
-        // 기존 선택된 파일에 추가
-        selectedFiles.value = [...selectedFiles.value, ...files]
+        const validFiles = []
+        const invalidFiles = []
         
-        // 성공 메시지 표시
-        if (showMessage) {
-          showMessage({
-            type: 'success',
-            text: `${files.length}개 파일이 첨브되었습니다.`
-          })
+        files.forEach(file => {
+          try {
+            validateFileSize(file)
+            validFiles.push(file)
+          } catch (error) {
+            invalidFiles.push(file.name)
+            console.error('파일 크기 검증 실패:', error.message)
+          }
+        })
+        
+        // 유효한 파일들만 추가
+        if (validFiles.length > 0) {
+          selectedFiles.value = [...selectedFiles.value, ...validFiles]
+          
+          // 성공 메시지 표시
+          if (showMessage) {
+            showMessage({
+              type: 'success',
+              text: `${validFiles.length}개 파일이 첨부되었습니다.`
+            })
+          }
+        }
+        
+        // 크기 초과 파일이 있으면 경고 메시지 표시
+        if (invalidFiles.length > 0) {
+          if (showMessage) {
+            showMessage({
+              type: 'error',
+              text: `다음 파일들은 50MB를 초과하여 제외되었습니다: ${invalidFiles.join(', ')}`
+            })
+          } else {
+            alert(`다음 파일들은 50MB를 초과하여 제외되었습니다: ${invalidFiles.join(', ')}`)
+          }
         }
       }
     }
@@ -1064,6 +1145,20 @@ export default {
     }
     
     const uploadFiles = async () => {
+      // 업로드 전 최종 파일 크기 검증
+      const invalidFiles = []
+      selectedFiles.value.forEach(file => {
+        try {
+          validateFileSize(file)
+        } catch (error) {
+          invalidFiles.push(file.name)
+        }
+      })
+      
+      if (invalidFiles.length > 0) {
+        throw new Error(`다음 파일들은 50MB를 초과하여 업로드할 수 없습니다: ${invalidFiles.join(', ')}`)
+      }
+      
       const formData = new FormData()
       selectedFiles.value.forEach(file => {
         formData.append('files', file)
@@ -2013,6 +2108,24 @@ export default {
 
 .file-selection-area {
   width: 100%;
+}
+
+/* 파일 첨부 버튼 컨테이너 */
+.file-attach-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-right: 12px;
+}
+
+.file-attach-btn {
+  margin-bottom: 4px;
+}
+
+.file-size-limit {
+  font-size: 10px;
+  line-height: 1;
+  opacity: 0.7;
 }
 
 .selected-files-preview {
