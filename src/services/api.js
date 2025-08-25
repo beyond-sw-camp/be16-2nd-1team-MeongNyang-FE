@@ -261,10 +261,10 @@ export const postAPI = {
   getList: (pageable) => apiClient.get('/posts', { params: pageable }),
   
   // 다른 사용자의 일기 목록 조회
-  getUserPosts: (userId, pageable) => apiClient.get(`/users/${userId}/posts`, { params: pageable }),
+  getUserPosts: (userId, pageable) => apiClient.get(`/posts/${userId}`, { params: pageable }),
   
   // 일기 상세 조회
-  getDetail: (postId) => apiClient.get(`/posts/${postId}`),
+  getDetail: (postId) => apiClient.get(`/posts/detail/${postId}`),
   
   // 좋아요
   like: (postId) => apiClient.post(`/posts/${postId}/like`),
@@ -454,6 +454,9 @@ export const petAPI = {
   // 대표 펫 설정
   setMainPet: () => apiClient.put(`/users/pets/main`),
   
+  // 반려동물 존재 여부 확인
+  checkExist: () => apiClient.get('/pets/exist'),
+  
   // 대표 반려동물 설정 (다른 엔드포인트)
   setMainPetAlt: () => apiClient.put(`/users/pets/main`),
   
@@ -562,10 +565,7 @@ export const petAPI = {
   },
   
   // 반려동물 삭제
-  delete: (petId) => apiClient.delete(`/pets/${petId}`),
-  
-  // 펫 등록 여부 확인
-  checkExist: () => apiClient.get('/pets/exist')
+  delete: (petId) => apiClient.delete(`/pets/${petId}`)
 }
 
 // 종류 관련 API

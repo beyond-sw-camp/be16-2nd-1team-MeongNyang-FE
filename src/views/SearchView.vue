@@ -42,7 +42,7 @@ export default {
     const $route = useRoute()
     
                     // 검색 상태
-                const searchType = ref('TITLE')
+                const searchType = ref('CONTENT')
                 const searchKeyword = ref('')
                 const showSearchResults = ref(false)
                 const searchResults = ref([])

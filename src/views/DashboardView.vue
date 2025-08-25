@@ -157,7 +157,13 @@ export default {
     const petStore = usePetStore()
     
     const user = computed(() => authStore.user)
-    const representativePet = computed(() => petStore.getRepresentativePet)
+    const representativePet = computed(() => {
+      const pet = petStore.getRepresentativePet
+      console.log('=== representativePet computed 실행 ===')
+      console.log('대표 반려동물:', pet)
+      console.log('대표 반려동물 이름:', pet?.name)
+      return pet
+    })
     
     const menuItems = ref([
       { title: '홈', icon: 'mdi-home', to: '/dashboard' },
@@ -237,11 +243,22 @@ export default {
     const weeklyLoginDays = ref(5)
     
     // 컴포넌트 마운트 시 데이터 가져오기
-    onMounted(() => {
+    onMounted(async () => {
+      console.log('=== DashboardView onMounted 시작 ===')
+      
+      // 반려동물 데이터 먼저 로드 (대표 반려동물 정보를 위해)
+      console.log('반려동물 데이터 로드 시작...')
+      await petStore.fetchPets()
+      console.log('반려동물 데이터 로드 완료')
+      console.log('대표 반려동물:', representativePet.value)
+      
+      // 통계 데이터 로드
       fetchPetCount()
       fetchDiaryCount()
       fetchMarketCount()
       fetchChatCount()
+      
+      console.log('=== DashboardView onMounted 완료 ===')
     })
 
     const goToRepresentativePet = () => {

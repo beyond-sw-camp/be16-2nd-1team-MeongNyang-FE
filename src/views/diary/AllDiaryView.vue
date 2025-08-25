@@ -149,11 +149,8 @@
             </div>
 
         <!-- 캡션 -->
-        <div class="caption" v-if="post.title">
-          <span class="caption-username">{{ post.petName }}</span>
-          <span class="caption-text">{{ post.title }}</span>
-        </div>
         <div class="caption" v-if="post.content">
+          <span class="caption-username">{{ post.petName }}</span>
           <span class="caption-text">{{ removeHashtags(post.content) }}</span>
         </div>
 
@@ -202,6 +199,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { postAPI } from '@/services/api'
 import LikesModal from '@/components/LikesModal.vue'
+import { checkPetExist } from '@/utils/petValidation'
 
 export default {
   name: 'AllPostsView',
@@ -223,6 +221,7 @@ export default {
     const currentPostId = ref(null)
     const likeProcessingPosts = ref(new Set()) // 좋아요 처리 중인 포스트 ID들
 
+
     // 좋아요 처리 중인지 확인하는 함수
     const isLikeProcessing = (postId) => {
       return likeProcessingPosts.value?.has(postId) || false
@@ -243,14 +242,22 @@ export default {
           
           console.log('가져온 포스트 목록:', newPosts)
           
-          // 백엔드에서 liked 필드 제공 확인
-          console.log('가져온 포스트 목록:', newPosts)
-          
-          // 각 포스트의 좋아요 상태 확인
+          // 각 포스트의 미디어 리스트에서 빈 URL 필터링 (URL 배열 형태)
           newPosts.forEach(post => {
+            if (post.mediaList && Array.isArray(post.mediaList)) {
+              post.mediaList = post.mediaList.filter(url => {
+                const hasValidUrl = url && typeof url === 'string' && url.trim() !== ''
+                if (!hasValidUrl) {
+                  console.log(`포스트 ${post.id}에서 빈 URL 필터링됨:`, url)
+                }
+                return hasValidUrl
+              })
+            }
+            
             console.log(`포스트 ${post.id} 초기 상태:`, {
               liked: post.liked,
-              likeCount: post.likeCount
+              likeCount: post.likeCount,
+              mediaCount: post.mediaList?.length || 0
             })
           })
           
@@ -312,6 +319,10 @@ export default {
       }
       
       try {
+        // 펫 등록 여부 확인
+        const hasPet = await checkPetExist()
+        if (!hasPet) return
+        
         likeProcessingPosts.value.add(postId)
         
         console.log(`좋아요 토글 시작 - 포스트 ${postId}`)
@@ -321,24 +332,71 @@ export default {
           likeCount: post.likeCount
         })
         
-        if (post.liked) {
+        // 즉시 UI 상태 변경 (낙관적 업데이트)
+        const previousLikedState = post.liked
+        post.liked = !post.liked
+        console.log('즉시 UI 상태 변경:', {
+          postId: post.id,
+          previous: previousLikedState,
+          new: post.liked
+        })
+        
+        let response
+        if (previousLikedState) {
           // 좋아요 취소 (백엔드에서 멱등성 보장)
           console.log('좋아요 취소 요청 시작')
-          const response = await postAPI.unlike(postId)
+          response = await postAPI.unlike(postId)
           console.log('좋아요 취소 응답:', response)
           console.log('좋아요 취소 성공')
         } else {
           // 좋아요 추가 (백엔드에서 중복 방지)
           console.log('좋아요 추가 요청 시작')
-          const response = await postAPI.like(postId)
+          response = await postAPI.like(postId)
           console.log('좋아요 추가 응답:', response)
           console.log('좋아요 추가 성공')
         }
         
-        // 좋아요 토글 후 해당 포스트의 최신 데이터를 가져와서 상태 업데이트
-        console.log('포스트 데이터 새로고침 시작')
-        await refreshPostData(postId)
-        console.log('포스트 데이터 새로고침 완료')
+        // 백엔드 응답 구조 확인
+        console.log('좋아요 API 응답:', response.data)
+        
+        if (response.data && response.data.isSuccess) {
+          console.log('좋아요 처리 성공, 상세 정보 재조회')
+          
+          // 좋아요 처리 후 상세 정보를 다시 조회하여 정확한 개수 반영
+          try {
+            const detailResponse = await postAPI.getDetail(postId)
+            if (detailResponse.data && detailResponse.data.isSuccess) {
+              const updatedPost = detailResponse.data.data
+              console.log('상세 정보 재조회 성공:', updatedPost)
+              
+              // 좋아요 개수만 업데이트 (상태는 이미 변경됨)
+              post.likeCount = updatedPost.likeCount
+              
+              console.log('좋아요 정보 업데이트 완료:', {
+                postId: postId,
+                likeCount: updatedPost.likeCount,
+                isLiked: updatedPost.isLiked
+              })
+            }
+          } catch (error) {
+            console.error('상세 정보 재조회 실패:', error)
+            // 재조회 실패 시 수동 계산으로 폴백
+            if (previousLikedState) {
+              post.likeCount = Math.max(0, (post.likeCount || 0) - 1)
+            } else {
+              post.likeCount = (post.likeCount || 0) + 1
+            }
+          }
+        } else {
+          console.log('좋아요 처리 실패, 상태 복원')
+          // 실패 시 상태 복원
+          const post = posts.value.find(p => p.id === postId)
+          if (post) {
+            post.liked = !post.liked
+            console.log(`에러로 인한 상태 복원 - 포스트 ${postId}:`, post.liked)
+          }
+        }
+        console.log('좋아요 처리 완료')
         
         console.log(`좋아요 토글 완료 - 포스트 ${postId}`)
       } catch (error) {
@@ -350,8 +408,14 @@ export default {
           message: error.message
         })
         
-        // 백엔드에서 동시성 제어를 하므로 에러 시 상태 복원 불필요
-        // 에러 메시지만 표시
+        // 에러 시 상태 복원
+        const post = posts.value.find(p => p.id === postId)
+        if (post) {
+          post.liked = !post.liked
+          console.log(`에러로 인한 상태 복원 - 포스트 ${postId}:`, post.liked)
+        }
+        
+        // 에러 메시지 표시
         if (error.response?.data?.message) {
           alert(error.response.data.message)
         } else {
@@ -362,33 +426,7 @@ export default {
       }
     }
 
-    // 특정 포스트 데이터 새로고침
-    const refreshPostData = async (postId) => {
-      try {
-        console.log(`포스트 ${postId} 데이터 새로고침 시작`)
-        const response = await postAPI.getDetail(postId)
-        
-        if (response.data && response.data.data) {
-          const updatedPost = response.data.data
-          const postIndex = posts.value.findIndex(p => p.id === postId)
-          
-          if (postIndex !== -1) {
-            // 백엔드에서 liked 필드를 제공하므로 직접 사용
-            posts.value[postIndex] = {
-              ...posts.value[postIndex], // 기존 데이터 유지 (currentImageIndex 등)
-              liked: updatedPost.liked,
-              likeCount: updatedPost.likeCount
-            }
-            console.log(`포스트 ${postId} 데이터 업데이트 완료:`, {
-              liked: updatedPost.liked,
-              likeCount: updatedPost.likeCount
-            })
-          }
-        }
-      } catch (error) {
-        console.error(`포스트 ${postId} 데이터 새로고침 실패:`, error)
-      }
-    }
+
 
     // 해시태그 제거
     const removeHashtags = (content) => {

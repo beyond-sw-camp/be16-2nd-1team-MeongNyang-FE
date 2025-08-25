@@ -101,14 +101,6 @@
 
     <!-- 입력 필드 -->
     <div class="input-section">
-      <v-text-field
-        v-model="title"
-        placeholder="제목을 입력하세요"
-        variant="outlined"
-        class="title-input"
-        hide-details
-      ></v-text-field>
-      
       <v-textarea
         v-model="content"
         placeholder="내용을 입력하세요(#을 입력하면 해시태그)"
@@ -147,7 +139,6 @@ export default {
     const fileInput = ref(null)
     
     // 폼 데이터
-    const title = ref('')
     const content = ref('')
     const mediaList = ref([])
     const currentMediaIndex = ref(0)
@@ -165,7 +156,7 @@ export default {
     
     // 제출 가능 여부
     const canSubmit = computed(() => {
-      return title.value.trim() && content.value.trim() && mediaList.value.length > 0
+      return content.value.trim() && mediaList.value.length > 0
     })
     
     // 미디어 추가
@@ -288,11 +279,6 @@ export default {
     
     // 제출 처리
     const handleSubmit = async () => {
-      if (!title.value.trim()) {
-        alert('제목을 입력해주세요.')
-        return
-      }
-      
       if (!content.value.trim()) {
         alert('내용을 입력해주세요.')
         return
@@ -305,7 +291,6 @@ export default {
       
       try {
         console.log('=== 다이어리 작성 시작 ===')
-        console.log('제목:', title.value)
         console.log('내용:', content.value)
         console.log('미디어 개수:', mediaList.value.length)
         
@@ -348,7 +333,6 @@ export default {
         
         // JSON 데이터를 별도의 RequestPart로 추가
         const postCreateRequest = {
-          title: title.value.trim(),
           content: content.value.trim()
         }
         
@@ -433,7 +417,6 @@ export default {
     
           return {
         fileInput,
-        title,
         content,
         mediaList,
         currentMediaIndex,
@@ -635,14 +618,7 @@ export default {
   gap: 20px;
 }
 
-.title-input {
-  background: white;
-  border-radius: 12px;
-}
 
-.title-input :deep(.v-field) {
-  border-radius: 12px;
-}
 
 .content-input {
   background: white;

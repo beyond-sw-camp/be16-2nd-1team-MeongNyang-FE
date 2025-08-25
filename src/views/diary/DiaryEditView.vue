@@ -19,7 +19,12 @@
 
     <!-- 이미지 업로드 영역 -->
     <div class="image-upload-section">
-      <div class="image-container" @click="addImage">
+      <div 
+        class="image-container" 
+        @click="addImage"
+        @dragover="handleDragOver"
+        @drop="handleDrop"
+      >
         <div v-if="mediaList.length === 0" class="empty-image-state">
           <v-icon size="64" color="#CBD5E1">mdi-image-plus</v-icon>
           <p class="upload-text">드래그 또는 + 버튼을 눌러 미디어를 삽입하세요(최대 10장)</p>
@@ -101,14 +106,6 @@
 
     <!-- 입력 필드 -->
     <div class="input-section">
-      <v-text-field
-        v-model="title"
-        placeholder="제목을 입력하세요"
-        variant="outlined"
-        class="title-input"
-        hide-details
-      ></v-text-field>
-      
       <v-textarea
         v-model="content"
         placeholder="내용을 입력하세요(#을 입력하면 해시태그)"
@@ -148,7 +145,6 @@ export default {
     const fileInput = ref(null)
     
     // 폼 데이터
-    const title = ref('')
     const content = ref('')
     const mediaList = ref([])
     const currentMediaIndex = ref(0)
@@ -168,8 +164,85 @@ export default {
     
     // 제출 가능 여부
     const canSubmit = computed(() => {
-      return title.value.trim() && content.value.trim() && mediaList.value.length > 0
+      return content.value.trim() && mediaList.value.length > 0
     })
+    
+               // 수정사항이 있는지 확인
+           const hasChanges = computed(() => {
+             console.log('=== 수정사항 확인 시작 ===')
+             console.log('기존 미디어 개수:', existingMedia.value.length)
+             console.log('현재 미디어 리스트:', mediaList.value)
+             
+             // 내용이 변경되었는지 확인
+             const originalPost = existingMedia.value.length > 0 ? {
+               content: content.value,
+               mediaCount: existingMedia.value.length
+             } : null
+             
+             console.log('원본 포스트 데이터:', originalPost)
+             
+             if (!originalPost) {
+               console.log('새로 생성된 포스트 - 수정사항 있음')
+               return true // 새로 생성된 경우
+             }
+             
+             // 현재 상태와 비교
+             const currentState = {
+               content: content.value,
+               mediaCount: mediaList.value.length
+             }
+             
+             console.log('현재 상태:', currentState)
+             
+             const contentChanged = originalPost.content !== currentState.content
+             const mediaCountChanged = originalPost.mediaCount !== currentState.mediaCount
+             
+             // 미디어 내용 변경 확인 (기존 파일 삭제/추가/교체)
+             const mediaContentChanged = (() => {
+               // 기존 미디어와 현재 미디어 비교
+               const existingMediaUrls = existingMedia.value.map(media => media.url).sort()
+               const currentMediaUrls = mediaList.value
+                 .filter(media => media.isExisting)
+                 .map(media => media.url)
+                 .sort()
+               
+               console.log('기존 미디어 URL들:', existingMediaUrls)
+               console.log('현재 기존 미디어 URL들:', currentMediaUrls)
+               
+               // URL 배열이 다르면 내용 변경
+               if (existingMediaUrls.length !== currentMediaUrls.length) {
+                 console.log('미디어 URL 개수 다름 - 내용 변경됨')
+                 return true
+               }
+               
+               for (let i = 0; i < existingMediaUrls.length; i++) {
+                 if (existingMediaUrls[i] !== currentMediaUrls[i]) {
+                   console.log('미디어 URL 내용 다름 - 내용 변경됨')
+                   return true
+                 }
+               }
+               
+               // 새로 추가된 파일이 있는지 확인
+               const hasNewFiles = mediaList.value.some(media => !media.isExisting)
+               if (hasNewFiles) {
+                 console.log('새로 추가된 파일 있음 - 내용 변경됨')
+                 return true
+               }
+               
+               console.log('미디어 내용 변경 없음')
+               return false
+             })()
+             
+             console.log('내용 변경:', contentChanged, `"${originalPost.content}" -> "${currentState.content}"`)
+             console.log('미디어 개수 변경:', mediaCountChanged, `${originalPost.mediaCount} -> ${currentState.mediaCount}`)
+             console.log('미디어 내용 변경:', mediaContentChanged)
+             
+             const hasChangesResult = contentChanged || mediaCountChanged || mediaContentChanged
+             console.log('최종 수정사항 여부:', hasChangesResult)
+             console.log('=== 수정사항 확인 완료 ===')
+             
+             return hasChangesResult
+           })
     
     // 포스트 데이터 가져오기
     const fetchPostData = async () => {
@@ -183,18 +256,32 @@ export default {
         
         if (response.data && response.data.data) {
           const post = response.data.data
-          title.value = post.title || ''
           content.value = post.content || ''
           
           // 기존 미디어 설정
           if (post.mediaList && post.mediaList.length > 0) {
-            existingMedia.value = post.mediaList.map((media, index) => ({
-              url: media,
-              type: media.includes('.mp4') ? 'video' : 'image',
-              isExisting: true,
-              index: index
-            }))
+            console.log('기존 미디어 리스트:', post.mediaList)
+            existingMedia.value = post.mediaList.map((media, index) => {
+              // media가 문자열인지 객체인지 확인
+              const mediaUrl = typeof media === 'string' ? media : media.url || media.fileName
+              const mediaType = mediaUrl.includes('.mp4') ? 'video' : 'image'
+              
+              console.log(`기존 미디어 ${index}:`, {
+                original: media,
+                url: mediaUrl,
+                type: mediaType
+              })
+              
+              return {
+                url: mediaUrl,
+                type: mediaType,
+                isExisting: true,
+                index: index,
+                originalData: media // 원본 데이터 보존
+              }
+            })
             mediaList.value = [...existingMedia.value]
+            console.log('설정된 기존 미디어:', existingMedia.value)
           }
           
           console.log('포스트 데이터 설정 완료')
@@ -211,6 +298,54 @@ export default {
       }
     }
     
+
+    
+    // URL을 File 객체로 변환
+    const urlToFile = async (url, fileName) => {
+      try {
+        const response = await fetch(url)
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        
+        const blob = await response.blob()
+        const file = new File([blob], fileName, { type: blob.type })
+        return file
+      } catch (error) {
+        console.error('URL을 File로 변환 실패:', error)
+        throw error
+      }
+    }
+    
+    // URL에서 파일명 추출 (마지막 - 이후 부분)
+    const extractFileNameFromUrl = (url) => {
+      if (!url) return 'unknown.jpg'
+      
+      try {
+        // URL에서 파일명 부분 추출
+        const urlParts = url.split('/')
+        const fullFileName = urlParts[urlParts.length - 1]
+        
+        // URL 디코딩
+        const decodedFileName = decodeURIComponent(fullFileName)
+        
+        // - 이후 부분 추출
+        const dashIndex = decodedFileName.lastIndexOf('-')
+        if (dashIndex !== -1) {
+          const fileName = decodedFileName.substring(dashIndex + 1)
+          console.log('파일명 추출:', { original: decodedFileName, extracted: fileName })
+          return fileName
+        }
+        
+        // -가 없으면 전체 파일명 사용
+        console.log('파일명 추출 (대시 없음):', decodedFileName)
+        return decodedFileName
+      } catch (error) {
+        console.error('파일명 추출 실패:', error)
+        return 'unknown.jpg'
+      }
+    }
+    
     // 미디어 추가
     const addImage = () => {
       if (mediaList.value.length >= 10) {
@@ -222,31 +357,65 @@ export default {
     
     // 파일 선택 처리
     const handleFileSelect = (event) => {
+      console.log('=== 파일 선택 처리 시작 ===')
       const files = Array.from(event.target.files)
+      console.log('선택된 파일들:', files)
       
       if (mediaList.value.length + files.length > 10) {
         alert('최대 10개까지만 업로드할 수 있습니다.')
         return
       }
       
-      files.forEach(file => {
-        if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
-          const reader = new FileReader()
-          reader.onload = (e) => {
-            const mediaType = file.type.startsWith('image/') ? 'image' : 'video'
-            mediaList.value.push({
-              url: e.target.result,
-              type: mediaType,
-              file: file,
-              isExisting: false
-            })
-          }
-          reader.readAsDataURL(file)
+      // 파일 유효성 검사 및 처리
+      const validFiles = files.filter(file => {
+        if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+          alert(`${file.name}은(는) 지원하지 않는 파일 형식입니다. 이미지나 비디오 파일만 업로드 가능합니다.`)
+          return false
         }
+        
+        // 파일 크기 제한 (10MB)
+        if (file.size > 10 * 1024 * 1024) {
+          alert(`${file.name}의 파일 크기가 너무 큽니다. 10MB 이하의 파일만 업로드 가능합니다.`)
+          return false
+        }
+        
+        return true
+      })
+      
+      console.log('유효한 파일들:', validFiles)
+      
+      // 파일을 미디어 리스트에 추가
+      validFiles.forEach((file) => {
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          const mediaType = file.type.startsWith('image/') ? 'image' : 'video'
+          const newMedia = {
+            url: e.target.result,
+            type: mediaType,
+            file: file,
+            isExisting: false,
+            name: file.name,
+            size: file.size
+          }
+          
+          console.log(`새 미디어 추가:`, newMedia)
+          mediaList.value.push(newMedia)
+          
+          // 현재 미디어 인덱스를 새로 추가된 파일로 설정
+          currentMediaIndex.value = mediaList.value.length - 1
+        }
+        
+        reader.onerror = (error) => {
+          console.error(`파일 ${file.name} 로드 실패:`, error)
+          alert(`${file.name} 파일을 읽는 중 오류가 발생했습니다.`)
+        }
+        
+        reader.readAsDataURL(file)
       })
       
       // 파일 입력 초기화
       event.target.value = ''
+      console.log('=== 파일 선택 처리 완료 ===')
     }
     
     // 현재 미디어 제거
@@ -327,70 +496,106 @@ export default {
     
     // 제출 처리
     const handleSubmit = async () => {
-      if (!title.value.trim()) {
-        alert('제목을 입력해주세요.')
-        return
-      }
-      
       if (!content.value.trim()) {
         alert('내용을 입력해주세요.')
         return
       }
       
+                   // 수정사항이 없는 경우 API 호출 없이 성공 처리
+             console.log('=== 제출 전 수정사항 확인 ===')
+             console.log('hasChanges.value:', hasChanges.value)
+             
+             if (!hasChanges.value) {
+               console.log('수정사항이 없음 - API 호출 생략')
+               console.log('성공 메시지 표시 후 상세 페이지로 이동')
+               alert('다이어리 수정에 성공했습니다!')
+               $router.push(`/diary/${$route.params.id}`)
+               return
+             }
+             
+             console.log('수정사항이 있음 - API 호출 진행')
+      
       try {
         console.log('=== 다이어리 수정 시작 ===')
-        console.log('제목:', title.value)
         console.log('내용:', content.value)
         console.log('미디어 개수:', mediaList.value.length)
         
         const formData = new FormData()
         
-        // 미디어 파일들을 비동기적으로 처리
-        const filePromises = mediaList.value.map(async (media, index) => {
-          console.log(`미디어 ${index} 처리:`, media)
+        // 모든 미디어를 File 객체로 변환하여 FormData에 추가
+        const allFiles = []
+        
+        for (let i = 0; i < mediaList.value.length; i++) {
+          const media = mediaList.value[i]
           
           if (media.isExisting) {
-            // 기존 S3 파일인 경우
-            console.log(`기존 미디어 ${index} 변환 시작:`, media.url)
-            
+            // 기존 파일: URL에서 실제 이미지 데이터를 가져와서 File 객체 생성
             try {
-              const response = await fetch(media.url)
-              const blob = await response.blob()
-              const file = new File([blob], `existing_media_${index}.${media.type === 'video' ? 'mp4' : 'jpg'}`, {
-                type: media.type === 'video' ? 'video/mp4' : 'image/jpeg'
-              })
-              console.log(`기존 미디어 ${index} 변환 완료:`, file)
-              return file
+              console.log(`기존 파일 ${i} 처리 시작:`, media.url)
+              const file = await urlToFile(media.url, extractFileNameFromUrl(media.url))
+              console.log(`기존 파일 ${i} 변환 완료:`, file.name, file.type, file.size)
+              allFiles.push(file)
             } catch (error) {
-              console.error(`기존 미디어 ${index} 변환 실패:`, error)
-              throw new Error(`이미지 로드 실패: ${media.url}`)
+              console.error(`기존 파일 ${i} 변환 실패:`, error)
+              // 변환 실패 시 빈 파일로 대체
+              const fileName = extractFileNameFromUrl(media.url)
+              const emptyFile = new File([''], fileName, { type: 'image/jpeg' })
+              allFiles.push(emptyFile)
             }
           } else {
-            // 새로 업로드된 파일인 경우
-            console.log(`새 미디어 ${index} 추가:`, media.file)
-            return media.file
+            // 새 파일: 실제 파일 사용
+            console.log(`새 파일 ${i} 처리:`, media.file.name, media.file.type, media.file.size)
+            allFiles.push(media.file)
           }
-        })
+        }
         
-        // 모든 파일 처리가 완료될 때까지 대기
-        const files = await Promise.all(filePromises)
+        console.log('전체 파일 목록:', allFiles.map(f => f.name))
+        console.log('전체 파일 개수:', allFiles.length)
         
-        // 파일들을 FormData에 추가
-        files.forEach(file => {
+        // 모든 파일을 FormData에 추가
+        allFiles.forEach((file, index) => {
+          console.log(`파일 ${index} 추가:`, file.name, file.type, file.size)
           formData.append('files', file)
         })
         
+        // 기존 미디어 URL들을 JSON에 포함 (삭제된 파일은 제외)
+        const existingMediaUrls = mediaList.value
+          .filter(media => media.isExisting)
+          .map(media => media.url)
+        
+        console.log('기존 미디어 URL들:', existingMediaUrls)
+        console.log('기존 미디어 개수:', existingMediaUrls.length)
+        
+        // 전체 미디어 리스트 상태 확인
+        console.log('=== 전체 미디어 리스트 상태 ===')
+        mediaList.value.forEach((media, index) => {
+          console.log(`미디어 ${index}:`, {
+            url: media.url.substring(0, 50) + '...',
+            type: media.type,
+            isExisting: media.isExisting,
+            hasFile: !!media.file,
+            name: media.name || '기존 파일'
+          })
+        })
+        
         // 파일이 없으면 빈 파일 추가 (백엔드 요구사항)
-        if (mediaList.value.length === 0) {
+        if (allFiles.length === 0) {
           const emptyFile = new File([''], 'empty.txt', { type: 'text/plain' })
           formData.append('files', emptyFile)
         }
         
         // JSON 데이터를 별도의 RequestPart로 추가
         const postEditReq = {
-          title: title.value.trim(),
-          content: content.value.trim()
+          content: content.value.trim(),
+          existingMediaUrls: existingMediaUrls
         }
+        
+        console.log('=== JSON 요청 데이터 ===')
+        console.log('제목:', postEditReq.title)
+        console.log('내용:', postEditReq.content)
+        console.log('기존 미디어 URL 배열:', postEditReq.existingMediaUrls)
+        console.log('기존 미디어 URL 개수:', postEditReq.existingMediaUrls.length)
+        console.log('전송할 전체 파일 개수:', allFiles.length)
         
         const jsonBlob = new Blob([JSON.stringify(postEditReq)], {
           type: 'application/json'
@@ -428,28 +633,64 @@ export default {
     
     const handleDrop = (e) => {
       e.preventDefault()
+      console.log('=== 드래그 앤 드롭 처리 시작 ===')
+      
       const files = Array.from(e.dataTransfer.files)
+      console.log('드롭된 파일들:', files)
       
       if (mediaList.value.length + files.length > 10) {
         alert('최대 10개까지만 업로드할 수 있습니다.')
         return
       }
       
-      files.forEach(file => {
-        if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
-          const reader = new FileReader()
-          reader.onload = (e) => {
-            const mediaType = file.type.startsWith('image/') ? 'image' : 'video'
-            mediaList.value.push({
-              url: e.target.result,
-              type: mediaType,
-              file: file,
-              isExisting: false
-            })
-          }
-          reader.readAsDataURL(file)
+      // 파일 유효성 검사 및 처리
+      const validFiles = files.filter(file => {
+        if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+          alert(`${file.name}은(는) 지원하지 않는 파일 형식입니다. 이미지나 비디오 파일만 업로드 가능합니다.`)
+          return false
         }
+        
+        // 파일 크기 제한 (10MB)
+        if (file.size > 10 * 1024 * 1024) {
+          alert(`${file.name}의 파일 크기가 너무 큽니다. 10MB 이하의 파일만 업로드 가능합니다.`)
+          return false
+        }
+        
+        return true
       })
+      
+      console.log('유효한 드롭 파일들:', validFiles)
+      
+      // 파일을 미디어 리스트에 추가
+      validFiles.forEach((file) => {
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          const mediaType = file.type.startsWith('image/') ? 'image' : 'video'
+          const newMedia = {
+            url: e.target.result,
+            type: mediaType,
+            file: file,
+            isExisting: false,
+            name: file.name,
+            size: file.size
+          }
+          
+          console.log(`드롭된 미디어 추가:`, newMedia)
+          mediaList.value.push(newMedia)
+          
+          // 현재 미디어 인덱스를 새로 추가된 파일로 설정
+          currentMediaIndex.value = mediaList.value.length - 1
+        }
+        
+        reader.onerror = (error) => {
+          console.error(`드롭 파일 ${file.name} 로드 실패:`, error)
+          alert(`${file.name} 파일을 읽는 중 오류가 발생했습니다.`)
+        }
+        
+        reader.readAsDataURL(file)
+      })
+      
+      console.log('=== 드래그 앤 드롭 처리 완료 ===')
     }
     
     onMounted(async () => {
@@ -459,13 +700,6 @@ export default {
       
       // 기존 데이터 불러오기
       fetchPostData()
-      
-      // 드래그 앤 드롭 이벤트 리스너 추가
-      const imageContainer = document.querySelector('.image-container')
-      if (imageContainer) {
-        imageContainer.addEventListener('dragover', handleDragOver)
-        imageContainer.addEventListener('drop', handleDrop)
-      }
       
       // 키보드 이벤트 리스너 추가
       document.addEventListener('keydown', handleKeydown)
@@ -478,12 +712,12 @@ export default {
     
     return {
       fileInput,
-      title,
       content,
       mediaList,
       currentMediaIndex,
       currentMedia,
       canSubmit,
+      hasChanges,
       isLoading,
       addImage,
       handleFileSelect,
@@ -493,6 +727,8 @@ export default {
       startDrag,
       onDrag,
       endDrag,
+      handleDragOver,
+      handleDrop,
       handleContentInput,
       handleSubmit
     }
@@ -679,14 +915,7 @@ export default {
   gap: 20px;
 }
 
-.title-input {
-  background: white;
-  border-radius: 12px;
-}
 
-.title-input :deep(.v-field) {
-  border-radius: 12px;
-}
 
 .content-input {
   background: white;

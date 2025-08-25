@@ -152,11 +152,8 @@
         </div>
 
         <!-- 캡션 -->
-        <div class="caption" v-if="postData?.title">
-          <span class="caption-username">{{ postData?.petName }}</span>
-          <span class="caption-text">{{ postData?.title }}</span>
-        </div>
         <div class="caption" v-if="postData?.content">
+          <span class="caption-username">{{ postData?.petName }}</span>
           <span class="caption-text">{{ removeHashtags(postData?.content) }}</span>
         </div>
 
@@ -274,6 +271,7 @@ export default {
                 const isLoading = ref(true)
                 const currentImageIndex = ref(0)
                 const isLiked = ref(false)
+
                 const commentsCount = ref(0)
                 const showLikesModal = ref(false)
                 const showCommentsModal = ref(false)
@@ -310,6 +308,10 @@ export default {
       }
       
       try {
+        // 펫 등록 여부 확인
+        const hasPet = await checkPetExist()
+        if (!hasPet) return
+        
         isLikeProcessing.value = true
         const postId = $route.params.id
         
@@ -320,8 +322,16 @@ export default {
           likeCount: postData.value?.likeCount
         })
         
+        // 즉시 UI 상태 변경 (낙관적 업데이트)
+        const previousLikedState = isLiked.value
+        isLiked.value = !isLiked.value
+        console.log('즉시 UI 상태 변경:', {
+          previous: previousLikedState,
+          new: isLiked.value
+        })
+        
         let response
-        if (isLiked.value) {
+        if (previousLikedState) {
           // 좋아요 취소 (백엔드에서 멱등성 보장)
           console.log(`좋아요 취소 요청 시작 - DELETE /posts/${postId}/like`)
           response = await postAPI.unlike(postId)
@@ -343,16 +353,31 @@ export default {
           })
         }
         
-        // 응답 확인
+        // 백엔드 응답 구조 확인
+        console.log('좋아요 API 응답:', response.data)
+        
         if (response.data && response.data.isSuccess) {
-          console.log('API 호출 성공, 포스트 데이터 새로고침 시작')
-          await refreshPostData()
-          console.log('포스트 데이터 새로고침 완료')
-        } else {
-          console.error('API 호출 실패:', {
-            response: response.data,
-            message: response.data?.message || '알 수 없는 오류'
+          console.log('좋아요 처리 성공')
+          
+          // 수동으로 좋아요 개수 업데이트 (즉시 반영)
+          if (previousLikedState) {
+            // 좋아요 취소: 개수 감소
+            postData.value.likeCount = Math.max(0, (postData.value.likeCount || 0) - 1)
+            console.log('좋아요 취소 - 개수 감소:', postData.value.likeCount)
+          } else {
+            // 좋아요 추가: 개수 증가
+            postData.value.likeCount = (postData.value.likeCount || 0) + 1
+            console.log('좋아요 추가 - 개수 증가:', postData.value.likeCount)
+          }
+          
+          console.log('좋아요 처리 완료 - 즉시 반영:', {
+            likeCount: postData.value.likeCount,
+            isLiked: isLiked.value
           })
+        } else {
+          console.log('좋아요 처리 실패, 상태 복원')
+          // 실패 시 상태 복원
+          isLiked.value = previousLikedState
           alert(response.data?.message || '좋아요 처리에 실패했습니다.')
         }
         
@@ -366,8 +391,11 @@ export default {
           message: error.message
         })
         
-        // 백엔드에서 동시성 제어를 하므로 에러 시 상태 복원 불필요
-        // 에러 메시지만 표시
+        // 에러 시 상태 복원
+        isLiked.value = !isLiked.value
+        console.log('에러로 인한 상태 복원:', isLiked.value)
+        
+        // 에러 메시지 표시
         if (error.response?.data?.message) {
           alert(error.response.data.message)
         } else {
@@ -378,27 +406,7 @@ export default {
       }
     }
 
-    // 포스트 데이터 새로고침
-    const refreshPostData = async () => {
-      try {
-        console.log('포스트 데이터 새로고침 시작')
-        const postId = $route.params.id
-        const response = await postAPI.getDetail(postId)
-        
-        if (response.data && response.data.data) {
-          const updatedPost = response.data.data
-          postData.value = updatedPost
-          isLiked.value = updatedPost.liked || updatedPost.isLiked || false
-          
-          console.log('포스트 데이터 새로고침 완료:', {
-            isLiked: isLiked.value,
-            likeCount: updatedPost.likeCount
-          })
-        }
-      } catch (error) {
-        console.error('포스트 데이터 새로고침 실패:', error)
-      }
-    }
+
     
 
     
@@ -539,6 +547,10 @@ export default {
     // 댓글 추가
     const handleAddComment = async (content) => {
       try {
+        // 펫 등록 여부 확인
+        const hasPet = await checkPetExist()
+        if (!hasPet) return
+        
         console.log('=== 댓글 추가 시작 ===')
         console.log('댓글 내용:', content)
         
@@ -557,6 +569,10 @@ export default {
     // 답글 추가
     const handleAddReply = async (replyData) => {
       try {
+        // 펫 등록 여부 확인
+        const hasPet = await checkPetExist()
+        if (!hasPet) return
+        
         console.log('=== 답글 추가 시작 ===')
         console.log('답글 데이터:', replyData)
         
@@ -660,10 +676,29 @@ export default {
                     const postId = $route.params.id
                     const response = await postAPI.getDetail(postId)
                     if (response.data && response.data.data) {
-                      postData.value = response.data.data
-                      // 백엔드에서 liked 필드로 반환하므로 isLiked로 매핑
-                      isLiked.value = response.data.data.liked || response.data.data.isLiked || false
-                      console.log('포스트 데이터 로드 완료, 좋아요 상태:', isLiked.value)
+                      const rawPostData = response.data.data
+                      
+                      // 빈 URL을 가진 미디어 필터링 (URL 배열 형태)
+                      if (rawPostData.mediaList && Array.isArray(rawPostData.mediaList)) {
+                        console.log('원본 미디어 리스트:', rawPostData.mediaList)
+                        rawPostData.mediaList = rawPostData.mediaList.filter(url => {
+                          const hasValidUrl = url && typeof url === 'string' && url.trim() !== ''
+                          if (!hasValidUrl) {
+                            console.log('빈 URL 필터링됨:', url)
+                          }
+                          return hasValidUrl
+                        })
+                        console.log('필터링된 미디어 URL 리스트:', rawPostData.mediaList)
+                        console.log('필터링 후 미디어 개수:', rawPostData.mediaList.length)
+                      }
+                      
+                      postData.value = rawPostData
+                      // 백엔드에서 liked 필드로 반환
+                      isLiked.value = rawPostData.liked || false
+                      console.log('포스트 데이터 로드 완료, 좋아요 상태:', {
+                        liked: rawPostData.liked,
+                        finalStatus: isLiked.value
+                      })
                     }
                   } catch (error) {
                     console.error('포스트 데이터 조회 실패:', error)
