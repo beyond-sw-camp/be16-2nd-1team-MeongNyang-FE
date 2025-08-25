@@ -351,6 +351,10 @@ export default {
   min-width: 0;
   position: relative;
   z-index: 1;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .room-name {
@@ -362,14 +366,18 @@ export default {
   text-overflow: ellipsis;
   white-space: nowrap;
   margin-bottom: 4px;
+  text-align: left;
+  width: 100%;
 }
 
 .room-meta {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   font-size: var(--mm-text-xs);
   color: var(--mm-on-surface-variant);
+  width: 100%;
+  gap: 12px;
 }
 
 .last-message {
@@ -377,7 +385,8 @@ export default {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  margin-right: 12px;
+  text-align: left;
+  min-width: 0;
 }
 
 .last-message-time {
@@ -484,10 +493,13 @@ export default {
   
   .room-meta {
     font-size: 10px;
+    justify-content: flex-start;
+    gap: 8px;
   }
   
   .last-message {
-    margin-right: 8px;
+    text-align: left;
+    min-width: 0;
   }
 }
 
@@ -508,6 +520,18 @@ export default {
   
   .chat-room-item.has-unread {
     background: rgba(232, 125, 125, 0.05);
+  }
+  
+  .room-info {
+    text-align: left;
+  }
+  
+  .room-name {
+    text-align: left;
+  }
+  
+  .last-message {
+    text-align: left;
   }
 }
 
