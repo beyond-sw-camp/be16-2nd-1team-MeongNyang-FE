@@ -175,13 +175,18 @@ export const userAPI = {
   getMyPage: () => apiClient.get('/users/my-page'),
   
   // 프로필 업데이트
-  updateProfile: (profileData, imageFile) => {
-    const formData = new FormData()
-    formData.append('profileUpdateReq', JSON.stringify(profileData))
-    if (imageFile) {
-      formData.append('profileImage', imageFile)
+  updateProfile: async (profileData) => {
+    console.log('프로필 업데이트 요청:', profileData)
+    
+    try {
+      // 백엔드 profile 엔드포인트 호출
+      const response = await apiClient.put('/users/profile', profileData)
+      console.log('프로필 업데이트 성공:', response.data)
+      return response
+    } catch (error) {
+      console.error('프로필 업데이트 실패:', error)
+      throw error
     }
-    return apiClient.put('/users/profile', formData)
   },
   
   // 팔로우

@@ -147,9 +147,11 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { userAPI } from '@/services/api'
+import { usePetStore } from '@/stores/pet'
 
 const router = useRouter()
-const auth = useAuthStore()
+const authStore = useAuthStore()
+const petStore = usePetStore()
 
 const formRef = ref(null)
 const loading = ref(false)
@@ -190,12 +192,17 @@ const nicknameValid = computed(() => {
 
 // 제출 가능 여부
 const canSubmit = computed(() => {
-  return form.name && form.nickname && nicknameAvailable.value === true
+  // 기존 닉네임과 동일하면 중복확인 없이도 저장 가능
+  const isSameNickname = profile.value?.nickname === form.nickname
+  
+  return form.name && 
+         form.nickname && 
+         (nicknameAvailable.value === true || isSameNickname)
 })
 
 // 프로필 정보 로드
 const loadProfile = async () => {
-  if (!auth.isAuthenticated) {
+  if (!authStore.isAuthenticated) {
     router.push('/auth/login')
     return
   }
@@ -205,12 +212,27 @@ const loadProfile = async () => {
     const { data } = await userAPI.getMyPage()
     profile.value = data?.data || data
     
-    // 폼 데이터 초기화
-    form.name = profile.value.name || ''
-    form.nickname = profile.value.nickname || ''
+    console.log('=== 백엔드 응답 전체 구조 ===')
+    console.log('전체 응답:', data)
+    console.log('profile.value:', profile.value)
+    console.log('profile.value.name:', profile.value?.name)
+    console.log('profile.value.nickname:', profile.value?.nickname)
+    console.log('profile.value의 모든 키:', Object.keys(profile.value || {}))
+    console.log('=== 응답 구조 확인 완료 ===')
     
-    // 닉네임 중복 확인 상태 초기화
-    nicknameAvailable.value = null
+    // 폼 데이터 초기화 - 실제 name 필드 사용
+    form.name = profile.value?.name || ''
+    form.nickname = profile.value?.nickname || ''
+    
+    console.log('폼에 설정된 이름:', form.name)
+    console.log('폼에 설정된 닉네임:', form.nickname)
+    
+    // 기존 닉네임이면 사용 가능하게 설정 (중복확인 불필요)
+    if (profile.value?.nickname) {
+      nicknameAvailable.value = true
+    } else {
+      nicknameAvailable.value = null
+    }
   } catch (error) {
     console.error('프로필 로드 실패:', error)
     if (error.response?.status === 401) {
@@ -268,12 +290,18 @@ const getSocialTypeLabel = (socialType) => {
 
     saving.value = true
     try {
-      // 프로필 업데이트 API 호출 (이미지 없이)
+      // 프로필 업데이트 API 호출
       await userAPI.updateProfile(form)
       
       showSuccess.value = true
       
-      // 프로필 화면으로 이동
+      // 성공 후 authStore와 petStore 데이터 새로고침
+      console.log('🔄 프로필 수정 성공, 데이터 새로고침 시작')
+      await authStore.fetchMyPageInfo()
+      await petStore.fetchPets()
+      console.log('✅ 데이터 새로고침 완료')
+      
+      // 프로필 화면으로 이동 (데이터가 이미 새로고침됨)
       setTimeout(() => {
         router.push('/profile')
       }, 1500)
