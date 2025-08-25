@@ -320,10 +320,16 @@ export const marketAPI = {
   // 거래글 수정
   update: (postId, postData, imageFiles) => {
     const formData = new FormData()
-    formData.append('marketPostUpdateReq', JSON.stringify(postData))
-    if (imageFiles) {
-      imageFiles.forEach(file => formData.append('files', file))
+  
+    formData.append(
+      'post',
+      new Blob([JSON.stringify(postData)], { type: 'application/json' })
+    )
+  
+    if (imageFiles && imageFiles.length > 0) {
+      imageFiles.forEach(file => formData.append('imageFiles', file))
     }
+  
     return apiClient.patch(`/markets/${postId}`, formData)
   },
 
