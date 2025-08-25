@@ -217,7 +217,7 @@ const submitExtra = async () => {
       try { await auth.getCurrentUser() } catch (e) {void(e)}
       // 완료됐으니 타이머 키 제거
       sessionStorage.removeItem(STORAGE_KEY.value)
-      router.replace({ name: 'Dashboard' })
+      router.replace({ name: 'Home' })
     } else {
       alert('로그인 토큰을 받지 못했습니다. 다시 시도해주세요.')
     }

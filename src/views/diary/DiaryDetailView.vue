@@ -1,5 +1,5 @@
 <template>
-  <div class="diary-detail-page">
+  <div class="diary-detail-page" :class="{ 'comments-open': showCommentsModal }">
                 <div class="diary-container">
               <!-- 로딩 상태 -->
               <div v-if="isLoading" class="loading-container">
@@ -40,6 +40,10 @@
                           </v-list-item>
                           <v-list-item @click="showDeleteConfirm = true" class="menu-item">
                             <v-list-item-title class="menu-text delete-text">삭제</v-list-item-title>
+                          </v-list-item>
+                          <v-divider></v-divider>
+                          <v-list-item @click="reportPost" class="menu-item">
+                            <v-list-item-title class="menu-text report-text">신고</v-list-item-title>
                           </v-list-item>
                         </v-list>
                       </v-menu>
@@ -107,8 +111,22 @@
               size="x-small" 
               class="like-btn" 
               @click="toggleLike"
+              :disabled="isLikeProcessing"
             >
-              <v-icon :color="isLiked ? 'red' : '#1E293B'" size="20">mdi-heart</v-icon>
+              <v-icon 
+                v-if="!isLikeProcessing" 
+                :color="isLiked ? 'red' : '#1E293B'" 
+                size="20"
+              >
+                mdi-heart
+              </v-icon>
+              <v-progress-circular 
+                v-else 
+                indeterminate 
+                size="16" 
+                width="2" 
+                color="#FF8B8B"
+              ></v-progress-circular>
             </v-btn>
             <span class="like-count">{{ postData?.likeCount || 0 }}</span>
             <v-btn 
@@ -134,11 +152,8 @@
         </div>
 
         <!-- 캡션 -->
-        <div class="caption" v-if="postData?.title">
-          <span class="caption-username">{{ postData?.petName }}</span>
-          <span class="caption-text">{{ postData?.title }}</span>
-        </div>
         <div class="caption" v-if="postData?.content">
+          <span class="caption-username">{{ postData?.petName }}</span>
           <span class="caption-text">{{ removeHashtags(postData?.content) }}</span>
         </div>
 
@@ -153,6 +168,7 @@
             #{{ tag }}
           </span>
         </div>
+
       </div>
     </div>
 
@@ -230,12 +246,14 @@
 
 <script>
             import { ref, computed, onMounted } from 'vue'
-            import { useRoute, useRouter } from 'vue-router'
-            import { postAPI } from '@/services/api'
-            import LikesModal from '@/components/LikesModal.vue'
-            import CommentsModal from '@/components/CommentsModal.vue'
-            import { handleApiError } from '@/utils/errorHandler'
-            import { useAuthStore } from '@/stores/auth'
+import { useRoute, useRouter } from 'vue-router'
+import { postAPI } from '@/services/api'
+import LikesModal from '@/components/LikesModal.vue'
+import CommentsModal from '@/components/CommentsModal.vue'
+import { handleApiError } from '@/utils/errorHandler'
+import { useAuthStore } from '@/stores/auth'
+
+import { checkPetExist } from '@/utils/petValidation'
 
 export default {
   name: 'DiaryDetailView',
@@ -253,6 +271,7 @@ export default {
                 const isLoading = ref(true)
                 const currentImageIndex = ref(0)
                 const isLiked = ref(false)
+
                 const commentsCount = ref(0)
                 const showLikesModal = ref(false)
                 const showCommentsModal = ref(false)
@@ -262,6 +281,7 @@ export default {
                 const commentsList = ref([])
                 const isLoadingLikes = ref(false)
                 const isLoadingComments = ref(false)
+                const isLikeProcessing = ref(false) // 좋아요 처리 중 상태
                 
                 // 현재 사용자 정보
                 const currentUser = computed(() => authStore.user)
@@ -281,37 +301,114 @@ export default {
                 
                 // 좋아요 토글 메서드
     const toggleLike = async () => {
+      // 이미 처리 중이면 무시
+      if (isLikeProcessing.value) {
+        console.log('좋아요 처리 중입니다. 요청을 무시합니다.')
+        return
+      }
+      
       try {
+        // 펫 등록 여부 확인
+        const hasPet = await checkPetExist()
+        if (!hasPet) return
+        
+        isLikeProcessing.value = true
         const postId = $route.params.id
         
-        if (isLiked.value) {
-          // 좋아요 취소
-          await postAPI.unlike(postId)
-          // 백엔드에서 업데이트된 좋아요 수를 받아오거나, 안전하게 감소
-          postData.value.likeCount = Math.max(0, postData.value.likeCount - 1)
-          isLiked.value = false
+        console.log('좋아요 토글 시작')
+        console.log('현재 포스트 상태:', {
+          id: postId,
+          isLiked: isLiked.value,
+          likeCount: postData.value?.likeCount
+        })
+        
+        // 즉시 UI 상태 변경 (낙관적 업데이트)
+        const previousLikedState = isLiked.value
+        isLiked.value = !isLiked.value
+        console.log('즉시 UI 상태 변경:', {
+          previous: previousLikedState,
+          new: isLiked.value
+        })
+        
+        let response
+        if (previousLikedState) {
+          // 좋아요 취소 (백엔드에서 멱등성 보장)
+          console.log(`좋아요 취소 요청 시작 - DELETE /posts/${postId}/like`)
+          response = await postAPI.unlike(postId)
+          console.log('좋아요 취소 응답:', {
+            status: response.status,
+            statusText: response.statusText,
+            data: response.data,
+            success: response.data?.isSuccess
+          })
         } else {
-          // 좋아요 추가
-          await postAPI.like(postId)
-          // 백엔드에서 업데이트된 좋아요 수를 받아오거나, 안전하게 증가
-          postData.value.likeCount++
-          isLiked.value = true
+          // 좋아요 추가 (백엔드에서 중복 방지)
+          console.log(`좋아요 추가 요청 시작 - POST /posts/${postId}/like`)
+          response = await postAPI.like(postId)
+          console.log('좋아요 추가 응답:', {
+            status: response.status,
+            statusText: response.statusText,
+            data: response.data,
+            success: response.data?.isSuccess
+          })
         }
+        
+        // 백엔드 응답 구조 확인
+        console.log('좋아요 API 응답:', response.data)
+        
+        if (response.data && response.data.isSuccess) {
+          console.log('좋아요 처리 성공')
+          
+          // 수동으로 좋아요 개수 업데이트 (즉시 반영)
+          if (previousLikedState) {
+            // 좋아요 취소: 개수 감소
+            postData.value.likeCount = Math.max(0, (postData.value.likeCount || 0) - 1)
+            console.log('좋아요 취소 - 개수 감소:', postData.value.likeCount)
+          } else {
+            // 좋아요 추가: 개수 증가
+            postData.value.likeCount = (postData.value.likeCount || 0) + 1
+            console.log('좋아요 추가 - 개수 증가:', postData.value.likeCount)
+          }
+          
+          console.log('좋아요 처리 완료 - 즉시 반영:', {
+            likeCount: postData.value.likeCount,
+            isLiked: isLiked.value
+          })
+        } else {
+          console.log('좋아요 처리 실패, 상태 복원')
+          // 실패 시 상태 복원
+          isLiked.value = previousLikedState
+          alert(response.data?.message || '좋아요 처리에 실패했습니다.')
+        }
+        
+        console.log('좋아요 토글 완료')
       } catch (error) {
         console.error('좋아요 토글 실패:', error)
+        console.error('에러 상세:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message
+        })
+        
         // 에러 시 상태 복원
-        if (isLiked.value) {
-          // 현재 좋아요 상태가 true라면, 에러로 인해 false로 되돌려야 함
-          isLiked.value = false
-          postData.value.likeCount = Math.max(0, postData.value.likeCount - 1)
+        isLiked.value = !isLiked.value
+        console.log('에러로 인한 상태 복원:', isLiked.value)
+        
+        // 에러 메시지 표시
+        if (error.response?.data?.message) {
+          alert(error.response.data.message)
         } else {
-          // 현재 좋아요 상태가 false라면, 에러로 인해 true로 되돌려야 함
-          isLiked.value = true
-          postData.value.likeCount++
+          handleApiError(error, $router, '좋아요 처리에 실패했습니다.')
         }
-        handleApiError(error, $router, '좋아요 처리에 실패했습니다.')
+      } finally {
+        isLikeProcessing.value = false
       }
     }
+
+
+    
+
     
     // 좋아요 목록 가져오기
     const fetchLikes = async () => {
@@ -429,8 +526,22 @@ export default {
           
           console.log('추출된 댓글 데이터:', commentsData)
           commentsList.value = Array.isArray(commentsData) ? commentsData : []
-          commentsCount.value = commentsList.value.length
+          
+          // 댓글과 답글 모두 카운트
+          let totalCount = 0
+          if (Array.isArray(commentsData)) {
+            commentsData.forEach(comment => {
+              // 댓글 카운트
+              totalCount++
+              // 답글도 카운트 (replies 배열이 있다면)
+              if (comment.replies && Array.isArray(comment.replies)) {
+                totalCount += comment.replies.length
+              }
+            })
+          }
+          commentsCount.value = totalCount
           console.log('설정된 댓글 목록:', commentsList.value)
+          console.log('댓글+답글 총 개수:', totalCount)
         } else {
           console.log('댓글 목록 데이터가 없음')
           commentsList.value = []
@@ -450,6 +561,10 @@ export default {
     // 댓글 추가
     const handleAddComment = async (content) => {
       try {
+        // 펫 등록 여부 확인
+        const hasPet = await checkPetExist()
+        if (!hasPet) return
+        
         console.log('=== 댓글 추가 시작 ===')
         console.log('댓글 내용:', content)
         
@@ -468,6 +583,10 @@ export default {
     // 답글 추가
     const handleAddReply = async (replyData) => {
       try {
+        // 펫 등록 여부 확인
+        const hasPet = await checkPetExist()
+        if (!hasPet) return
+        
         console.log('=== 답글 추가 시작 ===')
         console.log('답글 데이터:', replyData)
         
@@ -571,10 +690,29 @@ export default {
                     const postId = $route.params.id
                     const response = await postAPI.getDetail(postId)
                     if (response.data && response.data.data) {
-                      postData.value = response.data.data
-                      // 좋아요 상태 확인 (백엔드에서 isLiked 필드가 있다면 사용, 없다면 별도 API 호출)
-                      // 여기서는 백엔드 응답에 isLiked 필드가 포함되어 있다고 가정
-                      isLiked.value = response.data.data.isLiked || false
+                      const rawPostData = response.data.data
+                      
+                      // 빈 URL을 가진 미디어 필터링 (URL 배열 형태)
+                      if (rawPostData.mediaList && Array.isArray(rawPostData.mediaList)) {
+                        console.log('원본 미디어 리스트:', rawPostData.mediaList)
+                        rawPostData.mediaList = rawPostData.mediaList.filter(url => {
+                          const hasValidUrl = url && typeof url === 'string' && url.trim() !== ''
+                          if (!hasValidUrl) {
+                            console.log('빈 URL 필터링됨:', url)
+                          }
+                          return hasValidUrl
+                        })
+                        console.log('필터링된 미디어 URL 리스트:', rawPostData.mediaList)
+                        console.log('필터링 후 미디어 개수:', rawPostData.mediaList.length)
+                      }
+                      
+                      postData.value = rawPostData
+                      // 백엔드에서 liked 필드로 반환
+                      isLiked.value = rawPostData.liked || false
+                      console.log('포스트 데이터 로드 완료, 좋아요 상태:', {
+                        liked: rawPostData.liked,
+                        finalStatus: isLiked.value
+                      })
                     }
                   } catch (error) {
                     console.error('포스트 데이터 조회 실패:', error)
@@ -589,6 +727,13 @@ export default {
                 // 포스트 삭제
                 const deletePost = async () => {
                   try {
+                    // 펫 등록 여부 확인
+                    const hasPet = await checkPetExist()
+                    if (!hasPet) {
+                      $router.back()
+                      return
+                    }
+                    
                     console.log('=== 포스트 삭제 시작 ===')
                     const postId = $route.params.id
                     console.log('삭제할 포스트 ID:', postId)
@@ -631,7 +776,7 @@ export default {
                 
                 // 해시태그 검색 메서드
                 const searchByHashtag = (tag) => {
-                  console.log('해시태그 검색:', tag)
+                  console.log('해시태그 검색:', tag, typeof tag)
                   // 검색 페이지로 이동하면서 해시태그를 쿼리 파라미터로 전달
                   $router.push({
                     path: '/search',
@@ -654,6 +799,12 @@ export default {
                   fetchPostData()
                   fetchLikes()
                   fetchComments()
+                  
+                  // URL 쿼리 파라미터에서 showComments 확인
+                  if ($route.query.showComments === 'true') {
+                    // 댓글창 자동으로 열기
+                    showCommentsModal.value = true
+                  }
                 })
 
                                   return {
@@ -702,6 +853,11 @@ export default {
   background: linear-gradient(135deg, #FFFAF0 0%, #FFF7EC 100%);
   min-height: 100vh;
   padding: 32px;
+  transition: padding-right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.diary-detail-page.comments-open {
+  padding-right: 432px; /* 400px(댓글창) + 32px(기존 패딩) */
 }
 
 .diary-container {
@@ -994,6 +1150,11 @@ export default {
               font-weight: 600;
             }
 
+            .report-text {
+              color: #dc3545 !important;
+              font-weight: 600;
+            }
+
 /* 삭제 확인 다이얼로그 스타일 */
 .delete-confirm-card {
   border-radius: 20px !important;
@@ -1119,6 +1280,10 @@ export default {
 @media (max-width: 768px) {
   .diary-detail-page {
     padding: 16px;
+  }
+  
+  .diary-detail-page.comments-open {
+    padding-right: 16px; /* 모바일에서는 댓글창이 오버레이로 표시되므로 패딩 제거 */
   }
   
   .post-image {

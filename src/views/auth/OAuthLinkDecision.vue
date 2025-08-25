@@ -138,8 +138,8 @@ const handleConfirm = async () => {
         console.warn('Failed to get current user:', e)
       }
       
-      // 대시보드로 이동
-      router.replace({ name: 'Dashboard' })
+      // 홈으로 이동
+      router.replace({ name: 'Home' })
     } else {
       throw new Error('No access token received')
     }

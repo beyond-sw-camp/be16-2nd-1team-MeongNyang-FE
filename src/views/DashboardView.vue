@@ -68,7 +68,7 @@
               <v-col cols="12" sm="6" md="3">
                 <v-card class="stat-card stat-diary" @click="$router.push('/diarys')">
                   <v-card-title class="stat-title">
-                    작성한 다이어리
+                    작성한 일기
                   </v-card-title>
                   <v-card-text class="stat-number">
                     {{ diaryCount }}
@@ -113,7 +113,7 @@
               <v-col cols="6" md="3">
                 <div class="summary-item">
                   <div class="summary-number">{{ weeklyDiaryCount }}</div>
-                  <div class="summary-label">작성한 다이어리</div>
+                  <div class="summary-label">작성한 일기</div>
                 </div>
               </v-col>
               <v-col cols="6" md="3">
@@ -157,13 +157,19 @@ export default {
     const petStore = usePetStore()
     
     const user = computed(() => authStore.user)
-    const representativePet = computed(() => petStore.getRepresentativePet)
+    const representativePet = computed(() => {
+      const pet = petStore.getRepresentativePet
+      console.log('=== representativePet computed 실행 ===')
+      console.log('대표 반려동물:', pet)
+      console.log('대표 반려동물 이름:', pet?.name)
+      return pet
+    })
     
     const menuItems = ref([
       { title: '홈', icon: 'mdi-home', to: '/dashboard' },
       { title: '반려동물 관리', icon: 'mdi-paw', to: '/pets' },
-              { title: '다이어리', icon: 'mdi-book-open', to: '/diarys' },
-      { title: '마켓플레이스', icon: 'mdi-store', to: '/market' },
+      { title: '내 일기', icon: 'mdi-book-open', to: '/diarys' },
+      { title: '내 마켓', icon: 'mdi-store', to: '/market' },
       { title: '채팅', icon: 'mdi-chat', to: '/chat' },
       { title: '프로필', icon: 'mdi-account', to: '/profile' }
     ])
@@ -237,11 +243,22 @@ export default {
     const weeklyLoginDays = ref(5)
     
     // 컴포넌트 마운트 시 데이터 가져오기
-    onMounted(() => {
+    onMounted(async () => {
+      console.log('=== DashboardView onMounted 시작 ===')
+      
+      // 반려동물 데이터 먼저 로드 (대표 반려동물 정보를 위해)
+      console.log('반려동물 데이터 로드 시작...')
+      await petStore.fetchPets()
+      console.log('반려동물 데이터 로드 완료')
+      console.log('대표 반려동물:', representativePet.value)
+      
+      // 통계 데이터 로드
       fetchPetCount()
       fetchDiaryCount()
       fetchMarketCount()
       fetchChatCount()
+      
+      console.log('=== DashboardView onMounted 완료 ===')
     })
 
     const goToRepresentativePet = () => {
