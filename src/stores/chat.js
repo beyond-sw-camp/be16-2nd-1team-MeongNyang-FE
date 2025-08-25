@@ -150,7 +150,9 @@ export const useChatStore = defineStore('chat', {
     },
 
     setCurrentRoom(room) {
+      console.log(`setCurrentRoom 호출됨 - room:`, room)
       this.currentRoom = room
+      console.log(`현재 채팅방이 설정되었습니다:`, this.currentRoom)
     },
 
     updateMessageCount(roomId, count) {
@@ -162,6 +164,94 @@ export const useChatStore = defineStore('chat', {
 
     clearError() {
       this.error = null
+    },
+
+    // 채팅방 목록의 마지막 메시지 업데이트
+    updateChatRoomLastMessage(roomId, messageData) {
+      const room = this.chatRoomList.find(r => r.id == roomId)
+      if (room) {
+        // 마지막 메시지 업데이트
+        room.lastMessage = messageData.message
+        
+        // 현재 사용자가 보낸 메시지가 아니고, 현재 접속 중인 채팅방이 아닌 경우에만 새 메시지 카운트 증가
+        const currentUserEmail = localStorage.getItem('email')
+        const isCurrentRoom = this.currentRoom && this.currentRoom.id == roomId
+        
+        if (messageData.senderEmail !== currentUserEmail && !isCurrentRoom) {
+          room.newMessageCount = (room.newMessageCount || 0) + 1
+          console.log(`채팅방 ${roomId}의 새 메시지 카운트가 ${room.newMessageCount}로 증가했습니다. (현재 접속 중: ${isCurrentRoom})`)
+        } else {
+          console.log(`채팅방 ${roomId}의 메시지는 카운트에 반영되지 않습니다. (현재 접속 중: ${isCurrentRoom})`)
+        }
+        
+        // 해당 채팅방을 목록 맨 위로 이동 (최근 메시지 순)
+        this.chatRoomList = this.chatRoomList.filter(r => r.id != roomId)
+        this.chatRoomList.unshift(room)
+        
+        console.log('채팅방 목록 업데이트됨:', room.roomName, room.lastMessage, isCurrentRoom ? '(현재 접속 중)' : '')
+      } else {
+        console.warn(`채팅방 ${roomId}를 찾을 수 없어서 메시지를 업데이트할 수 없습니다.`)
+      }
+    },
+
+    // 새 메시지 카운트 초기화 (채팅방 입장 시)
+    resetMessageCount(roomId) {
+      console.log(`resetMessageCount 호출됨 - roomId: ${roomId}, 타입: ${typeof roomId}`)
+      console.log(`현재 채팅방 목록:`, this.chatRoomList.map(r => ({ id: r.id, type: typeof r.id, roomName: r.roomName })))
+      
+      const room = this.chatRoomList.find(r => r.id == roomId)
+      if (room) {
+        const oldCount = room.newMessageCount
+        room.newMessageCount = 0
+        console.log(`채팅방 ${roomId}의 새 메시지 카운트가 ${oldCount}에서 0으로 초기화되었습니다.`)
+      } else {
+        console.warn(`채팅방 ${roomId}를 찾을 수 없어서 메시지 카운트를 초기화할 수 없습니다.`)
+        console.warn(`채팅방 목록에 있는 ID들:`, this.chatRoomList.map(r => r.id))
+      }
+    },
+
+    // SSE로 새 채팅방 추가
+    addNewChatRoom(roomData) {
+      // 이미 존재하는 채팅방인지 확인
+      const existingRoom = this.chatRoomList.find(r => r.id === roomData.id)
+      if (!existingRoom) {
+        const newRoom = {
+          id: roomData.id,
+          roomName: roomData.roomName || '새 채팅방',
+          lastMessage: "메세지를 보내 채팅을 시작해보세요!",
+          newMessageCount: 0
+        }
+        this.chatRoomList.unshift(newRoom)
+        console.log('새 채팅방이 SSE로 추가되었습니다:', newRoom)
+      }
+    },
+
+    // SSE로 채팅방 정보 업데이트
+    updateChatRoom(updateData) {
+      const room = this.chatRoomList.find(r => r.id === updateData.id)
+      if (room) {
+        // 업데이트 가능한 필드들만 업데이트
+        if (updateData.roomName) room.roomName = updateData.roomName
+        if (updateData.lastMessage) room.lastMessage = updateData.lastMessage
+        if (updateData.newMessageCount !== undefined) room.newMessageCount = updateData.newMessageCount
+        
+        console.log('채팅방 정보가 SSE로 업데이트되었습니다:', room)
+      }
+    },
+
+    // 사용자 온라인/오프라인 상태 업데이트
+    updateUserOnlineStatus(email, isOnline) {
+      if (isOnline) {
+        // 온라인 사용자 목록에 추가 (중복 방지)
+        if (!this.onlineParticipants.includes(email)) {
+          this.onlineParticipants.push(email)
+        }
+      } else {
+        // 오프라인 사용자 목록에서 제거
+        this.onlineParticipants = this.onlineParticipants.filter(e => e !== email)
+      }
+      
+      console.log(`사용자 ${email} 온라인 상태: ${isOnline}`)
     }
   }
 })

@@ -693,6 +693,14 @@ export default {
           }
         }
         
+        // 채팅 스토어에 현재 채팅방 설정 (SSE 메시지 카운트 제어용)
+        chatStore.setCurrentRoom(currentRoom.value)
+        console.log('현재 채팅방이 설정되었습니다:', currentRoom.value)
+        
+        // 새 메시지 카운트 초기화 (채팅방 입장 시) - 채팅방 목록 로드 후 실행
+        chatStore.resetMessageCount(props.roomId)
+        console.log('채팅방 입장 시 메시지 카운트 초기화 완료')
+        
         // 메시지와 참여자는 채팅 스토어를 통해 로드
         await chatStore.getMessages(props.roomId)
         await chatStore.getParticipants(props.roomId)
@@ -722,28 +730,33 @@ export default {
       stompClient.value.connect(
         { Authorization: `Bearer ${accessToken}` },
         () => {
-          // 메시지 구독
-          stompClient.value.subscribe(`/topic/chat-rooms/${props.roomId}/chat-message`, (message) => {
+          // 메시지 구독 (구독 ID 저장)
+          const messageSubscription = stompClient.value.subscribe(`/topic/chat-rooms/${props.roomId}/chat-message`, (message) => {
             const parseMessage = JSON.parse(message.body)
-            messages.value.push(parseMessage)
             
-            onlineParticipants.value.forEach(online => {
-              participants.value.forEach(p => {
-                if (p.email === online.email) {
-                  p.lastReadMessageId = parseMessage.id
-                }
+            // 중복 메시지 방지 (같은 ID의 메시지가 이미 있는지 확인)
+            const existingMessage = messages.value.find(msg => msg.id === parseMessage.id)
+            if (!existingMessage) {
+              messages.value.push(parseMessage)
+              
+              onlineParticipants.value.forEach(online => {
+                participants.value.forEach(p => {
+                  if (p.email === online.email) {
+                    p.lastReadMessageId = parseMessage.id
+                  }
+                })
               })
-            })
+            }
           }, { Authorization: `Bearer ${accessToken}` })
           
-          // 참여자 구독
-          stompClient.value.subscribe(`/topic/chat-rooms/${props.roomId}/chat-participants`, (message) => {
+          // 참여자 구독 (구독 ID 저장)
+          const participantsSubscription = stompClient.value.subscribe(`/topic/chat-rooms/${props.roomId}/chat-participants`, (message) => {
             const parseMessage = JSON.parse(message.body)
             participants.value = parseMessage
           }, { Authorization: `Bearer ${accessToken}` })
           
-          // 온라인 참여자 구독
-          stompClient.value.subscribe(`/topic/chat-rooms/${props.roomId}/chat-online-participants`, (message) => {
+          // 온라인 참여자 구독 (구독 ID 저장)
+          const onlineParticipantsSubscription = stompClient.value.subscribe(`/topic/chat-rooms/${props.roomId}/chat-online-participants`, (message) => {
             const parseMessage = JSON.parse(message.body)
             onlineParticipants.value = parseMessage
             
@@ -755,6 +768,11 @@ export default {
               })
             })
           }, { Authorization: `Bearer ${accessToken}` })
+          
+          // 구독 ID들을 저장 (해제 시 사용)
+          stompClient.value.messageSubscription = messageSubscription
+          stompClient.value.participantsSubscription = participantsSubscription
+          stompClient.value.onlineParticipantsSubscription = onlineParticipantsSubscription
           
           // 온라인 상태 전송
           const onlineMessage = { email: senderEmail.value }
@@ -768,9 +786,17 @@ export default {
         const offlineMessage = { email: senderEmail.value }
         stompClient.value.send(`/publish/chat-rooms/${props.roomId}/offline`, JSON.stringify(offlineMessage))
         
-        stompClient.value.unsubscribe(`/topic/chat-rooms/${props.roomId}/chat-message`)
-        stompClient.value.unsubscribe(`/topic/chat-rooms/${props.roomId}/chat-participants`)
-        stompClient.value.unsubscribe(`/topic/chat-rooms/${props.roomId}/chat-online-participants`)
+        // 저장된 구독 ID를 사용하여 구독 해제
+        if (stompClient.value.messageSubscription) {
+          stompClient.value.messageSubscription.unsubscribe()
+        }
+        if (stompClient.value.participantsSubscription) {
+          stompClient.value.participantsSubscription.unsubscribe()
+        }
+        if (stompClient.value.onlineParticipantsSubscription) {
+          stompClient.value.onlineParticipantsSubscription.unsubscribe()
+        }
+        
         stompClient.value.disconnect()
         stompClient.value = null
       }
@@ -1198,6 +1224,14 @@ export default {
         
         disconnectWebsocket()
         await loadRoomData()
+        
+        // 채팅 스토어에 현재 채팅방 설정 (SSE 메시지 카운트 제어용)
+        chatStore.setCurrentRoom(currentRoom.value)
+        console.log('채팅방 변경 시 현재 채팅방이 설정되었습니다:', currentRoom.value)
+        
+        // 새 메시지 카운트 초기화 (채팅방 입장 시)
+        chatStore.resetMessageCount(newRoomId)
+        console.log('채팅방 변경 시 메시지 카운트 초기화 완료')
         connectWebsocket()
       }
     })
@@ -1288,6 +1322,9 @@ export default {
       
       // ResizeObserver 정리
       cleanupResizeObserver()
+      
+      // 채팅방을 나갈 때 currentRoom 초기화 (SSE 메시지 카운트 제어용)
+      chatStore.setCurrentRoom(null)
     })
     
     // 미디어 로딩 상태 등록
