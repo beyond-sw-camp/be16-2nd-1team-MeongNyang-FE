@@ -134,7 +134,7 @@
             >
               <v-icon color="#1E293B" size="20">mdi-comment-outline</v-icon>
             </v-btn>
-            <span class="comment-count">{{ post.commentCount || 0 }}</span>
+            <span class="comment-count">{{ post.commentsCount || 0 }}</span>
           </div>
         </div>
 
@@ -195,8 +195,8 @@
 </template>
 
 <script>
-import { ref, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { postAPI } from '@/services/api'
 import LikesModal from '@/components/LikesModal.vue'
 import { checkPetExist } from '@/utils/petValidation'
@@ -208,6 +208,7 @@ export default {
   },
   setup() {
     const router = useRouter()
+    const route = useRoute()
     const posts = ref([])
     const loading = ref(false)
     const hasMore = ref(true)
@@ -229,6 +230,67 @@ export default {
 
 
 
+    // 모든 포스트의 댓글 수 가져오기
+    const fetchAllCommentsCount = async () => {
+      try {
+        console.log('=== 모든 포스트 댓글 수 조회 시작 ===')
+        
+        // 현재 로드된 모든 포스트에 대해 댓글 수 조회
+        const promises = posts.value.map(async (post) => {
+          try {
+            console.log(`포스트 ${post.id} 댓글 수 조회 시작`)
+            const response = await postAPI.getComments(post.id, { page: 0, size: 1000 })
+            console.log(`포스트 ${post.id} 댓글 API 응답:`, response.data)
+            
+            if (response.data && response.data.data) {
+              let commentsData = []
+              
+              if (Array.isArray(response.data.data)) {
+                commentsData = response.data.data
+              } else if (response.data.data.content) {
+                commentsData = response.data.data.content
+              } else {
+                commentsData = response.data.data
+              }
+              
+              // 댓글과 답글 모두 카운트
+              let totalCount = 0
+              if (Array.isArray(commentsData)) {
+                commentsData.forEach(comment => {
+                  // 댓글 카운트
+                  totalCount++
+                  // 답글도 카운트 (replies 배열이 있다면)
+                  if (comment.replies && Array.isArray(comment.replies)) {
+                    totalCount += comment.replies.length
+                  }
+                })
+              }
+              
+              console.log(`포스트 ${post.id} 댓글+답글 수 계산 완료:`, totalCount)
+              
+              // 포스트 객체에 댓글 수 업데이트
+              post.commentsCount = totalCount
+              return { postId: post.id, count: totalCount }
+            }
+            
+            console.log(`포스트 ${post.id} 댓글 데이터 없음`)
+            post.commentsCount = 0
+            return { postId: post.id, count: 0 }
+          } catch (error) {
+            console.error(`포스트 ${post.id} 댓글 수 조회 실패:`, error)
+            post.commentsCount = 0
+            return { postId: post.id, count: 0 }
+          }
+        })
+        
+        const results = await Promise.all(promises)
+        console.log('=== 모든 포스트 댓글 수 조회 완료 ===', results)
+        
+      } catch (error) {
+        console.error('전체 댓글 수 조회 실패:', error)
+      }
+    }
+
     // 일기 목록 가져오기
     const fetchPosts = async (page = 0, append = false) => {
       if (loading.value || (!append && !hasMore.value)) return
@@ -242,7 +304,7 @@ export default {
           
           console.log('가져온 포스트 목록:', newPosts)
           
-          // 각 포스트의 미디어 리스트에서 빈 URL 필터링 (URL 배열 형태)
+                    // 각 포스트의 미디어 리스트에서 빈 URL 필터링 (URL 배열 형태)
           newPosts.forEach(post => {
             if (post.mediaList && Array.isArray(post.mediaList)) {
               post.mediaList = post.mediaList.filter(url => {
@@ -257,14 +319,20 @@ export default {
             console.log(`포스트 ${post.id} 초기 상태:`, {
               liked: post.liked,
               likeCount: post.likeCount,
+              commentCount: post.commentCount,
+              commentsCount: post.commentsCount,
               mediaCount: post.mediaList?.length || 0
             })
           })
           
           if (append) {
             posts.value.push(...newPosts)
+            // 새로 추가된 포스트들의 댓글 수 조회
+            await fetchAllCommentsCount()
           } else {
             posts.value = newPosts
+            // 전체 포스트의 댓글 수 조회
+            await fetchAllCommentsCount()
           }
           
           hasMore.value = !response.data.data.last
@@ -431,7 +499,8 @@ export default {
     // 해시태그 제거
     const removeHashtags = (content) => {
       if (!content) return ''
-      return content.replace(/#\w+/g, '').trim()
+      // 해시태그와 그 뒤의 공백을 모두 제거
+      return content.replace(/#\S+/g, '').replace(/\s+/g, ' ').trim()
     }
 
     // 좋아요 텍스트 생성
@@ -555,8 +624,18 @@ export default {
       return dateString
     }
 
-    onMounted(() => {
-      fetchPosts(0, false)
+    // 라우트 변경 감지
+    watch(() => route.path, async (newPath, oldPath) => {
+      if (newPath === '/diarys' && oldPath !== newPath) {
+        console.log('AllDiaryView로 이동 감지, 댓글 수 새로고침')
+        await fetchAllCommentsCount()
+      }
+    })
+
+    onMounted(async () => {
+      await fetchPosts(0, false)
+      // 포스트 로딩 완료 후 댓글 수 조회
+      await fetchAllCommentsCount()
       window.addEventListener('scroll', handleScroll)
     })
 

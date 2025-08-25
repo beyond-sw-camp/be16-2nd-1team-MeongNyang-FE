@@ -146,6 +146,7 @@ export default {
     
     // 폼 데이터
     const content = ref('')
+    const originalContent = ref('') // 원본 내용 저장
     const mediaList = ref([])
     const currentMediaIndex = ref(0)
     const isDragging = ref(false)
@@ -175,7 +176,7 @@ export default {
              
              // 내용이 변경되었는지 확인
              const originalPost = existingMedia.value.length > 0 ? {
-               content: content.value,
+               content: originalContent.value, // 원본 내용과 비교
                mediaCount: existingMedia.value.length
              } : null
              
@@ -257,6 +258,7 @@ export default {
         if (response.data && response.data.data) {
           const post = response.data.data
           content.value = post.content || ''
+          originalContent.value = post.content || '' // 원본 내용 저장
           
           // 기존 미디어 설정
           if (post.mediaList && post.mediaList.length > 0) {
@@ -584,15 +586,32 @@ export default {
           formData.append('files', emptyFile)
         }
         
+        // 해시태그 추출 및 로깅 (해시태그 뒤 글자도 포함)
+        const contentText = content.value.trim()
+        const hashtagRegex = /#\S+/g
+        const extractedHashtags = contentText.match(hashtagRegex) || []
+        
+        console.log('=== 해시태그 디버깅 ===')
+        console.log('원본 내용:', contentText)
+        console.log('추출된 해시태그:', extractedHashtags)
+        console.log('해시태그 개수:', extractedHashtags.length)
+        
+        // 해시태그 뒤 글자 확인
+        extractedHashtags.forEach((hashtag, index) => {
+          const hashtagIndex = contentText.indexOf(hashtag)
+          const afterHashtag = contentText.substring(hashtagIndex + hashtag.length)
+          console.log(`해시태그 ${index + 1}: "${hashtag}" 뒤 글자: "${afterHashtag}"`)
+        })
+        
         // JSON 데이터를 별도의 RequestPart로 추가
         const postEditReq = {
-          content: content.value.trim(),
+          content: contentText,
           existingMediaUrls: existingMediaUrls
         }
         
         console.log('=== JSON 요청 데이터 ===')
-        console.log('제목:', postEditReq.title)
         console.log('내용:', postEditReq.content)
+        console.log('내용 길이:', postEditReq.content.length)
         console.log('기존 미디어 URL 배열:', postEditReq.existingMediaUrls)
         console.log('기존 미디어 URL 개수:', postEditReq.existingMediaUrls.length)
         console.log('전송할 전체 파일 개수:', allFiles.length)
@@ -605,15 +624,32 @@ export default {
         console.log('FormData 구성 완료')
         console.log('FormData 내용:')
         for (let [key, value] of formData.entries()) {
-          console.log(`${key}:`, value)
+          if (key === 'postEditReq') {
+            try {
+              console.log(`${key}:`, JSON.parse(value))
+            } catch (error) {
+              console.log(`${key}: [JSON 파싱 실패]`, value)
+            }
+          } else {
+            console.log(`${key}:`, value)
+          }
         }
+        
+        console.log('=== 최종 전송 데이터 확인 ===')
+        console.log('전송할 내용:', contentText)
+        console.log('전송할 해시태그:', extractedHashtags)
+        console.log('전송할 파일 개수:', allFiles.length)
         
         const postId = $route.params.id
         const response = await postAPI.update(postId, formData)
         console.log('다이어리 수정 응답:', response)
+        console.log('응답 데이터:', response.data)
         
         if (response.status === 200) {
           console.log('다이어리 수정 성공')
+          console.log('=== 수정 완료 확인 ===')
+          console.log('전송한 해시태그:', extractedHashtags)
+          console.log('백엔드 응답 해시태그:', response.data?.data?.hashTagList || '응답에 해시태그 정보 없음')
           alert('다이어리 수정에 성공했습니다!')
           $router.push(`/diary/${postId}`)
         } else {
@@ -713,6 +749,7 @@ export default {
     return {
       fileInput,
       content,
+      originalContent,
       mediaList,
       currentMediaIndex,
       currentMedia,

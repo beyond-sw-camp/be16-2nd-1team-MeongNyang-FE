@@ -274,13 +274,22 @@ export default {
               console.log('답글의 답글 작성:', this.replyingTo)
               
               const commentId = this.replyingTo.commentId || this.replyingTo.parentCommentId
-              const mentionUserId = this.replyingTo.userId || this.replyingTo.id
+              const mentionUserId = this.replyingTo.mentionUserId || this.replyingTo.replyUserId || this.replyingTo.userId || this.replyingTo.user?.id || this.replyingTo.replyUser?.id
               
               console.log('답글의 답글 데이터 전송:', {
                 commentId: commentId,
                 content: this.newComment,
-                mentionUserId: mentionUserId
+                mentionUserId: mentionUserId,
+                replyingTo: this.replyingTo
               })
+              
+              // mentionUserId가 null인지 확인
+              if (!mentionUserId) {
+                console.error('mentionUserId가 null입니다!')
+                console.error('replyingTo 객체:', this.replyingTo)
+                alert('답글 작성자 정보를 찾을 수 없습니다.')
+                return
+              }
               
               this.$emit('add-reply', {
                 commentId: commentId,
@@ -371,6 +380,41 @@ export default {
     },
     
     replyToReply(reply, parentComment) {
+      console.log('=== replyToReply 호출 ===')
+      console.log('reply 객체:', reply)
+      console.log('parentComment 객체:', parentComment)
+      console.log('reply 객체의 모든 키:', Object.keys(reply))
+      
+      // 답글 작성자 ID 찾기 (replyUserName을 기반으로 찾기)
+      let replyUserId = reply.replyUserId || reply.userId || reply.user?.id || reply.replyUser?.id || reply.user?.userId
+      
+      // replyUserName이 있으면 해당 사용자의 ID를 찾기
+      if (!replyUserId && reply.replyUserName) {
+        console.log('replyUserName으로 사용자 ID 찾기 시도:', reply.replyUserName)
+        // 현재 댓글 목록에서 해당 사용자 이름을 가진 사용자 찾기
+        const allComments = this.commentsList || []
+        for (const comment of allComments) {
+          if (comment.userName === reply.replyUserName || comment.petName === reply.replyUserName) {
+            replyUserId = comment.userId
+            console.log('찾은 사용자 ID:', replyUserId)
+            break
+          }
+          // 답글들도 확인
+          if (comment.replies && Array.isArray(comment.replies)) {
+            for (const replyItem of comment.replies) {
+              if (replyItem.replyUserName === reply.replyUserName) {
+                // 답글 작성자의 ID는 부모 댓글에서 찾아야 할 수도 있음
+                replyUserId = comment.userId // 임시로 부모 댓글 작성자 ID 사용
+                console.log('답글에서 찾은 사용자 ID (부모 댓글 작성자):', replyUserId)
+                break
+              }
+            }
+          }
+        }
+      }
+      
+      console.log('최종 찾은 답글 작성자 ID:', replyUserId)
+      
       // 답글에 대한 답글 모드 설정 (부모 댓글의 ID 사용, 답글의 작성자 ID 사용)
       this.replyingTo = {
         ...reply,
@@ -382,8 +426,12 @@ export default {
         parentCommentId: parentComment.commentId || parentComment.id,
         // 답글의 ID도 저장
         replyId: reply.id,
+        // 답글 작성자의 ID를 mentionUserId로 사용
+        mentionUserId: replyUserId,
         id: reply.id
       }
+      
+      console.log('설정된 replyingTo:', this.replyingTo)
       
       // 답글 작성자 이름을 다양한 필드에서 찾기
       const replyUserName = reply.replyUserName || reply.replyPetName || reply.userName || reply.username || reply.petName || reply.user?.name || reply.user?.petName || '사용자'

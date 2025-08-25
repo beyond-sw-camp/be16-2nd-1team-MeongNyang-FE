@@ -526,8 +526,22 @@ export default {
           
           console.log('추출된 댓글 데이터:', commentsData)
           commentsList.value = Array.isArray(commentsData) ? commentsData : []
-          commentsCount.value = commentsList.value.length
+          
+          // 댓글과 답글 모두 카운트
+          let totalCount = 0
+          if (Array.isArray(commentsData)) {
+            commentsData.forEach(comment => {
+              // 댓글 카운트
+              totalCount++
+              // 답글도 카운트 (replies 배열이 있다면)
+              if (comment.replies && Array.isArray(comment.replies)) {
+                totalCount += comment.replies.length
+              }
+            })
+          }
+          commentsCount.value = totalCount
           console.log('설정된 댓글 목록:', commentsList.value)
+          console.log('댓글+답글 총 개수:', totalCount)
         } else {
           console.log('댓글 목록 데이터가 없음')
           commentsList.value = []
