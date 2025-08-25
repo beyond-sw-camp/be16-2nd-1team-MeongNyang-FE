@@ -8,6 +8,7 @@ import './assets/styles/global-design-system.css'
 import '@mdi/font/css/materialdesignicons.css'
 import axios from 'axios'
 import { useAuthStore } from './stores/auth'
+import SseService from './services/sse'
 
 // axios interceptor 설정
 axios.interceptors.request.use(
@@ -73,5 +74,17 @@ app.use(vuetify)
 // 인증 스토어 초기화
 const authStore = useAuthStore()
 authStore.initialize()
+
+// SSE 서비스 초기화 및 디버깅 함수 설정
+if (process.env.NODE_ENV === 'development') {
+  // 개발 환경에서만 디버깅 함수 노출
+  window.debugSSENewRoom = (testData) => {
+    console.log('테스트용 SSE new-room 이벤트 시뮬레이션:', testData);
+    SseService.handleNewRoom(testData);
+  };
+  
+  console.log('SSE 디버깅 함수가 설정되었습니다. 브라우저 콘솔에서 debugSSENewRoom() 함수를 사용할 수 있습니다.');
+  console.log('예시: debugSSENewRoom({id: 34, roomName: "admin와의 채팅", lastMessage: "메세지를 보내 채팅을 시작해보세요!", lastMessageTime: "2025-08-25T15:46:06.931218", newMessageCount: 0})');
+}
 
 app.mount('#app')

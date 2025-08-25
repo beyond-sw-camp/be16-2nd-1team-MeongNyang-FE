@@ -217,12 +217,15 @@ export const useChatStore = defineStore('chat', {
       if (!existingRoom) {
         const newRoom = {
           id: roomData.id,
-          roomName: roomData.roomName || '새 채팅방',
-          lastMessage: "메세지를 보내 채팅을 시작해보세요!",
-          newMessageCount: 0
+          roomName: roomData.roomName,
+          lastMessage: roomData.lastMessage || "메세지를 보내 채팅을 시작해보세요!",
+          lastMessageTime: roomData.lastMessageTime,
+          newMessageCount: roomData.newMessageCount || 0
         }
         this.chatRoomList.unshift(newRoom)
         console.log('새 채팅방이 SSE로 추가되었습니다:', newRoom)
+      } else {
+        console.log('이미 존재하는 채팅방입니다:', roomData.id)
       }
     },
 

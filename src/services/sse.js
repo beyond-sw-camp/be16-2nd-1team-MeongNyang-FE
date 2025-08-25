@@ -109,8 +109,8 @@ class SseService {
       if (data.chatRoomId && data.message && data.senderEmail) {
         eventName = 'chat-message';
       }
-      // 새 채팅방 구조인지 확인
-      else if (data.id && data.roomName && data.participantEmails) {
+      // 새 채팅방 구조인지 확인 (roomName, lastMessage, lastMessageTime, newMessageCount 포함)
+      else if (data.id && data.roomName && data.lastMessage && data.lastMessageTime) {
         eventName = 'new-room';
       }
       // 알림 구조인지 확인
@@ -171,6 +171,14 @@ class SseService {
         chatStore.addNewChatRoom(roomData);
         
         console.log('새 채팅방이 SSE로 추가되었습니다:', roomData);
+        
+        // 디버깅: 브라우저 콘솔에서 확인할 수 있도록 전역 함수로 노출
+        if (typeof window !== 'undefined') {
+          window.debugSSENewRoom = (testData) => {
+            console.log('테스트용 SSE new-room 이벤트 시뮬레이션:', testData);
+            this.handleNewRoom(testData);
+          };
+        }
       });
     } catch (error) {
       console.error('새 채팅방 처리 중 오류:', error);
