@@ -18,8 +18,9 @@
           variant="text"
           @click="closeDrawer"
           class="close-btn"
+          size="small"
         >
-          <v-icon size="20">mdi-close</v-icon>
+          <v-icon size="18">mdi-close</v-icon>
         </v-btn>
       </div>
     </div>
@@ -66,14 +67,12 @@
         <v-divider class="mb-3"></v-divider>
         <div class="action-buttons">
           <v-btn
-            variant="outlined"
-            color="primary"
-            size="small"
+            variant="text"
+            color="grey"
             @click="markAllAsRead"
             :disabled="!hasUnreadNotifications"
-            class="full-width-btn"
+            class="simple-text-btn"
           >
-            <v-icon size="16" class="mr-1">mdi-check-all</v-icon>
             모두 읽음 처리
           </v-btn>
         </div>
@@ -229,6 +228,14 @@ export default {
 
 .close-btn {
   color: white !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-radius: 50% !important;
+  transition: all 0.3s ease !important;
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+  transform: scale(1.1) !important;
 }
 
 .notification-list {
@@ -358,9 +365,31 @@ export default {
   justify-content: center;
 }
 
-.full-width-btn {
-  width: 100%;
-  font-size: 0.8rem;
+.simple-text-btn {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #5A6C7D !important;
+  font-size: 0.95rem;
+  font-weight: 400;
+  font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  text-transform: none;
+  letter-spacing: 0.4px;
+  line-height: 1.5;
+  padding: 8px 16px;
+  border-radius: 8px;
+}
+
+.simple-text-btn:hover {
+  background: transparent !important;
+}
+
+
+
+.simple-text-btn:disabled {
+  color: #ADB5BD !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 /* 스크롤바 스타일링 */
