@@ -1,5 +1,195 @@
 <template>
+  <!-- 모바일 헤더 -->
+  <v-app-bar 
+    v-if="$vuetify.display.mdAndDown"
+    app 
+    elevation="0"
+    class="mobile-header"
+  >
+    <v-app-bar-nav-icon @click="drawer = !drawer" class="hamburger-icon"></v-app-bar-nav-icon>
+
+    <v-spacer></v-spacer>
+
+    <!-- 모바일 사용자 아바타 -->
+    <div v-if="isLoggedIn" class="mobile-user-section">
+      <v-avatar size="32" class="mobile-avatar" @click="goToRepresentativePet">
+        <v-img v-if="representativePet?.url" :src="representativePet.url" :alt="representativePet.name"></v-img>
+        <v-img v-else-if="user?.profileImage" :src="user.profileImage" alt="사용자 프로필"></v-img>
+        <v-icon v-else>mdi-account</v-icon>
+      </v-avatar>
+    </div>
+  </v-app-bar>
+
+  <!-- 모바일 네비게이션 드로어 -->
   <v-navigation-drawer 
+    v-model="drawer"
+    v-if="$vuetify.display.mdAndDown"
+    temporary
+    class="mobile-drawer"
+    width="280"
+  >
+    <!-- 모바일 드로어 헤더 -->
+    <div class="mobile-drawer-header">
+      <div class="mobile-drawer-logo" @click="$router.push('/')">
+        <img 
+          class="brand-logo-mobile" 
+          src="@/assets/logo.png" 
+          alt="멍멍냥냥 로고" 
+        />
+        <span class="brand-title-mobile">멍멍냥냥</span>
+      </div>
+    </div>
+
+    <!-- 모바일 메뉴 -->
+    <v-list class="mobile-menu">
+      <!-- 홈 -->
+      <v-list-item 
+        @click="goToHome"
+        :class="{ 'active': isHomeActive }"
+        class="mobile-menu-item"
+        density="compact"
+      >
+        <template v-slot:prepend>
+          <v-icon size="20" :color="isHomeActive ? '#E87D7D' : '#6c757d'">
+            mdi-home
+          </v-icon>
+        </template>
+        <v-list-item-title>홈</v-list-item-title>
+      </v-list-item>
+
+      <!-- 마켓 -->
+      <v-list-item 
+        v-if="isLoggedIn"
+        @click="goToMarket"
+        :class="{ 'active': $route.path === '/market' }"
+        class="mobile-menu-item"
+        density="compact"
+      >
+        <template v-slot:prepend>
+          <v-icon size="20" :color="$route.path === '/market' ? '#E87D7D' : '#6c757d'">
+            mdi-store
+          </v-icon>
+        </template>
+        <v-list-item-title>마켓</v-list-item-title>
+      </v-list-item>
+
+      <!-- 채팅 -->
+      <v-list-item 
+        v-if="isLoggedIn"
+        @click="goToChat"
+        :class="{ 'active': $route.path === '/chat' }"
+        class="mobile-menu-item"
+        density="compact"
+      >
+        <template v-slot:prepend>
+          <v-icon size="20" :color="$route.path === '/chat' ? '#E87D7D' : '#6c757d'">
+            mdi-chat
+          </v-icon>
+        </template>
+        <v-list-item-title>채팅</v-list-item-title>
+      </v-list-item>
+
+      <!-- 대시보드 -->
+      <v-list-item 
+        v-if="isLoggedIn"
+        @click="goToDashboard"
+        :class="{ 'active': $route.path === '/dashboard' }"
+        class="mobile-menu-item"
+        density="compact"
+      >
+        <template v-slot:prepend>
+          <v-icon size="20" :color="$route.path === '/dashboard' ? '#E87D7D' : '#6c757d'">
+            mdi-view-dashboard
+          </v-icon>
+        </template>
+        <v-list-item-title>대시보드</v-list-item-title>
+      </v-list-item>
+
+      <!-- 프로필 -->
+      <v-list-item 
+        v-if="isLoggedIn"
+        @click="goToProfile"
+        :class="{ 'active': $route.path === '/profile' }"
+        class="mobile-menu-item"
+        density="compact"
+      >
+        <template v-slot:prepend>
+          <v-icon size="20" :color="$route.path === '/profile' ? '#E87D7D' : '#6c757d'">
+            mdi-account
+          </v-icon>
+        </template>
+        <v-list-item-title>프로필</v-list-item-title>
+      </v-list-item>
+
+      <!-- 관리자 (관리자인 경우) -->
+      <v-list-item 
+        v-if="isLoggedIn && isAdmin"
+        @click="goToAdmin"
+        :class="{ 'active': $route.path === '/admin' }"
+        class="mobile-menu-item"
+        density="compact"
+      >
+        <template v-slot:prepend>
+          <v-icon size="20" :color="$route.path === '/admin' ? '#E87D7D' : '#6c757d'">
+            mdi-shield-account
+          </v-icon>
+        </template>
+        <v-list-item-title>관리자</v-list-item-title>
+      </v-list-item>
+
+      <!-- 구분선 -->
+      <v-divider v-if="isLoggedIn" class="my-4"></v-divider>
+
+      <!-- 로그인/회원가입 (비로그인 시) -->
+      <template v-if="!isLoggedIn">
+        <v-list-item 
+          @click="goToLogin"
+          class="mobile-menu-item auth-item"
+          density="compact"
+        >
+          <template v-slot:prepend>
+            <v-icon size="20" color="#6c757d">mdi-login</v-icon>
+          </template>
+          <v-list-item-title>로그인</v-list-item-title>
+        </v-list-item>
+
+        <v-list-item 
+          @click="goToRegister"
+          class="mobile-menu-item auth-item"
+          density="compact"
+        >
+          <template v-slot:prepend>
+            <v-icon size="20" color="#6c757d">mdi-account-plus</v-icon>
+          </template>
+          <v-list-item-title>회원가입</v-list-item-title>
+        </v-list-item>
+      </template>
+    </v-list>
+
+    <!-- 모바일 사용자 정보 -->
+    <template v-slot:append>
+      <div v-if="isLoggedIn" class="mobile-user-info">
+        <v-divider class="mb-3"></v-divider>
+        <div class="mobile-user-details">
+          <v-avatar size="40" class="mobile-user-avatar" @click="goToRepresentativePet">
+            <v-img v-if="representativePet?.url" :src="representativePet.url" :alt="representativePet.name"></v-img>
+            <v-img v-else-if="user?.profileImage" :src="user.profileImage" alt="사용자 프로필"></v-img>
+            <v-icon v-else>mdi-account</v-icon>
+          </v-avatar>
+          <div class="mobile-user-text">
+            <div class="mobile-user-name">{{ user?.nickname || '사용자' }}</div>
+          </div>
+          <v-btn icon class="mobile-logout-btn" @click="handleLogout">
+            <v-icon color="#F87171">mdi-logout</v-icon>
+          </v-btn>
+        </div>
+      </div>
+    </template>
+  </v-navigation-drawer>
+
+  <!-- 데스크톱 사이드바 -->
+  <v-navigation-drawer 
+    v-if="$vuetify.display.lgAndUp"
     app 
     permanent
     class="modern-sidebar"
@@ -66,7 +256,7 @@
         <v-list-item-title>채팅</v-list-item-title>
       </v-list-item>
 
-      <!-- 대시보드 (채팅 밑으로 이동) -->
+      <!-- 대시보드 -->
       <v-list-item 
         v-if="isLoggedIn"
         @click="$router.push('/dashboard')"
@@ -168,9 +358,10 @@
 </template>
 
 <script>
-import { computed, watch } from 'vue'
+import { computed, watch, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { usePetStore } from '@/stores/pet'
 
 export default {
   name: 'HeaderComponent',
@@ -178,10 +369,15 @@ export default {
     const router = useRouter()
     const route = useRoute()
     const authStore = useAuthStore()
+    const petStore = usePetStore()
     
     const isLoggedIn = computed(() => authStore.isAuthenticated)
     const user = computed(() => authStore.user)
     const isAdmin = computed(() => user.value?.role === 'ADMIN')
+    const representativePet = computed(() => petStore.getRepresentativePet)
+    
+    // 모바일 드로어 상태
+    const drawer = ref(false)
     
     // 로그인 상태 변화를 감지하기 위해 watch 추가
     watch(() => authStore.isAuthenticated, (newValue) => {
@@ -196,11 +392,48 @@ export default {
     // 홈으로 이동
     const goToHome = () => {
       router.push('/')
+      drawer.value = false
+    }
+    
+    const goToMarket = () => {
+      router.push('/market')
+      drawer.value = false
+    }
+    
+    const goToChat = () => {
+      router.push('/chat')
+      drawer.value = false
+    }
+    
+    const goToDashboard = () => {
+      router.push('/dashboard')
+      drawer.value = false
+    }
+    
+    const goToProfile = () => {
+      router.push('/profile')
+      drawer.value = false
+    }
+    
+    const goToAdmin = () => {
+      router.push('/admin')
+      drawer.value = false
+    }
+    
+    const goToLogin = () => {
+      router.push('/auth/login')
+      drawer.value = false
+    }
+    
+    const goToRegister = () => {
+      router.push('/auth/register')
+      drawer.value = false
     }
     
     const handleLogout = () => {
       authStore.logout()
       router.push('/')
+      drawer.value = false
     }
     
     return {
@@ -208,7 +441,16 @@ export default {
       user,
       isAdmin,
       isHomeActive,
+      representativePet,
+      drawer,
       goToHome,
+      goToMarket,
+      goToChat,
+      goToDashboard,
+      goToProfile,
+      goToAdmin,
+      goToLogin,
+      goToRegister,
       handleLogout
     }
   }
@@ -296,6 +538,149 @@ export default {
   background: rgba(99, 102, 241, 0.08);
 }
 
+/* 모바일 헤더 */
+.mobile-header {
+  background: #FFFFFF !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.hamburger-icon {
+  color: #6c757d !important;
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.hamburger-icon :deep(.v-icon) {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.mobile-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  margin-left: 8px;
+}
+
+.brand-logo-mobile {
+  height: 28px;
+  width: auto;
+}
+
+.brand-title-mobile {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.mobile-user-section {
+  margin-right: 8px;
+}
+
+.mobile-avatar {
+  cursor: pointer;
+  border: 2px solid #FF8B8B;
+}
+
+/* 모바일 드로어 */
+.mobile-drawer {
+  background: #FFFFFF !important;
+}
+
+.mobile-drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.mobile-drawer-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.close-btn {
+  color: #6c757d !important;
+}
+
+.mobile-menu {
+  padding: 16px 10px;
+}
+
+.mobile-menu-item {
+  margin: 4px 8px;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.mobile-menu-item:hover {
+  background: rgba(232, 125, 125, 0.08);
+  transform: translateX(4px);
+}
+
+.mobile-menu-item.active {
+  background: linear-gradient(135deg, rgba(232, 125, 125, 0.15), rgba(255, 107, 107, 0.1));
+  border-left: 3px solid #E87D7D;
+}
+
+.mobile-menu-item.active .v-list-item-title {
+  color: #E87D7D;
+  font-weight: 600;
+}
+
+.mobile-user-info {
+  padding: 16px 20px;
+}
+
+.mobile-user-details {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mobile-user-avatar {
+  cursor: pointer;
+  border: 2px solid #FF8B8B;
+}
+
+.mobile-user-text {
+  flex: 1;
+}
+
+.mobile-user-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1E293B;
+}
+
+.mobile-logout-btn {
+  color: #F87171 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 960px) {
+  .modern-sidebar {
+    display: none;
+  }
+}
+
+@media (min-width: 961px) {
+  .mobile-header,
+  .mobile-drawer {
+    display: none;
+  }
+}
+
 .logout-item:hover {
   background: rgba(220, 53, 69, 0.08);
 }
@@ -345,11 +730,13 @@ export default {
 
 .logout-btn {
   background: transparent !important;
+  box-shadow: none !important;
   transition: all 0.3s ease;
 }
 
 .logout-btn:hover {
   background: transparent !important;
+  box-shadow: none !important;
   transform: scale(1.1);
 }
 
