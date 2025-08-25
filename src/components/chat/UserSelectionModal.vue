@@ -74,7 +74,7 @@
           variant="outlined"
           density="compact"
           clearable
-          class="mb-4"
+          class="mb-4 search-field"
         ></v-text-field>
         
         <!-- 탭 컨텐츠 컨테이너 -->
@@ -124,87 +124,77 @@
               <div v-else>
                 <!-- 초대 가능한 사용자 섹션 -->
                 <div v-if="filteredUsers.length > 0" class="mb-4">
-                  <div class="section-header">
+                  <div class="section-header invite-available">
                     <v-icon size="20" color="success" class="mr-2">mdi-account-plus</v-icon>
                     <span class="section-title">초대 가능한 사용자 ({{ filteredUsers.length }}명)</span>
                   </div>
-                  <v-list density="compact" class="max-height-400">
-                    <v-list-item
+                  <div class="user-grid">
+                    <div
                       v-for="user in filteredUsers"
                       :key="user.id"
-                      @click="selectUser(user)"
-                      :class="{ 'selected-user': selectedUsers.some(u => u.userEmail === user.userEmail) }"
-                      class="user-list-item"
+                      @click="toggleUser(user)"
+                      :class="{ 'user-card': true, 'user-card-selected': selectedUsers.some(u => u.userEmail === user.userEmail) }"
                     >
-                      <template v-slot:prepend>
-                        <v-checkbox
-                          :model-value="selectedUsers.some(u => u.userEmail === user.userEmail)"
-                          @click.stop="toggleUser(user)"
-                          color="primary"
-                        ></v-checkbox>
-                      </template>
+                      <!-- 커스텀 체크박스 -->
+                      <div class="custom-checkbox" :class="{ 'checked': selectedUsers.some(u => u.userEmail === user.userEmail) }">
+                        <v-icon v-if="selectedUsers.some(u => u.userEmail === user.userEmail)" size="16" color="white">mdi-check</v-icon>
+                      </div>
                       
-                      <v-list-item-content>
-                        <v-list-item-title class="font-weight-medium">
-                          {{ user.userName || user.userEmail }}
-                        </v-list-item-title>
-                        <v-list-item-subtitle class="text-caption">
-                          {{ user.userEmail }}
-                        </v-list-item-subtitle>
-                      </v-list-item-content>
+                      <!-- 사용자 정보 -->
+                      <div class="user-info">
+                        <div class="user-avatar">
+                          <v-img v-if="user.profileImage" :src="user.profileImage" alt="프로필 이미지" cover></v-img>
+                          <v-icon v-else size="24" color="grey">mdi-account-circle</v-icon>
+                        </div>
+                        <div class="user-details">
+                          <div class="user-name">{{ user.userName || user.userEmail }}</div>
+                          <div class="user-email">{{ user.userEmail }}</div>
+                        </div>
+                      </div>
                       
-                      <template v-slot:append>
-                        <v-avatar size="32" class="ml-2">
-                          <v-img v-if="user.profileImage" :src="user.profileImage" alt="프로필 이미지"></v-img>
-                          <v-icon v-else>mdi-account-circle</v-icon>
-                        </v-avatar>
-                      </template>
-                    </v-list-item>
-                  </v-list>
+                      <!-- 선택 상태 표시 제거 -->
+                    </div>
+                  </div>
                 </div>
                 
                 <!-- 이미 참여 중인 사용자 섹션 -->
                 <div v-if="existingParticipantsInTab.length > 0" class="mt-6">
-                  <div class="section-header">
+                  <div class="section-header existing-participants">
                     <v-icon size="20" color="grey" class="mr-2">mdi-account-check</v-icon>
                     <span class="section-title text-grey-darken-1">이미 참여 중인 사용자 ({{ existingParticipantsInTab.length }}명)</span>
                   </div>
-                  <v-list density="compact" class="max-height-400 existing-participants">
-                    <v-list-item
+                  <div class="user-grid">
+                    <div
                       v-for="user in existingParticipantsInTab"
                       :key="user.id"
-                      class="user-list-item existing-user"
-                      disabled
+                      class="user-card user-card-disabled"
                     >
-                      <template v-slot:prepend>
-                        <v-checkbox
-                          :model-value="true"
-                          disabled
-                          color="grey"
-                        ></v-checkbox>
-                      </template>
+                      <!-- 비활성화된 체크박스 -->
+                      <div class="custom-checkbox disabled">
+                        <v-icon size="16" color="grey">mdi-check</v-icon>
+                      </div>
                       
-                      <v-list-item-content>
-                        <v-list-item-title class="font-weight-medium text-grey-darken-1">
-                          {{ user.userName || user.userEmail }}
-                        </v-list-item-title>
-                        <v-list-item-subtitle class="text-caption text-grey-darken-1">
-                          {{ user.userEmail }}
-                        </v-list-item-subtitle>
-                      </v-list-item-content>
+                      <!-- 사용자 정보 -->
+                      <div class="user-info">
+                        <div class="user-avatar">
+                          <v-img v-if="user.profileImage" :src="user.profileImage" alt="프로필 이미지" cover></v-img>
+                          <v-icon v-else size="24" color="grey">mdi-account-circle</v-icon>
+                        </div>
+                        <div class="user-details">
+                          <div class="user-name">{{ user.userName || user.userEmail }}</div>
+                          <div class="user-email">{{ user.userEmail }}</div>
+                        </div>
+                      </div>
                       
-                      <template v-slot:append>
-                        <v-chip size="small" color="grey" variant="tonal" class="mr-2">
+                      <!-- 참여 중 상태 표시 -->
+                      <div class="participation-status">
+                        <v-chip size="small" color="grey" variant="tonal">
                           <v-icon size="14" class="mr-1">mdi-check</v-icon>
                           참여 중
                         </v-chip>
-                        <v-avatar size="32" class="ml-2">
-                          <v-img v-if="user.profileImage" :src="user.profileImage" alt="프로필 이미지"></v-img>
-                          <v-icon v-else color="grey">mdi-account-circle</v-icon>
-                        </v-avatar>
-                      </template>
-                    </v-list-item>
-                  </v-list>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -255,87 +245,77 @@
               <div v-else>
                 <!-- 초대 가능한 사용자 섹션 -->
                 <div v-if="filteredUsers.length > 0" class="mb-4">
-                  <div class="section-header">
+                  <div class="section-header invite-available">
                     <v-icon size="20" color="success" class="mr-2">mdi-account-plus</v-icon>
                     <span class="section-title">초대 가능한 사용자 ({{ filteredUsers.length }}명)</span>
                   </div>
-                  <v-list density="compact" class="max-height-400">
-                    <v-list-item
+                  <div class="user-grid">
+                    <div
                       v-for="user in filteredUsers"
                       :key="user.id"
-                      @click="selectUser(user)"
-                      :class="{ 'selected-user': selectedUsers.some(u => u.userEmail === user.userEmail) }"
-                      class="user-list-item"
+                      @click="toggleUser(user)"
+                      :class="{ 'user-card': true, 'user-card-selected': selectedUsers.some(u => u.userEmail === user.userEmail) }"
                     >
-                      <template v-slot:prepend>
-                        <v-checkbox
-                          :model-value="selectedUsers.some(u => u.userEmail === user.userEmail)"
-                          @click.stop="toggleUser(user)"
-                          color="primary"
-                        ></v-checkbox>
-                      </template>
+                      <!-- 커스텀 체크박스 -->
+                      <div class="custom-checkbox" :class="{ 'checked': selectedUsers.some(u => u.userEmail === user.userEmail) }">
+                        <v-icon v-if="selectedUsers.some(u => u.userEmail === user.userEmail)" size="16" color="white">mdi-check</v-icon>
+                      </div>
                       
-                      <v-list-item-content>
-                        <v-list-item-title class="font-weight-medium">
-                          {{ user.userName || user.userEmail }}
-                        </v-list-item-title>
-                        <v-list-item-subtitle class="text-caption">
-                          {{ user.userEmail }}
-                        </v-list-item-subtitle>
-                      </v-list-item-content>
+                      <!-- 사용자 정보 -->
+                      <div class="user-info">
+                        <div class="user-avatar">
+                          <v-img v-if="user.profileImage" :src="user.profileImage" alt="프로필 이미지" cover></v-img>
+                          <v-icon v-else size="24" color="grey">mdi-account-circle</v-icon>
+                        </div>
+                        <div class="user-details">
+                          <div class="user-name">{{ user.userName || user.userEmail }}</div>
+                          <div class="user-email">{{ user.userEmail }}</div>
+                        </div>
+                      </div>
                       
-                      <template v-slot:append>
-                        <v-avatar size="32" class="ml-2">
-                          <v-img v-if="user.profileImage" :src="user.profileImage" alt="프로필 이미지"></v-img>
-                          <v-icon v-else>mdi-account-circle</v-icon>
-                        </v-avatar>
-                      </template>
-                    </v-list-item>
-                  </v-list>
+                      <!-- 선택 상태 표시 제거 -->
+                    </div>
+                  </div>
                 </div>
                 
                 <!-- 이미 참여 중인 사용자 섹션 -->
                 <div v-if="existingParticipantsInTab.length > 0" class="mt-6">
-                  <div class="section-header">
+                  <div class="section-header existing-participants">
                     <v-icon size="20" color="grey" class="mr-2">mdi-account-check</v-icon>
                     <span class="section-title text-grey-darken-1">이미 참여 중인 사용자 ({{ existingParticipantsInTab.length }}명)</span>
                   </div>
-                  <v-list density="compact" class="max-height-400 existing-participants">
-                    <v-list-item
+                  <div class="user-grid">
+                    <div
                       v-for="user in existingParticipantsInTab"
                       :key="user.id"
-                      class="user-list-item existing-user"
-                      disabled
+                      class="user-card user-card-disabled"
                     >
-                      <template v-slot:prepend>
-                        <v-checkbox
-                          :model-value="true"
-                          disabled
-                          color="grey"
-                        ></v-checkbox>
-                      </template>
+                      <!-- 비활성화된 체크박스 -->
+                      <div class="custom-checkbox disabled">
+                        <v-icon size="16" color="grey">mdi-check</v-icon>
+                      </div>
                       
-                      <v-list-item-content>
-                        <v-list-item-title class="font-weight-medium text-grey-darken-1">
-                          {{ user.userName || user.userEmail }}
-                        </v-list-item-title>
-                        <v-list-item-subtitle class="text-caption text-grey-darken-1">
-                          {{ user.userEmail }}
-                        </v-list-item-subtitle>
-                      </v-list-item-content>
+                      <!-- 사용자 정보 -->
+                      <div class="user-info">
+                        <div class="user-avatar">
+                          <v-img v-if="user.profileImage" :src="user.profileImage" alt="프로필 이미지" cover></v-img>
+                          <v-icon v-else size="24" color="grey">mdi-account-circle</v-icon>
+                        </div>
+                        <div class="user-details">
+                          <div class="user-name">{{ user.userName || user.userEmail }}</div>
+                          <div class="user-email">{{ user.userEmail }}</div>
+                        </div>
+                      </div>
                       
-                      <template v-slot:append>
-                        <v-chip size="small" color="grey" variant="tonal" class="mr-2">
+                      <!-- 참여 중 상태 표시 -->
+                      <div class="participation-status">
+                        <v-chip size="small" color="grey" variant="tonal">
                           <v-icon size="14" class="mr-1">mdi-check</v-icon>
                           참여 중
                         </v-chip>
-                        <v-avatar size="32" class="ml-2">
-                          <v-img v-if="user.profileImage" :src="user.profileImage" alt="프로필 이미지"></v-img>
-                          <v-icon v-else color="grey">mdi-account-circle</v-icon>
-                        </v-avatar>
-                      </template>
-                    </v-list-item>
-                  </v-list>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -658,78 +638,252 @@ export default {
   background: rgba(232, 125, 125, 0.1);
 }
 
-.max-height-400 {
+/* 검색 필드 스타일 */
+.search-field {
+  background: var(--mm-surface);
+  border-radius: 12px;
+}
+
+.search-field .v-field {
+  border-radius: 12px;
+}
+
+/* 사용자 그리드 레이아웃 */
+.user-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
   max-height: 400px;
   overflow-y: auto;
 }
 
-.user-list-item {
-  transition: background-color 0.2s ease-in-out;
+/* 사용자 카드 스타일 */
+.user-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: var(--mm-surface);
+  border: 2px solid transparent;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.user-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(232, 125, 125, 0.05) 0%, rgba(255, 107, 107, 0.05) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.user-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  border-color: rgba(232, 125, 125, 0.2);
+}
+
+.user-card:hover::before {
+  opacity: 1;
+}
+
+.user-card-selected {
+  background: linear-gradient(135deg, rgba(232, 125, 125, 0.1) 0%, rgba(255, 107, 107, 0.1) 100%);
+  border-color: #E87D7D;
+  box-shadow: 0 4px 20px rgba(232, 125, 125, 0.2);
+}
+
+.user-card-selected::before {
+  opacity: 1;
+}
+
+.user-card-disabled {
+  background: var(--mm-surface-variant);
+  border-color: var(--mm-outline-variant);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.user-card-disabled:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: var(--mm-outline-variant);
+}
+
+.user-card-disabled::before {
+  opacity: 0;
+}
+
+/* 커스텀 체크박스 스타일 */
+.custom-checkbox {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #9CA3AF;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: var(--mm-surface);
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.custom-checkbox::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #E87D7D 0%, #FF6B6B 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.custom-checkbox:hover {
+  border-color: var(--mm-primary);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transform: scale(1.05);
+}
+
+.custom-checkbox.checked {
+  border-color: #E87D7D;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(232, 125, 125, 0.3);
+}
+
+.custom-checkbox.checked::before {
+  opacity: 1;
+}
+
+.custom-checkbox.checked .v-icon {
+  transform: scale(1.2);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.custom-checkbox.disabled {
+  border-color: var(--mm-outline-variant);
+  background: var(--mm-surface-variant);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.custom-checkbox.disabled:hover {
+  transform: none;
+  border-color: var(--mm-outline-variant);
+  box-shadow: none;
+}
+
+.custom-checkbox.disabled .v-icon {
+  color: var(--mm-outline-variant) !important;
+}
+
+/* 사용자 정보 스타일 */
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 2px solid var(--mm-outline-variant);
+  background: var(--mm-surface-variant);
+}
+
+.user-avatar .v-img {
+  width: 100%;
+  height: 100%;
+}
+
+.user-avatar .v-icon {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.user-name {
+  font-size: var(--mm-text-md);
+  font-weight: 600;
+  color: var(--mm-on-surface);
+  margin-bottom: 4px;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-email {
+  font-size: var(--mm-text-sm);
+  color: var(--mm-on-surface-variant);
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 선택 상태 표시 제거 */
+
+/* 참여 중 상태 표시 */
+.participation-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.participation-status .v-chip {
+  font-size: var(--mm-text-xs);
+  height: 24px;
   border-radius: 12px;
-  margin: 4px 0;
 }
 
-.user-list-item:hover {
-  background-color: var(--mm-surface-variant);
-  transform: translateY(-1px);
-  box-shadow: var(--mm-shadow-sm);
-}
-
-.selected-user {
-  background-color: rgba(232, 125, 125, 0.1);
-  border-left: 4px solid #E87D7D;
-}
-
-.selected-user:hover {
-  background-color: rgba(232, 125, 125, 0.15);
-}
-
+/* 섹션 헤더 스타일 */
 .section-header {
   display: flex;
   align-items: center;
-  margin-bottom: 12px;
-  padding-left: 8px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--mm-surface-variant);
+  border-radius: 12px;
+  border-left: 4px solid transparent;
+}
+
+.section-header.invite-available {
+  border-left-color: var(--mm-success);
+}
+
+.section-header.existing-participants {
+  border-left-color: var(--mm-outline);
 }
 
 .section-title {
   font-size: var(--mm-text-md);
   font-weight: 600;
-  color: var(--mm-on-surface-variant);
-}
-
-.existing-participants .user-list-item {
-  background-color: var(--mm-surface-variant);
-  border-left: 4px solid var(--mm-surface-variant);
-  margin: 4px 0;
-}
-
-.existing-participants .user-list-item:hover {
-  background-color: var(--mm-surface-variant);
-  transform: translateY(-1px);
-  box-shadow: var(--mm-shadow-sm);
-}
-
-.existing-participants .user-list-item .v-list-item-content {
-  opacity: 0.7;
-}
-
-.existing-participants .user-list-item .v-list-item-title {
-  font-weight: 500;
-  color: var(--mm-on-surface-variant);
-}
-
-.existing-participants .user-list-item .v-list-item-subtitle {
-  color: var(--mm-on-surface-variant);
-}
-
-.existing-participants .user-list-item .v-chip {
-  background-color: var(--mm-surface-variant);
-  border-color: var(--mm-surface-variant);
-  color: var(--mm-on-surface-variant);
-}
-
-.existing-participants .user-list-item .v-chip .v-icon {
-  color: var(--mm-on-surface-variant);
+  color: var(--mm-on-surface);
 }
 
 /* 탭별 상태 정보 스타일 */
@@ -741,7 +895,7 @@ export default {
   padding: 8px 12px;
   background-color: var(--mm-surface-variant);
   border-radius: 12px;
-  border: 1px solid var(--mm-surface-variant);
+  border: 1px solid var(--mm-outline-variant);
   box-shadow: var(--mm-shadow-sm);
 }
 
@@ -760,7 +914,7 @@ export default {
 /* 탭 컨텐츠 컨테이너 스타일 */
 .tab-content-container {
   position: relative;
-  min-height: 400px; /* 모달 크기 안정화를 위한 최소 높이 설정 */
+  min-height: 400px;
   overflow: hidden;
 }
 
@@ -825,6 +979,28 @@ export default {
   .selection-content {
     min-height: 350px;
   }
+  
+  .user-grid {
+    gap: 8px;
+  }
+  
+  .user-card {
+    padding: 12px;
+    gap: 12px;
+  }
+  
+  .user-avatar {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .user-name {
+    font-size: var(--mm-text-sm);
+  }
+  
+  .user-email {
+    font-size: var(--mm-text-xs);
+  }
 }
 
 @media (max-width: 480px) {
@@ -835,6 +1011,18 @@ export default {
   .selection-content {
     min-height: 300px;
   }
+  
+  .user-card {
+    padding: 10px;
+    gap: 10px;
+  }
+  
+  .custom-checkbox {
+    width: 20px;
+    height: 20px;
+  }
+  
+
 }
 
 /* 다크 모드 지원 */
@@ -851,6 +1039,58 @@ export default {
     background: var(--mm-surface-variant);
     border-color: var(--mm-border-light);
   }
+  
+  .user-card {
+    background: var(--mm-surface);
+  }
+  
+  .user-card-selected {
+    background: linear-gradient(135deg, rgba(232, 125, 125, 0.15) 0%, rgba(255, 107, 107, 0.15) 100%);
+  }
+  
+  .user-card-disabled {
+    background: var(--mm-surface-variant);
+  }
+}
+
+/* 스크롤바 스타일링 */
+.user-grid::-webkit-scrollbar {
+  width: 6px;
+}
+
+.user-grid::-webkit-scrollbar-track {
+  background: var(--mm-surface-variant);
+  border-radius: 3px;
+}
+
+.user-grid::-webkit-scrollbar-thumb {
+  background: var(--mm-outline-variant);
+  border-radius: 3px;
+}
+
+.user-grid::-webkit-scrollbar-thumb:hover {
+  background: var(--mm-outline);
+}
+
+/* 호버 효과 개선 */
+.user-card:active {
+  transform: translateY(0);
+  transition: transform 0.1s ease;
+}
+
+.user-card-selected:active {
+  transform: translateY(0);
+}
+
+/* 포커스 상태 (접근성) */
+.user-card:focus-visible {
+  outline: 2px solid var(--mm-primary);
+  outline-offset: 2px;
+}
+
+.custom-checkbox:focus-visible {
+  outline: 2px solid var(--mm-primary);
+  outline-offset: 2px;
 }
 </style>
 
