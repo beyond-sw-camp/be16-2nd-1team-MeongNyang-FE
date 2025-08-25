@@ -158,57 +158,33 @@ export default {
 
     const handleAlarmClick = async (alarm) => {
       try {
-        console.log('알림 클릭:', alarm)
-        console.log('현재 읽음 상태:', alarm.isRead, '타입:', typeof alarm.isRead)
-        console.log('알림 ID:', alarm.id, '타입:', typeof alarm.id)
-        console.log('isRead === false:', alarm.isRead === false)
-        console.log('isRead === "FALSE":', alarm.isRead === "FALSE")
-        console.log('!alarm.isRead:', !alarm.isRead)
-        
-        // 읽지 않은 알림인 경우 읽음 처리 (문자열 "FALSE"로 비교)
+        // 읽지 않은 알림인 경우 읽음 처리
         if (alarm.isRead == "FALSE") {
-          console.log('읽음 처리 시작...')
           await alarmStore.markAlarmAsRead(alarm.id)
-          console.log('읽음 처리 완료')
-        } else {
-          console.log('이미 읽은 알림입니다.')
         }
 
         // 알림 타입에 따른 네비게이션 처리
         if (alarm.targetId) {
-          console.log('알림 타입:', alarm.alarmType, '타겟 ID:', alarm.targetId)
           switch (alarm.alarmType) {
             case 'CHAT':
-              // 채팅방으로 이동
               // router.push(`/chat/${alarm.targetId}`)
               break
             case 'LIKE':
             case 'COMMENT':
-              // 게시글 상세로 이동
               // router.push(`/post/${alarm.targetId}`)
               break
             case 'FOLLOW':
-              // 사용자 프로필로 이동
               // router.push(`/profile/${alarm.targetId}`)
               break
             case 'MARKET':
-              // 마켓 상세로 이동
               // router.push(`/market/${alarm.targetId}`)
               break
             case 'PET':
-              // 반려동물 상세로 이동
               // router.push(`/pet/${alarm.targetId}`)
               break
           }
         }
       } catch (error) {
-        console.error('알림 처리 중 오류:', error)
-        console.error('에러 상세 정보:', {
-          message: error.message,
-          response: error.response,
-          status: error.response?.status,
-          data: error.response?.data
-        })
         showSnackbar({
           title: '알림 처리 실패',
           message: '알림을 처리하는데 실패했습니다.',
@@ -410,7 +386,6 @@ export default {
   color: #5A6C7D !important;
   font-size: 0.95rem;
   font-weight: 400;
-  font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   text-transform: none;
   letter-spacing: 0.4px;
   line-height: 1.5;
