@@ -95,10 +95,16 @@
             <!-- 이미지 -->
             <div class="post-image">
               <img 
-                :src="post.thumbnailUrl || 'https://via.placeholder.com/400x300/f0f0f0/cccccc?text=이미지+없음'" 
+                v-if="post.thumbnailUrl"
+                :src="post.thumbnailUrl" 
                 :alt="post.title"
                 @error="handleImageError"
               />
+              <!-- 이미지가 없는 경우 기본 이미지 표시 -->
+              <div v-else class="default-image">
+                <v-icon icon="mdi-image-off" size="48" color="#E87D7D" />
+                <span class="default-image-text">이미지 없음</span>
+              </div>
               <!-- 판매상태 배지 -->
               <div class="status-badge" :class="getStatusClass(post.saleStatus)">
                 {{ getStatusText(post.saleStatus) }}
@@ -418,8 +424,18 @@ export default {
     },
 
     handleImageError(event) {
-      // 이미지 로드 실패 시 플레이스홀더로 대체
-      event.target.src = 'https://via.placeholder.com/400x300/f0f0f0/cccccc?text=이미지+없음'
+      // 이미지 로드 실패 시 기본 이미지로 대체
+      const postImage = event.target.parentElement
+      if (postImage) {
+        // 기존 이미지 숨기기
+        event.target.style.display = 'none'
+        
+        // 기본 이미지 표시
+        const defaultImage = postImage.querySelector('.default-image')
+        if (defaultImage) {
+          defaultImage.style.display = 'flex'
+        }
+      }
     },
 
     changePage(page) {
@@ -1283,5 +1299,36 @@ export default {
 .like-button-top,
 .like-button-inline {
   display: none;
+}
+
+/* 기본 이미지 스타일 */
+.default-image {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
+  color: #6c757d;
+  min-height: 200px;
+}
+
+.default-image-text {
+  margin-top: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #6c757d;
+}
+
+/* 포스트 이미지 컨테이너 */
+.post-image {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f8f9fa;
 }
 </style>

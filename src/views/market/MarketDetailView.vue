@@ -26,10 +26,16 @@
       <div class="image-section">
         <div class="image-container">
           <img 
+            v-if="currentImage"
             :src="currentImage" 
             :alt="post.title"
             class="main-image"
           />
+          <!-- 이미지가 없는 경우 기본 이미지 표시 -->
+          <div v-else class="default-main-image">
+            <v-icon icon="mdi-image-off" size="80" color="#E87D7D" />
+            <span class="default-image-text">이미지 없음</span>
+          </div>
           
           <!-- 상태 뱃지 (좌상단) -->
           <div class="status-badge" :class="post.saleStatus.toLowerCase()">
@@ -81,7 +87,11 @@
              :class="{ active: index === currentImageIndex }"
              @click="setCurrentImage(index)"
            >
-             <img :src="image" :alt="`${post.title} ${index + 1}`" />
+             <img v-if="image" :src="image" :alt="`${post.title} ${index + 1}`" />
+             <!-- 썸네일 이미지가 없는 경우 기본 이미지 표시 -->
+             <div v-else class="default-thumbnail">
+               <v-icon icon="mdi-image-off" size="24" color="#E87D7D" />
+             </div>
            </div>
          </div>
         <!-- 판매자 정보 -->
@@ -205,14 +215,13 @@ export default {
       'OTHER': '기타'
     }
     
-         // 현재 이미지 (썸네일을 첫 번째 이미지로 설정)
-     const currentImage = computed(() => {
-       if (!post.value) return ''
-       if (post.value.productImageList && post.value.productImageList.length > 0) {
-         return post.value.productImageList[currentImageIndex.value]
-       }
-       return post.value.thumbnailUrl || ''
-     })
+         // 현재 이미지
+    const currentImage = computed(() => {
+      if (!post.value || !post.value.productImageList || post.value.productImageList.length === 0) {
+        return null
+      }
+      return post.value.productImageList[currentImageIndex.value]
+    })
     
          // 거래글 상세 조회
      const fetchPostDetail = async () => {
@@ -1251,6 +1260,38 @@ export default {
 .retry-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(232, 125, 125, 0.3);
+}
+
+/* 기본 이미지 스타일 */
+.default-main-image {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 400px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 16px;
+  color: #6c757d;
+}
+
+.default-image-text {
+  margin-top: 16px;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #6c757d;
+}
+
+.default-thumbnail {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 8px;
+  color: #6c757d;
+  min-height: 60px;
 }
 
 /* 반응형 */
