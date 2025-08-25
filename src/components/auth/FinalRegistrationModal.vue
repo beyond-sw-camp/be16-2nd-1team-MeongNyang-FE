@@ -176,15 +176,63 @@ export default {
       console.log('🔍 닉네임 중복확인 시작:', form.value.nickname.trim())
       
       try {
+        console.log('📤 중복확인 API 요청 데이터:', {
+          nickname: form.value.nickname.trim(),
+          nicknameLength: form.value.nickname.trim().length
+        })
+        
         const response = await userAPI.checkNickname(form.value.nickname.trim())
         console.log('📡 중복확인 API 응답:', response)
         console.log('📡 응답 데이터:', response.data)
         
         const result = response.data
         
+        // 백엔드 응답 구조 상세 분석
+        console.log('🔍 백엔드 응답 구조 분석:')
+        console.log('- result:', result)
+        console.log('- result.isSuccess:', result.isSuccess)
+        console.log('- result.data:', result.data)
+        console.log('- result.data.available:', result.data?.available)
+        console.log('- result.status:', result.status)
+        console.log('- result.status?.message:', result.status?.message)
+        
         if (result.isSuccess) {
           console.log('✅ API 성공 응답:', result)
-          if (result.data.available) {
+          
+          // 백엔드 응답 구조에 따른 사용 가능 여부 판단
+          let isAvailable = false
+          
+          // CommonRes<String> 구조: result.data에 닉네임이 있으면 사용 가능
+          if (result.data && typeof result.data === 'string' && result.data.trim() !== '') {
+            isAvailable = true
+            console.log('📋 CommonRes<String> 구조 사용: result.data =', result.data)
+          }
+          // 구조 1: result.data.available (boolean)
+          else if (result.data && typeof result.data.available === 'boolean') {
+            isAvailable = result.data.available
+            console.log('📋 구조 1 사용: result.data.available =', isAvailable)
+          }
+          // 구조 2: result.data (boolean)
+          else if (result.data && typeof result.data === 'boolean') {
+            isAvailable = result.data
+            console.log('📋 구조 2 사용: result.data =', isAvailable)
+          }
+          // 구조 3: result.available (boolean)
+          else if (typeof result.available === 'boolean') {
+            isAvailable = result.available
+            console.log('📋 구조 3 사용: result.available =', isAvailable)
+          }
+          // 구조 4: result.status.code === 200이면 사용 가능
+          else if (result.status && result.status.code === 200) {
+            isAvailable = true
+            console.log('📋 구조 4 사용: result.status.code === 200')
+          }
+          else {
+            console.log('❓ 알 수 없는 응답 구조:', result)
+            isAvailable = false
+          }
+          
+          if (isAvailable) {
             nicknameChecked.value = true
             nicknameMessage.value = '사용 가능한 닉네임입니다.'
             nicknameMessageType.value = 'success'

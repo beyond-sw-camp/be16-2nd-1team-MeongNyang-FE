@@ -318,7 +318,7 @@
 
 <script>
 import { ref, provide } from 'vue'
-import { useRouter } from 'vue-router'
+
 import { useUIStore } from './stores/ui'
 import { useAuthStore } from './stores/auth'
 import { userAPI } from './services/api'
@@ -344,7 +344,6 @@ export default {
   setup() {
     const uiStore = useUIStore()
     const authStore = useAuthStore()
-    const router = useRouter()
     
     // 플로팅 모달 상태 관리
     const showAuthModal = ref(false)
@@ -430,6 +429,12 @@ export default {
       
       // 성공 메시지 표시
       uiStore.showSnackbar('성공', '회원가입이 완료되었습니다!', 'success')
+      
+      // 회원가입 완료 후 화면 새로고침하여 로그인된 상태로 표시
+      console.log('✅ 회원가입 완료! 화면 새로고침 중...')
+      setTimeout(() => {
+        window.location.href = '/'
+      }, 1000) // 1초 후 새로고침 (스낵바 메시지 확인 후)
     }
     
     // OAuth 추가정보 모달 이벤트 핸들러들
@@ -444,8 +449,11 @@ export default {
       // 성공 메시지 표시
       uiStore.showSnackbar('성공', '소셜 계정 연동이 완료되었습니다!', 'success')
       
-      // 홈으로 이동
-      router.push('/')
+      // 로그인 성공 후 화면 새로고침하여 로그인된 상태로 표시
+      console.log('✅ OAuth 추가정보 완료! 화면 새로고침 중...')
+      setTimeout(() => {
+        window.location.href = '/'
+      }, 1000) // 1초 후 새로고침 (스낵바 메시지 확인 후)
     }
     
     // 소셜 계정 중복 모달 이벤트 핸들러들
@@ -473,6 +481,12 @@ export default {
     const handleAuthSuccess = (type) => {
       console.log(`${type} 성공!`)
       showAuthModal.value = false
+      
+      // 로그인 성공 후 화면 새로고침하여 로그인된 상태로 표시
+      console.log(`✅ ${type} 성공! 화면 새로고침 중...`)
+      setTimeout(() => {
+        window.location.href = '/'
+      }, 1000) // 1초 후 새로고침 (스낵바 메시지 확인 후)
     }
     
     // OAuth 추가정보 모달 열기 (HomeView에서 호출)
@@ -552,8 +566,11 @@ export default {
         showOAuthLinkModal.value = false
         oauthLinkData.value = null
         
-        // 홈 화면으로 이동
-        router.push('/')
+        // 연동 성공 후 화면 새로고침하여 로그인된 상태로 표시
+        console.log('✅ OAuth 연동 완료! 화면 새로고침 중...')
+        setTimeout(() => {
+          window.location.href = '/'
+        }, 1000) // 1초 후 새로고침 (스낵바 메시지 확인 후)
       } catch (error) {
         console.error('❌ 소셜 로그인 연동 실패:', error)
         uiStore.showSnackbar('오류', error.message || '소셜 로그인 연동에 실패했습니다.', 'error')
