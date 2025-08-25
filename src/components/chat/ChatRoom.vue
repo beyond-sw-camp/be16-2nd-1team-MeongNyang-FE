@@ -105,7 +105,15 @@
               <!-- 아바타 영역 -->
               <div class="avatar-area">
                 <v-avatar v-if="item.senderEmail !== senderEmail && item.showAvatarAndEmail" size="40">
-                  <v-img src="https://cdn.vuetifyjs.com/images/john.jpg" alt="avatar"></v-img>
+                  <v-img 
+                    v-if="getParticipantProfileImage(item.senderEmail)" 
+                    :src="getParticipantProfileImage(item.senderEmail)" 
+                    alt="프로필 이미지"
+                    cover
+                  ></v-img>
+                  <div v-else class="message-avatar-placeholder">
+                    {{ getInitials(item.senderEmail) }}
+                  </div>
                 </v-avatar>
               </div>
               
@@ -399,7 +407,13 @@
           >
             <div class="participant-avatar">
               <div class="avatar-circle">
-                <span class="avatar-text">{{ getInitials(participant.email) }}</span>
+                <v-img 
+                  v-if="participant.profileImage" 
+                  :src="participant.profileImage" 
+                  alt="프로필 이미지"
+                  cover
+                ></v-img>
+                <span v-else class="avatar-text">{{ getInitials(participant.email) }}</span>
               </div>
               <div 
                 class="online-indicator"
@@ -414,7 +428,7 @@
               </div>
             </div>
 
-            <div class="participant-actions">
+            <!-- <div class="participant-actions">
               <v-btn
                 icon
                 variant="text"
@@ -425,7 +439,7 @@
               >
                 <v-icon size="18">mdi-account</v-icon>
               </v-btn>
-            </div>
+            </div> -->
           </div>
         </div>
 
@@ -1062,6 +1076,11 @@ export default {
       return parts.substring(0, 1).toUpperCase();
     }
 
+    const getParticipantProfileImage = (email) => {
+      const participant = participants.value.find(p => p.email === email);
+      return participant?.profileImage || null;
+    }
+
     const viewProfile = (participant) => {
       // 프로필 보기 로직 (나중에 구현)
       console.log('프로필 보기:', participant);
@@ -1403,6 +1422,7 @@ export default {
       isLeaving,
       isOnline,
       getInitials,
+      getParticipantProfileImage,
       viewProfile,
       showParticipants,
       inviteParticipants,
@@ -1500,6 +1520,8 @@ export default {
   font-size: inherit;
   font-weight: inherit;
 }
+
+
 
 .room-status {
   display: flex;
@@ -1634,6 +1656,19 @@ export default {
 .message-avatar {
   border: 2px solid var(--mm-border);
   transition: all var(--mm-transition-normal);
+}
+
+.message-avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #E87D7D 0%, #FF6B6B 100%);
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
 }
 
 .message-content {
@@ -3232,6 +3267,13 @@ export default {
   font-weight: 600;
   font-size: var(--mm-text-lg);
   position: relative;
+  overflow: hidden;
+}
+
+.avatar-circle .v-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .online-indicator {
