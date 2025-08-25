@@ -41,7 +41,7 @@
         <div class="room-info">
           <div class="room-name">{{ chatRoom.roomName }}</div>
           <div class="room-meta">
-            <span class="last-message">{{ chatRoom.lastMessage || '새로운 채팅방입니다.' }}</span>
+            <span class="last-message">{{ chatRoom.lastMessage || '파일' }}</span>
             <span class="last-message-time">{{ formatLastMessageTime(chatRoom.lastMessageTime || chatRoom.updatedAt || new Date()) }}</span>
           </div>
         </div>
