@@ -13,6 +13,7 @@
         v-model="showAuthModal"
         :initial-tab="authModalTab"
         @success="handleAuthSuccess"
+        @update:modelValue="handleAuthModalUpdate"
       />
       
       <!-- OTP 인증 모달 -->
@@ -489,6 +490,18 @@ export default {
       }, 1000) // 1초 후 새로고침 (스낵바 메시지 확인 후)
     }
     
+    // 인증 모달 상태 변경 처리
+    const handleAuthModalUpdate = (value) => {
+      console.log('인증 모달 상태 변경:', value)
+      showAuthModal.value = value
+      
+      // 모달이 닫힐 때 폼 초기화
+      if (!value) {
+        console.log('인증 모달 닫힘 - 폼 초기화')
+        // 필요한 경우 여기서 추가 정리 작업 수행
+      }
+    }
+    
     // OAuth 추가정보 모달 열기 (HomeView에서 호출)
     const openOAuthExtraModal = (data) => {
       console.log('OAuth 추가정보 모달 열기:', data)
@@ -602,6 +615,7 @@ export default {
       showDeletedAccountModal,
       deletedAccountData,
       handleAuthSuccess,
+      handleAuthModalUpdate,
       handleOtpBack,
       handleOtpClose,
       handleOtpSuccess,

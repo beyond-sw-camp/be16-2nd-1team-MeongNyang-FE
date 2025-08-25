@@ -1045,6 +1045,9 @@ const oauthExtraErrorMsg = ref('')
 const oauthExtraTimeLeft = ref(600) // 10분 (600초)
 const nicknameCheckResult = ref(null)
 
+// OTP 관련 변수 (resetForms에서 사용)
+const otpCode = ref('')
+
 
 
 // Forms
@@ -1112,8 +1115,21 @@ const confirmPasswordRules = [
 
 // Methods
 const closeModal = () => {
-  dialog.value = false
-  resetForms()
+  try {
+    console.log('🔒 모달 닫기 시작')
+    
+    // 먼저 모달 상태를 false로 설정
+    dialog.value = false
+    
+    // 그 다음 폼 초기화 (에러가 발생해도 모달은 닫힘)
+    resetForms()
+    
+    console.log('✅ 모달 닫기 완료')
+  } catch (error) {
+    console.error('❌ 모달 닫기 중 에러 발생:', error)
+    // 에러가 발생해도 모달은 닫히도록 함
+    dialog.value = false
+  }
 }
 
 
@@ -1247,24 +1263,30 @@ const handleUnlockAccount = async () => {
 
 
 const resetForms = () => {
-  loginForm.email = ''
-  loginForm.password = ''
-  
-  registerForm.email = ''
-  registerForm.name = ''
-  registerForm.nickname = ''
-  registerForm.password = ''
-  registerForm.confirmPassword = ''
-  registerForm.agreeTerms = false
-  
-  otpCode.value = ''
-  registerStep.value = 'basic'
-  errorMsg.value = ''
-  activeTab.value = 'login'
-  
-
-  
-
+  try {
+    // 로그인 폼 초기화
+    loginForm.email = ''
+    loginForm.password = ''
+    
+    // 회원가입 폼 초기화
+    registerForm.email = ''
+    registerForm.name = ''
+    registerForm.nickname = ''
+    registerForm.password = ''
+    registerForm.confirmPassword = ''
+    registerForm.agreeTerms = false
+    
+    // OTP 관련 변수 초기화
+    otpCode.value = ''
+    registerStep.value = 'basic'
+    errorMsg.value = ''
+    activeTab.value = 'login'
+    
+    console.log('✅ 폼 초기화 완료')
+  } catch (error) {
+    console.error('❌ 폼 초기화 중 에러 발생:', error)
+    // 에러가 발생해도 모달은 닫히도록 함
+  }
 }
 
 const handleLogin = async () => {
