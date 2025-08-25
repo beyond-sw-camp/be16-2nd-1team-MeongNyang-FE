@@ -71,7 +71,7 @@ export default {
     },
     searchType: {
       type: String,
-      default: 'TITLE'
+      default: 'CONTENT'
     }
   },
   emits: ['update:modelValue', 'update:searchType', 'search', 'clear'],
@@ -80,7 +80,6 @@ export default {
       searchKeyword: this.modelValue,
       localSearchType: this.searchType,
       searchTypes: [
-        { label: '제목', value: 'TITLE' },
         { label: '내용', value: 'CONTENT' },
         { label: '사용자', value: 'USER' },
         { label: '해시태그', value: 'HASHTAG' }
@@ -91,16 +90,6 @@ export default {
       selectedIndex: -1,
       // 더미 자동완성 데이터
       autocompleteData: {
-        TITLE: [
-          '냥냥이 일기',
-          '강아지 산책',
-          '반려동물 건강',
-          '펫샵 후기',
-          '동물병원 체험',
-          '애완동물 훈련',
-          '펫 사진',
-          '동물 용품 리뷰'
-        ],
         CONTENT: [
           '오늘은 정말 행복한 하루였어요',
           '산책하면서 만난 친구들',
@@ -151,7 +140,7 @@ export default {
     handleSearch() {
       if (this.searchKeyword && this.searchKeyword.trim()) {
         this.$emit('search', {
-          type: this.localSearchType,
+          searchType: this.localSearchType,
           keyword: this.searchKeyword.trim()
         })
         this.hideAutocomplete()

@@ -6,7 +6,7 @@
       <router-view />
     </v-main>
     
-    <FooterComponent />
+    <!-- <FooterComponent v-if="!isChatPage" /> -->
     
     <!-- 전역 UI 컴포넌트들 -->
     <GlobalSnackbar
@@ -35,7 +35,7 @@
 <script>
 import { useUIStore } from './stores/ui'
 import HeaderComponent from './components/HeaderComponent.vue'
-import FooterComponent from './components/FooterComponent.vue'
+// import FooterComponent from './components/FooterComponent.vue'
 import GlobalSnackbar from './components/ui/global/GlobalSnackbar.vue'
 import GlobalLoadingOverlay from './components/ui/global/GlobalLoadingOverlay.vue'
 
@@ -43,7 +43,7 @@ export default {
   name: 'App',
   components: {
     HeaderComponent,
-    FooterComponent,
+    // FooterComponent,
     GlobalSnackbar,
     GlobalLoadingOverlay
   },
@@ -77,6 +77,6 @@ export default {
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
-  margin-top: 60px;
+  /* margin-top: 60px; */
 }
 </style>

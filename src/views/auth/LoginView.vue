@@ -186,11 +186,17 @@ export default {
           rememberMe: form.rememberMe,
         })
 
-        // ?redirect=/path 지원, 없으면 /dashboard 로
+        // ?redirect=/path 지원, 없으면 홈으로
         const redirect = typeof route.query.redirect === 'string'
           ? route.query.redirect
-          : '/dashboard'
-        router.push(redirect)
+          : '/'
+        
+        // 홈으로 리다이렉트하는 경우 강제로 새로고침하여 상태 반영
+        if (redirect === '/') {
+          window.location.href = '/'
+        } else {
+          router.push(redirect)
+        }
       } catch (e) {
         const s = e?.response?.status
         if (s === 400) errorMsg.value = '이메일 또는 비밀번호가 올바르지 않습니다.'

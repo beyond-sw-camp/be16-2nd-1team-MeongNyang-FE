@@ -3,7 +3,7 @@
     app 
     permanent
     class="modern-sidebar"
-    width="240"
+    width="260"
   >
     <!-- 로고 섹션 -->
     <div class="sidebar-header">
@@ -21,13 +21,13 @@
     <v-list class="sidebar-menu">
       <!-- 홈 -->
       <v-list-item 
-        @click="$router.push('/')"
-        :class="{ 'active': $route.path === '/' }"
+        @click="goToHome"
+        :class="{ 'active': isHomeActive }"
         class="menu-item"
         density="compact"
       >
         <template v-slot:prepend>
-          <v-icon size="20" :color="$route.path === '/' ? '#E87D7D' : '#6c757d'">
+          <v-icon size="20" :color="isHomeActive ? '#E87D7D' : '#6c757d'">
             mdi-home
           </v-icon>
         </template>
@@ -98,22 +98,6 @@
         <v-list-item-title>프로필</v-list-item-title>
       </v-list-item>
 
-      <!-- 알림 -->
-      <v-list-item 
-        v-if="isLoggedIn"
-        @click="$router.push('/notifications')"
-        :class="{ 'active': $route.path === '/notifications' }"
-        class="menu-item"
-        density="compact"
-      >
-        <template v-slot:prepend>
-          <v-icon size="20" :color="$route.path === '/notifications' ? '#E87D7D' : '#6c757d'">
-            mdi-bell
-          </v-icon>
-        </template>
-        <v-list-item-title>알림</v-list-item-title>
-      </v-list-item>
-
       <!-- 관리자 (관리자인 경우) -->
       <v-list-item 
         v-if="isLoggedIn && isAdmin"
@@ -158,52 +142,61 @@
         </v-list-item>
       </template>
 
-      
+
     </v-list>
 
-         <!-- 사용자 정보 (하단) -->
-     <template v-slot:append>
-       <div v-if="isLoggedIn" class="user-section">
-         <v-divider class="mb-3"></v-divider>
-         <div class="user-info">
-           <v-avatar size="40" class="user-avatar">
-             <v-img v-if="user?.profileImage" :src="user.profileImage"></v-img>
-             <v-icon v-else size="20">mdi-account</v-icon>
-           </v-avatar>
-           <div class="user-details">
-             <div class="user-name">{{ user?.nickname || '사용자' }}</div>
-           </div>
-           <!-- 로그아웃 아이콘 (사용자 닉네임 우측) -->
-           <v-btn
-             @click="handleLogout"
-             icon
-             variant="text"
-             size="small"
-             class="logout-icon-btn"
-             color="#dc3545"
-           >
-             <v-icon size="20">mdi-logout</v-icon>
-           </v-btn>
-         </div>
-       </div>
-     </template>
+    <!-- 사용자 정보 (하단) -->
+    <template v-slot:append>
+      <div v-if="isLoggedIn" class="user-section">
+        <v-divider class="mb-3"></v-divider>
+        <div class="user-info">
+          <v-avatar size="40" class="user-avatar" @click="goToRepresentativePet">
+            <v-img v-if="representativePet?.url" :src="representativePet.url" :alt="representativePet.name"></v-img>
+            <v-img v-else-if="user?.profileImage" :src="user.profileImage" alt="사용자 프로필"></v-img>
+            <v-icon v-else>mdi-account</v-icon>
+          </v-avatar>
+          <div class="user-details">
+            <div class="user-name">{{ user?.nickname || '사용자' }}</div>
+          </div>
+          <v-btn icon class="logout-btn" @click="handleLogout">
+            <v-icon color="#F87171">mdi-logout</v-icon>
+          </v-btn>
+        </div>
+      </div>
+    </template>
   </v-navigation-drawer>
 </template>
 
 <script>
-import { computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 export default {
   name: 'HeaderComponent',
   setup() {
     const router = useRouter()
+    const route = useRoute()
     const authStore = useAuthStore()
     
     const isLoggedIn = computed(() => authStore.isAuthenticated)
     const user = computed(() => authStore.user)
     const isAdmin = computed(() => user.value?.role === 'ADMIN')
+    
+    // 로그인 상태 변화를 감지하기 위해 watch 추가
+    watch(() => authStore.isAuthenticated, (newValue) => {
+      console.log('Header - 로그인 상태 변화 감지:', newValue)
+    }, { immediate: true })
+    
+    // 홈 활성화 상태 확인
+    const isHomeActive = computed(() => {
+      return route.path === '/'
+    })
+    
+    // 홈으로 이동
+    const goToHome = () => {
+      router.push('/')
+    }
     
     const handleLogout = () => {
       authStore.logout()
@@ -214,6 +207,8 @@ export default {
       isLoggedIn,
       user,
       isAdmin,
+      isHomeActive,
+      goToHome,
       handleLogout
     }
   }
@@ -225,6 +220,8 @@ export default {
   background: linear-gradient(180deg, #FFFFFF 0%, #FAFAFA 100%);
   border-right: 1px solid rgba(0, 0, 0, 0.08);
   box-shadow: 2px 0 20px rgba(0, 0, 0, 0.05);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .sidebar-header {
@@ -245,28 +242,39 @@ export default {
 }
 
 .brand-logo {
-  height: 40px;
+  height: 38px;
   width: auto;
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
 }
 
 
 
 .brand-title {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: #2c3e50;
   white-space: nowrap;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .sidebar-menu {
-  padding: 16px 8px;
+  padding: 16px 10px;
 }
 
 .menu-item {
   margin: 4px 8px;
-  border-radius: 12px;
+  border-radius: 10px;
   transition: all 0.3s ease;
   cursor: pointer;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 .menu-item:hover {
@@ -296,59 +304,69 @@ export default {
   color: #dc3545 !important;
 }
 
-.logout-icon-btn {
-  margin-left: auto;
-  transition: all 0.3s ease;
-}
-
-.logout-icon-btn:hover {
-  transform: scale(1.1);
-  background: rgba(220, 53, 69, 0.1) !important;
-}
-
 .user-section {
-  padding: 16px;
+  padding: 12px;
   background: rgba(0, 0, 0, 0.02);
 }
 
 .user-info {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
 }
 
 .user-avatar {
   border: 2px solid #E87D7D;
   box-shadow: 0 4px 15px rgba(232, 125, 125, 0.2);
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
 }
 
 .user-details {
   flex: 1;
   min-width: 0;
+  text-align: left;
 }
 
 .user-name {
   font-weight: 600;
   color: #2c3e50;
   font-size: 0.9rem;
-  margin-bottom: 2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-.user-email {
-  color: #6c757d;
-  font-size: 0.8rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.logout-btn {
+  background: transparent !important;
+  transition: all 0.3s ease;
+}
+
+.logout-btn:hover {
+  background: transparent !important;
+  transform: scale(1.1);
+}
+
+.logout-btn :deep(.v-icon) {
+  color: #F87171 !important;
+}
+
+.logout-btn:hover :deep(.v-icon) {
+  color: #EF4444 !important;
 }
 
 /* Vuetify 스타일 오버라이드 */
 :deep(.v-list-item) {
-  border-radius: 12px;
-  margin: 2px 0;
+  border-radius: 10px;
+  margin: 3px 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 :deep(.v-list-item__prepend) {
@@ -363,12 +381,81 @@ export default {
   font-size: 0.9rem;
   font-weight: 500;
   color: #495057;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* 반응형 */
 @media (max-width: 960px) {
   .modern-sidebar {
-    width: 240px !important;
+    width: 260px !important;
+  }
+  
+  .sidebar-header {
+    padding: 20px 16px;
+  }
+  
+  .brand-logo {
+    height: 38px;
+  }
+  
+  .brand-title {
+    font-size: 1.1rem;
+  }
+  
+  .sidebar-menu {
+    padding: 16px 10px;
+  }
+  
+  .menu-item {
+    margin: 4px 8px;
+  }
+  
+  .user-section {
+    padding: 12px;
+  }
+  
+  .user-name {
+    font-size: 0.9rem;
+    margin-bottom: 3px;
+  }
+  
+  .user-email {
+    font-size: 0.8rem;
+  }
+  
+  :deep(.v-list-item) {
+    margin: 3px 0;
+  }
+  
+  :deep(.v-list-item__prepend) {
+    margin-right: 12px;
+  }
+  
+  :deep(.v-list-item__content) {
+    padding: 8px 0;
+  }
+  
+  :deep(.v-list-item-title) {
+    font-size: 0.9rem;
+  }
+}
+
+/* 맥 환경 최적화 */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .modern-sidebar {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  .brand-logo {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+  
+  .user-avatar {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
   }
 }
 
@@ -390,6 +477,9 @@ export default {
   .user-name {
     color: #f8f9fa;
   }
-
+  
+  .user-email {
+    color: #adb5bd;
+  }
 }
 </style>

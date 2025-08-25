@@ -107,8 +107,9 @@
 </template>
 
 <script>
-import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, computed, nextTick, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import { postAPI, userAPI, petAPI } from '@/services/api'
 import SearchComponent from '@/components/SearchComponent.vue'
 import FollowModal from '@/components/FollowModal.vue'
@@ -122,9 +123,45 @@ export default {
   setup() {
     const $router = useRouter()
     const $route = useRoute()
+    const authStore = useAuthStore()
     
     // 사용자 ID (라우트 파라미터에서 가져옴)
     const userId = computed(() => $route.params.userId)
+    
+    // 현재 로그인한 사용자 ID
+    const currentUserId = computed(() => {
+      const user = authStore.user
+      console.log('=== 사용자 ID 추출 시작 ===')
+      console.log('authStore.user 전체:', user)
+      console.log('authStore.user 타입:', typeof user)
+      console.log('authStore.user 키들:', user ? Object.keys(user) : 'user가 null')
+      
+      if (!user) {
+        console.log('사용자 정보가 없음')
+        return null
+      }
+      
+      // 가능한 ID 필드들을 확인
+      const possibleIds = [
+        user.id,
+        user.userId,
+        user.memberId,
+        user.user_id,
+        user.member_id,
+        user.member?.id,
+        user.member?.userId,
+        user.member?.memberId
+      ]
+      
+      console.log('가능한 ID 필드들:', possibleIds)
+      console.log('user.member:', user.member)
+      
+      const foundId = possibleIds.find(id => id != null && id !== undefined)
+      console.log('찾은 사용자 ID:', foundId)
+      console.log('=== 사용자 ID 추출 완료 ===')
+      
+      return foundId
+    })
     
     // 팔로우 상태
     const isFollowing = ref(false)
@@ -145,7 +182,7 @@ export default {
     const diaryList = ref([])
     
     // 검색 상태
-    const searchType = ref('TITLE')
+    const searchType = ref('CONTENT')
     const searchKeyword = ref('')
     
     // 페이지네이션 상태
@@ -155,7 +192,18 @@ export default {
     
     // 대표 반려동물 (firstPet이 true인 동물)
     const mainPet = computed(() => {
-      return userPets.value.find(pet => pet.firstPet) || null
+      console.log('=== mainPet computed 실행 ===')
+      console.log('현재 userPets:', userPets.value)
+      
+      const foundPet = userPets.value.find(pet => pet.firstPet)
+      console.log('찾은 대표 반려동물:', foundPet)
+      
+      if (!foundPet && userPets.value.length > 0) {
+        console.log('firstPet이 없어서 첫 번째 반려동물 사용:', userPets.value[0])
+        return userPets.value[0]
+      }
+      
+      return foundPet || null
     })
     
     // 대표 반려동물 소개글
@@ -166,14 +214,42 @@ export default {
     // 반려동물 목록 가져오기
     const fetchUserPets = async () => {
       try {
+        console.log('=== 사용자 반려동물 목록 조회 시작 ===')
+        console.log('조회할 사용자 ID:', userId.value)
+        
         const response = await petAPI.getOtherUserPets(userId.value)
+        console.log('반려동물 목록 API 응답:', response)
+        
         if (response.data && response.data.data) {
+          console.log('API 응답 데이터:', response.data.data)
           userPets.value = response.data.data.pets || []
           userName.value = response.data.data.userName || ''
+          
+          console.log('설정된 반려동물 목록:', userPets.value)
+          console.log('설정된 사용자명:', userName.value)
+          
+          // 각 반려동물의 상세 정보 로깅
+          userPets.value.forEach((pet, index) => {
+            console.log(`반려동물 ${index}:`, {
+              id: pet.id,
+              name: pet.name,
+              firstPet: pet.firstPet,
+              url: pet.url,
+              introduce: pet.introduce,
+              species: pet.species,
+              age: pet.age
+            })
+          })
+        } else {
+          console.log('API 응답에 데이터가 없음')
+          userPets.value = []
+          userName.value = ''
         }
         
         // 팔로우 상태 확인
         await checkFollowStatus()
+        
+        console.log('=== 사용자 반려동물 목록 조회 완료 ===')
         
       } catch (error) {
         console.error('반려동물 목록 조회 실패:', error)
@@ -198,9 +274,13 @@ export default {
     // 게시물 개수 가져오기
     const fetchPostsCount = async () => {
       try {
-        const response = await userAPI.getUserPostsCount(userId.value)
+        // 해당 사용자의 일기 목록을 가져와서 개수 계산
+        const response = await postAPI.getUserPosts(userId.value, { page: 0, size: 1000 }) // 충분히 큰 size로 모든 일기 가져오기
+        console.log('사용자 일기 목록 API 응답:', response.data)
         if (response.data && response.data.data) {
-          postsCount.value = response.data.data.totalElements || 0
+          const posts = response.data.data.content || []
+          postsCount.value = posts.length
+          console.log('계산된 사용자 게시물 개수:', postsCount.value)
         }
       } catch (error) {
         console.error('게시물 개수 조회 실패:', error)
@@ -300,6 +380,20 @@ export default {
         
         if (response.data && response.data.data) {
           const newContent = response.data.data.content || []
+          
+          // 각 다이어리의 미디어 리스트에서 빈 URL 필터링 (URL 배열 형태)
+          newContent.forEach(diary => {
+            if (diary.mediaList && Array.isArray(diary.mediaList)) {
+              diary.mediaList = diary.mediaList.filter(url => {
+                const hasValidUrl = url && typeof url === 'string' && url.trim() !== ''
+                if (!hasValidUrl) {
+                  console.log(`다이어리 ${diary.id}에서 빈 URL 필터링됨:`, url)
+                }
+                return hasValidUrl
+              })
+            }
+          })
+          
           if (append) {
             diaryList.value = [...diaryList.value, ...newContent]
           } else {
@@ -376,11 +470,100 @@ export default {
       isFollowModalVisible.value = false
     }
     
+    // 라우터 가드 - 컴포넌트가 활성화되기 전에 리다이렉트 체크
+    const checkAndRedirect = async () => {
+      console.log('=== 라우터 가드 체크 시작 ===')
+      console.log('체크 시점 라우트 사용자 ID:', userId.value)
+      console.log('체크 시점 현재 사용자 ID:', currentUserId.value)
+      console.log('authStore.isInitialized:', authStore.isInitialized)
+      console.log('authStore.isAuthenticated:', authStore.isAuthenticated)
+      
+      // 사용자 정보가 아직 로드되지 않았다면 대기
+      if (!authStore.isInitialized || !authStore.user) {
+        console.log('사용자 정보가 아직 로드되지 않음 - 리다이렉트 체크 건너뜀')
+        return false
+      }
+      
+      if (userId.value == currentUserId.value) {
+        console.log('라우터 가드에서 리다이렉트 감지')
+        await $router.replace('/diarys')
+        return true // 리다이렉트됨
+      }
+      return false // 리다이렉트되지 않음
+    }
+    
     // 컴포넌트 마운트 시 데이터 가져오기
-    onMounted(() => {
+    onMounted(async () => {
+      console.log('=== UserDiaryListView 마운트 시작 ===')
+      console.log('라우트 사용자 ID:', userId.value, '타입:', typeof userId.value)
+      console.log('현재 로그인한 사용자 ID:', currentUserId.value, '타입:', typeof currentUserId.value)
+      console.log('authStore.user:', authStore.user)
+      console.log('authStore.isAuthenticated:', authStore.isAuthenticated)
+      console.log('authStore.isInitialized:', authStore.isInitialized)
+      console.log('현재 라우트:', $route.fullPath)
+      console.log('현재 라우트 파라미터:', $route.params)
+      
+      // auth store 초기화 대기
+      if (!authStore.isInitialized) {
+        console.log('auth store 초기화 대기 중...')
+        await new Promise(resolve => {
+          const unwatch = watch(() => authStore.isInitialized, (initialized) => {
+            if (initialized) {
+              console.log('auth store 초기화 완료')
+              unwatch()
+              resolve()
+            }
+          }, { immediate: true })
+        })
+      }
+      
+      // 현재 로그인한 사용자의 다이어리인지 확인
+      console.log('ID 비교 결과 (===):', userId.value === currentUserId.value)
+      console.log('ID 비교 결과 (==):', userId.value == currentUserId.value)
+      console.log('문자열 비교 결과:', String(userId.value) === String(currentUserId.value))
+      console.log('숫자 비교 결과:', Number(userId.value) === Number(currentUserId.value))
+      
+      // 라우터 가드로 먼저 체크
+      const redirected = await checkAndRedirect()
+      if (redirected) {
+        console.log('라우터 가드에서 리다이렉트 완료')
+        return
+      }
+      
+      // 리다이렉트 조건 확인
+      const shouldRedirect = userId.value == currentUserId.value
+      console.log('리다이렉트 여부:', shouldRedirect)
+      
+      if (shouldRedirect) {
+        console.log('=== 리다이렉트 시작 ===')
+        console.log('리다이렉트 전 현재 경로:', $route.fullPath)
+        console.log('리다이렉트할 경로:', '/diarys')
+        
+        try {
+          // 즉시 리다이렉트
+          console.log('$router.replace 호출 시작')
+          await $router.replace('/diarys')
+          console.log('$router.replace 완료')
+          console.log('리다이렉트 후 현재 경로:', $route.fullPath)
+          return
+        } catch (error) {
+          console.error('$router.replace 실패:', error)
+          console.log('window.location.href 사용 시도')
+          // 리다이렉트 실패 시 window.location 사용
+          window.location.href = '/diarys'
+          console.log('window.location.href 설정 완료')
+          return
+        }
+      } else {
+        console.log('리다이렉트하지 않음 - 다른 사용자의 다이어리')
+      }
+      
       // 초기화를 nextTick으로 지연
-      nextTick(() => {
-        fetchUserPets()
+      nextTick(async () => {
+        // 반려동물 정보를 먼저 가져오기
+        await fetchUserPets()
+        
+        // 그 다음 다른 데이터 가져오기
         fetchPostsCount()
         fetchFollowersCount()
         fetchFollowingsCount()
@@ -388,8 +571,22 @@ export default {
         
         // 스크롤 이벤트 리스너 추가
         window.addEventListener('scroll', handleScroll)
+        
+        console.log('=== UserDiaryListView 마운트 완료 ===')
       })
     })
+    
+    // 사용자 ID 변경 감지
+    watch([userId, currentUserId], async ([newUserId, newCurrentUserId]) => {
+      console.log('=== 사용자 ID 변경 감지 ===')
+      console.log('새 라우트 사용자 ID:', newUserId)
+      console.log('새 현재 사용자 ID:', newCurrentUserId)
+      
+      if (newUserId == newCurrentUserId) {
+        console.log('ID 변경 감지로 리다이렉트 시도')
+        await checkAndRedirect()
+      }
+    }, { immediate: true })
     
     // 컴포넌트 언마운트 시 이벤트 리스너 제거
     onUnmounted(() => {
@@ -600,6 +797,8 @@ export default {
 .diary-item:hover .diary-image {
   transform: scale(1.05);
 }
+
+
 
 .loading-indicator {
   display: flex;

@@ -1,7 +1,9 @@
 <template>
   <div class="home-view">
-    <!-- 히어로 섹션 -->
-    <section class="hero-section">
+    <!-- 로그인하지 않은 경우: 기존 홈페이지 -->
+    <template v-if="!isLoggedIn">
+      <!-- 히어로 섹션 -->
+      <section class="hero-section">
       <div class="hero-background">
         <div class="hero-overlay"></div>
         <div class="floating-shapes">
@@ -143,19 +145,34 @@
         </div>
       </div>
     </section>
+    </template>
+
+    <!-- 로그인한 경우: 전체 일기 목록 -->
+    <template v-else>
+      <AllPostsView />
+    </template>
   </div>
 </template>
 
 <script>
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import AllPostsView from '@/views/diary/AllDiaryView.vue'
 
 export default {
   name: 'HomeView',
+  components: {
+    AllPostsView
+  },
   setup() {
     const authStore = useAuthStore()
     
     const isLoggedIn = computed(() => authStore.isAuthenticated)
+    
+    // 로그인 상태 변화를 감지하기 위해 watch 추가
+    watch(() => authStore.isAuthenticated, (newValue) => {
+      console.log('로그인 상태 변화 감지:', newValue)
+    }, { immediate: true })
     
     return {
       isLoggedIn

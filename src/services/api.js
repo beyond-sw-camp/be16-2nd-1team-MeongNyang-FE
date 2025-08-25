@@ -169,8 +169,8 @@ export const userAPI = {
     apiClient.post('/users/logout', null, { headers: { [RT_HEADER_RAW]: refreshToken } }),
 
   // 대표 동물 설정
-  setMainPet: (petId) => apiClient.put(`/users/my-page/${petId}/main-pet`),
-
+  setMainPet: () => apiClient.put(`/users/pets/main`),
+  
   // 마이페이지 정보 조회
   getMyPage: () => apiClient.get('/users/my-page'),
 
@@ -235,9 +235,11 @@ export const userAPI = {
 
 // 게시글 관련 API
 export const postAPI = {
+  // 전체 일기 목록 조회
+  getAllPosts: (pageable = { page: 0, size: 9 }) => apiClient.get('/posts', { params: pageable }),
+  
   // 내 일기 목록 조회 (대시보드용)
-  getMyPosts: (pageable = { page: 0, size: 1 }) => apiClient.get('/posts', { params: pageable }),
-
+  getMyPosts: (pageable = { page: 0, size: 1 }) => apiClient.get('/posts/me', { params: pageable }),
   // 내 게시물 개수 조회 (프로필용)
   getMyPostsCount: () => apiClient.get('/posts', { params: { page: 0, size: 1 } }),
 
@@ -258,11 +260,11 @@ export const postAPI = {
   getList: (pageable) => apiClient.get('/posts', { params: pageable }),
 
   // 다른 사용자의 일기 목록 조회
-  getUserPosts: (userId, pageable) => apiClient.get('/posts', { params: { ...pageable, userId } }),
-
+  getUserPosts: (userId, pageable) => apiClient.get(`/posts/${userId}`, { params: pageable }),
+  
   // 일기 상세 조회
-  getDetail: (postId) => apiClient.get(`/posts/${postId}`),
-
+  getDetail: (postId) => apiClient.get(`/posts/detail/${postId}`),
+  
   // 좋아요
   like: (postId) => apiClient.post(`/posts/${postId}/like`),
 
@@ -461,10 +463,13 @@ export const petAPI = {
   getOtherUserPets: (userId) => apiClient.get('/pets', { params: { userId } }),
 
   // 대표 펫 설정
-  setMainPet: (petId) => apiClient.put(`/pets/${petId}/main`),
-
+  setMainPet: () => apiClient.put(`/users/pets/main`),
+  
+  // 반려동물 존재 여부 확인
+  checkExist: () => apiClient.get('/pets/exist'),
+  
   // 대표 반려동물 설정 (다른 엔드포인트)
-  setMainPetAlt: (petId) => apiClient.put(`/users/my-page/${petId}/main-pet`),
+  setMainPetAlt: () => apiClient.put(`/users/pets/main`),
 
   // 반려동물 수정
   update: async (petId, petData, petImg) => {
