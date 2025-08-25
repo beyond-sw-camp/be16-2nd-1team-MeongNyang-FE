@@ -34,10 +34,12 @@
 
 <script>
 import { useUIStore } from './stores/ui'
+import { useSseStore } from './stores/sse'
 import HeaderComponent from './components/HeaderComponent.vue'
 // import FooterComponent from './components/FooterComponent.vue'
 import GlobalSnackbar from './components/ui/global/GlobalSnackbar.vue'
 import GlobalLoadingOverlay from './components/ui/global/GlobalLoadingOverlay.vue'
+import { onMounted, onUnmounted } from 'vue'
 
 export default {
   name: 'App',
@@ -49,6 +51,33 @@ export default {
   },
   setup() {
     const uiStore = useUIStore()
+    const sseStore = useSseStore()
+    
+    // SSE 연결 설정
+    const setupSse = async () => {
+      try {
+        await sseStore.connect()
+        console.log('SSE connection established in App.vue')
+      } catch (error) {
+        console.error('Failed to establish SSE connection:', error)
+      }
+    }
+    
+    // SSE 연결 해제
+    const cleanupSse = () => {
+      sseStore.disconnect()
+      console.log('SSE connection cleaned up in App.vue')
+    }
+    
+    // 컴포넌트 마운트 시 SSE 연결
+    onMounted(() => {
+      setupSse()
+    })
+    
+    // 컴포넌트 언마운트 시 SSE 연결 해제
+    onUnmounted(() => {
+      cleanupSse()
+    })
     
     return {
       uiStore
