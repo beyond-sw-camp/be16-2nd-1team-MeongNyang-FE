@@ -460,22 +460,66 @@
   />
 
   <!-- 채팅방 나가기 확인 다이얼로그 -->
-  <v-dialog v-model="showLeaveConfirmDialog" max-width="400">
-    <v-card>
-      <v-card-title class="d-flex align-center">
-        <v-icon class="mr-2" color="error">mdi-alert-circle</v-icon>
-        채팅방 나가기
-      </v-card-title>
-      <v-card-text>
-        정말로 이 채팅방을 나가시겠습니까?
-        <br>
-        <small class="text-grey">나가면 다시 들어올 수 없습니다.</small>
-      </v-card-text>
-      <v-card-actions>
-        <v-spacer></v-spacer>
-        <v-btn @click="showLeaveConfirmDialog = false">취소</v-btn>
-        <v-btn color="error" @click="leaveRoom">나가기</v-btn>
-      </v-card-actions>
+  <v-dialog 
+    v-model="showLeaveConfirmDialog" 
+    max-width="480" 
+    persistent
+    aria-labelledby="leave-room-title"
+    aria-describedby="leave-room-description"
+  >
+    <v-card class="leave-room-dialog" elevation="24" role="dialog">
+      <!-- 헤더 섹션 -->
+      <div class="dialog-header">
+        <div class="header-content">
+          <div class="header-icon">
+            <v-icon size="48" color="error">mdi-exit-to-app</v-icon>
+          </div>
+          <div class="header-text">
+            <h2 id="leave-room-title" class="dialog-title">채팅방 나가기</h2>
+            <p id="leave-room-description" class="dialog-subtitle">이 채팅방에서 나가시겠습니까?</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 경고 메시지 섹션 -->
+      <div class="warning-section">
+        <div class="warning-icon">
+          <v-icon size="24" color="warning">mdi-alert-circle</v-icon>
+          <h4 class="warning-title">주의사항</h4>
+        </div>
+        <div class="warning-content">
+          <ul class="warning-list">
+            <li>채팅방을 나가면 모든 메시지 기록에 접근할 수 없습니다</li>
+            <li>다시 입장하려면 초대를 받아야 합니다</li>
+            <li>업로드한 파일들도 더 이상 볼 수 없습니다</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 액션 버튼들 -->
+      <div class="dialog-actions">
+        <v-btn
+          variant="outlined"
+          size="large"
+          @click="showLeaveConfirmDialog = false"
+          class="cancel-btn"
+          min-width="120"
+        >
+          <v-icon left>mdi-close</v-icon>
+          취소
+        </v-btn>
+        <v-btn
+          color="error"
+          size="large"
+          @click="leaveRoom"
+          class="leave-btn"
+          min-width="120"
+          :loading="isLeaving"
+        >
+          <v-icon left>mdi-exit-to-app</v-icon>
+          채팅방 나가기
+        </v-btn>
+      </div>
     </v-card>
   </v-dialog>
 </template>
@@ -542,6 +586,7 @@ export default {
     const showParticipantsDialog = ref(false)
     const showInviteDialog = ref(false)
     const showLeaveConfirmDialog = ref(false)
+    const isLeaving = ref(false)
 
     // 스크롤 관련 상태
     const showScrollToBottomButton = ref(false)
@@ -1066,6 +1111,8 @@ export default {
 
     const leaveRoom = async () => {
       try {
+        isLeaving.value = true;
+        
         // 백엔드 API로 채팅방 나가기
         await axios.delete(`${process.env.VUE_APP_API_BASE_URL}/chat-rooms/${props.roomId}/participants/me`, {
           headers: {
@@ -1098,6 +1145,8 @@ export default {
         } else {
           alert('채팅방 나가기에 실패했습니다.');
         }
+      } finally {
+        isLeaving.value = false;
       }
     }
     
@@ -1336,6 +1385,7 @@ export default {
       showParticipantsDialog,
       showInviteDialog,
       showLeaveConfirmDialog,
+      isLeaving,
       isOnline,
       getInitials,
       viewProfile,
@@ -2861,8 +2911,8 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-  opacity: 0.3;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  opacity: 0.8;
 }
 
 .header-content {
@@ -2883,6 +2933,7 @@ export default {
   align-items: center;
   justify-content: center;
   backdrop-filter: blur(10px);
+  flex-shrink: 0;
 }
 
 .header-text {
@@ -2891,17 +2942,191 @@ export default {
 }
 
 .dialog-title {
-  font-size: var(--mm-text-xl);
+  font-size: 24px;
   font-weight: 700;
-  margin: 0 0 4px 0;
+  margin: 0 0 8px 0;
   color: white;
+  line-height: 1.2;
 }
 
 .dialog-subtitle {
-  font-size: var(--mm-text-sm);
+  font-size: 16px;
   margin: 0;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.9);
   font-weight: 400;
+  line-height: 1.4;
+}
+
+.warning-section {
+  padding: 24px;
+  background: #FFF5F5;
+  border: 1px solid #FFE5E5;
+  border-radius: 16px;
+  margin: 24px;
+  position: relative;
+}
+
+.warning-section::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(135deg, #FFE5E5, #FFF5F5);
+  border-radius: 18px;
+  z-index: -1;
+}
+
+.warning-icon {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.warning-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #D32F2F;
+  margin: 0;
+}
+
+.warning-content {
+  flex: 1;
+}
+
+.warning-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.warning-list li {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
+  padding-left: 20px;
+  position: relative;
+  line-height: 1.5;
+}
+
+.warning-list li::before {
+  content: '⚠️';
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-size: 12px;
+}
+
+.warning-list li:last-child {
+  margin-bottom: 0;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  padding: 0 24px 24px 24px;
+}
+
+.cancel-btn,
+.leave-btn {
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+  letter-spacing: 0.5px !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  min-width: 140px !important;
+  height: 48px !important;
+}
+
+.cancel-btn {
+  background: #F5F5F5 !important;
+  color: #666 !important;
+  border: 2px solid #E0E0E0 !important;
+}
+
+.cancel-btn:hover:not(:disabled) {
+  background: #EEEEEE !important;
+  border-color: #BDBDBD !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.leave-btn {
+  background: linear-gradient(135deg, #FF6B6B, #FF5252) !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: 0 4px 16px rgba(255, 107, 107, 0.4);
+}
+
+.leave-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #FF5252, #FF1744) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(255, 107, 107, 0.6);
+}
+
+.leave-btn:active {
+  transform: translateY(0);
+}
+
+.cancel-btn:active,
+.leave-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.cancel-btn .v-icon,
+.leave-btn .v-icon {
+  transition: all 0.2s ease;
+  margin-right: 8px;
+}
+
+.cancel-btn:hover .v-icon,
+.leave-btn:hover .v-icon {
+  transform: scale(1.1);
+}
+
+/* 모바일 반응형 디자인 */
+@media (max-width: 600px) {
+  .leave-room-dialog {
+    margin: 16px;
+    border-radius: 16px;
+  }
+  
+  .dialog-header {
+    padding: 20px;
+  }
+  
+  .header-icon {
+    width: 48px;
+    height: 48px;
+  }
+  
+  .dialog-title {
+    font-size: 20px;
+  }
+  
+  .dialog-subtitle {
+    font-size: 14px;
+  }
+  
+  .warning-section {
+    margin: 16px;
+    padding: 20px;
+  }
+  
+  .dialog-actions {
+    flex-direction: column;
+    gap: 12px;
+    padding: 0 16px 20px 16px;
+  }
+  
+  .cancel-btn,
+  .leave-btn {
+    width: 100%;
+    min-width: auto;
+  }
 }
 
 .close-btn {
@@ -3335,5 +3560,217 @@ export default {
     font-size: 14px !important;
     padding: 12px 24px !important;
   }
+}
+
+.leave-room-dialog {
+  border-radius: 20px;
+  overflow: hidden;
+  transform: scale(0.9);
+  opacity: 0;
+  animation: modalEnter 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes modalEnter {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.leave-room-dialog:hover {
+  transform: scale(1.02);
+  transition: transform 0.2s ease;
+}
+
+.dialog-header {
+  background: linear-gradient(135deg, #E87D7D 0%, #FF6B6B 100%);
+  padding: 24px;
+  color: white;
+  position: relative;
+}
+
+.dialog-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+  opacity: 0.3;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+}
+
+.header-icon {
+  width: 56px;
+  height: 56px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+  flex-shrink: 0;
+}
+
+.header-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.dialog-title {
+  font-size: var(--mm-text-xl);
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  color: white;
+}
+
+.dialog-subtitle {
+  font-size: var(--mm-text-sm);
+  margin: 0;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 400;
+}
+
+.warning-section {
+  padding: 24px;
+  background: #FFF5F5;
+  border: 1px solid #FFE5E5;
+  border-radius: 16px;
+  margin: 24px;
+  position: relative;
+}
+
+.warning-section::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(135deg, #FFE5E5, #FFF5F5);
+  border-radius: 18px;
+  z-index: -1;
+}
+
+.warning-icon {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.warning-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #D32F2F;
+  margin: 0;
+}
+
+.warning-content {
+  flex: 1;
+}
+
+.warning-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.warning-list li {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
+  padding-left: 20px;
+  position: relative;
+  line-height: 1.5;
+}
+
+.warning-list li::before {
+  content: '⚠️';
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-size: 12px;
+}
+
+.warning-list li:last-child {
+  margin-bottom: 0;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  padding: 0 24px 24px 24px;
+}
+
+.cancel-btn,
+.leave-btn {
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+  letter-spacing: 0.5px !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  min-width: 140px !important;
+  height: 48px !important;
+}
+
+.cancel-btn {
+  background: #F5F5F5 !important;
+  color: #666 !important;
+  border: 2px solid #E0E0E0 !important;
+}
+
+.cancel-btn:hover:not(:disabled) {
+  background: #EEEEEE !important;
+  border-color: #BDBDBD !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.leave-btn {
+  background: linear-gradient(135deg, #FF6B6B, #FF5252) !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: 0 4px 16px rgba(255, 107, 107, 0.4);
+}
+
+.leave-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #FF5252, #FF1744) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(255, 107, 107, 0.6);
+}
+
+.leave-btn:active {
+  transform: translateY(0);
+}
+
+.cancel-btn:active,
+.leave-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.cancel-btn .v-icon,
+.leave-btn .v-icon {
+  transition: all 0.2s ease;
+  margin-right: 8px;
+}
+
+.cancel-btn:hover .v-icon,
+.leave-btn:hover .v-icon {
+  transform: scale(1.1);
 }
 </style>
