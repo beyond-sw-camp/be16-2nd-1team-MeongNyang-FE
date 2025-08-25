@@ -66,7 +66,7 @@
           v-for="alarm in alarmStore.alarms"
           :key="alarm.id"
           class="notification-item"
-          :class="{ 'unread': !alarm.isRead }"
+          :class="{ 'unread': alarm.isRead == 'FALSE', 'read': alarm.isRead == 'TRUE' }"
           @click="handleAlarmClick(alarm)"
         >
           <div class="notification-icon">
@@ -79,12 +79,20 @@
           </div>
           
           <div class="notification-content">
-            <div class="notification-title">{{ alarm.content }}</div>
+            <div class="notification-title" :class="{ 'unread-text': alarm.isRead == 'FALSE' }">
+              {{ alarm.content }}
+            </div>
             <div class="notification-type">{{ getAlarmTypeText(alarm.alarmType) }}</div>
             <div class="notification-time">{{ formatTime(alarm.createdAt) }}</div>
           </div>
           
-          <div v-if="!alarm.isRead" class="unread-indicator"></div>
+          <!-- 읽음/안읽음 상태 표시 -->
+          <div class="read-status">
+            <div v-if="alarm.isRead == 'FALSE'" class="unread-indicator"></div>
+            <div v-else class="read-indicator">
+              <v-icon size="12" color="grey">mdi-check</v-icon>
+            </div>
+          </div>
           
           <!-- 삭제 버튼 -->
           <v-btn
@@ -239,13 +247,25 @@ export default {
 
     const handleAlarmClick = async (alarm) => {
       try {
-        // 읽지 않은 알림인 경우 읽음 처리
-        if (!alarm.isRead) {
+        console.log('알림 클릭:', alarm)
+        console.log('현재 읽음 상태:', alarm.isRead, '타입:', typeof alarm.isRead)
+        console.log('알림 ID:', alarm.id, '타입:', typeof alarm.id)
+        console.log('isRead === false:', alarm.isRead === false)
+        console.log('isRead === "FALSE":', alarm.isRead === "FALSE")
+        console.log('!alarm.isRead:', !alarm.isRead)
+        
+        // 읽지 않은 알림인 경우 읽음 처리 (문자열 "FALSE"로 비교)
+        if (alarm.isRead == "FALSE") {
+          console.log('읽음 처리 시작...')
           await alarmStore.markAlarmAsRead(alarm.id)
+          console.log('읽음 처리 완료')
+        } else {
+          console.log('이미 읽은 알림입니다.')
         }
 
         // 알림 타입에 따른 네비게이션 처리
         if (alarm.targetId) {
+          console.log('알림 타입:', alarm.alarmType, '타겟 ID:', alarm.targetId)
           switch (alarm.alarmType) {
             case 'CHAT':
               // 채팅방으로 이동
@@ -271,6 +291,13 @@ export default {
           }
         }
       } catch (error) {
+        console.error('알림 처리 중 오류:', error)
+        console.error('에러 상세 정보:', {
+          message: error.message,
+          response: error.response,
+          status: error.response?.status,
+          data: error.response?.data
+        })
         showSnackbar({
           title: '알림 처리 실패',
           message: '알림을 처리하는데 실패했습니다.',
@@ -482,6 +509,17 @@ export default {
   border-color: rgba(232, 125, 125, 0.2);
 }
 
+.notification-item.read {
+  background: #F8F9FA; /* 읽은 알림의 배경색 */
+  border-color: rgba(0, 0, 0, 0.05); /* 읽은 알림의 테두리 색 */
+  opacity: 0.8; /* 읽은 알림은 약간 투명하게 */
+}
+
+.notification-item.read:hover {
+  background: #F1F3F4;
+  opacity: 1;
+}
+
 .notification-icon {
   flex-shrink: 0;
   width: 40px;
@@ -491,6 +529,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-top: 2px;
 }
 
 .notification-content {
@@ -499,34 +538,61 @@ export default {
 }
 
 .notification-title {
-  font-weight: 600;
   font-size: 0.9rem;
+  font-weight: 500;
   color: #2C3E50;
   margin-bottom: 4px;
   line-height: 1.3;
 }
 
+.notification-title.unread-text {
+  font-weight: 600;
+  color: #E87D7D; /* 읽지 않은 알림의 텍스트 색 */
+}
+
 .notification-type {
-  font-size: 0.8rem;
-  color: #E87D7D;
-  font-weight: 500;
-  margin-bottom: 4px;
+  font-size: 0.75rem;
+  color: #6C757D;
+  margin-bottom: 2px;
 }
 
 .notification-time {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: #9CA3AF;
 }
 
-.unread-indicator {
+.read-status {
   position: absolute;
   top: 12px;
-  right: 12px;
+  right: 40px; /* 삭제 버튼과 겹치지 않도록 조정 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.unread-indicator {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: #E87D7D;
+  box-shadow: 0 0 0 2px rgba(232, 125, 125, 0.3);
   animation: pulse 2s infinite;
+}
+
+.read-indicator {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #4CAF50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+}
+
+.read-indicator .v-icon {
+  color: white !important;
+  font-size: 10px;
 }
 
 .delete-btn {
@@ -638,17 +704,41 @@ export default {
     background: rgba(232, 125, 125, 0.1);
     border-color: rgba(232, 125, 125, 0.3);
   }
+
+  .notification-item.read {
+    background: #2D2D2D; /* 읽은 알림의 배경색 */
+    border-color: rgba(255, 255, 255, 0.1); /* 읽은 알림의 테두리 색 */
+    opacity: 0.8;
+  }
+
+  .notification-item.read:hover {
+    background: #3D3D3D;
+    opacity: 1;
+  }
   
   .notification-title {
     color: #F8F9FA;
   }
   
+  .notification-title.unread-text {
+    color: #E87D7D; /* 읽지 않은 알림의 텍스트 색 */
+  }
+  
   .notification-type {
-    color: #E87D7D;
+    color: #B0B0B0;
   }
   
   .notification-time {
-    color: #6C757D;
+    color: #808080;
+  }
+
+  .read-indicator {
+    background: #4CAF50;
+    opacity: 0.8;
+  }
+
+  .read-indicator .v-icon {
+    color: white !important;
   }
   
   .drawer-actions {

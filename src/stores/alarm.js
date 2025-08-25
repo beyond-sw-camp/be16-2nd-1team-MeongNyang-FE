@@ -10,7 +10,7 @@ export const useAlarmStore = defineStore('alarm', () => {
 
   // 계산된 속성
   const unreadCount = computed(() => {
-    return alarms.value.filter(alarm => !alarm.isRead).length
+    return alarms.value.filter(alarm => alarm.isRead == 'FALSE').length
   })
 
   const hasUnreadAlarms = computed(() => {
@@ -52,15 +52,29 @@ export const useAlarmStore = defineStore('alarm', () => {
 
   const markAlarmAsRead = async (alarmId) => {
     try {
-      await alarmAPI.markAsRead(alarmId)
+      console.log(`알림 ${alarmId} 읽음 처리 시작...`)
+      console.log('API 호출 전 alarmId:', alarmId, '타입:', typeof alarmId)
       
-      // 로컬 상태 업데이트 - isRead를 true로 변경
+      const response = await alarmAPI.markAsRead(alarmId)
+      console.log('API 응답 성공:', response)
+      
+      // 로컬 상태 업데이트 - isRead를 "TRUE"로 변경
       const alarm = alarms.value.find(a => a.id === alarmId)
       if (alarm) {
-        alarm.isRead = true
+        alarm.isRead = "TRUE"
+        console.log(`알림 ${alarmId} 읽음 처리 완료`)
+      } else {
+        console.warn(`알림 ${alarmId}를 로컬 상태에서 찾을 수 없습니다.`)
       }
     } catch (err) {
       console.error('알림 읽음 처리 실패:', err)
+      console.error('에러 상세 정보:', {
+        message: err.message,
+        response: err.response,
+        status: err.response?.status,
+        data: err.response?.data,
+        config: err.config
+      })
       throw err
     }
   }
@@ -69,10 +83,11 @@ export const useAlarmStore = defineStore('alarm', () => {
     try {
       await alarmAPI.markAllAsRead()
       
-      // 로컬 상태 업데이트 - 모든 알림의 isRead를 true로 변경
+      // 로컬 상태 업데이트 - 모든 알림을 "TRUE"로 변경
       alarms.value.forEach(alarm => {
-        alarm.isRead = true
+        alarm.isRead = "TRUE"
       })
+      console.log('모든 알림 읽음 처리 완료')
     } catch (err) {
       console.error('모든 알림 읽음 처리 실패:', err)
       throw err
@@ -103,9 +118,14 @@ export const useAlarmStore = defineStore('alarm', () => {
     }
   }
 
-  const addAlarm = (alarm) => {
-    // 새 알림 추가 (SSE 등에서 사용)
-    alarms.value.unshift(alarm)
+  const addAlarm = (alarmData) => {
+    const newAlarm = {
+      ...alarmData,
+      isRead: "FALSE", // 새 알림은 기본적으로 읽지 않은 상태
+      createdAt: new Date().toISOString()
+    }
+    alarms.value.unshift(newAlarm)
+    console.log('새 알림 추가:', newAlarm)
   }
 
   const clearError = () => {
