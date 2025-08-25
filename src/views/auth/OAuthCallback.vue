@@ -1,17 +1,7 @@
 <template>
-  <v-container class="fill-height" fluid>
-    <v-row class="fill-height" align="center" justify="center">
-      <v-col cols="12" sm="8" md="6" lg="4">
-        <v-card class="pa-6">
-          <v-card-title class="text-h5 text-center">소셜 로그인 처리중…</v-card-title>
-          <v-card-text class="text-center">
-            잠시만 기다려주세요.
-            <v-progress-linear indeterminate class="mt-4"></v-progress-linear>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
-  </v-container>
+  <div class="oauth-callback">
+    <!-- OAuth 처리 중 - 화면에 표시되지 않음 -->
+  </div>
 </template>
 
 
@@ -205,5 +195,14 @@ onMounted(async () => {
 
 
 <style scoped>
-.fill-height { min-height: 70vh; }
+.oauth-callback {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  z-index: -1;
+  pointer-events: none;
+}
 </style>

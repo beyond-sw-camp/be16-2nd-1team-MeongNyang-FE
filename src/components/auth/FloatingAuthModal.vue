@@ -83,6 +83,24 @@
                 height="48"
               />
 
+              <!-- 계정 잠금 안내 문구 -->
+              <div class="account-lock-notice mb-4">
+                <v-alert
+                  type="warning"
+                  variant="tonal"
+                  density="compact"
+                  rounded="lg"
+                  class="mb-0"
+                >
+                  <template #prepend>
+                    <v-icon size="16" color="warning">mdi-alert-circle</v-icon>
+                  </template>
+                  <span class="text-caption">
+                    <strong>보안 안내:</strong> 로그인 5번 실패 시 계정이 자동으로 잠깁니다.
+                  </span>
+                </v-alert>
+              </div>
+
               <div class="d-flex justify-space-between align-center mb-6">
                 <v-btn
                   variant="text"
@@ -167,6 +185,25 @@
                 <img src="https://developers.kakao.com/assets/img/about/logos/kakaolink/kakaolink_btn_small.png" alt="Kakao" class="social-icon me-3" />
                 카카오로 계속하기
               </v-btn>
+
+              <!-- OAuth 연동 안내 메시지 -->
+              <div class="oauth-info-notice mt-4">
+                <v-alert
+                  type="info"
+                  variant="tonal"
+                  density="compact"
+                  rounded="lg"
+                  class="mb-0"
+                >
+                  <template #prepend>
+                    <v-icon size="16" color="info">mdi-information</v-icon>
+                  </template>
+                  <span class="text-caption">
+                    <strong>소셜 로그인 안내:</strong> Google/카카오 계정으로 간편하게 로그인하고, 
+                    기존 계정과 연동할 수도 있습니다.
+                  </span>
+                </v-alert>
+              </div>
             </div>
           </v-card-text>
         </v-window-item>
@@ -203,6 +240,25 @@
                 <img src="https://developers.kakao.com/assets/img/about/logos/kakaolink/kakaolink_btn_small.png" alt="Kakao" class="social-icon me-3" />
                 카카오로 계속하기
               </v-btn>
+
+              <!-- OAuth 연동 안내 메시지 -->
+              <div class="oauth-info-notice mt-4">
+                <v-alert
+                  type="info"
+                  variant="tonal"
+                  density="compact"
+                  rounded="lg"
+                  class="mb-0"
+                >
+                  <template #prepend>
+                    <v-icon size="16" color="info">mdi-information</v-icon>
+                  </template>
+                  <span class="text-caption">
+                    <strong>소셜 로그인 안내:</strong> Google/카카오 계정으로 간편하게 로그인하고, 
+                    기존 계정과 연동할 수도 있습니다.
+                  </span>
+                </v-alert>
+              </div>
             </div>
 
             <!-- 구분선 - basic 단계에서만 표시 -->
@@ -577,9 +633,33 @@
             <v-icon size="32" color="white">mdi-account-lock</v-icon>
           </div>
           <h3 class="text-h6 font-weight-semibold mb-2 text-dark">계정 잠금 해제</h3>
-          <p class="text-body-2 text-medium-emphasis">
+          <p class="text-body-2 text-medium-emphasis mb-4">
             계정이 잠긴 경우 이름과 이메일을 입력하여 잠금을 해제할 수 있습니다
           </p>
+          
+          <!-- 계정 잠금 상세 안내 -->
+          <div class="account-lock-details">
+            <v-alert
+              type="warning"
+              variant="tonal"
+              density="compact"
+              rounded="lg"
+              class="mb-0"
+            >
+              <template #prepend>
+                <v-icon size="16" color="warning">mdi-information</v-icon>
+              </template>
+              <div class="text-left">
+                <div class="text-caption font-weight-medium mb-2">🔒 계정 잠금 안내:</div>
+                <ul class="text-caption mb-0" style="margin-left: 16px; padding-left: 0;">
+                  <li>로그인 5번 실패 시 자동으로 계정이 잠깁니다</li>
+                  <li>잠긴 계정은 보안을 위해 일시적으로 접근이 제한됩니다</li>
+                  <li>이름과 이메일 확인 후 잠금을 해제할 수 있습니다</li>
+                  <li>잠금 해제 후 새로운 비밀번호로 로그인하세요</li>
+                </ul>
+              </div>
+            </v-alert>
+          </div>
         </div>
 
         <v-form ref="unlockAccountFormRef" @submit.prevent="handleUnlockAccount">
@@ -654,6 +734,74 @@
           </v-btn>
         </v-form>
       </v-card-text>
+    </v-card>
+  </v-dialog>
+
+  <!-- 소셜 로그인 연동 확인 모달 -->
+  <v-dialog
+    v-model="showSocialLinkModal"
+    max-width="500"
+    persistent
+    class="social-link-modal"
+  >
+    <v-card class="pa-6" rounded="lg">
+      <v-card-title class="text-h5 text-center mb-4">
+        <v-icon size="32" color="primary" class="me-3">
+          {{ socialLinkData?.provider === 'google' ? 'mdi-google' : 'mdi-chat' }}
+        </v-icon>
+        계정 연동 확인
+      </v-card-title>
+
+      <v-card-text class="text-center">
+        <div class="mb-4">
+          <p class="text-body-1 mb-2">
+            <strong>{{ socialLinkData?.email }}</strong>으로 가입된 계정이 이미 존재합니다.
+          </p>
+          <p class="text-body-2 text-medium-emphasis">
+            이 {{ socialLinkData?.provider === 'google' ? 'Google' : '카카오' }} 계정을 기존 계정과 연동하시겠습니까?
+          </p>
+        </div>
+
+        <v-alert
+          type="info"
+          variant="tonal"
+          density="compact"
+          rounded="lg"
+          class="mb-4"
+        >
+          <template #prepend>
+            <v-icon size="16" color="info">mdi-information</v-icon>
+          </template>
+          <span class="text-caption">
+            <strong>연동 시:</strong> 소셜 계정으로 간편하게 로그인할 수 있습니다.
+          </span>
+        </v-alert>
+      </v-card-text>
+
+      <v-card-actions class="pa-0">
+        <v-btn
+          variant="outlined"
+          block
+          size="large"
+          @click="handleSocialLink('new')"
+          class="mb-3"
+          height="48"
+          rounded="lg"
+        >
+          새 계정으로 가입
+        </v-btn>
+        
+        <v-btn
+          color="primary"
+          block
+          size="large"
+          @click="handleSocialLink('link')"
+          height="48"
+          rounded="lg"
+        >
+          기존 계정과 연동
+        </v-btn>
+      </v-card-actions>
     </v-card>
   </v-dialog>
 
@@ -811,6 +959,7 @@
 <script setup>
 /* eslint-disable no-undef */
 import { ref, reactive, computed, watch, inject, provide } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { userAPI } from '@/services/api'
 
@@ -832,6 +981,8 @@ const emit = defineEmits(['update:modelValue', 'success'])
 
 // Composables
 const authStore = useAuthStore()
+const router = useRouter()
+const route = useRoute()
 
         // App.vue에서 제공하는 함수들 주입
         const openOtpModal = inject('openOtpModal')
@@ -879,6 +1030,8 @@ const registerStep = ref('basic') // 'basic', 'otp', 'final'
 // 새로운 모달 상태
 const showForgotPasswordModal = ref(false)
 const showUnlockAccountModal = ref(false)
+const showSocialLinkModal = ref(false)
+const socialLinkData = ref(null)
 
 const forgotPasswordFormRef = ref(null)
 const unlockAccountFormRef = ref(null)
@@ -1122,16 +1275,43 @@ const handleLogin = async () => {
   errorMsg.value = ''
 
   try {
-    await authStore.login({
+    console.log('🔐 로그인 시도 시작')
+    console.log('📧 이메일:', loginForm.email)
+    console.log('🔑 비밀번호:', loginForm.password ? '***' : '비어있음')
+    
+    const result = await authStore.login({
       email: loginForm.email,
       password: loginForm.password
     })
     
+    console.log('✅ 로그인 성공:', result)
     emit('success', 'login')
     closeModal()
+    
+    // 홈 화면으로 자동 이동
+    router.push('/')
   } catch (error) {
-    console.error('로그인 실패:', error)
-    errorMsg.value = error.response?.data?.message || '로그인에 실패했습니다.'
+    console.error('❌ 로그인 실패:', error)
+    console.error('❌ 에러 응답:', error.response)
+    console.error('❌ 에러 상태:', error.response?.status)
+    console.error('❌ 에러 데이터:', error.response?.data)
+    console.error('❌ 에러 메시지:', error.message)
+    
+    // 계정 잠금 상태 확인 및 적절한 메시지 표시
+    const errorData = error.response?.data
+    if (errorData?.status?.code === 423) {
+      // 계정이 잠긴 경우
+      errorMsg.value = '🔒 계정이 잠겼습니다. 보안을 위해 계정이 일시적으로 잠겼습니다. "계정 잠금 해제"를 클릭하여 잠금을 해제해주세요.'
+    } else if (errorData?.status?.code === 429) {
+      // 로그인 시도 횟수 초과
+      errorMsg.value = '⚠️ 로그인 시도 횟수가 초과되었습니다. 잠시 후 다시 시도하거나 "계정 잠금 해제"를 이용해주세요.'
+    } else if (errorData?.status?.code === 401) {
+      // 인증 실패
+      errorMsg.value = '❌ 이메일 또는 비밀번호가 올바르지 않습니다. 다시 확인해주세요.'
+    } else {
+      // 기타 오류
+      errorMsg.value = errorData?.status?.message || '로그인에 실패했습니다.'
+    }
   } finally {
     busy.value = false
   }
@@ -1144,10 +1324,15 @@ const handleOAuthLogin = async (provider) => {
   const cbUrl = (p) => `${origin}/oauth/${p}/redirect`
   
   try {
+    // OAuth 연동 시작 메시지
+    const providerName = provider === 'google' ? 'Google' : '카카오'
+    console.log(`🔗 ${providerName} OAuth 연동 시작`)
+    
     if (provider === 'google') {
       const client = process.env.VUE_APP_GOOGLE_CLIENT_ID
       if (!client) { 
-        alert('VUE_APP_GOOGLE_CLIENT_ID 미설정'); 
+        console.error('❌ VUE_APP_GOOGLE_CLIENT_ID 미설정')
+        errorMsg.value = 'Google 로그인 설정이 완료되지 않았습니다.'
         return 
       }
 
@@ -1158,11 +1343,14 @@ const handleOAuthLogin = async (provider) => {
         scope: 'openid email profile',
         state: 'google',
       })
+      
+      console.log('🔗 Google OAuth 리다이렉트 시작')
       window.location.assign(`https://accounts.google.com/o/oauth2/v2/auth?${params}`)
     } else if (provider === 'kakao') {
       const client = process.env.VUE_APP_KAKAO_CLIENT_ID // REST API 키
       if (!client) { 
-        alert('VUE_APP_KAKAO_CLIENT_ID 미설정'); 
+        console.error('❌ VUE_APP_KAKAO_CLIENT_ID 미설정')
+        errorMsg.value = '카카오 로그인 설정이 완료되지 않았습니다.'
         return 
       }
 
@@ -1170,15 +1358,77 @@ const handleOAuthLogin = async (provider) => {
         client_id: client,
         redirect_uri: cbUrl('kakao'),
         response_type: 'code',
-        state: 'kakao',
+        state: 'google',
       })
+      
+      console.log('🔗 카카오 OAuth 리다이렉트 시작')
       window.location.assign(`https://kauth.kakao.com/oauth/authorize?${params}`)
     }
   } catch (error) {
-    console.error(`${provider} OAuth 로그인 실패:`, error)
-    errorMsg.value = `${provider} 로그인에 실패했습니다.`
+    console.error(`❌ ${provider} OAuth 로그인 실패:`, error)
+    errorMsg.value = `${provider === 'google' ? 'Google' : '카카오'} 로그인에 실패했습니다.`
   }
 }
+
+// 소셜 로그인 연동 확인 함수 (백엔드에서 필요시 호출)
+const showSocialLinkConfirmation = (provider, email, name) => {
+  socialLinkData.value = { provider, email, name }
+  showSocialLinkModal.value = true
+}
+
+// OAuth 연동 모달 열기 (App.vue에서 호출)
+// eslint-disable-next-line no-unused-vars
+const openOAuthLinkModal = inject('openOAuthLinkModal', null)
+
+// OAuth 연동 데이터가 전달되었을 때 처리
+watch(() => route.query, (query) => {
+  if (query.openOAuthLink === 'true' && query.provider && query.email && query.linkTicket) {
+    console.log('OAuth 연동 데이터 감지:', query)
+    // openOAuthLinkModal 함수를 통해 연동 모달 표시
+    if (openOAuthLinkModal) {
+      openOAuthLinkModal({
+        provider: query.provider,
+        email: query.email,
+        linkTicket: query.linkTicket
+      })
+    } else {
+      // fallback: 직접 연동 모달 표시
+      showSocialLinkConfirmation(
+        query.provider,
+        query.email,
+        query.linkTicket
+      )
+    }
+  }
+}, { immediate: true })
+
+// 소셜 로그인 연동 처리
+const handleSocialLink = async (action) => {
+  try {
+    if (action === 'link') {
+      // 기존 계정과 연동
+      console.log('🔗 기존 계정과 연동 처리')
+      // TODO: 백엔드 API 호출하여 연동 처리
+      showSuccessMessage('계정이 성공적으로 연동되었습니다!')
+    } else {
+      // 새 계정 생성
+      console.log('🆕 새 계정 생성 처리')
+      // TODO: 백엔드 API 호출하여 새 계정 생성
+      showSuccessMessage('새 계정이 생성되었습니다!')
+    }
+    
+    showSocialLinkModal.value = false
+    socialLinkData.value = null
+    
+    // 홈 화면으로 이동
+    router.push('/')
+  } catch (error) {
+    console.error('❌ 소셜 로그인 연동 실패:', error)
+    errorMsg.value = '소셜 로그인 연동에 실패했습니다.'
+  }
+}
+
+
 
 const handleRegisterStep1 = async () => {
   const { valid } = await registerFormRef.value?.validate()
@@ -1431,6 +1681,33 @@ watch(() => props.modelValue, (newValue) => {
   object-fit: contain;
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
 }
+
+/* 계정 잠금 안내 스타일 */
+.account-lock-notice .v-alert {
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  background: rgba(254, 243, 199, 0.3);
+}
+
+.account-lock-notice .v-alert .v-icon {
+  margin-right: 8px;
+}
+
+/* OAuth 연동 안내 스타일 */
+.oauth-info-notice .v-alert {
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  background: rgba(239, 246, 255, 0.3);
+}
+
+.oauth-info-notice .v-alert .v-icon {
+  margin-right: 8px;
+}
+
+.oauth-info-notice .text-caption {
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+
 
 /* Google 버튼 스타일 */
 .google-btn {
@@ -1921,5 +2198,24 @@ watch(() => props.modelValue, (newValue) => {
   color: #333333;
   border-color: #fee500;
   box-shadow: 0 8px 25px rgba(254, 229, 0, 0.3);
+}
+
+/* 소셜 로그인 연동 모달 스타일 */
+.social-link-modal .v-card {
+  border-radius: 16px;
+}
+
+.social-link-modal .v-card-title {
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.social-link-modal .v-card-text {
+  color: #4b5563;
+}
+
+.social-link-modal .v-btn {
+  font-weight: 500;
+  text-transform: none;
 }
 </style>

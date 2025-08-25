@@ -38,10 +38,26 @@ export const useAuthStore = defineStore('auth', () => {
       saveTokens(at, rt)
       
       // JWT에서 이메일 추출하여 저장
-      const email = getEmailFromToken(at)
-      if (email) {
-        localStorage.setItem('email', email)
-      }
+      user.value = member
+      
+      // 토큰 자동 갱신 설정
+      setupTokenRefresh(refreshAccessToken)
+      
+      return response.data
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const loginWithOAuth = async (oauthData) => {
+    loading.value = true
+    try {
+      const { accessToken: at, refreshToken: rt, member } = oauthData
+      
+      // 토큰 저장
+      accessToken.value = at
+      refreshToken.value = rt
+      saveTokens(at, rt)
       
       // 사용자 정보 저장
       user.value = member
@@ -49,7 +65,7 @@ export const useAuthStore = defineStore('auth', () => {
       // 토큰 자동 갱신 설정
       setupTokenRefresh(refreshAccessToken)
       
-      return response.data
+      return { success: true }
     } finally {
       loading.value = false
     }
@@ -267,6 +283,7 @@ export const useAuthStore = defineStore('auth', () => {
     
     // 액션
     login,
+    loginWithOAuth,
     register,
     logout,
     refreshAccessToken,
