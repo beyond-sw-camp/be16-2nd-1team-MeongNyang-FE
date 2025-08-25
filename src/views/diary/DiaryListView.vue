@@ -264,8 +264,8 @@ export default {
                       // 검색이 있는 경우
                       response = await postAPI.search(searchType.value, searchKeyword.value.trim(), { page, size: 9 })
                     } else {
-                      // 일반 목록 조회
-                      response = await postAPI.getList({ page, size: 9 })
+                      // 내 일기 목록 조회
+                      response = await postAPI.getMyPosts({ page, size: 9 })
                     }
                     
                     if (response.data && response.data.data) {
@@ -351,7 +351,7 @@ export default {
         }
         
         // 백엔드 API 호출
-        await petAPI.setMainPet(selectedPetData.id)
+        await petAPI.setMainPet()
         
         // 성공 메시지
         alert('대표동물이 변경되었습니다!')

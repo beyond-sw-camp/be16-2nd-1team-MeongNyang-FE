@@ -169,7 +169,7 @@ export const userAPI = {
     apiClient.post('/users/logout', null, { headers: { [RT_HEADER_RAW]: refreshToken } }),
 
   // 대표 동물 설정
-  setMainPet: (petId) => apiClient.put(`/users/my-page/${petId}/main-pet`),
+  setMainPet: () => apiClient.put(`/users/pets/main`),
   
   // 마이페이지 정보 조회
   getMyPage: () => apiClient.get('/users/my-page'),
@@ -452,10 +452,10 @@ export const petAPI = {
   getOtherUserPets: (userId) => apiClient.get('/pets', { params: { userId } }),
   
   // 대표 펫 설정
-  setMainPet: (petId) => apiClient.put(`/pets/${petId}/main`),
+  setMainPet: () => apiClient.put(`/users/pets/main`),
   
   // 대표 반려동물 설정 (다른 엔드포인트)
-  setMainPetAlt: (petId) => apiClient.put(`/users/my-page/${petId}/main-pet`),
+  setMainPetAlt: () => apiClient.put(`/users/pets/main`),
   
   // 반려동물 수정
   update: async (petId, petData, petImg) => {
