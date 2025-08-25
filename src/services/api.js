@@ -90,7 +90,7 @@ apiClient.interceptors.response.use(
         if (!rt) throw new Error('NO_REFRESH_TOKEN')
 
         // RT는 "헤더"로 보냄 (서버 규약)
-        const r = await axios.post(`${API_BASE_URL}/users/refresh-token`, {}, {
+        const r = await axios.post(`${API_BASE_URL}/users/token/refresh`, {}, {
           headers: { [RT_HEADER_RAW]: rt }
         })
 

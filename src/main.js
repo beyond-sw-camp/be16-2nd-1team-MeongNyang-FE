@@ -9,6 +9,9 @@ import '@mdi/font/css/materialdesignicons.css'
 import axios from 'axios'
 import { useAuthStore } from './stores/auth'
 
+// ✅ axios를 전역 객체로 등록
+window.axios = axios
+
 // axios interceptor 설정
 axios.interceptors.request.use(
   config => {
@@ -29,16 +32,20 @@ axios.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       try {
         const refreshToken = localStorage.getItem('refreshToken')
-        const response = await axios.post(`${process.env.VUE_APP_API_BASE_URL}/member/refresh-at`, { refreshToken })
+        
+        const response = await axios.post(`${process.env.VUE_APP_API_BASE_URL}/users/token/refresh`, {}, {
+          headers: { 'X-Refresh-Token': refreshToken }
+        })
+        
         localStorage.setItem("accessToken", response.data.data.accessToken)
-
         console.log("갱신성공")
-        window.location.reload()
+        
+        // 페이지 새로고침 대신 원래 요청 재시도
+        return axios(error.config)
       } catch (e) {
         console.log("갱신 실패", e)
-
         localStorage.clear()
-        window.location.href = "/member/login"
+        window.location.href = "/users/login"
       }
     }
     return Promise.reject(error)
