@@ -136,7 +136,7 @@
       <!-- 로그인/회원가입 (비로그인 시) -->
       <template v-if="!isLoggedIn">
         <v-list-item 
-          @click="$router.push('/auth/login')"
+          @click="openAuthModal('login')"
           class="menu-item auth-item"
           density="compact"
         >
@@ -147,7 +147,7 @@
         </v-list-item>
 
         <v-list-item 
-          @click="$router.push('/auth/register')"
+          @click="openAuthModal('register')"
           class="menu-item auth-item"
           density="compact"
         >
@@ -191,7 +191,7 @@
 </template>
 
 <script>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { usePetStore } from '@/stores/pet'
@@ -202,6 +202,9 @@ export default {
     const router = useRouter()
     const authStore = useAuthStore()
     const petStore = usePetStore()
+    
+    // App.vue에서 제공하는 함수 inject
+    const openAuthModal = inject('openAuthModal')
     
     const isLoggedIn = computed(() => authStore.isAuthenticated)
     const user = computed(() => authStore.user)
@@ -238,7 +241,8 @@ export default {
       user,
       isAdmin,
       representativePetImage,
-      handleLogout
+      handleLogout,
+      openAuthModal
     }
   }
 }

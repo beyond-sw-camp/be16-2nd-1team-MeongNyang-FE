@@ -55,24 +55,28 @@ onMounted(async () => {
       return
     }
 
-    // 이메일 매칭 → 연동 확인
+    // 이메일 매칭 → 연동 확인 (홈으로 이동 후 모달 열기)
     if (payload?.needLink) {
+      // 홈으로 이동하고 소셜 연동 모달을 열기 위한 쿼리 파라미터 전달
       router.replace({
-        name: 'oauth-link',
+        name: 'Home',
         query: {
+          openOAuthLink: 'true',
           provider,
           email: payload.email,
-          linkTicket: payload.linkTicket, // 반드시 전달
+          linkTicket: payload.linkTicket,
         },
       })
       return
     }
 
-    // 신규가입 → 추가정보
+    // 신규가입 → 추가정보 (홈으로 이동 후 모달 열기)
     if (payload?.isNewUser || payload?.needExtra || payload?.signupTicket) {
+      // 홈으로 이동하고 OAuth 추가정보 모달을 열기 위한 쿼리 파라미터 전달
       router.replace({
-        name: 'signup-extra',
+        name: 'Home',
         query: {
+          openOAuthExtra: 'true',
           provider,
           signupTicket: payload.signupTicket,
           email: payload.email,

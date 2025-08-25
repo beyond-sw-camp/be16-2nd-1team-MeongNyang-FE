@@ -28,7 +28,7 @@
               size="x-large"
               variant="elevated"
               class="hero-btn login-btn"
-              @click="$router.push('/auth/login')"
+              @click="openAuthModal('login')"
             >
               <v-icon class="me-3">mdi-login</v-icon>
               로그인
@@ -38,7 +38,7 @@
               size="x-large"
               variant="outlined"
               class="hero-btn register-btn"
-              @click="$router.push('/auth/register')"
+              @click="openAuthModal('register')"
             >
               <v-icon class="me-3">mdi-account-plus</v-icon>
               회원가입
@@ -143,22 +143,64 @@
         </div>
       </div>
     </section>
+    
+
   </div>
 </template>
 
 <script>
-import { computed } from 'vue'
+import { computed, inject, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { useRoute } from 'vue-router'
 
 export default {
   name: 'HomeView',
+
   setup() {
     const authStore = useAuthStore()
+    const route = useRoute()
+    
+    // App.vue에서 제공하는 함수 inject
+    const openAuthModal = inject('openAuthModal')
     
     const isLoggedIn = computed(() => authStore.isAuthenticated)
     
+    // OAuth 모달 자동 열기
+    onMounted(() => {
+      // OAuth 추가정보 모달
+      const { openOAuthExtra, provider, signupTicket, email } = route.query
+      if (openOAuthExtra === 'true' && provider && signupTicket && email) {
+        const openOAuthExtraModal = inject('openOAuthExtraModal')
+        if (openOAuthExtraModal) {
+          openOAuthExtraModal({
+            provider,
+            signupTicket,
+            email
+          })
+        }
+        // URL에서 쿼리 파라미터 제거
+        window.history.replaceState({}, document.title, '/')
+      }
+      
+      // 소셜 연동 모달
+      const { openOAuthLink, provider: linkProvider, email: linkEmail, linkTicket } = route.query
+      if (openOAuthLink === 'true' && linkProvider && linkEmail && linkTicket) {
+        const openOAuthLinkModal = inject('openOAuthLinkModal')
+        if (openOAuthLinkModal) {
+          openOAuthLinkModal({
+            provider: linkProvider,
+            email: linkEmail,
+            linkTicket
+          })
+        }
+        // URL에서 쿼리 파라미터 제거
+        window.history.replaceState({}, document.title, '/')
+      }
+    })
+    
     return {
-      isLoggedIn
+      isLoggedIn,
+      openAuthModal
     }
   }
 }
