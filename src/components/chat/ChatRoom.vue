@@ -1,5 +1,13 @@
 <template>
-  <v-card class="chat-room-container d-flex flex-column" flat tile>
+  <v-card 
+    class="chat-room-container d-flex flex-column" 
+    flat 
+    tile
+    @dragenter="handleDragEnter"
+    @dragover="handleDragOver"
+    @dragleave="handleDragLeave"
+    @drop="handleDrop"
+  >
     <!-- 채팅방 헤더 -->
     <div class="chat-header">
       <div class="header-content">
@@ -80,19 +88,17 @@
       </div>
     </div>
     <v-divider></v-divider>
-    <v-card-text 
+    
+        <v-card-text 
       class="chat-messages-container flex-grow-1 pa-4" 
       ref="chatBox"
-      @dragenter="handleDragEnter"
-      @dragover="handleDragOver"
-      @dragleave="handleDragLeave"
-      @drop="handleDrop"
       @scroll="handleScroll"
     >
       <!-- 드래그 앤 드롭 오버레이 -->
       <div 
         v-if="isDragOver" 
         class="drag-drop-overlay"
+        :style="dragOverlayStyle"
       >
         <div class="drag-drop-content">
           <v-icon size="64" color="primary">mdi-cloud-upload</v-icon>
@@ -657,6 +663,25 @@ export default {
         messagesWithSeparators.push({ ...message, showTimestamp, showAvatarAndEmail })
       })
       return messagesWithSeparators
+    })
+    
+    // 드래그 오버레이 스타일 계산
+    const dragOverlayStyle = computed(() => {
+      if (!isDragOver.value || !chatBox.value) {
+        return {}
+      }
+      
+      const container = chatBox.value.$el || chatBox.value
+      const rect = container.getBoundingClientRect()
+      
+      return {
+        position: 'fixed',
+        top: `${rect.top}px`,
+        left: `${rect.left}px`,
+        width: `${rect.width}px`,
+        height: `${rect.height}px`,
+        zIndex: 9999
+      }
     })
     
     // 메서드들
@@ -1582,7 +1607,9 @@ export default {
       cleanupResizeObserver,
       // 빠른 메시지 관련
       quickMessages,
-      sendQuickMessage
+      sendQuickMessage,
+      // 드래그 오버레이 스타일
+      dragOverlayStyle
     }
   }
 }
@@ -1596,6 +1623,7 @@ export default {
   overflow: hidden;
   background: var(--mm-surface);
   border-radius: 0;
+  position: relative;
 }
 
 /* 채팅 헤더 고정 높이 */
@@ -2821,19 +2849,18 @@ export default {
 
 /* 드래그 앤 드롭 스타일 */
 .drag-drop-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
   background: rgba(232, 125, 125, 0.1);
   border: 3px dashed #E87D7D;
   border-radius: var(--mm-radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10;
   backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+
+.drag-drop-overlay * {
+  pointer-events: none;
 }
 
 .drag-drop-content {
