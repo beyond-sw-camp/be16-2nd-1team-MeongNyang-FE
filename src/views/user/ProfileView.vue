@@ -127,6 +127,21 @@
       </v-btn>
       
       <v-btn 
+        v-if="userInfo?.socialType === 'COMMON'"
+        variant="outlined" 
+        size="large"
+        rounded="xl"
+        prepend-icon="mdi-lock"
+        class="action-btn secondary-btn"
+        @click="changePassword"
+        elevation="0"
+        hover
+      >
+        비밀번호 변경
+      </v-btn>
+      
+      <v-btn 
+        v-else
         variant="outlined" 
         size="large"
         rounded="xl"
@@ -135,7 +150,7 @@
         disabled
         elevation="0"
       >
-        비밀번호 변경 (불가)
+        비밀번호 변경 (소셜 계정)
       </v-btn>
     </div>
 
@@ -509,6 +524,11 @@ export default {
       }
     })
     
+    // 비밀번호 변경 함수
+    const changePassword = () => {
+      router.push('/profile/change-password')
+    }
+    
     return {
       userInfo,
       profileImageUrl,
@@ -523,6 +543,7 @@ export default {
       getStatusText,
       editProfile,
       deleteAccount,
+      changePassword,
       forceRefreshData,
       handleImageError,
       handleImageLoad

@@ -31,44 +31,53 @@
             비밀번호 변경
           </v-card-title>
           
-          <v-form ref="form" v-model="isValid" @submit.prevent="handleSubmit">
+          <v-form ref="formRef" @submit.prevent="handleSubmit">
             <v-row>
               <!-- 기존 비밀번호 -->
               <v-col cols="12">
-                <FormField
+                <v-text-field
                   v-model="form.oldPassword"
-                  label="기존 비밀번호"
+                  label="기존 비밀번호 *"
                   type="password"
                   placeholder="현재 비밀번호를 입력하세요"
                   :rules="oldPasswordRules"
                   required
                   prepend-icon="mdi-lock"
+                  variant="outlined"
+                  density="comfortable"
+                  hide-details="auto"
                 />
               </v-col>
 
               <!-- 새 비밀번호 -->
               <v-col cols="12">
-                <FormField
+                <v-text-field
                   v-model="form.newPassword"
-                  label="새 비밀번호"
+                  label="새 비밀번호 *"
                   type="password"
                   placeholder="새 비밀번호를 입력하세요"
                   :rules="newPasswordRules"
                   required
                   prepend-icon="mdi-lock-plus"
+                  variant="outlined"
+                  density="comfortable"
+                  hide-details="auto"
                 />
               </v-col>
 
               <!-- 새 비밀번호 확인 -->
               <v-col cols="12">
-                <FormField
+                <v-text-field
                   v-model="form.confirmPassword"
-                  label="새 비밀번호 확인"
+                  label="새 비밀번호 확인 *"
                   type="password"
                   placeholder="새 비밀번호를 다시 입력하세요"
                   :rules="confirmPasswordRules"
                   required
                   prepend-icon="mdi-lock-check"
+                  variant="outlined"
+                  density="comfortable"
+                  hide-details="auto"
                 />
               </v-col>
             </v-row>
@@ -138,7 +147,6 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { userAPI } from '@/services/api'
-import FormField from '@/components/ui/molecules/FormField.vue'
 
 const router = useRouter()
 const userProfile = ref(null) // To store user's socialType
@@ -151,7 +159,6 @@ const form = reactive({
 })
 
 const formRef = ref(null)
-const isValid = ref(false)
 const loading = ref(false)
 const showSuccess = ref(false)
 const showError = ref(false)
