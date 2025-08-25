@@ -38,10 +38,9 @@ apiClient.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${at}`
   }
 
-  // FormData면 Content-Type을 multipart/form-data로 설정
+  // FormData면 Content-Type 제거 (브라우저가 boundary 자동 설정)
   if (config.data instanceof FormData) {
-    config.headers = config.headers || {}
-    config.headers['Content-Type'] = 'multipart/form-data'
+    delete config.headers['Content-Type']
   }
 
   // 만약 CSRF 쓰려면 주석 해제
@@ -309,7 +308,7 @@ export const marketAPI = {
       'post',
       new Blob([JSON.stringify(postData)], { type: 'application/json' })
     )
-    
+
     if (imageFiles && imageFiles.length > 0) {
       imageFiles.forEach(file => formData.append('imageFiles', file))
     }

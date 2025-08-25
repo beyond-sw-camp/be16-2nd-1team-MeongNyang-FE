@@ -34,9 +34,9 @@
                 
                 <!-- 이미지가 없을 때 업로드 안내 -->
                 <div v-if="imageUrls.length === 0" class="upload-content" @click="triggerFileInput">
-                                     <div class="upload-icon">
-                     <v-icon icon="mdi-cloud-upload" size="48" color="white" />
-                   </div>
+                  <div class="upload-icon">
+                    <v-icon icon="mdi-cloud-upload" size="48" color="white" />
+                  </div>
                   <h4 class="upload-title">사진을 업로드하세요</h4>
                   <p class="upload-subtitle">최대 10장까지 등록 가능합니다</p>
                   <div class="upload-hint">
@@ -134,32 +134,33 @@
 
               <div class="form-field">
                 <label class="field-label">카테고리 *</label>
-                <div class="category-buttons">
-                  <button
+                <select
+                  v-model="form.category"
+                  class="form-select"
+                  required
+                  @change="handleCategoryChange"
+                >
+                  <!-- <option value="" disabled>카테고리를 선택해주세요</option> -->
+                  <option
                     v-for="category in categoryOptions"
                     :key="category.value"
-                    :class="[
-                      'category-btn', 
-                      { 
-                        'active': form.category === category.value 
-                      }
-                    ]"
-                    @click.prevent="selectCategory(category.value)"
-                    type="button"
-                    :data-category="category.value"
-                    :title="`현재 선택: ${form.category}, 이 버튼: ${category.value}`"
+                    :value="category.value"
                   >
                     {{ category.label }}
-                  </button>
-                </div>
-                <div v-if="form.category && form.category !== null" class="category-selected">
+                  </option>
+                </select>
+                
+                <!-- 카테고리가 선택된 경우 -->
+                <div v-if="form.category && form.category !== null && form.category !== ''" class="category-selected">
                   <div class="selected-category-content">
                     <v-icon icon="mdi-check-circle" size="20" color="#E87D7D" />
                     <span class="selected-text">선택된 카테고리: <strong>{{ categoryOptions.find(c => c.value === form.category)?.label }}</strong></span>
-                    <span class="debug-info">(값: {{ form.category }})</span>
+                    <span class="debug-info">({{ form.category }})</span>
                   </div>
                 </div>
-                <div v-else class="category-hint">
+                
+                <!-- 카테고리가 선택되지 않은 경우 -->
+                <div v-if="!form.category || form.category === null || form.category === ''" class="category-hint">
                   <v-icon icon="mdi-information" size="16" color="#6c757d" />
                   <span>카테고리를 선택해주세요</span>
                 </div>
@@ -310,14 +311,20 @@
         </v-form>
       </div>
     </v-container>
-
-    <!-- 성공/실패 알림 -->
-    <div v-if="snackbar.show" class="snackbar" :class="snackbar.color">
+    
+    <!-- 스낵바 -->
+    <v-snackbar
+      v-model="snackbar.show"
+      :color="snackbar.color"
+      :timeout="3000"
+      location="top"
+      class="custom-snackbar"
+    >
       <div class="snackbar-content">
-        <v-icon :icon="snackbar.icon" size="18" />
-        <span>{{ snackbar.message }}</span>
+        <v-icon :icon="snackbar.icon" size="20" class="snackbar-icon" />
+        <span class="snackbar-message">{{ snackbar.message }}</span>
       </div>
-    </div>
+    </v-snackbar>
   </div>
 </template>
 
@@ -447,6 +454,29 @@ export default {
       validateForm()
     }
 
+    // 폼 validation 함수
+    const validateForm = () => {
+      // 문자열 필드는 공백 제거 후 검사
+      const hasTitle = form.title && form.title.trim().length > 0
+      const hasCategory = !!form.category
+      // 가격은 0보다 큰 숫자인지 확인
+      const hasPrice = form.price !== null && form.price !== undefined && form.price > 0
+      const hasDescription = form.description && form.description.trim().length > 0
+      const hasLocation = !!selectedLocation.value
+      
+      console.log('=== 폼 유효성 검사 ===')
+      console.log('제목:', `"${form.title}"`, '→', hasTitle)
+      console.log('카테고리:', form.category, '→', hasCategory)
+      console.log('가격:', form.price, '→', hasPrice)
+      console.log('설명:', `"${form.description}"`, '→', hasDescription)
+      console.log('위치:', selectedLocation.value, '→', hasLocation)
+      
+      valid.value = hasTitle && hasCategory && hasPrice && hasDescription && hasLocation
+      
+      console.log('최종 유효성:', valid.value)
+      console.log('========================')
+    }
+
     const valid = ref(false)
     const loading = ref(false)
     const images = ref([])
@@ -467,7 +497,7 @@ export default {
       color: 'success',
       icon: 'mdi-check-circle'
     })
-
+    
     // 카테고리 옵션
     const categoryOptions = ref([
       { label: '장난감', value: 'TOY' },
@@ -482,56 +512,55 @@ export default {
         console.log('=== 카테고리 선택 시작 ===')
         console.log('선택할 카테고리:', category)
         console.log('선택 전 form.category:', form.category)
-        console.log('전체 form 객체:', form)
-        console.log('카테고리 옵션들:', categoryOptions.value)
         
         // 유효한 카테고리인지 확인
         const validCategory = categoryOptions.value.find(c => c.value === category)
         if (!validCategory) {
           console.error('유효하지 않은 카테고리:', category)
-          snackbar.message = '유효하지 않은 카테고리입니다'
-          snackbar.color = 'error'
-          snackbar.icon = 'mdi-alert-circle'
-          snackbar.show = true
           return
         }
         
-        // 카테고리 값 설정 (반응성 보장)
+        // 카테고리 값 설정 (간단하게)
         form.category = category
         
         console.log('선택 후 form.category:', form.category)
-        console.log('form 객체 업데이트 확인:', form)
-        console.log('카테고리 버튼 활성화 상태 확인:')
-        categoryOptions.value.forEach(c => {
-          console.log(`${c.label}(${c.value}): ${form.category === c.value}`)
-        })
         
-        // 강제로 반응성 업데이트
-        nextTick(() => {
-          console.log('nextTick 후 form.category:', form.category)
-          console.log('DOM 업데이트 확인')
-          console.log('폼 유효성 검사 시작...')
-          validateForm()
-        })
-        
-        // 스낵바로 선택 확인
-        snackbar.message = `카테고리: ${validCategory.label} 선택됨`
+        // 스낵바 테스트
+        snackbar.message = `카테고리 "${validCategory.label}"가 선택되었습니다!`
         snackbar.color = 'success'
         snackbar.icon = 'mdi-check-circle'
         snackbar.show = true
         
-        // 2초 후 스낵바 숨기기
-        setTimeout(() => {
-          snackbar.show = false
-        }, 2000)
+        // 폼 유효성 검사
+        validateForm()
         
       } catch (error) {
         console.error('카테고리 선택 중 오류 발생:', error)
-        snackbar.message = '카테고리 선택 중 오류가 발생했습니다'
-        snackbar.color = 'error'
-        snackbar.icon = 'mdi-alert-circle'
+      }
+    }
+
+    // 카테고리 변경 처리
+    const handleCategoryChange = (event) => {
+      const value = event.target.value
+      console.log('카테고리 변경 이벤트:', value, '타입:', typeof value)
+      
+      // 값 설정
+      form.category = value
+      
+      console.log('카테고리 처리 후:', form.category)
+      
+      // 유효한 카테고리인지 확인
+      const validCategory = categoryOptions.value.find(c => c.value === value)
+      if (validCategory) {
+        // 스낵바 표시
+        snackbar.message = `카테고리 "${validCategory.label}"가 선택되었습니다!`
+        snackbar.color = 'success'
+        snackbar.icon = 'mdi-check-circle'
         snackbar.show = true
       }
+      
+      // 폼 유효성 검사
+      validateForm()
     }
 
     // 파일 입력 트리거
@@ -563,13 +592,10 @@ export default {
         return true
       })
 
-      if (validFiles.length === 0) {
-        snackbar.message = '유효한 이미지 파일을 선택해주세요'
-        snackbar.color = 'error'
-        snackbar.icon = 'mdi-alert-circle'
-        snackbar.show = true
-        return
-      }
+             if (validFiles.length === 0) {
+         console.error('유효한 이미지 파일을 선택해주세요')
+         return
+       }
 
       // 파일과 URL 모두 저장
       images.value = validFiles
@@ -626,29 +652,6 @@ export default {
     
     const goToSlide = (index) => {
       currentSlide.value = index
-    }
-
-    // 폼 validation 함수
-    const validateForm = () => {
-      // 문자열 필드는 공백 제거 후 검사
-      const hasTitle = form.title && form.title.trim().length > 0
-      const hasCategory = !!form.category
-      // 가격은 0보다 큰 숫자인지 확인
-      const hasPrice = form.price !== null && form.price !== undefined && form.price > 0
-      const hasDescription = form.description && form.description.trim().length > 0
-      const hasLocation = !!selectedLocation.value
-      
-      console.log('=== 폼 유효성 검사 ===')
-      console.log('제목:', `"${form.title}"`, '→', hasTitle)
-      console.log('카테고리:', form.category, '→', hasCategory)
-      console.log('가격:', form.price, '→', hasPrice)
-      console.log('설명:', `"${form.description}"`, '→', hasDescription)
-      console.log('위치:', selectedLocation.value, '→', hasLocation)
-      
-      valid.value = hasTitle && hasCategory && hasPrice && hasDescription && hasLocation
-      
-      console.log('최종 유효성:', valid.value)
-      console.log('========================')
     }
 
     // 지도 관련 함수들
@@ -725,10 +728,7 @@ export default {
         selectedLocation.value = null
         validateForm()
         
-        snackbar.message = '위치가 초기화되었습니다'
-        snackbar.color = 'info'
-        snackbar.icon = 'mdi-information'
-        snackbar.show = true
+                 console.log('위치가 초기화되었습니다')
       }
     }
 
@@ -815,15 +815,15 @@ export default {
           console.log('================')
           
           if (response.status === 200 || response.status === 201) {
-            // 성공 메시지
-            snackbar.message = '거래글이 성공적으로 등록되었습니다!'
-            snackbar.color = 'success'
-            snackbar.icon = 'mdi-check-circle'
-            snackbar.show = true
-            
-            setTimeout(() => {
-              router.push('/market')
-            }, 2000)
+             // 성공 메시지
+             snackbar.message = '거래글이 성공적으로 등록되었습니다!'
+             snackbar.color = 'success'
+             snackbar.icon = 'mdi-check-circle'
+             snackbar.show = true
+             
+             setTimeout(() => {
+               router.push('/market')
+             }, 2000)
           } else {
             throw new Error(`서버 응답이 성공이 아닙니다. 상태: ${response.status}`)
           }
@@ -867,14 +867,15 @@ export default {
       imageUrls,
       mainImageIndex,
       currentSlide,
-      snackbar,
       categoryOptions,
       // 지도 관련 변수들
       map,
       marker,
       selectedLocation,
       mapLoaded,
+      snackbar, // 스낵바 상태 반환
       selectCategory,
+      handleCategoryChange,
       triggerFileInput,
       handleImageChange,
       removeImage,
@@ -900,53 +901,6 @@ export default {
 </script>
 
 <style scoped>
-/* 전역 스타일 추가 - scoped 스타일의 우선순위 문제 해결 */
-</style>
-
-<style>
-/* 카테고리 버튼 활성화 상태를 위한 전역 스타일 */
-.category-btn.active {
-  border-color: #E87D7D !important;
-  background: linear-gradient(135deg, #E87D7D, #FF6B6B) !important;
-  color: white !important;
-  box-shadow: 0 8px 25px rgba(232, 125, 125, 0.5) !important;
-  transform: translateY(-4px) !important;
-  font-weight: 700 !important;
-  z-index: 100 !important;
-  position: relative !important;
-  border-width: 3px !important;
-}
-
-.category-btn.active:hover {
-  border-color: #E87D7D !important;
-  background: linear-gradient(135deg, #E87D7D, #FF6B6B) !important;
-  color: white !important;
-  box-shadow: 0 12px 30px rgba(232, 125, 125, 0.6) !important;
-  transform: translateY(-6px) !important;
-}
-
-.category-btn.active::after {
-  content: '✓' !important;
-  position: absolute !important;
-  top: -8px !important;
-  right: -8px !important;
-  width: 24px !important;
-  height: 24px !important;
-  background: #28a745 !important;
-  color: white !important;
-  border-radius: 50% !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  font-size: 14px !important;
-  font-weight: bold !important;
-  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4) !important;
-  z-index: 101 !important;
-}
-</style>
-
-<style scoped>
-
 /* 뒤로가기 버튼 */
 .back-btn-wrapper {
   margin-bottom: 16px;
@@ -1065,6 +1019,127 @@ export default {
   color: #adb5bd;
 }
 
+/* 드롭다운 스타일 */
+.form-select {
+  width: 100%;
+  padding: 16px 20px;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  font-size: 1rem;
+  color: #2c3e50;
+  background: white;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236c757d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 16px;
+  padding-right: 48px;
+  position: relative;
+  z-index: 10;
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: #E87D7D;
+  box-shadow: 0 0 0 3px rgba(232, 125, 125, 0.1);
+  transform: translateY(-1px);
+}
+
+.form-select:hover {
+  border-color: #E87D7D;
+  background-color: #fff5f5;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(232, 125, 125, 0.15);
+}
+
+.form-select option {
+  padding: 16px 20px;
+  background: white;
+  color: #2c3e50;
+  font-size: 0.95rem;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.form-select option:hover {
+  background: linear-gradient(135deg, #fff5f5, #ffe6e6);
+  color: #E87D7D;
+  transform: translateX(8px);
+  padding-left: 28px;
+}
+
+.form-select option:checked {
+  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(232, 125, 125, 0.3);
+}
+
+.form-select option:disabled {
+  color: #adb5bd;
+  font-style: italic;
+  background: #f8f9fa;
+}
+
+/* 드롭다운 커스텀 스타일링 */
+.form-select:focus option {
+  background: #fff5f5;
+}
+
+/* 드롭다운 화살표 애니메이션 */
+.form-select:focus {
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23E87D7D' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  transform: translateY(-1px) scale(1.02);
+}
+
+/* 드롭다운 옵션 그룹 스타일링 */
+.form-select optgroup {
+  font-weight: 600;
+  color: #E87D7D;
+  background: #fff5f5;
+  padding: 8px 16px;
+  border-bottom: 1px solid #ffe6e6;
+}
+
+/* 드롭다운 옵션 선택 효과 */
+.form-select option:active {
+  background: linear-gradient(135deg, #FF6B6B, #E87D7D);
+  color: white;
+  transform: scale(1.05);
+}
+
+/* 드롭다운 포커스 링 효과 */
+.form-select:focus::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
+  border-radius: 14px;
+  z-index: -1;
+  opacity: 0.3;
+  animation: focusGlow 0.3s ease-out;
+}
+
+@keyframes focusGlow {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+}
+
 /* 가격 입력 */
 .price-input-container {
   position: relative;
@@ -1083,8 +1158,6 @@ export default {
   font-weight: 500;
   font-size: 0.95rem;
 }
-
-
 
 /* 이미지 업로드 섹션 */
 .image-upload-section {
@@ -1123,7 +1196,7 @@ export default {
   border-radius: 16px;
   transition: all 0.3s ease;
 }
-:
+
 .upload-content:hover {
   background: linear-gradient(135deg, #fff5f5 0%, #ffe6e6 100%);
   transform: translateY(-2px);
@@ -1338,7 +1411,6 @@ export default {
   border-bottom: 1px solid #e9ecef;
 }
 
-
 .map-title-content {
   flex: 1;
 }
@@ -1504,7 +1576,6 @@ export default {
   border-radius: 12px;
 }
 
-
 .hint-content {
   display: flex;
   flex-direction: column;
@@ -1630,210 +1701,16 @@ export default {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
-
-/* 스낵바 */
-.snackbar {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1000;
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  backdrop-filter: blur(10px);
-  animation: slideUp 0.3s ease;
-}
-
-.snackbar.success {
-  background: linear-gradient(135deg, #28a745, #20c997);
-}
-
-.snackbar.error {
-  background: linear-gradient(135deg, #dc3545, #c82333);
-}
-
-.snackbar.warning {
-  background: linear-gradient(135deg, #ffc107, #e0a800);
-}
-
-.snackbar.info {
-  background: linear-gradient(135deg, #17a2b8, #138496);
-}
-
-.snackbar-content {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 24px;
-  color: white;
-  font-weight: 500;
-  font-size: 0.95rem;
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateX(-50%) translateY(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(-50%) translateY(0);
-    opacity: 1;
-  }
-}
-
-/* 카테고리 버튼 */
-.category-buttons {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  width: 100%;
-}
-
-/* 카테고리 버튼 기본 스타일 강화 */
-.category-buttons .category-btn {
-  padding: 16px 20px;
-  border: 2px solid #e9ecef;
-  border-radius: 12px;
-  background: white;
-  color: #6c757d;
-  font-size: 0.95rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-align: center;
-  white-space: nowrap;
-  position: relative;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-/* 카테고리 버튼 hover 효과 강화 */
-.category-buttons .category-btn:hover:not(.active),
-.category-btn:hover:not(.active) {
-  border-color: #E87D7D;
-  background: #fff5f5;
-  color: #E87D7D;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(232, 125, 125, 0.2);
-}
-
-/* 활성화된 카테고리 버튼 - 최고 우선순위로 적용되도록 강화 */
-.category-btn.active,
-.category-btn[data-category].active,
-button.category-btn.active,
-div.category-buttons .category-btn.active,
-div.category-buttons button.category-btn.active,
-div.category-buttons .category-btn[data-category].active {
-  border-color: #E87D7D !important;
-  background: linear-gradient(135deg, #E87D7D, #FF6B6B) !important;
-  color: white !important;
-  box-shadow: 0 8px 25px rgba(232, 125, 125, 0.5) !important;
-  transform: translateY(-4px) !important;
-  font-weight: 700 !important;
-  z-index: 100 !important;
-  position: relative !important;
-  border-width: 3px !important;
-}
-
-.category-btn.active:hover,
-.category-btn[data-category].active:hover,
-button.category-btn.active:hover,
-div.category-buttons .category-btn.active:hover,
-div.category-buttons button.category-btn.active:hover,
-div.category-buttons .category-btn[data-category].active:hover {
-  border-color: #E87D7D !important;
-  background: linear-gradient(135deg, #E87D7D, #FF6B6B) !important;
-  color: white !important;
-  box-shadow: 0 12px 30px rgba(232, 125, 125, 0.6) !important;
-  transform: translateY(-6px) !important;
-}
-
-/* 선택된 카테고리 버튼에 추가 효과 */
-.category-btn.active::after,
-.category-btn[data-category].active::after,
-button.category-btn.active::after,
-div.category-buttons .category-btn.active::after,
-div.category-buttons button.category-btn.active::after,
-div.category-buttons .category-btn[data-category].active::after {
-  content: '✓';
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  width: 24px;
-  height: 24px;
-  background: #28a745;
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: bold;
-  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
-  z-index: 101;
-}
-
-/* 선택된 카테고리 표시 */
-.category-selected {
-  margin-top: 16px;
-  padding: 16px 20px;
-  background: linear-gradient(135deg, #fff5f5, #fff);
-  border: 3px solid #E87D7D;
-  border-radius: 16px;
-  font-size: 1rem;
-  color: #E87D7D;
-  font-weight: 600;
-  text-align: center;
-  box-shadow: 0 6px 20px rgba(232, 125, 125, 0.2);
-  position: relative;
-  overflow: hidden;
-}
-
-.category-selected::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
-}
-
-.selected-category-content {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.selected-text {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #E87D7D;
-}
-
-.selected-text strong {
-  color: #FF6B6B;
-  font-weight: 800;
-}
-
-/* 디버깅 정보 */
-.debug-info {
-  color: #6c757d;
-  font-size: 0.8rem;
-  font-family: monospace;
-  margin-left: 8px;
-}
-
-/* 카테고리 힌트 */
+ 
+ /* 카테고리 힌트 */
 .category-hint {
   margin-top: 8px;
   padding: 8px 12px;
-  background: #e3f2fd;
+  background: #ffe8e8;
   border-radius: 8px;
   font-size: 0.9rem;
-  color: #1976d2;
-  border-left: 3px solid #1976d2;
+  color: #595454;
+  border-left: 3px solid #E87D7D;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1851,10 +1728,6 @@ div.category-buttons .category-btn[data-category].active::after {
   
   .page-title {
     font-size: 2rem;
-  }
-  
-  .category-buttons {
-    grid-template-columns: repeat(2, 1fr);
   }
   
   .action-section {
@@ -1893,4 +1766,143 @@ div.category-buttons .category-btn[data-category].active::after {
     padding: 14px 16px;
   }
 }
+ 
+ /* 스낵바 스타일 */
+ .custom-snackbar {
+   border-radius: 16px;
+   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+   backdrop-filter: blur(20px);
+   border: 1px solid rgba(255, 255, 255, 0.2);
+   max-width: 400px;
+   min-width: 300px;
+   margin: 16px;
+   overflow: hidden;
+   position: relative;
+   z-index: 9999;
+ }
+ 
+ .custom-snackbar::before {
+   content: '';
+   position: absolute;
+   top: 0;
+   left: 0;
+   right: 0;
+   height: 3px;
+   background: linear-gradient(90deg, #E87D7D, #FF6B6B, #E87D7D);
+   background-size: 200% 100%;
+   animation: shimmer 2s ease-in-out infinite;
+ }
+ 
+ @keyframes shimmer {
+   0% { background-position: 200% 0; }
+   100% { background-position: -200% 0; }
+ }
+ 
+ .snackbar-content {
+   display: flex;
+   align-items: center;
+   gap: 16px;
+   flex: 1;
+   padding: 20px 24px;
+   position: relative;
+   z-index: 1;
+ }
+ 
+ .snackbar-icon {
+   flex-shrink: 0;
+   width: 24px;
+   height: 24px;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   border-radius: 50%;
+   background: rgba(255, 255, 255, 0.15);
+   backdrop-filter: blur(10px);
+   border: 1px solid rgba(255, 255, 255, 0.2);
+   transition: all 0.3s ease;
+ }
+ 
+ .snackbar-message {
+   font-size: 0.95rem;
+   font-weight: 500;
+   line-height: 1.5;
+   color: inherit;
+   flex: 1;
+   text-align: left;
+ }
+ 
+ /* 스낵바 색상 커스터마이징 */
+ .custom-snackbar.v-snackbar--success {
+   background: linear-gradient(135deg, rgba(76, 175, 80, 0.95), rgba(76, 175, 80, 0.85)) !important;
+   color: white !important;
+   border-color: rgba(76, 175, 80, 0.3) !important;
+ }
+ 
+ .custom-snackbar.v-snackbar--success .snackbar-icon {
+   background: rgba(255, 255, 255, 0.2);
+   border-color: rgba(255, 255, 255, 0.3);
+ }
+ 
+ .custom-snackbar.v-snackbar--error {
+   background: linear-gradient(135deg, rgba(244, 67, 54, 0.95), rgba(244, 67, 54, 0.85)) !important;
+   color: white !important;
+   border-color: rgba(244, 67, 54, 0.3) !important;
+ }
+ 
+ .custom-snackbar.v-snackbar--error .snackbar-icon {
+   background: rgba(255, 255, 255, 0.2);
+   border-color: rgba(255, 255, 255, 0.3);
+ }
+ 
+ .custom-snackbar.v-snackbar--info {
+   background: linear-gradient(135deg, rgba(33, 150, 243, 0.95), rgba(33, 150, 243, 0.85)) !important;
+   color: white !important;
+   border-color: rgba(33, 150, 243, 0.3) !important;
+ }
+ 
+ .custom-snackbar.v-snackbar--info .snackbar-icon {
+   background: rgba(255, 255, 255, 0.2);
+   border-color: rgba(255, 255, 255, 0.3);
+ }
+ 
+ /* 스낵바 애니메이션 */
+ .custom-snackbar {
+   animation: slideInDown 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+ }
+ 
+ @keyframes slideInDown {
+   0% {
+     transform: translateY(-100%) scale(0.8);
+     opacity: 0;
+   }
+   100% {
+     transform: translateY(0) scale(1);
+     opacity: 1;
+   }
+ }
+ 
+ /* 호버 효과 */
+ .custom-snackbar:hover {
+   transform: translateY(-2px);
+   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15);
+   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+ }
+ 
+ /* 반응형 디자인 */
+ @media (max-width: 480px) {
+   .custom-snackbar {
+     max-width: calc(100vw - 32px);
+     min-width: auto;
+     margin: 8px;
+   }
+   
+   .snackbar-content {
+     padding: 16px 20px;
+     gap: 12px;
+   }
+   
+   .snackbar-message {
+     font-size: 0.9rem;
+   }
+ }
 </style>
