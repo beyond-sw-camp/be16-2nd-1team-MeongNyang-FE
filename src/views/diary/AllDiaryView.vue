@@ -39,10 +39,26 @@
               </v-btn>
             </template>
             <v-list class="options-menu">
-              <v-list-item @click="reportPost(post.id)" class="menu-item">
-                <v-list-item-title class="menu-text report-text">신고</v-list-item-title>
-              </v-list-item>
+              <!-- 내 게시글이면 수정/삭제 옵션만 표시 -->
+              <template v-if="post.userId === currentUserId">
+                <v-list-item @click="editPost(post.id)" class="menu-item">
+                  <v-list-item-title class="menu-text">수정</v-list-item-title>
+                </v-list-item>
+                <v-list-item @click="deletePost(post.id)" class="menu-item">
+                  <v-list-item-title class="menu-text delete-text">삭제</v-list-item-title>
+                </v-list-item>
+              </template>
+              <!-- 다른 사용자 게시글이면 신고 옵션만 표시 -->
+              <template v-else>
+                <v-list-item @click="reportPost(post.id)" class="menu-item">
+                  <v-list-item-title class="menu-text report-text">신고</v-list-item-title>
+                </v-list-item>
+              </template>
             </v-list>
+            <!-- 디버깅용 로그 -->
+            <div style="display: none;">
+              {{ console.log('post.userId:', post.userId, 'currentUserId:', currentUserId, 'isMyPost:', post.userId === currentUserId) }}
+            </div>
           </v-menu>
         </div>
 
@@ -195,8 +211,9 @@
 </template>
 
 <script>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import { postAPI } from '@/services/api'
 import LikesModal from '@/components/LikesModal.vue'
 import { checkPetExist } from '@/utils/petValidation'
@@ -209,6 +226,7 @@ export default {
   setup() {
     const router = useRouter()
     const route = useRoute()
+    const authStore = useAuthStore()
     const posts = ref([])
     const loading = ref(false)
     const hasMore = ref(true)
@@ -222,6 +240,12 @@ export default {
     const currentPostId = ref(null)
     const likeProcessingPosts = ref(new Set()) // 좋아요 처리 중인 포스트 ID들
 
+    // 현재 사용자 ID
+    const currentUserId = computed(() => {
+      console.log('authStore.user:', authStore.user)
+      console.log('authStore.isLoggedIn:', authStore.isLoggedIn)
+      return authStore.user?.userId || authStore.user?.id
+    })
 
     // 좋아요 처리 중인지 확인하는 함수
     const isLikeProcessing = (postId) => {
@@ -581,6 +605,26 @@ export default {
       router.push(`/search?searchType=HASHTAG&keyword=${encodeURIComponent(tag)}`)
     }
 
+    // 게시글 수정
+    const editPost = (postId) => {
+      router.push(`/diarys/edit/${postId}`)
+    }
+
+    // 게시글 삭제
+    const deletePost = async (postId) => {
+      if (confirm('정말로 이 게시글을 삭제하시겠습니까?')) {
+        try {
+          await postAPI.deletePost(postId)
+          alert('게시글이 삭제되었습니다.')
+          // 삭제된 게시글을 목록에서 제거
+          posts.value = posts.value.filter(post => post.id !== postId)
+        } catch (error) {
+          console.error('게시글 삭제 실패:', error)
+          alert('게시글 삭제에 실패했습니다.')
+        }
+      }
+    }
+
     // 신고하기
     const reportPost = (postId) => {
       if (confirm('이 게시글을 신고하시겠습니까?')) {
@@ -633,6 +677,10 @@ export default {
     })
 
     onMounted(async () => {
+      console.log('=== AllDiaryView onMounted ===')
+      console.log('authStore.user:', authStore.user)
+      console.log('authStore.isLoggedIn:', authStore.isLoggedIn)
+      
       await fetchPosts(0, false)
       // 포스트 로딩 완료 후 댓글 수 조회
       await fetchAllCommentsCount()
@@ -648,6 +696,7 @@ export default {
       loading,
       hasMore,
       scrollTrigger,
+      currentUserId,
       showLikesModal,
       likesList,
       isLoadingLikes,
@@ -658,6 +707,8 @@ export default {
       toggleLike,
       removeHashtags,
       searchByHashtag,
+      editPost,
+      deletePost,
       reportPost,
       previousImage,
       nextImage,
@@ -740,6 +791,7 @@ export default {
 
 .menu-item {
   padding: 8px 16px;
+  text-align: center;
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
