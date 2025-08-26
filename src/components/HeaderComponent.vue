@@ -331,7 +331,7 @@
       <!-- 로그인/회원가입 (비로그인 시) -->
       <template v-if="!isLoggedIn">
         <v-list-item 
-          @click="$router.push('/auth/login')"
+          @click="openAuthModal('login')"
           class="menu-item auth-item"
           density="compact"
         >
@@ -342,7 +342,7 @@
         </v-list-item>
 
         <v-list-item 
-          @click="$router.push('/auth/register')"
+          @click="openAuthModal('register')"
           class="menu-item auth-item"
           density="compact"
         >
@@ -356,25 +356,25 @@
 
     </v-list>
 
-    <!-- 사용자 정보 (하단) -->
-    <template v-slot:append>
-      <div v-if="isLoggedIn" class="user-section">
-        <v-divider class="mb-3"></v-divider>
-        <div class="user-info">
-          <v-avatar size="40" class="user-avatar" @click="goToRepresentativePet">
-            <v-img v-if="representativePet?.url" :src="representativePet.url" :alt="representativePet.name"></v-img>
-            <v-img v-else-if="user?.profileImage" :src="user.profileImage" alt="사용자 프로필"></v-img>
-            <v-icon v-else>mdi-account</v-icon>
-          </v-avatar>
-          <div class="user-details">
-            <div class="user-name">{{ user?.nickname || '사용자' }}</div>
-          </div>
-          <v-btn icon class="logout-btn" @click="handleLogout">
-            <v-icon color="#F87171">mdi-logout</v-icon>
-          </v-btn>
-        </div>
+<!-- 사용자 정보 (하단) -->
+<template v-slot:append>
+  <div v-if="isLoggedIn" class="user-section">
+    <v-divider class="mb-3"></v-divider>
+    <div class="user-info">
+      <v-avatar size="40" class="user-avatar" @click="goToRepresentativePet">
+        <v-img v-if="representativePet?.url" :src="representativePet.url" :alt="representativePet.name"></v-img>
+        <v-img v-else-if="user?.profileImage" :src="user.profileImage" alt="사용자 프로필"></v-img>
+        <v-icon v-else>mdi-account</v-icon>
+      </v-avatar>
+      <div class="user-details">
+        <div class="user-name">{{ user?.nickname || '사용자' }}</div>
       </div>
-    </template>
+      <v-btn icon class="logout-btn" @click="handleLogout">
+        <v-icon color="#F87171">mdi-logout</v-icon>
+      </v-btn>
+    </div>
+  </div>
+</template>
   </v-navigation-drawer>
 
   <!-- 알림 드로워 -->
@@ -382,7 +382,8 @@
 </template>
 
 <script>
-import { computed, ref } from 'vue'
+
+import { computed, ref, onMounted, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useAlarmStore } from '@/stores/alarm'
@@ -398,8 +399,15 @@ export default {
     const router = useRouter()
     const route = useRoute()
     const authStore = useAuthStore()
+
+    const petStore = usePetStore()
+    
+    // App.vue에서 제공하는 함수 inject
+    const openAuthModal = inject('openAuthModal')
+
     const alarmStore = useAlarmStore()
     const petStore = usePetStore()
+
     
     const isLoggedIn = computed(() => authStore.isAuthenticated)
     const user = computed(() => authStore.user)
@@ -463,6 +471,16 @@ export default {
     // 알림 드로워 상태
     const showNotificationDrawer = ref(false)
     
+    // 대표 반려동물 이미지 가져오기
+    const representativePetImage = computed(() => {
+      const mainPetId = authStore.myPageInfo?.mainPetId
+      if (!mainPetId) return null
+      
+      const representativePet = petStore.pets.find(pet => pet.id === mainPetId)
+      // 대표 펫에 이미지가 있을 때만 반환, 없으면 기본 아이콘 표시
+      return representativePet?.url || null
+    })
+    
     const handleLogout = () => {
       authStore.logout()
       router.push('/')
@@ -482,10 +500,25 @@ export default {
       router.push(path)
     }
     
+    // 컴포넌트 마운트시 펫 데이터 가져오기
+    onMounted(async () => {
+      if (authStore.isAuthenticated) {
+        try {
+          await petStore.fetchPets()
+        } catch (error) {
+          console.error('HeaderComponent: 펫 데이터 로드 실패:', error)
+        }
+      }
+    })
+    
     return {
       isLoggedIn,
       user,
       isAdmin,
+
+      representativePetImage,
+      handleLogout,
+      openAuthModal
       alarmStore,
       showNotificationDrawer,
       handleLogout,

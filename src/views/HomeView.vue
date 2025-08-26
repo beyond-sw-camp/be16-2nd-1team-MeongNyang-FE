@@ -30,7 +30,7 @@
               size="x-large"
               variant="elevated"
               class="hero-btn login-btn"
-              @click="$router.push('/auth/login')"
+              @click="openAuthModal('login')"
             >
               <v-icon class="me-3">mdi-login</v-icon>
               로그인
@@ -40,7 +40,7 @@
               size="x-large"
               variant="outlined"
               class="hero-btn register-btn"
-              @click="$router.push('/auth/register')"
+              @click="openAuthModal('register')"
             >
               <v-icon class="me-3">mdi-account-plus</v-icon>
               회원가입
@@ -145,6 +145,7 @@
         </div>
       </div>
     </section>
+
     </template>
 
     <!-- 로그인한 경우: 전체 일기 목록 -->
@@ -155,8 +156,9 @@
 </template>
 
 <script>
-import { computed, watch } from 'vue'
+import { computed, inject, onMounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { useRoute } from 'vue-router'
 import AllPostsView from '@/views/diary/AllDiaryView.vue'
 
 export default {
@@ -164,10 +166,81 @@ export default {
   components: {
     AllPostsView
   },
-  setup() {
-    const authStore = useAuthStore()
     
-    const isLoggedIn = computed(() => authStore.isAuthenticated)
+// OAuth 모달 자동 열기
+    onMounted(() => {
+      // OAuth 추가정보 모달
+      const { openOAuthExtra, provider, signupTicket, email } = route.query
+      if (openOAuthExtra === 'true' && provider && signupTicket && email) {
+        const openOAuthExtraModal = inject('openOAuthExtraModal')
+        if (openOAuthExtraModal) {
+          openOAuthExtraModal({
+            provider,
+            signupTicket,
+            email
+          })
+        }
+        // URL에서 쿼리 파라미터 제거
+        window.history.replaceState({}, document.title, '/')
+      }
+      
+      // 소셜 연동 모달
+      const { openOAuthLink, provider: linkProvider, email: linkEmail, linkTicket } = route.query
+      if (openOAuthLink === 'true' && linkProvider && linkEmail && linkTicket) {
+        const openOAuthLinkModal = inject('openOAuthLinkModal')
+        if (openOAuthLinkModal) {
+          openOAuthLinkModal({
+            provider: linkProvider,
+            email: linkEmail,
+            linkTicket
+          })
+        }
+        // URL에서 쿼리 파라미터 제거
+        window.history.replaceState({}, document.title, '/')
+      }
+      
+      // OAuth 추가정보 모달 (중복 제거)
+      const { openOAuthExtra: extraFlag, provider: extraProvider, email: extraEmail, signupTicket: extraTicket } = route.query
+      if (extraFlag === 'true' && extraProvider && extraEmail && extraTicket) {
+        const openOAuthExtraModal = inject('openOAuthExtraModal')
+        if (openOAuthExtraModal) {
+          openOAuthExtraModal({
+            provider: extraProvider,
+            email: extraEmail,
+            signupTicket: extraTicket
+          })
+        }
+        // URL에서 쿼리 파라미터 제거
+        window.history.replaceState({}, document.title, '/')
+      }
+      
+      // 소셜 계정 중복 모달
+      const { showSocialDuplicate, duplicateEmail, duplicateProvider } = route.query
+      if (showSocialDuplicate === 'true' && duplicateEmail && duplicateProvider) {
+        const openSocialDuplicateModal = inject('openSocialDuplicateModal')
+        if (openSocialDuplicateModal) {
+          openSocialDuplicateModal({
+            email: duplicateEmail,
+            provider: duplicateProvider
+          })
+        }
+        // URL에서 쿼리 파라미터 제거
+        window.history.replaceState({}, document.title, '/')
+      }
+      
+      // 삭제된 계정 모달
+      const { showDeletedAccount, deletedEmail } = route.query
+      if (showDeletedAccount === 'true' && deletedEmail) {
+        const openDeletedAccountModal = inject('openDeletedAccountModal')
+        if (openDeletedAccountModal) {
+          openDeletedAccountModal({
+            email: deletedEmail
+          })
+        }
+        // URL에서 쿼리 파라미터 제거
+        window.history.replaceState({}, document.title, '/')
+      }
+    })
     
     // 로그인 상태 변화를 감지하기 위해 watch 추가
     watch(() => authStore.isAuthenticated, (newValue) => {
@@ -175,7 +248,8 @@ export default {
     }, { immediate: true })
     
     return {
-      isLoggedIn
+      isLoggedIn,
+      openAuthModal
     }
   }
 }

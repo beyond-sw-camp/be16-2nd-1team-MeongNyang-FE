@@ -10,6 +10,9 @@ import axios from 'axios'
 import { useAuthStore } from './stores/auth'
 import SseService from './services/sse'
 
+// ✅ axios를 전역 객체로 등록
+window.axios = axios
+
 // axios interceptor 설정
 axios.interceptors.request.use(
   config => {
@@ -30,16 +33,20 @@ axios.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       try {
         const refreshToken = localStorage.getItem('refreshToken')
-        const response = await axios.post(`${process.env.VUE_APP_API_BASE_URL}/member/refresh-at`, { refreshToken })
+        
+        const response = await axios.post(`${process.env.VUE_APP_API_BASE_URL}/users/token/refresh`, {}, {
+          headers: { 'X-Refresh-Token': refreshToken }
+        })
+        
         localStorage.setItem("accessToken", response.data.data.accessToken)
-
         console.log("갱신성공")
-        window.location.reload()
+        
+        // 페이지 새로고침 대신 원래 요청 재시도
+        return axios(error.config)
       } catch (e) {
         console.log("갱신 실패", e)
-
         localStorage.clear()
-        window.location.href = "/member/login"
+        window.location.href = "/users/login"
       }
     }
     return Promise.reject(error)
@@ -54,14 +61,37 @@ app.config.errorHandler = (error, instance, info) => {
   console.error('에러 정보:', info)
   console.error('컴포넌트:', instance)
   
-  // 사용자에게 에러 알림 (간단한 alert로 대체)
-  alert('오류가 발생했습니다. 페이지를 새로고침해주세요.')
+  // 모달 닫기나 일반적인 UI 동작에서 발생하는 에러는 무시
+  if (error && typeof error === 'string' && error.includes('modal')) {
+    console.log('모달 관련 에러 무시:', error)
+    return
+  }
+  
+  // 실제 애플리케이션 에러만 사용자에게 알림
+  if (error && (error.message || error.stack)) {
+    console.error('실제 애플리케이션 에러:', error)
+    // 사용자에게 에러 알림 (간단한 alert로 대체)
+    alert('오류가 발생했습니다. 페이지를 새로고침해주세요.')
+  }
 }
 
 // 처리되지 않은 Promise 에러 핸들러
 window.addEventListener('unhandledrejection', (event) => {
   console.error('처리되지 않은 Promise 에러:', event.reason)
-  alert('오류가 발생했습니다. 페이지를 새로고침해주세요.')
+  
+  // 모달 관련 Promise 에러는 무시
+  if (event.reason && typeof event.reason === 'string' && event.reason.includes('modal')) {
+    console.log('모달 관련 Promise 에러 무시:', event.reason)
+    event.preventDefault()
+    return
+  }
+  
+  // 실제 애플리케이션 Promise 에러만 사용자에게 알림
+  if (event.reason && (event.reason.message || event.reason.stack)) {
+    console.error('실제 애플리케이션 Promise 에러:', event.reason)
+    alert('오류가 발생했습니다. 페이지를 새로고침해주세요.')
+  }
+  
   event.preventDefault()
 })
 
