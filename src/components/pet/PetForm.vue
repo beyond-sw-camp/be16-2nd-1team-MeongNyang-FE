@@ -5,15 +5,14 @@
       <div class="image-upload-section">
         <div class="image-container">
           <v-avatar
-            :size="140"
+            :size="120"
             class="pet-avatar"
-            color="grey-lighten-3"
-            :key="`avatar-${imageRemoved}-${previewImage ? 'preview' : 'no-preview'}-${isEdit ? 'edit' : 'new'}`"
+            color="grey-lighten-4"
           >
             <!-- 이미지 제거 상태이거나 이미지가 없는 경우: 기본 아이콘 표시 -->
             <v-icon 
               v-if="imageRemoved || !previewImage" 
-              :size="64" 
+              :size="48" 
               :color="getSpeciesIconColor()" 
               :icon="getSpeciesIcon()" 
             />
@@ -25,43 +24,32 @@
               cover
               :key="`preview-${previewImage}`"
             />
-            <!-- 예상치 못한 상태: 디버그용 -->
-            <div v-else class="debug-state">
-              <v-icon size="32" color="warning">mdi-alert</v-icon>
-              <p>디버그: 예상치 못한 상태</p>
-              <p>imageRemoved: {{ imageRemoved }}</p>
-              <p>previewImage: {{ previewImage }}</p>
-            </div>
           </v-avatar>
           
           <div class="image-actions">
             <v-btn
-              color="primary"
               variant="outlined"
               prepend-icon="mdi-camera"
               @click="handleImageClick"
-              class="mm-btn"
-              rounded="xl"
+              class="upload-btn"
+              rounded="lg"
             >
               {{ previewImage ? '이미지 변경' : '이미지 추가' }}
             </v-btn>
             
             <v-btn
               v-if="previewImage && !imageRemoved"
-              color="error"
-              variant="outlined"
+              variant="text"
               size="small"
               @click="clearImage"
-              class="mm-btn image-remove-btn"
-              rounded="lg"
-              prepend-icon="mdi-delete"
+              class="remove-btn"
+              color="error"
             >
-              이미지 제거
+              제거
             </v-btn>
           </div>
           
           <div class="image-hint">
-            <v-icon size="16" color="info">mdi-information</v-icon>
             <span>이미지 크기는 5MB 이하 권장</span>
           </div>
           
@@ -77,54 +65,46 @@
 
       <!-- 입력 필드 섹션 -->
       <div class="form-fields-section">
-        <div class="mm-grid mm-grid-cols-2">
+        <div class="form-grid">
           <!-- 반려동물 이름 -->
           <div class="form-field">
-            <label class="field-label">
-              <v-icon size="20" color="primary">mdi-account</v-icon>
-              <span>반려동물 이름 *</span>
-            </label>
+            <label class="field-label">반려동물 이름 *</label>
             <v-text-field
               v-model="petData.name"
               placeholder="반려동물 이름을 입력하세요"
               :rules="[v => !!v || '반려동물 이름은 필수입니다']"
               required
               variant="outlined"
-              rounded="xl"
-              class="mm-input"
+              rounded="lg"
+              class="form-input"
               hide-details="auto"
+              density="comfortable"
             />
           </div>
 
           <!-- 반려동물 종류 -->
           <div class="form-field">
-            <label class="field-label">
-              <v-icon size="20" color="secondary">mdi-magnify</v-icon>
-              <span>반려동물 종류 *</span>
-            </label>
+            <label class="field-label">반려동물 종류 *</label>
             <v-autocomplete
               v-model="petData.speciesId"
               :items="speciesOptions"
               item-title="species"
               item-value="speciesId"
-              placeholder="종류를 검색하세요 (예: 토이푸들, 먼치킨)"
+              placeholder="종류를 검색하세요"
               :rules="[v => !!v || '반려동물 종류는 필수입니다']"
               required
               variant="outlined"
-              rounded="xl"
-              class="mm-input"
+              rounded="lg"
+              class="form-input"
               hide-details="auto"
-              prepend-inner-icon="mdi-paw"
+              density="comfortable"
               @update:model-value="handleSpeciesIdChange"
             />
           </div>
 
           <!-- 성별 -->
           <div class="form-field">
-            <label class="field-label">
-              <v-icon size="20" color="pink">mdi-gender-male-female</v-icon>
-              <span>성별</span>
-            </label>
+            <label class="field-label">성별</label>
             <v-select
               v-model="petData.gender"
               :items="genderOptions"
@@ -132,52 +112,47 @@
               item-value="value"
               placeholder="성별을 선택하세요"
               variant="outlined"
-              rounded="xl"
-              class="mm-input"
+              rounded="lg"
+              class="form-input"
               hide-details="auto"
+              density="comfortable"
             />
           </div>
 
           <!-- 나이 -->
           <div class="form-field">
-            <label class="field-label">
-              <v-icon size="20" color="orange">mdi-cake-variant</v-icon>
-              <span>나이</span>
-            </label>
+            <label class="field-label">나이</label>
             <v-text-field
               v-model="petData.age"
               type="number"
-              :placeholder="petData.birthday ? '생일로 자동 계산됨' : '나이를 입력하세요 (0살부터 가능)'"
+              :placeholder="petData.birthday ? '생일로 자동 계산됨' : '나이를 입력하세요'"
               variant="outlined"
-              rounded="xl"
-              class="mm-input"
+              rounded="lg"
+              class="form-input"
               hide-details="auto"
+              density="comfortable"
               min="0"
               max="30"
               :readonly="!!petData.birthday"
               :disabled="!!petData.birthday"
             />
-            <div class="field-hint">
-              <v-icon size="16" color="info">mdi-information</v-icon>
-              <span v-if="petData.birthday">생일이 설정되어 나이가 자동 계산됩니다. 나이를 변경하려면 생일을 수정하세요.</span>
-              <span v-else>나이를 직접 입력하거나 생일을 입력하여 자동 계산할 수 있습니다 (0살부터 등록 가능)</span>
+            <div class="field-hint" v-if="petData.birthday">
+              <span>생일이 설정되어 나이가 자동 계산됩니다</span>
             </div>
           </div>
 
           <!-- 몸무게 -->
           <div class="form-field">
-            <label class="field-label">
-              <v-icon size="20" color="teal">mdi-weight-kilogram</v-icon>
-              <span>몸무게 (kg)</span>
-            </label>
+            <label class="field-label">몸무게 (kg)</label>
             <v-text-field
               v-model="petData.weight"
               type="number"
               placeholder="몸무게를 입력하세요"
               variant="outlined"
-              rounded="xl"
-              class="mm-input"
+              rounded="lg"
+              class="form-input"
               hide-details="auto"
+              density="comfortable"
               min="0"
               max="100"
               step="0.1"
@@ -186,10 +161,7 @@
 
           <!-- 생일 -->
           <div class="form-field">
-            <label class="field-label">
-              <v-icon size="20" color="indigo">mdi-cake</v-icon>
-              <span>생일 (선택사항)</span>
-            </label>
+            <label class="field-label">생일 (선택사항)</label>
             <div class="birthday-input-container">
               <v-menu
                 v-model="showBirthdayPicker"
@@ -205,9 +177,10 @@
                     readonly
                     v-bind="props"
                     variant="outlined"
-                    rounded="xl"
-                    class="mm-input"
+                    rounded="lg"
+                    class="form-input"
                     hide-details="auto"
+                    density="comfortable"
                     prepend-inner-icon="mdi-calendar"
                   />
                 </template>
@@ -233,33 +206,29 @@
               />
             </div>
             <div class="field-hint">
-              <v-icon size="16" color="info">mdi-information</v-icon>
-              <span>생일을 입력하면 나이가 자동으로 계산됩니다 (선택사항)</span>
+              <span>생일을 입력하면 나이가 자동으로 계산됩니다</span>
             </div>
           </div>
+        </div>
 
-          <!-- 소개글 -->
-          <div class="form-field">
-            <label class="field-label">
-              <v-icon size="20" color="purple">mdi-text</v-icon>
-              <span>소개글 (선택사항)</span>
-            </label>
-            <v-textarea
-              v-model="petData.introduce"
-              placeholder="반려동물을 소개해주세요"
-              variant="outlined"
-              rounded="xl"
-              class="mm-input"
-              hide-details="auto"
-              rows="3"
-              max-rows="5"
-              counter="500"
-              maxlength="500"
-            />
-            <div class="field-hint">
-              <v-icon size="16" color="info">mdi-information</v-icon>
-              <span>반려동물의 성격이나 특징을 자유롭게 작성해주세요 (최대 500자)</span>
-            </div>
+        <!-- 소개글 -->
+        <div class="form-field full-width">
+          <label class="field-label">소개글 (선택사항)</label>
+          <v-textarea
+            v-model="petData.introduce"
+            placeholder="반려동물을 소개해주세요"
+            variant="outlined"
+            rounded="lg"
+            class="form-input"
+            hide-details="auto"
+            rows="3"
+            max-rows="5"
+            counter="500"
+            maxlength="500"
+            density="comfortable"
+          />
+          <div class="field-hint">
+            <span>반려동물의 성격이나 특징을 자유롭게 작성해주세요 (최대 500자)</span>
           </div>
         </div>
       </div>
@@ -268,22 +237,22 @@
       <div class="form-actions">
         <v-btn
           variant="outlined"
-          color="secondary"
           @click="$emit('close')"
-          class="mm-btn"
+          class="cancel-btn"
+          rounded="lg"
           size="large"
-          rounded="xl"
         >
           취소
         </v-btn>
+        
         <v-btn
           type="submit"
           color="primary"
           :loading="submitting"
           :disabled="!isValid || submitting"
-          class="mm-btn mm-btn-primary"
+          class="submit-btn"
+          rounded="lg"
           size="large"
-          rounded="xl"
         >
           {{ isEdit ? '수정' : '등록' }}
         </v-btn>
@@ -882,107 +851,135 @@ export default {
 .pet-form-container {
   max-width: 800px;
   margin: 0 auto;
-  background: var(--mm-surface);
-  border-radius: var(--mm-radius-2xl);
-  box-shadow: var(--mm-shadow-xl);
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
   overflow: hidden;
 }
 
 /* 이미지 업로드 섹션 */
 .image-upload-section {
+  padding: 40px 32px 32px;
   text-align: center;
-  padding: var(--mm-space-8);
-  background: linear-gradient(135deg, var(--mm-surface-variant), var(--mm-border-light));
-  border-bottom: 1px solid var(--mm-border);
+  background: #ffffff;
 }
 
 .image-container {
-  position: relative;
-  display: inline-block;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
 }
 
 .pet-avatar {
-  border: 4px solid var(--mm-border);
-  box-shadow: var(--mm-shadow-lg);
-  transition: all var(--mm-transition-normal);
+  border: 3px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
 }
 
 .pet-avatar:hover {
-  transform: scale(1.05);
-  box-shadow: var(--mm-shadow-xl);
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .image-actions {
-  margin-top: var(--mm-space-4);
   display: flex;
-  gap: var(--mm-space-3);
+  gap: 12px;
   justify-content: center;
   flex-wrap: wrap;
 }
 
+.upload-btn {
+  border-color: #d1d5db;
+  color: #374151;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.upload-btn:hover {
+  border-color: #9ca3af;
+  background-color: #f9fafb;
+}
+
+.remove-btn {
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.remove-btn:hover {
+  background-color: #fef2f2;
+}
+
 .image-hint {
-  margin-top: var(--mm-space-4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--mm-space-2);
-  color: var(--mm-on-surface-variant);
-  font-size: var(--mm-text-sm);
-  font-weight: var(--mm-font-weight-medium);
+  color: #9ca3af;
+  font-size: 14px;
+  font-weight: 400;
 }
 
 /* 폼 필드 섹션 */
 .form-fields-section {
-  padding: var(--mm-space-8);
+  padding: 0 32px 32px;
+  background: #ffffff;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  margin-bottom: 24px;
 }
 
 .form-field {
-  margin-bottom: var(--mm-space-6);
   width: 100%;
 }
 
-.form-field .mm-input {
-  width: 100%;
+.form-field.full-width {
+  grid-column: 1 / -1;
 }
 
 .field-label {
-  display: flex;
-  align-items: center;
-  gap: var(--mm-space-3);
-  margin-bottom: var(--mm-space-3);
-  font-size: var(--mm-text-lg);
-  font-weight: var(--mm-font-weight-semibold);
-  color: var(--mm-on-surface);
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  line-height: 1.4;
+}
+
+.form-input {
+  width: 100%;
+}
+
+.form-input :deep(.v-field) {
+  border-radius: 12px;
+  background-color: #ffffff;
+}
+
+.form-input :deep(.v-field__outline) {
+  border-radius: 12px;
+  border-color: #d1d5db;
+}
+
+.form-input :deep(.v-field--focused .v-field__outline) {
+  border-color: #3b82f6;
+  border-width: 2px;
+}
+
+.form-input :deep(.v-field__input) {
+  color: #111827;
+  font-size: 16px;
+}
+
+.form-input :deep(.v-field__input::placeholder) {
+  color: #9ca3af;
 }
 
 .field-hint {
-  margin-top: var(--mm-space-2);
-  display: flex;
-  align-items: center;
-  gap: var(--mm-space-2);
-  color: var(--mm-on-surface-variant);
-  font-size: var(--mm-text-sm);
-  font-weight: var(--mm-font-weight-medium);
-}
-
-/* 입력 필드 스타일 */
-.mm-input {
-  width: 100%;
-}
-
-.mm-input :deep(.v-field) {
-  border-radius: var(--mm-radius-xl);
-  width: 100%;
-}
-
-.mm-input :deep(.v-field__outline) {
-  border-radius: var(--mm-radius-xl);
-  width: 100%;
-}
-
-.mm-input :deep(.v-field--focused .v-field__outline) {
-  border-color: var(--v-theme-primary);
-  border-width: 2px;
+  margin-top: 6px;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.4;
 }
 
 /* 생일 입력 컨테이너 */
@@ -990,10 +987,9 @@ export default {
   position: relative;
   display: flex;
   align-items: center;
-  gap: var(--mm-space-2);
 }
 
-.birthday-input-container .mm-input {
+.birthday-input-container .form-input {
   flex: 1;
 }
 
@@ -1007,144 +1003,160 @@ export default {
 
 /* 생일 선택기 */
 .birthday-picker {
-  border-radius: var(--mm-radius-xl);
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: var(--mm-shadow-xl);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
 }
 
 /* 액션 버튼 */
 .form-actions {
   display: flex;
-  justify-content: flex-end;
-  gap: var(--mm-space-4);
-  padding: var(--mm-space-6) var(--mm-space-8);
-  background: var(--mm-surface-variant);
-  border-top: 1px solid var(--mm-border);
+  justify-content: center;
+  gap: 16px;
+  padding: 24px 32px;
+  background: #f8fafc;
+  border-top: 1px solid #e5e7eb;
+}
+
+.cancel-btn {
+  min-width: 120px;
+  height: 48px;
+  border-color: #d1d5db;
+  color: #374151;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.cancel-btn:hover {
+  border-color: #9ca3af;
+  background-color: #f9fafb;
+}
+
+.submit-btn {
+  min-width: 120px;
+  height: 48px;
+  background-color: #3b82f6;
+  color: white;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.submit-btn:hover {
+  background-color: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.submit-btn:disabled {
+  background-color: #9ca3af;
+  transform: none;
+  box-shadow: none;
 }
 
 /* 반응형 디자인 */
-@media (max-width: 960px) {
-  .pet-form-container {
-    margin: var(--mm-space-4);
-  }
-  
-  .image-upload-section {
-    padding: var(--mm-space-6);
-  }
-  
-  .form-fields-section {
-    padding: var(--mm-space-6);
-  }
-  
-  .form-actions {
-    padding: var(--mm-space-4) var(--mm-space-6);
-  }
-}
-
 @media (max-width: 768px) {
   .pet-form-container {
-    margin: var(--mm-space-3);
+    margin: 16px;
+    border-radius: 12px;
   }
   
   .image-upload-section {
-    padding: var(--mm-space-4);
+    padding: 32px 24px 24px;
   }
   
   .image-actions {
     flex-direction: column;
     align-items: center;
-    gap: var(--mm-space-2);
+    gap: 8px;
   }
   
-  .form-fields-section .mm-grid {
+  .form-fields-section {
+    padding: 0 24px 24px;
+  }
+  
+  .form-grid {
     grid-template-columns: 1fr;
-  }
-  
-  .form-field {
-    margin-bottom: var(--mm-space-4);
-  }
-  
-  .field-label {
-    font-size: var(--mm-text-base);
-    gap: var(--mm-space-2);
+    gap: 20px;
   }
   
   .form-actions {
     flex-direction: column;
-    gap: var(--mm-space-3);
-    padding: var(--mm-space-4);
+    gap: 12px;
+    padding: 20px 24px;
   }
   
-  .form-actions .mm-btn {
+  .cancel-btn,
+  .submit-btn {
     width: 100%;
+    min-width: auto;
   }
-}
-
-/* 이미지 제거 버튼 특별 스타일 */
-.image-remove-btn {
-  border-color: var(--v-theme-error) !important;
-  color: var(--v-theme-error) !important;
-  font-weight: 600;
-  transition: all 0.2s ease;
-}
-
-.image-remove-btn:hover {
-  background-color: var(--v-theme-error) !important;
-  color: white !important;
-  transform: scale(1.05);
 }
 
 @media (max-width: 480px) {
   .pet-form-container {
-    margin: var(--mm-space-2);
-    border-radius: var(--mm-radius-xl);
+    margin: 8px;
+    border-radius: 8px;
   }
   
   .image-upload-section {
-    padding: var(--mm-space-3);
-  }
-  
-  .pet-avatar {
-    width: 120px !important;
-    height: 120px !important;
-  }
-  
-  .image-hint {
-    font-size: var(--mm-text-xs);
-    gap: var(--mm-space-1);
+    padding: 24px 20px 20px;
   }
   
   .form-fields-section {
-    padding: var(--mm-space-4);
-  }
-  
-  .field-label {
-    font-size: var(--mm-text-sm);
-    margin-bottom: var(--mm-space-2);
-  }
-  
-  .field-hint {
-    font-size: var(--mm-text-xs);
-    gap: var(--mm-space-1);
+    padding: 0 20px 20px;
   }
   
   .form-actions {
-    padding: var(--mm-space-3);
+    padding: 16px 20px;
   }
 }
 
-.debug-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 1rem;
-  font-size: 0.8rem;
-  color: #666;
+/* 닫기 버튼 스타일 */
+.close-btn {
+  color: #6b7280;
+  transition: all 0.2s ease;
+  padding: 8px;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 50%;
 }
 
-.debug-state p {
-  margin: 0.2rem 0;
+.close-btn:hover {
+  color: #374151;
+  background: rgba(107, 114, 128, 0.1) !important;
+}
+
+.close-btn::before {
+  background: transparent !important;
+}
+
+.close-btn::after {
+  background: transparent !important;
+}
+
+.close-btn .v-btn__content {
+  background: transparent !important;
+}
+
+.close-btn .v-btn__overlay {
+  background: transparent !important;
+  opacity: 0 !important;
+}
+
+.close-btn:hover .v-btn__overlay {
+  background: transparent !important;
+  opacity: 0 !important;
+}
+
+.close-btn:focus .v-btn__overlay {
+  background: transparent !important;
+  opacity: 0 !important;
+}
+
+.close-btn:active .v-btn__overlay {
+  background: transparent !important;
+  opacity: 0 !important;
 }
 </style>
+

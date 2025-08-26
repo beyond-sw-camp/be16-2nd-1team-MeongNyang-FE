@@ -111,31 +111,22 @@
           class="pet-form-dialog"
           @click:outside="closeForm"
         >
-      <v-card class="pet-form-card" rounded="xl">
-        <v-card-title class="form-header">
-          <div class="form-title">
-            <v-icon size="32" color="primary" class="mr-3">mdi-paw</v-icon>
-            <span class="text-h4">{{ editingPet ? '반려동물 수정' : '새 반려동물 등록' }}</span>
-          </div>
-          <v-btn
-            icon="mdi-close"
-            variant="text"
-            size="large"
-            @click="closeForm"
-            class="close-btn"
-          />
-        </v-card-title>
-
-        <v-card-text class="form-content">
-          <PetForm
-            :pet="editingPet"
-            :is-edit="!!editingPet"
-            @close="closeForm"
-            @success="handleFormSuccess"
-          />
-        </v-card-text>
-      </v-card>
-    </v-dialog>
+          <v-card class="pet-form-card" rounded="xl">
+            <v-card-title class="form-header">
+              <div class="form-title">
+                <span class="text-h4">{{ editingPet ? '반려동물 수정' : '새 반려동물 등록' }}</span>
+              </div>
+            </v-card-title>
+            <v-card-text class="form-content">
+              <PetForm
+                :pet="editingPet"
+                :is-edit="!!editingPet"
+                @close="closeForm"
+                @success="handleFormSuccess"
+              />
+            </v-card-text>
+          </v-card>
+        </v-dialog>
 
     <!-- 삭제 확인 모달 -->
     <ModalDialog
@@ -734,4 +725,27 @@ export default {
 }
 
 /* 🧹 기존 스타일 정리 완료 - 모던한 디자인만 남김 */
+
+/* 📝 폼 헤더 스타일 */
+.form-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px 24px 16px;
+  border-bottom: none;
+  background: transparent;
+}
+
+.form-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.form-title .text-h4 {
+  color: #374151;
+  font-weight: 600;
+  margin: 0;
+}
 </style>

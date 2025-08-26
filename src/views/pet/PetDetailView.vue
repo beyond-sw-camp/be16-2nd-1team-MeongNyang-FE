@@ -187,19 +187,9 @@
       <v-card class="edit-card" elevation="8" rounded="xl">
         <v-card-title class="edit-header">
           <div class="edit-title">
-            <v-icon size="32" color="primary" class="mr-3">mdi-pencil</v-icon>
             <span class="text-h4">{{ pet.name }} 수정</span>
           </div>
-          <v-btn
-            icon="mdi-close"
-            variant="text"
-            size="large"
-            @click="exitEditMode"
-            title="수정 취소"
-            class="close-btn"
-          />
         </v-card-title>
-
         <v-card-text class="edit-content">
           <PetForm
             :pet="pet"
@@ -826,19 +816,24 @@ onMounted(async () => {
 
 .edit-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  padding: 24px 24px 0;
-  gap: 16px;
+  padding: 24px 24px 16px;
+  border-bottom: none;
+  background: transparent;
 }
 
 .edit-title {
   display: flex;
   align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
-.edit-title .v-icon {
-  margin-right: 8px;
+.edit-title .text-h4 {
+  color: #374151;
+  font-weight: 600;
+  margin: 0;
 }
 
 .close-btn {
