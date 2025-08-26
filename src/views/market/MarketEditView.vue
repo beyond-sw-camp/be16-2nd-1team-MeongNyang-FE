@@ -1,17 +1,2262 @@
 <template>
-  <v-container>
-    <v-card>
-      <v-card-title>게시글 수정</v-card-title>
-      <v-card-text>
-        <p>마켓플레이스 게시글 수정 페이지입니다.</p>
-        <v-btn @click="$router.push('/market')">목록으로 돌아가기</v-btn>
-      </v-card-text>
-    </v-card>
+  <div class="market-create-page">
+    <!-- 메인 컨테이너 -->
+    <v-container class="create-container">
+      <!-- 폼 컨테이너 -->
+      <!-- 목록으로 버튼과 삭제하기 버튼 -->
+      <div class="back-btn-wrapper">
+                 <button type="button" @click="goBackToDetail" class="back-btn">
+           <v-icon icon="mdi-arrow-left" size="20" />
+           뒤로가기
+         </button>
+         
+         <!-- 삭제하기 버튼 -->
+         <button type="button" @click="confirmDelete" class="delete-btn">
+           <v-icon icon="mdi-delete" size="20" />
+           삭제하기
+         </button>
+      </div>
+
+      <div class="form-container">
+        <v-form ref="form" v-model="valid" @submit.prevent="submitForm">
+                     <!-- 상품 이미지 섹션 -->
+           <div class="form-section">
+             <div class="section-header">
+               <h3 class="section-title">상품 이미지</h3>
+             </div>
+             
+             <div class="image-upload-section">
+               <!-- 이미지 에러 메시지 -->
+               <div v-if="imageError" class="image-error-message">
+                 <v-icon icon="mdi-alert-circle" size="20" color="#f44336" />
+                 <span>{{ imageError }}</span>
+                 <button type="button" @click="clearImageError" class="error-close-btn">✕</button>
+               </div>
+               
+               <!-- 메인 업로드 영역 -->
+               <div class="main-upload-area" :class="{ 'has-images': imageUrls.length > 0 }">
+                 <!-- 파일 입력 -->
+                 <input
+                   ref="fileInput"
+                   type="file"
+                   multiple
+                   accept="image/*"
+                   class="hidden-file-input"
+                   @change="handleImageChange"
+                 />
+                 
+                 <!-- 이미지가 없을 때 업로드 안내 -->
+                 <div v-if="imageCount === 0" class="upload-content" @click="triggerFileInput">
+                   <div class="upload-icon">
+                     <v-icon icon="mdi-cloud-upload" size="48" color="white" />
+                   </div>
+                   <h4 class="upload-title">사진을 업로드하세요</h4>
+                   <p class="upload-subtitle">최대 10장까지 등록 가능합니다</p>
+                   <div class="upload-hint">
+                     <v-icon icon="mdi-information" size="16" color="#7f8c8d" />
+                     <span>클릭하여 이미지 선택</span>
+                   </div>
+                 </div>
+                 
+                                                       <!-- 이미지가 있을 때 슬라이더 -->
+                  <div v-else class="image-slider-container">
+                    <!-- 이미지 슬라이더 -->
+                    <div class="image-slider">
+                      <div 
+                        v-for="(url, index) in imageUrls" 
+                        :key="index"
+                        class="slide"
+                        :class="{ 'active': index === currentSlide }"
+                        :style="{ transform: `translateX(${(index - currentSlide) * 100}%)` }"
+                      >
+                        <img
+                          :src="url"
+                          class="slide-image"
+                          alt="상품 이미지"
+                        />
+                        
+                        <!-- 대표 이미지 표시 -->
+                        <div class="main-image-checkbox" @click.stop="setMainImage(index)">
+                          <div class="checkbox" :class="{ 'checked': index === mainImageIndex }">
+                            <span v-if="index === mainImageIndex" class="check-mark">✓</span>
+                          </div>
+                        </div>
+                        
+                        <!-- 이미지 제거 버튼 -->
+                        <button
+                          type="button"
+                          @click.stop="removeImage(index)"
+                          class="remove-image-btn"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <!-- 네비게이션 버튼 -->
+                    <div class="slider-nav">
+                      <button
+                        type="button"
+                        @click="previousSlide"
+                        :disabled="currentSlide === 0"
+                        class="nav-btn prev-btn"
+                      >
+                        <v-icon icon="mdi-chevron-left" size="24" />
+                      </button>
+                      
+                      <div class="slide-indicators">
+                        <div
+                          v-for="(url, index) in imageUrls"
+                          :key="index"
+                          class="indicator"
+                          :class="{ 'active': index === currentSlide }"
+                          @click="goToSlide(index)"
+                        ></div>
+                      </div>
+                      
+                      <button
+                        type="button"
+                        @click="nextSlide"
+                        :disabled="currentSlide === imageUrls.length - 1"
+                        class="nav-btn next-btn"
+                      >
+                        <v-icon icon="mdi-chevron-right" size="24" />
+                      </button>
+                    </div>
+                  </div>
+               </div>
+             </div>
+           </div>
+
+          <!-- 기본 정보 섹션 -->
+          <div class="form-section">
+            <div class="section-header">
+              <h3 class="section-title">기본 정보</h3>
+            </div>
+            
+            <div class="form-grid">
+              <div class="form-field">
+                <label class="field-label">상품명 *</label>
+                <input
+                  v-model="formTitle"
+                  type="text"
+                  placeholder="상품명을 입력해주세요"
+                  class="form-input"
+                  required
+                  @input="handleTitleInput"
+                  @change="handleTitleChange"
+                />
+              </div>
+
+              <div class="form-field">
+                <label class="field-label">카테고리 *</label>
+                <select
+                  v-model="formCategory"
+                  class="form-select"
+                  required
+                  @change="handleCategoryChange"
+                >
+                  <option
+                    v-for="category in categoryOptions"
+                    :key="category.value"
+                    :value="category.value"
+                  >
+                    {{ category.label }}
+                  </option>
+                </select>
+                
+                <!-- 카테고리가 선택된 경우 -->
+                <div v-if="formCategory && formCategory !== null && formCategory !== ''" class="category-selected">
+                  <div class="selected-category-content">
+                    <v-icon icon="mdi-check-circle" size="20" color="#E87D7D" />
+                    <span class="selected-text">선택된 카테고리: <strong>{{ categoryOptions.find(c => c.value === formCategory)?.label }}</strong></span>
+                  </div>
+                </div>
+                
+                <!-- 카테고리가 선택되지 않은 경우 -->
+                <div v-if="!formCategory || formCategory === null || formCategory === ''" class="category-hint">
+                  <v-icon icon="mdi-information" size="16" color="#6c757d" />
+                  <span>카테고리를 선택해주세요</span>
+                </div>
+              </div>
+
+              <div class="form-field">
+                <label class="field-label">가격 *</label>
+                <div class="price-input-container">
+                  <input
+                    v-model="formPrice"
+                    type="number"
+                    placeholder="가격을 입력해주세요"
+                    class="form-input price-input"
+                    required
+                    min="0"
+                    step="1"
+                    @input="handlePriceInput"
+                    @change="handlePriceChange"
+                  />
+                  <span class="price-unit">원</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 상세 설명 섹션 -->
+          <div class="form-section">
+            <div class="section-header">
+              <h3 class="section-title">상세 설명</h3>
+            </div>
+            
+            <div class="description-section">
+              <textarea
+                v-model="formDescription"
+                placeholder="상품의 상태, 특징, 거래 조건 등을 자세히 설명해주세요..."
+                class="form-textarea"
+                rows="6"
+                required
+                @input="handleDescriptionInput"
+                @change="handleDescriptionChange"
+              ></textarea>
+              
+              <div class="description-hint">
+                <v-icon icon="mdi-lightbulb" size="16" color="#E87D7D" />
+                <span>구체적이고 정확한 정보를 제공하면 더 빠른 거래가 가능합니다</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 지역 정보 섹션 -->
+          <div class="form-section">
+            <div class="section-header">
+              <h3 class="section-title">거래 지역</h3>
+            </div>
+            
+            <div class="region-section">
+              <!-- 지도 기반 위치 선택 -->
+              <div class="map-selection-section">
+                <div class="map-header">
+                  <div class="map-icon">
+                    <v-icon icon="mdi-map-marker-radius" size="28" color="#E87D7D" />
+                  </div>
+                  <div class="map-title-content">
+                    <h4 class="section-subtitle">지도에서 거래 장소 선택</h4>
+                    <p class="map-description">지도를 클릭하거나 핀을 드래그하여 정확한 거래 장소를 지정하세요</p>
+                  </div>
+                </div>
+                
+                <div class="map-container">
+                  <div class="map-wrapper">
+                    <div id="location-map" class="location-map"></div>
+                    <div v-if="!mapLoaded" class="map-overlay">
+                      <div class="map-status">
+                        <v-icon icon="mdi-crosshairs-gps" size="16" color="#E87D7D" />
+                        <span>지도를 클릭하거나 핀을 드래그하여 위치를 설정하세요</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="map-controls">
+                                         <button
+                       type="button"
+                       @click="resetMapLocation"
+                       class="map-btn secondary-btn"
+                     >
+                       <v-icon icon="mdi-refresh" size="18" />
+                       위치 초기화
+                     </button>
+                  </div>
+                </div>
+                
+                <!-- 선택된 위치 정보 -->
+                <div v-if="selectedLocation" class="location-info">
+                  <div class="info-header">
+                    <div class="info-icon">
+                      <v-icon icon="mdi-map-marker-check" size="20" color="white" />
+                    </div>
+                    <span>선택된 거래 장소</span>
+                  </div>
+                  <div class="info-content">
+                    <div class="address-display">
+                      <v-icon icon="mdi-map-marker" size="16" color="#E87D7D" />
+                      <p class="address-text">{{ selectedLocation.address }}</p>
+                    </div>
+                    <div class="coordinate-display">
+                      <v-icon icon="mdi-crosshairs-gps" size="16" color="#7f8c8d" />
+                      <p class="coordinate-text">
+                        위도: {{ selectedLocation.lat.toFixed(6) }}, 
+                        경도: {{ selectedLocation.lng.toFixed(6) }}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="map-hint">
+                  <div class="hint-icon">
+                    <v-icon icon="mdi-lightbulb-on" size="18" color="#E87D7D" />
+                  </div>
+                  <div class="hint-content">
+                    <span class="hint-title">사용 팁</span>
+                    <span class="hint-text">지도에서 핀을 드래그하여 정확한 위치를 조정할 수 있습니다. 클릭으로도 위치를 변경할 수 있어요!</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 액션 버튼 -->
+          <div class="action-section">
+            <button
+              type="button"
+              @click="$router.push('/market')"
+              class="cancel-btn"
+            >
+              <v-icon icon="mdi-close" size="18" />
+              취소
+            </button>
+            
+            <button
+              type="submit"
+              :disabled="!valid || loading"
+              class="submit-btn"
+            >
+              <v-icon v-if="!loading" icon="mdi-check" size="18" />
+              <div v-else class="loading-spinner-small"></div>
+              {{ loading ? '수정 중...' : '수정하기' }}
+            </button>
+          </div>
+        </v-form>
+      </div>
   </v-container>
+    
+    <!-- 스낵바 -->
+    <v-snackbar
+      v-model="snackbar.show"
+      :color="snackbar.color"
+      :timeout="3000"
+      location="top"
+      class="custom-snackbar"
+    >
+      <div class="snackbar-content">
+        <v-icon :icon="snackbar.icon" size="20" class="snackbar-icon" />
+        <span class="snackbar-message">{{ snackbar.message }}</span>
+      </div>
+    </v-snackbar>
+  </div>
 </template>
 
 <script>
+import { ref, reactive, onMounted, nextTick, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { marketAPI } from '@/services/api'
+
 export default {
-  name: 'MarketEditView'
+  name: 'MarketEditView',
+  setup() {
+    const route = useRoute()
+    const router = useRouter()
+    
+    const form = reactive({
+      title: '',
+      category: null,
+      price: null,
+      description: ''
+    })
+    
+    // 폼 데이터를 ref로도 관리하여 반응성 보장
+    const formTitle = ref('')
+    const formCategory = ref(null)
+    const formPrice = ref(null)
+    const formDescription = ref('')
+
+    // 폼 상태 변수들
+    const valid = ref(false)
+    const loading = ref(false)
+    
+    // 이미지 관련 상태
+    const images = ref([])
+    const imageUrls = ref([])
+    const mainImageIndex = ref(0)
+    const currentSlide = ref(0)
+    const replaceMode = ref(false)
+    const imageError = ref('')
+    
+    // 지도 관련 상태
+    const map = ref(null)
+    const marker = ref(null)
+    const selectedLocation = ref(null)
+    const mapLoaded = ref(false)
+    
+    // 스낵바 상태
+    const snackbar = reactive({
+      show: false,
+      message: '',
+      color: 'success',
+      icon: 'mdi-check-circle'
+    })
+    
+    // 카테고리 옵션
+    const categoryOptions = ref([
+      { label: '장난감', value: 'TOY' },
+      { label: '사료', value: 'FEED' },
+      { label: '의류', value: 'CLOTH' },
+      { label: '기타', value: 'OTHER' }
+    ])
+
+    // 이미지 관련 computed 속성
+    const imageCount = computed(() => {
+      const count = imageUrls.value?.length || 0
+      console.log('imageCount computed 업데이트:', count, 'imageUrls.length:', imageUrls.value?.length)
+      return count
+    })
+
+    const hasImages = computed(() => {
+      return imageUrls.value.length > 0
+    })
+
+    // 기존 거래글 데이터 불러오기
+    const fetchPostDetail = async () => {
+      try {
+        console.log('거래글 데이터 로드 시작 - ID:', route.params.id)
+        const response = await marketAPI.getDetail(route.params.id)
+        console.log('API 응답:', response)
+        
+        if (response.data && response.data.isSuccess) {
+          const postData = response.data.data
+          console.log('받은 거래글 데이터:', postData)
+          
+          // 폼에 기존 데이터 설정
+          console.log('=== 폼 데이터 설정 시작 ===')
+          console.log('설정 전 form.title:', form.title)
+          console.log('설정 전 form.category:', form.category)
+          console.log('설정 전 form.price:', form.price)
+          console.log('설정 전 form.description:', form.description)
+          
+          // reactive 객체에 데이터 설정
+          form.title = postData.title || ''
+          form.category = postData.category || null
+          form.price = postData.price || null
+          form.description = postData.description || ''
+          
+          // ref 값도 함께 업데이트
+          formTitle.value = postData.title || ''
+          formCategory.value = postData.category || null
+          formPrice.value = postData.price || null
+          formDescription.value = postData.description || ''
+          
+          console.log('설정 후 form.title:', form.title)
+          console.log('설정 후 form.category:', form.category)
+          console.log('설정 후 form.price:', form.price)
+          console.log('설정 후 form.description:', form.description)
+          console.log('설정 후 formTitle.value:', formTitle.value)
+          console.log('설정 후 formCategory.value:', formCategory.value)
+          console.log('설정 후 formPrice.value:', formPrice.value)
+          console.log('설정 후 formDescription.value:', formDescription.value)
+          console.log('=== 폼 데이터 설정 완료 ===')
+          
+                     // 이미지가 있으면 설정
+           if (postData.productImageList && postData.productImageList.length > 0) {
+             try {
+               // 기존 이미지 URL 정리
+               imageUrls.value.forEach(url => {
+                 try {
+                   if (url && url.startsWith('blob:')) {
+                     URL.revokeObjectURL(url)
+                   }
+                 } catch (e) {
+                   console.warn('Error revoking existing URL:', e)
+                 }
+               })
+               
+                               // 새 이미지 설정
+                imageUrls.value = [...postData.productImageList]
+                
+                // 대표 이미지 인덱스 찾기
+                const thumbnailIndex = postData.productImageList.findIndex(url => url === postData.thumbnailUrl)
+                mainImageIndex.value = thumbnailIndex >= 0 ? thumbnailIndex : 0
+                currentSlide.value = 0
+                
+                console.log('=== 기존 이미지 설정 완료 ===')
+                console.log('이미지 URL들:', imageUrls.value)
+                console.log('썸네일 URL:', postData.thumbnailUrl)
+                console.log('썸네일 인덱스:', thumbnailIndex)
+                console.log('설정된 mainImageIndex:', mainImageIndex.value)
+                console.log('===============================')
+             } catch (error) {
+               console.error('이미지 설정 중 오류:', error)
+               imageError.value = '기존 이미지를 불러오는 중 오류가 발생했습니다.'
+             }
+           } else {
+             // 이미지가 없는 경우 초기화
+             try {
+               // 기존 blob URL 정리
+               imageUrls.value.forEach(url => {
+                 try {
+                   if (url && url.startsWith('blob:')) {
+                     URL.revokeObjectURL(url)
+                   }
+                 } catch (e) {
+                   console.warn('Error revoking existing URL:', e)
+                 }
+               })
+               
+                               imageUrls.value = []
+                images.value = []
+                mainImageIndex.value = 0
+                currentSlide.value = 0
+               
+               console.log('이미지 없음 - 초기화 완료')
+             } catch (error) {
+               console.error('이미지 초기화 중 오류:', error)
+             }
+           }
+          
+          // 기존 위치 정보가 있으면 설정
+          if (postData.latitude && postData.longitude) {
+            selectedLocation.value = {
+              lat: postData.latitude,
+              lng: postData.longitude,
+              address: '기존 위치' // 주소는 나중에 지도에서 업데이트
+            }
+            console.log('위치 정보 설정 완료:', selectedLocation.value)
+          }
+          
+          console.log('기존 거래글 데이터 로드 완료:', postData)
+          console.log('설정된 폼 데이터:', form)
+          console.log('설정된 위치:', selectedLocation.value)
+          
+          // 데이터 설정 후 폼 유효성 검사 실행
+          nextTick(() => {
+            validateForm()
+          })
+        } else {
+          console.error('API 응답이 성공이 아님:', response)
+          throw new Error('API 응답이 성공이 아닙니다')
+        }
+      } catch (error) {
+        console.error('거래글 데이터 로드 실패:', error)
+        console.error('에러 상세:', {
+          message: error.message,
+          response: error.response,
+          status: error.response?.status,
+          data: error.response?.data
+        })
+        alert('거래글 데이터를 불러올 수 없습니다.')
+        router.push('/market')
+      }
+    }
+
+    // 삭제 확인 및 실행
+    const confirmDelete = async () => {
+      if (confirm('정말로 이 거래글을 삭제하시겠습니까?')) {
+        try {
+          await marketAPI.delete(route.params.id)
+          snackbar.message = '거래글이 삭제되었습니다.'
+          snackbar.color = 'success'
+          snackbar.icon = 'mdi-check-circle'
+          snackbar.show = true
+          
+          setTimeout(() => {
+            router.push('/market')
+          }, 2000)
+        } catch (error) {
+          console.error('거래글 삭제 실패:', error)
+          snackbar.message = '거래글 삭제에 실패했습니다.'
+          snackbar.color = 'error'
+          snackbar.icon = 'mdi-alert-circle'
+          snackbar.show = true
+        }
+      }
+    }
+
+    // 폼 데이터 변경 감지를 위한 watcher 추가
+    const logFormChanges = () => {
+      console.log('=== 폼 데이터 변경 감지 ===')
+      console.log('form.title:', `"${form.title}"`)
+      console.log('form.category:', form.category)
+      console.log('form.price:', form.price)
+      console.log('form.description:', `"${form.description}"`)
+      console.log('formTitle.value:', `"${formTitle.value}"`)
+      console.log('formCategory.value:', formCategory.value)
+      console.log('formPrice.value:', formPrice.value)
+      console.log('formDescription.value:', `"${formDescription.value}"`)
+      console.log('========================')
+    }
+
+    // 가격 입력 처리 함수
+    const handlePriceInput = (event) => {
+      const value = event.target.value
+      console.log('가격 입력 이벤트:', value, '타입:', typeof value)
+      
+      // 빈 문자열이면 null로 설정
+      if (value === '' || value === null || value === undefined) {
+        form.price = null
+        formPrice.value = null
+      } else {
+        // 숫자로 변환
+        const numValue = parseInt(value, 10)
+        if (!isNaN(numValue) && numValue >= 0) {
+          form.price = numValue
+          formPrice.value = numValue
+        } else {
+          form.price = null
+          formPrice.value = null
+        }
+      }
+      
+      console.log('가격 처리 후:', form.price, 'formPrice.value:', formPrice.value)
+      validateForm()
+    }
+
+    const handlePriceChange = (event) => {
+      const value = event.target.value
+      console.log('가격 변경 이벤트:', value, '타입:', typeof value)
+      
+      // 최종 값 검증 및 설정
+      if (value === '' || value === null || value === undefined) {
+        form.price = null
+        formPrice.value = null
+      } else {
+        const numValue = parseInt(value, 10)
+        if (!isNaN(numValue) && numValue >= 0) {
+          form.price = numValue
+          formPrice.value = numValue
+        } else {
+          form.price = null
+          formPrice.value = null
+        }
+      }
+      
+      console.log('가격 최종 설정:', form.price, 'formPrice.value:', formPrice.value)
+      logFormChanges()
+      validateForm()
+    }
+
+    // 제목 입력 처리 함수
+    const handleTitleInput = (event) => {
+      const value = event.target.value
+      console.log('제목 입력 이벤트:', value, '타입:', typeof value)
+      
+      // 값 설정
+      form.title = value
+      formTitle.value = value
+      
+      console.log('제목 처리 후:', form.title, 'formTitle.value:', formTitle.value)
+      validateForm()
+    }
+
+    const handleTitleChange = (event) => {
+      const value = event.target.value
+      console.log('제목 변경 이벤트:', value, '타입:', typeof value)
+      
+      // 최종 값 설정
+      form.title = value
+      formTitle.value = value
+      
+      console.log('제목 최종 설정:', form.title, 'formTitle.value:', formTitle.value)
+      logFormChanges()
+      validateForm()
+    }
+
+    // 설명 입력 처리 함수
+    const handleDescriptionInput = (event) => {
+      const value = event.target.value
+      console.log('설명 입력 이벤트:', value, '타입:', typeof value)
+      
+      // 값 설정
+      form.description = value
+      formDescription.value = value
+      
+      console.log('설명 처리 후:', form.description, 'formDescription.value:', formDescription.value)
+      validateForm()
+    }
+
+    const handleDescriptionChange = (event) => {
+      const value = event.target.value
+      console.log('설명 변경 이벤트:', value, '타입:', typeof value)
+      
+      // 최종 값 설정
+      form.description = value
+      formDescription.value = value
+      
+      console.log('설명 최종 설정:', form.description, 'formDescription.value:', formDescription.value)
+      logFormChanges()
+      validateForm()
+    }
+
+    // 폼 validation 함수
+    const validateForm = () => {
+      console.log('=== 폼 유효성 검사 시작 ===')
+      console.log('현재 form 객체:', form)
+      console.log('form.title 타입:', typeof form.title, '값:', form.title)
+      console.log('form.category 타입:', typeof form.category, '값:', form.category)
+      console.log('form.price 타입:', typeof form.price, '값:', form.price)
+      console.log('form.description 타입:', typeof form.description, '값:', form.description)
+      console.log('selectedLocation:', selectedLocation.value)
+      console.log('이미지 개수:', imageUrls.value.length)
+      
+      // 문자열 필드는 공백 제거 후 검사
+      const hasTitle = form.title && form.title.trim().length > 0
+      const hasCategory = !!form.category
+      // 가격은 0보다 큰 숫자인지 확인
+      const hasPrice = form.price !== null && form.price !== undefined && form.price > 0
+      const hasDescription = form.description && form.description.trim().length > 0
+      const hasLocation = !!selectedLocation.value
+      
+      // 이미지는 필수가 아님 (수정 페이지에서는 기존 이미지가 있을 수 있음)
+      const hasImages = imageUrls.value.length > 0
+      
+      console.log('=== 폼 유효성 검사 결과 ===')
+      console.log('제목:', `"${form.title}"`, '→', hasTitle)
+      console.log('카테고리:', form.category, '→', hasCategory)
+      console.log('가격:', form.price, '→', hasPrice)
+      console.log('설명:', `"${form.description}"`, '→', hasDescription)
+      console.log('위치:', selectedLocation.value, '→', hasLocation)
+      console.log('이미지:', imageUrls.value.length, '→', hasImages)
+      
+      // 이미지는 필수가 아니므로 hasImages는 검증에서 제외
+      valid.value = hasTitle && hasCategory && hasPrice && hasDescription && hasLocation
+      
+      console.log('최종 유효성:', valid.value)
+      console.log('========================')
+    }
+
+    // 이미지 에러 초기화
+    const clearImageError = () => {
+      imageError.value = ''
+    }
+
+    // 카테고리 변경 처리
+    const handleCategoryChange = (event) => {
+      const value = event.target.value
+      console.log('카테고리 변경 이벤트:', value, '타입:', typeof value)
+      
+      // 값 설정
+      form.category = value
+      formCategory.value = value
+      
+      console.log('카테고리 처리 후:', form.category, 'formCategory.value:', formCategory.value)
+      
+      // 유효한 카테고리인지 확인
+      const validCategory = categoryOptions.value.find(c => c.value === value)
+      if (validCategory) {
+        // 스낵바 표시
+        snackbar.message = `카테고리 "${validCategory.label}"가 선택되었습니다!`
+        snackbar.color = 'success'
+        snackbar.icon = 'mdi-check-circle'
+        snackbar.show = true
+      }
+      
+      // 폼 유효성 검사
+      validateForm()
+    }
+
+         // 파일 입력 트리거
+     const triggerFileInput = () => {
+       try {
+         clearImageError()
+         const fileInput = document.querySelector('.hidden-file-input')
+         if (fileInput) {
+           fileInput.click()
+         } else {
+           imageError.value = '파일 입력 요소를 찾을 수 없습니다.'
+         }
+       } catch (error) {
+         console.error('파일 입력 트리거 오류:', error)
+         imageError.value = '파일 선택 중 오류가 발생했습니다.'
+       }
+     }
+     
+     // 이미지 교체 (기존 이미지를 모두 새 이미지로 교체)
+     const replaceAllImages = () => {
+       try {
+         clearImageError()
+         console.log('이미지 교체 모드 활성화')
+         
+         const fileInput = document.querySelector('.hidden-file-input')
+         if (fileInput) {
+           fileInput.click()
+         } else {
+           imageError.value = '파일 입력 요소를 찾을 수 없습니다.'
+         }
+       } catch (error) {
+         console.error('이미지 교체 오류:', error)
+         imageError.value = '이미지 교체 중 오류가 발생했습니다.'
+       }
+     }
+
+         // 이미지 변경 처리 (전체 교체만 지원)
+     const handleImageChange = (event) => {
+       try {
+         clearImageError()
+         const files = event.target.files
+         if (!files || files.length === 0) return
+
+         console.log('새 이미지 선택됨 - 파일 개수:', files.length)
+
+         // 파일 유효성 검사
+         const validFiles = Array.from(files).filter(file => {
+           if (!file || !(file instanceof File)) return false
+           if (!file.type.startsWith('image/')) return false
+           if (file.size > 10 * 1024 * 1024) return false // 10MB 제한
+           return true
+         })
+
+         if (validFiles.length === 0) {
+           imageError.value = '유효한 이미지 파일을 선택해주세요. (JPG, PNG, GIF, 최대 10MB)'
+           return
+         }
+
+         // 최대 이미지 개수 제한 (10장)
+         if (validFiles.length > 10) {
+           imageError.value = '최대 10장까지 선택할 수 있습니다.'
+           return
+         }
+
+                   // 기존 이미지 모두 제거하고 새 이미지로 교체
+          console.log('이미지 교체 - 기존 이미지 제거 후 새 이미지 추가')
+          
+          // 기존 URL 정리
+          imageUrls.value.forEach(url => {
+            try {
+              if (url && url.startsWith('blob:')) {
+                URL.revokeObjectURL(url)
+              }
+            } catch (e) {
+              console.warn('Error revoking URL:', e)
+            }
+          })
+          
+          // 새 이미지로 교체
+          images.value = [...validFiles]
+          imageUrls.value = validFiles.map(file => URL.createObjectURL(file))
+          
+          // 슬라이더 상태 초기화
+          currentSlide.value = 0
+          mainImageIndex.value = 0
+          
+          console.log('이미지 교체 완료 - 새 이미지 개수:', imageUrls.value.length)
+          
+          // 파일 입력 초기화 (같은 파일을 다시 선택할 수 있도록)
+          event.target.value = ''
+          
+          // 성공 메시지
+          snackbar.message = '이미지가 성공적으로 교체되었습니다.'
+          snackbar.color = 'success'
+          snackbar.icon = 'mdi-check-circle'
+          snackbar.show = true
+         
+       } catch (error) {
+         console.error('이미지 변경 처리 오류:', error)
+         imageError.value = '이미지 처리 중 오류가 발생했습니다.'
+       }
+           }
+      
+      // 이미지 제거
+      const removeImage = (index) => {
+        try {
+          clearImageError()
+          console.log('이미지 제거 시작 - 인덱스:', index)
+          console.log('제거 전 이미지 개수:', imageUrls.value.length)
+          
+          if (index < 0 || index >= imageUrls.value.length) {
+            imageError.value = '유효하지 않은 이미지 인덱스입니다.'
+            return
+          }
+          
+          // URL 정리
+          if (imageUrls.value[index]) {
+            try {
+              if (imageUrls.value[index].startsWith('blob:')) {
+                URL.revokeObjectURL(imageUrls.value[index])
+              }
+            } catch (e) {
+              console.warn('Error revoking URL:', e)
+            }
+          }
+          
+          // 배열에서 제거
+          imageUrls.value.splice(index, 1)
+          images.value.splice(index, 1)
+          
+          console.log('제거 후 이미지 개수:', imageUrls.value.length)
+          
+          // 슬라이더 상태 조정
+          if (imageUrls.value.length === 0) {
+            currentSlide.value = 0
+            mainImageIndex.value = 0
+            console.log('모든 이미지 제거됨 - 업로드 영역 표시 예정')
+          } else {
+            // 현재 슬라이드가 범위를 벗어나면 조정
+            if (currentSlide.value >= imageUrls.value.length) {
+              currentSlide.value = imageUrls.value.length - 1
+            }
+            // 대표 이미지 인덱스가 범위를 벗어나면 조정
+            if (mainImageIndex.value >= imageUrls.value.length) {
+              mainImageIndex.value = imageUrls.value.length - 1
+            }
+          }
+          
+          // 폼 유효성 검사
+          validateForm()
+          
+          console.log('이미지 제거 완료')
+        } catch (error) {
+          console.error('이미지 제거 중 오류:', error)
+          imageError.value = '이미지 제거 중 오류가 발생했습니다.'
+        }
+      }
+      
+      // 대표 이미지 설정
+      const setMainImage = (index) => {
+        try {
+          clearImageError()
+          console.log('=== 대표 이미지 설정 시작 ===')
+          console.log('요청된 인덱스:', index)
+          console.log('현재 이미지 개수:', imageUrls.value.length)
+          console.log('현재 mainImageIndex:', mainImageIndex.value)
+          
+          if (index < 0 || index >= imageUrls.value.length) {
+            console.error('유효하지 않은 인덱스:', index, '이미지 개수:', imageUrls.value.length)
+            imageError.value = '유효하지 않은 이미지 인덱스입니다.'
+            return
+          }
+          
+          mainImageIndex.value = index
+          console.log('대표 이미지 설정 완료 - 새 인덱스:', mainImageIndex.value)
+          console.log('=== 대표 이미지 설정 완료 ===')
+          
+          // 성공 메시지
+          snackbar.message = `대표 이미지가 설정되었습니다. (${index + 1}번째 이미지)`
+          snackbar.color = 'success'
+          snackbar.icon = 'mdi-check-circle'
+          snackbar.show = true
+          
+        } catch (error) {
+          console.error('대표 이미지 설정 중 오류:', error)
+          imageError.value = '대표 이미지 설정 중 오류가 발생했습니다.'
+        }
+      }
+      
+      // 슬라이더 네비게이션
+      const nextSlide = () => {
+        if (currentSlide.value < imageUrls.value.length - 1) {
+          currentSlide.value++
+        }
+      }
+      
+      const previousSlide = () => {
+        if (currentSlide.value > 0) {
+          currentSlide.value--
+        }
+      }
+      
+      const goToSlide = (index) => {
+        if (index >= 0 && index < imageUrls.value.length) {
+          currentSlide.value = index
+        }
+      }
+      
+      
+      
+      // 지도 관련 함수들
+    const initMap = () => {
+      if (typeof window.kakao === 'undefined') {
+        console.warn('Kakao Map API not loaded')
+        return
+      }
+
+      try {
+        const mapContainer = document.getElementById('location-map')
+        if (!mapContainer) return
+
+        const mapOption = {
+          center: new window.kakao.maps.LatLng(37.5665, 126.9780), // 서울시청
+          level: 3
+        }
+
+        map.value = new window.kakao.maps.Map(mapContainer, mapOption)
+        
+        // 마커 생성
+        marker.value = new window.kakao.maps.Marker({
+          position: mapOption.center,
+          draggable: true
+        })
+
+        // 마커를 지도에 표시
+        marker.value.setMap(map.value)
+
+        // 마커 드래그 이벤트
+        window.kakao.maps.event.addListener(marker.value, 'dragend', function() {
+          const position = marker.value.getPosition()
+          updateLocationFromCoordinates(position.getLat(), position.getLng())
+        })
+
+        // 지도 클릭 이벤트
+        window.kakao.maps.event.addListener(map.value, 'click', function(mouseEvent) {
+          const latlng = mouseEvent.latLng
+          marker.value.setPosition(latlng)
+          updateLocationFromCoordinates(latlng.getLat(), latlng.getLng())
+        })
+
+        console.log('Map initialized successfully')
+        mapLoaded.value = true
+      } catch (error) {
+        console.error('Error initializing map:', error)
+      }
+    }
+
+    const updateLocationFromCoordinates = (lat, lng) => {
+      if (typeof window.kakao === 'undefined') return
+
+      const geocoder = new window.kakao.maps.services.Geocoder()
+      const coords = new window.kakao.maps.LatLng(lat, lng)
+      
+      geocoder.coord2Address(coords.getLng(), coords.getLat(), function(result, status) {
+        if (status === window.kakao.maps.services.Status.OK) {
+          const address = result[0].address.address_name
+          selectedLocation.value = {
+            address: address,
+            lat: lat,
+            lng: lng
+          }
+          validateForm()
+        }
+      })
+    }
+
+    const resetMapLocation = () => {
+      if (map.value && marker.value) {
+        const center = new window.kakao.maps.LatLng(37.5665, 126.9780)
+        map.value.setCenter(center)
+        marker.value.setPosition(center)
+        selectedLocation.value = null
+        validateForm()
+        
+        console.log('위치가 초기화되었습니다')
+      }
+    }
+
+    // 컴포넌트 마운트 후 지도 초기화
+    onMounted(async () => {
+      try {
+        // 이미지 배열 안전하게 초기화
+        if (!imageUrls.value || !Array.isArray(imageUrls.value)) {
+          imageUrls.value = []
+        }
+        if (!images.value || !Array.isArray(images.value)) {
+          images.value = []
+        }
+        
+                 // 이미지 관련 상태 초기화
+         mainImageIndex.value = 0
+         currentSlide.value = 0
+         replaceMode.value = false
+         imageError.value = ''
+        
+        console.log('이미지 배열 초기화 완료')
+        console.log('imageUrls:', imageUrls.value)
+        console.log('images:', images.value)
+        
+        // 기존 거래글 데이터 불러오기
+        await fetchPostDetail()
+        
+        // Kakao Map API가 로드될 때까지 대기
+        const checkKakaoMap = () => {
+          if (typeof window.kakao !== 'undefined' && window.kakao.maps) {
+            initMap()
+          } else {
+            setTimeout(checkKakaoMap, 100)
+          }
+        }
+        checkKakaoMap()
+        
+      } catch (error) {
+        console.error('컴포넌트 마운트 중 오류:', error)
+        imageError.value = '페이지 로드 중 오류가 발생했습니다.'
+      }
+    })
+
+    // 뒤로가기 (상세 페이지로)
+    const goBackToDetail = () => {
+      router.push(`/market/${route.params.id}`)
+    }
+
+    // 폼 제출
+    const submitForm = async () => {
+      if (!valid.value) return
+
+      loading.value = true
+      
+      try {
+                          // API 호출을 위한 데이터 준비
+                   const postData = {
+            title: formTitle.value,
+            category: formCategory.value,
+            price: formPrice.value,
+            description: formDescription.value,
+            latitude: selectedLocation.value?.lat,
+            longitude: selectedLocation.value?.lng,
+            mainImageIndex: imageUrls.value.length > 0 ? mainImageIndex.value : 0
+          }
+         
+         console.log('=== API 호출 준비 ===')
+         console.log('전송할 데이터:', postData)
+         console.log('이미지 파일들:', images.value)
+         console.log('이미지 개수:', images.value?.length || 0)
+         console.log('이미지 URL 개수:', imageUrls.value.length)
+         console.log('위치 정보:', selectedLocation.value)
+         console.log('========================')
+        
+        try {
+          // API 호출
+          console.log('API 호출 시작...')
+          
+          // 이미지 파일 검증
+          if (images.value && images.value.length > 0) {
+            console.log('새로 추가된 이미지 파일들:', images.value)
+            console.log('이미지 파일 타입:', images.value.map(img => img.type))
+            console.log('이미지 파일 크기:', images.value.map(img => img.size))
+          }
+          
+          // 기존 이미지 URL들 (삭제되지 않은 것들)
+          const existingImageUrls = imageUrls.value.filter(url => !url.startsWith('blob:'))
+          console.log('기존 이미지 URL들 (유지):', existingImageUrls)
+          
+          // 대표이미지 인덱스 처리
+          let finalMainImageIndex = 0
+          if (imageUrls.value.length > 0) {
+            // 새로 추가된 이미지가 있는 경우
+            if (images.value.length > 0) {
+              // 새 이미지들만 있는 경우: mainImageIndex 그대로 사용
+              finalMainImageIndex = mainImageIndex.value
+            } else {
+              // 기존 이미지만 있는 경우: 기존 이미지 중에서 대표이미지 인덱스 사용
+              finalMainImageIndex = mainImageIndex.value
+            }
+          }
+          
+          // postData에 최종 대표이미지 인덱스 설정
+          postData.mainImageIndex = finalMainImageIndex
+          
+          console.log('최종 대표이미지 인덱스:', finalMainImageIndex)
+          console.log('전송할 postData:', postData)
+          
+          const response = await marketAPI.update(route.params.id, postData, images.value)
+          
+          console.log('=== API 응답 ===')
+          console.log('응답 상태:', response.status)
+          console.log('응답 데이터:', response.data)
+          console.log('응답 헤더:', response.headers)
+          console.log('================')
+          
+          if (response.status === 200 || response.status === 201) {
+             // 성공 메시지
+             snackbar.message = '거래글이 성공적으로 수정되었습니다!'
+             snackbar.color = 'success'
+             snackbar.icon = 'mdi-check-circle'
+             snackbar.show = true
+             
+             // blob URL 정리
+             try {
+               imageUrls.value.forEach(url => {
+                 if (url && url.startsWith('blob:')) {
+                   URL.revokeObjectURL(url)
+                 }
+               })
+             } catch (e) {
+               console.warn('blob URL 정리 중 오류:', e)
+             }
+             
+             setTimeout(() => {
+               router.push(`/market/${route.params.id}`)
+             }, 2000)
+          } else {
+            throw new Error(`서버 응답이 성공이 아닙니다. 상태: ${response.status}`)
+          }
+        } catch (apiError) {
+          console.error('API 호출 중 오류:', apiError)
+          
+          // API 오류 상세 정보
+          if (apiError.response) {
+            console.error('응답 상태:', apiError.response.status)
+            console.error('응답 데이터:', apiError.response.data)
+            console.error('응답 헤더:', apiError.response.headers)
+            
+            // 400 에러인 경우 상세 메시지 표시
+            if (apiError.response.status === 400) {
+              snackbar.message = `입력 데이터 오류: ${apiError.response.data?.message || '잘못된 입력입니다.'}`
+            } else if (apiError.response.status === 403) {
+              snackbar.message = '권한이 없습니다. 로그인 상태를 확인해주세요.'
+            } else if (apiError.response.status === 404) {
+              snackbar.message = '거래글을 찾을 수 없습니다.'
+            } else {
+              snackbar.message = `서버 오류: ${apiError.response.status}`
+            }
+          } else if (apiError.request) {
+            console.error('요청 오류:', apiError.request)
+            snackbar.message = '네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.'
+          } else {
+            console.error('오류 메시지:', apiError.message)
+            snackbar.message = `오류가 발생했습니다: ${apiError.message}`
+          }
+          
+          snackbar.color = 'error'
+          snackbar.icon = 'mdi-alert-circle'
+          snackbar.show = true
+          
+          throw apiError
+        }
+        
+      } catch (error) {
+        console.error('거래글 수정 실패:', error)
+        snackbar.message = '거래글 수정에 실패했습니다. 다시 시도해주세요.'
+        snackbar.color = 'error'
+        snackbar.icon = 'mdi-alert-circle'
+        snackbar.show = true
+      } finally {
+        loading.value = false
+      }
+    }
+
+    return {
+      form,
+      // ref 값들도 반환
+      formTitle,
+      formCategory,
+      formPrice,
+      formDescription,
+      valid,
+      loading,
+      fetchPostDetail,
+      confirmDelete,
+             images,
+       imageUrls,
+       imageCount,
+       hasImages,
+       mainImageIndex,
+       currentSlide,
+       replaceMode,
+       imageError,
+       clearImageError,
+       categoryOptions,
+       handleCategoryChange,
+       // 지도 관련 변수들
+       map,
+       marker,
+       selectedLocation,
+       mapLoaded,
+       snackbar,
+       triggerFileInput,
+       replaceAllImages,
+       handleImageChange,
+       removeImage,
+       setMainImage,
+       nextSlide,
+       previousSlide,
+       goToSlide,
+      validateForm,
+      logFormChanges,
+      handleTitleInput,
+      handleTitleChange,
+      handlePriceInput,
+      handlePriceChange,
+      handleDescriptionInput,
+      handleDescriptionChange,
+      submitForm,
+      goBackToDetail,
+      initMap,
+      updateLocationFromCoordinates,
+      resetMapLocation
+    }
+  }
 }
 </script>
+
+<style scoped>
+/* 뒤로가기 버튼과 삭제하기 버튼 */
+.back-btn-wrapper {
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.back-btn,
+.delete-btn {
+  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.back-btn:hover,
+.delete-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(232, 125, 125, 0.3);
+}
+
+.delete-btn {
+  /* background: linear-gradient(135deg, #dc3545, #c82333); */
+}
+
+.delete-btn:hover {
+  box-shadow: 0 8px 25px rgba(220, 53, 69, 0.3);
+}
+
+/* 메인 컨테이너 */
+.create-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* 폼 컨테이너 */
+.form-container {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+/* 폼 섹션 */
+.form-section {
+  padding: 32px;
+  border-bottom: 1px solid #f1f3f4;
+}
+
+.form-section:last-child {
+  border-bottom: none;
+}
+
+.section-header {
+  margin-bottom: 24px;
+}
+
+.section-title {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.section-title::before {
+  content: '';
+  width: 4px;
+  height: 24px;
+  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
+  border-radius: 2px;
+}
+
+/* 폼 그리드 */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+/* 폼 필드 */
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #495057;
+  margin: 0;
+}
+
+/* 폼 입력 */
+.form-input {
+  width: 100%;
+  padding: 16px 20px;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  font-size: 1rem;
+  color: #2c3e50;
+  background: white;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #E87D7D;
+  box-shadow: 0 0 0 3px rgba(232, 125, 125, 0.1);
+}
+
+.form-input::placeholder {
+  color: #adb5bd;
+}
+
+/* 드롭다운 스타일 */
+.form-select {
+  width: 100%;
+  padding: 16px 20px;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  font-size: 1rem;
+  color: #2c3e50;
+  background: white;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236c757d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 16px;
+  padding-right: 48px;
+  position: relative;
+  z-index: 10;
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: #E87D7D;
+  box-shadow: 0 0 0 3px rgba(232, 125, 125, 0.1);
+  transform: translateY(-1px);
+}
+
+.form-select:hover {
+  border-color: #E87D7D;
+  background-color: #fff5f5;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(232, 125, 125, 0.15);
+}
+
+/* 가격 입력 */
+.price-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.price-input {
+  padding-right: 60px;
+}
+
+.price-unit {
+  position: absolute;
+  right: 20px;
+  color: #6c757d;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+/* 이미지 업로드 섹션 */
+.image-upload-section {
+  margin-top: 16px;
+}
+
+.main-upload-area {
+  border: 2px dashed #e9ecef;
+  border-radius: 16px;
+  min-height: 300px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.main-upload-area:hover {
+  border-color: #E87D7D;
+  background: #fff5f5;
+}
+
+.main-upload-area.has-images {
+  border: none;
+  min-height: auto;
+}
+
+/* 업로드 콘텐츠 */
+.upload-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  cursor: pointer;
+  text-align: center;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+}
+
+.upload-content:hover {
+  background: linear-gradient(135deg, #fff5f5 0%, #ffe6e6 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(232, 125, 125, 0.15);
+}
+
+.upload-icon {
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
+  border-radius: 50%;
+  box-shadow: 0 8px 25px rgba(232, 125, 125, 0.3);
+  transition: all 0.3s ease;
+}
+
+.upload-content:hover .upload-icon {
+  transform: scale(1.1);
+  box-shadow: 0 12px 30px rgba(232, 125, 125, 0.4);
+}
+
+.upload-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0 0 8px 0;
+}
+
+.upload-subtitle {
+  font-size: 0.95rem;
+  color: #6c757d;
+  margin: 0 0 16px 0;
+}
+
+ .upload-hint {
+   display: flex;
+   align-items: center;
+   gap: 6px;
+   font-size: 0.85rem;
+   color: #7f8c8d;
+ }
+ 
+ .upload-note {
+   display: flex;
+   align-items: center;
+   gap: 6px;
+   font-size: 0.8rem;
+   color: #E87D7D;
+   margin-top: 8px;
+   padding: 6px 12px;
+   background: rgba(232, 125, 125, 0.1);
+   border-radius: 6px;
+   border-left: 2px solid #E87D7D;
+ }
+ 
+   /* 이미지 슬라이더 */
+  .image-slider-container {
+    width: 100%;
+  }
+  
+  .image-slider {
+    position: relative;
+    width: 100%;
+    height: 300px;
+    overflow: hidden;
+    border-radius: 16px;
+  }
+  
+  .slide {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.3s ease;
+  }
+  
+  .slide-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  /* 대표 이미지 체크박스 */
+  .main-image-checkbox {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    z-index: 10;
+    cursor: pointer;
+  }
+  
+  .checkbox {
+    width: 32px;
+    height: 32px;
+    border: 3px solid white;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(10px);
+  }
+  
+  .checkbox.checked {
+    background: #E87D7D;
+    border-color: white;
+  }
+  
+  .check-mark {
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+  }
+  
+  /* 이미지 제거 버튼 */
+  .remove-image-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(10px);
+  }
+  
+  .remove-image-btn:hover {
+    background: rgba(220, 53, 69, 0.9);
+    transform: scale(1.1);
+  }
+  
+  /* 슬라이더 네비게이션 */
+  .slider-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 16px;
+    padding: 0 16px;
+  }
+  
+  .nav-btn {
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(10px);
+  }
+  
+  .nav-btn:hover:not(:disabled) {
+    background: rgba(0, 0, 0, 0.9);
+    transform: scale(1.1);
+  }
+  
+  .nav-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  /* 슬라이드 인디케이터 */
+  .slide-indicators {
+    display: flex;
+    gap: 8px;
+  }
+  
+  .indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #dee2e6;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .indicator.active {
+    background: #E87D7D;
+    transform: scale(1.2);
+  }
+  
+
+
+/* 숨겨진 파일 입력 */
+.hidden-file-input {
+  display: none;
+}
+
+/* 이미지 에러 메시지 */
+.image-error-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #ffe8e8;
+  border: 1px solid #f44336;
+  border-radius: 8px;
+  color: #595454;
+  font-size: 0.9rem;
+  margin-bottom: 16px;
+}
+
+.error-close-btn {
+  background: none;
+  border: none;
+  color: #f44336;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+}
+
+.error-close-btn:hover {
+  background-color: rgba(244, 67, 54, 0.1);
+}
+
+
+
+
+
+/* 지역 섹션 */
+.region-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* 지도 선택 섹션 */
+.map-selection-section {
+  background: white;
+  border: 2px solid #e9ecef;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.map-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+  background: linear-gradient(135deg, #fff5f5, #fff);
+  border-bottom: 1px solid #e9ecef;
+}
+
+.map-title-content {
+  flex: 1;
+}
+
+.section-subtitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0 0 8px 0;
+}
+
+.map-description {
+  font-size: 0.9rem;
+  color: #6c757d;
+  margin: 8px 0 0 0;
+  line-height: 1.5;
+}
+
+/* 지도 컨테이너 */
+.map-container {
+  padding: 24px;
+}
+
+.map-wrapper {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.location-map {
+  width: 100%;
+  height: 300px;
+  border-radius: 12px;
+}
+
+.map-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+}
+
+.map-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+/* 지도 컨트롤 */
+.map-controls {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.map-btn {
+  flex: 1;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.secondary-btn {
+  background: #f8f9fa;
+  color: #6c757d;
+  border: 2px solid #e9ecef;
+}
+
+.secondary-btn:hover {
+  background: #e9ecef;
+  color: #495057;
+}
+
+/* 위치 정보 */
+.location-info {
+  margin-top: 20px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.info-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
+  color: white;
+  font-weight: 600;
+}
+
+.info-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+}
+
+.info-content {
+  padding: 20px;
+}
+
+.address-display,
+.coordinate-display {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.address-display:last-child,
+.coordinate-display:last-child {
+  margin-bottom: 0;
+}
+
+.address-text,
+.coordinate-text {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #2c3e50;
+  line-height: 1.4;
+}
+
+/* 지도 힌트 */
+.map-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 16px 20px;
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 12px;
+}
+
+.hint-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hint-title {
+  font-weight: 600;
+  color: #856404;
+  font-size: 0.9rem;
+}
+
+.hint-text {
+  color: #856404;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* 상세 설명 섹션 */
+.description-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-textarea {
+  width: 100%;
+  padding: 20px;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  font-size: 1rem;
+  color: #2c3e50;
+  background: white;
+  resize: vertical;
+  min-height: 120px;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.form-textarea:focus {
+  outline: none;
+  border-color: #E87D7D;
+  box-shadow: 0 0 0 3px rgba(232, 125, 125, 0.1);
+}
+
+.form-textarea::placeholder {
+  color: #adb5bd;
+}
+
+.description-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: #6c757d;
+}
+
+/* 액션 섹션 */
+.action-section {
+  display: flex;
+  gap: 16px;
+  padding: 32px;
+  background: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+}
+
+.cancel-btn,
+.submit-btn {
+  flex: 1;
+  padding: 16px 24px;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.cancel-btn {
+  background: #e9ecef;
+  color: #6c757d;
+}
+
+.cancel-btn:hover {
+  background: #e9ecef;
+  transform: translateY(-2px);
+}
+
+.submit-btn {
+  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
+  color: white;
+  box-shadow: 0 4px 15px rgba(232, 125, 125, 0.3);
+}
+
+.submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(232, 125, 125, 0.4);
+}
+
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* 로딩 스피너 */
+.loading-spinner-small {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 카테고리 힌트 */
+.category-hint {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #ffe8e8;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: #595454;
+  border-left: 3px solid #E87D7D;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.category-selected {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #e8f5e8;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: #2d5a2d;
+  border-left: 3px solid #28a745;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.selected-category-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.selected-text {
+  font-weight: 500;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .create-container {
+    padding: 16px;
+  }
+  
+  .form-section {
+    padding: 24px 20px;
+  }
+  
+  .action-section {
+    flex-direction: column;
+    padding: 24px 20px;
+  }
+  
+     .map-controls {
+     flex-direction: column;
+   }
+   
+
+  
+  .back-btn-wrapper {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  
+  .back-btn,
+  .delete-btn {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .create-container {
+    padding: 12px;
+  }
+  
+  .form-section {
+    padding: 20px 16px;
+  }
+  
+  .section-title {
+    font-size: 1.2rem;
+  }
+  
+  .form-input,
+  .form-textarea {
+    padding: 14px 16px;
+  }
+}
+
+/* 스낵바 스타일 */
+.custom-snackbar {
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  max-width: 400px;
+  min-width: 300px;
+  margin: 16px;
+  overflow: hidden;
+  position: relative;
+  z-index: 9999;
+}
+
+.custom-snackbar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #E87D7D, #FF6B6B, #E87D7D);
+  background-size: 200% 100%;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.snackbar-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  padding: 20px 24px;
+  position: relative;
+  z-index: 1;
+}
+
+.snackbar-icon {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.snackbar-message {
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.5;
+  color: inherit;
+  flex: 1;
+  text-align: left;
+}
+
+/* 스낵바 색상 커스터마이징 */
+.custom-snackbar.v-snackbar--success {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.95), rgba(76, 175, 80, 0.85)) !important;
+  color: white !important;
+  border-color: rgba(76, 175, 80, 0.3) !important;
+}
+
+.custom-snackbar.v-snackbar--success .snackbar-icon {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.custom-snackbar.v-snackbar--error {
+  background: linear-gradient(135deg, rgba(244, 67, 54, 0.95), rgba(244, 67, 54, 0.85)) !important;
+  color: white !important;
+  border-color: rgba(244, 67, 54, 0.3) !important;
+}
+
+.custom-snackbar.v-snackbar--error .snackbar-icon {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* 스낵바 애니메이션 */
+.custom-snackbar {
+  animation: slideInDown 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes slideInDown {
+  0% {
+    transform: translateY(-100%) scale(0.8);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+/* 호버 효과 */
+.custom-snackbar:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 반응형 디자인 */
+@media (max-width: 480px) {
+  .custom-snackbar {
+    max-width: calc(100vw - 32px);
+    min-width: auto;
+    margin: 8px;
+  }
+  
+  .snackbar-content {
+    padding: 16px 20px;
+    gap: 12px;
+  }
+  
+  .snackbar-message {
+    font-size: 0.9rem;
+  }
+}
+</style>

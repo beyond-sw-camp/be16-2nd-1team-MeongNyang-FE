@@ -48,15 +48,26 @@
                       :key="reply.id" 
                       class="reply-item"
                     >
+                      <v-avatar 
+                        size="24" 
+                        class="reply-avatar clickable"
+                        @click="goToUserDiary(reply.replyUserId || reply.userId)"
+                      >
+                        <v-img :src="reply.profileImage || reply.userImage || 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=24&h=24&fit=crop&crop=center'"></v-img>
+                      </v-avatar>
                       <div class="reply-content" @contextmenu.prevent="showContextMenu($event, 'reply', reply)">
-                        <span class="reply-username">{{ reply.replyPetName || reply.replyUserName }}</span>
-                        <span class="reply-text">
+                        <div class="reply-header">
+                          <span class="reply-username clickable" @click="goToUserDiary(reply.replyUserId || reply.userId)">
+                            {{ reply.replyPetName || reply.replyUserName }}
+                          </span>
+                          <span class="reply-time">{{ formatDate(reply.createdAt) }}</span>
+                        </div>
+                        <div class="reply-text">
                           <template v-for="(part, partIndex) in formatCommentText(reply.content)" :key="partIndex">
                             <span v-if="part.isTag" class="tag-mention">{{ part.text }}</span>
                             <span v-else>{{ part.text }}</span>
                           </template>
-                        </span>
-                        <span class="reply-time">{{ formatDate(reply.createdAt) }}</span>
+                        </div>
                         
                         <!-- 답글의 답글 버튼 -->
                         <v-btn text size="x-small" class="reply-btn reply-to-reply-btn" @click="replyToReply(reply, comment)">
@@ -152,6 +163,8 @@
 </template>
 
 <script>
+import { checkPetExist } from '@/utils/petValidation'
+
 export default {
   name: 'CommentsModal',
   props: {
@@ -222,6 +235,13 @@ export default {
     async addComment() {
       if (this.newComment.trim() && !this.isSubmitting) {
         try {
+          // 펫 등록 여부 확인
+          const hasPet = await checkPetExist()
+          if (!hasPet) {
+            this.$router.back()
+            return
+          }
+          
           this.isSubmitting = true
           console.log('=== addComment 메서드 시작 ===')
           console.log('댓글 내용:', this.newComment)
@@ -265,13 +285,22 @@ export default {
               console.log('답글의 답글 작성:', this.replyingTo)
               
               const commentId = this.replyingTo.commentId || this.replyingTo.parentCommentId
-              const mentionUserId = this.replyingTo.userId || this.replyingTo.id
+              const mentionUserId = this.replyingTo.mentionUserId || this.replyingTo.replyUserId || this.replyingTo.userId || this.replyingTo.user?.id || this.replyingTo.replyUser?.id
               
               console.log('답글의 답글 데이터 전송:', {
                 commentId: commentId,
                 content: this.newComment,
-                mentionUserId: mentionUserId
+                mentionUserId: mentionUserId,
+                replyingTo: this.replyingTo
               })
+              
+              // mentionUserId가 null인지 확인
+              if (!mentionUserId) {
+                console.error('mentionUserId가 null입니다!')
+                console.error('replyingTo 객체:', this.replyingTo)
+                alert('답글 작성자 정보를 찾을 수 없습니다.')
+                return
+              }
               
               this.$emit('add-reply', {
                 commentId: commentId,
@@ -345,7 +374,11 @@ export default {
     replyToComment(comment) {
       // 부모 댓글에 대한 답글 모드 설정
       this.replyingTo = comment
-      this.newComment = `@${comment.userName || comment.username} `
+      
+      // 사용자 이름을 다양한 필드에서 찾기
+      const userName = comment.userName || comment.username || comment.petName || comment.user?.name || comment.user?.petName || '사용자'
+      this.newComment = `@${userName} `
+      
       // 포커스를 입력 필드로 이동
       this.$nextTick(() => {
         if (this.$refs.commentInput && this.$refs.commentInput.$el) {
@@ -358,6 +391,41 @@ export default {
     },
     
     replyToReply(reply, parentComment) {
+      console.log('=== replyToReply 호출 ===')
+      console.log('reply 객체:', reply)
+      console.log('parentComment 객체:', parentComment)
+      console.log('reply 객체의 모든 키:', Object.keys(reply))
+      
+      // 답글 작성자 ID 찾기 (replyUserName을 기반으로 찾기)
+      let replyUserId = reply.replyUserId || reply.userId || reply.user?.id || reply.replyUser?.id || reply.user?.userId
+      
+      // replyUserName이 있으면 해당 사용자의 ID를 찾기
+      if (!replyUserId && reply.replyUserName) {
+        console.log('replyUserName으로 사용자 ID 찾기 시도:', reply.replyUserName)
+        // 현재 댓글 목록에서 해당 사용자 이름을 가진 사용자 찾기
+        const allComments = this.commentsList || []
+        for (const comment of allComments) {
+          if (comment.userName === reply.replyUserName || comment.petName === reply.replyUserName) {
+            replyUserId = comment.userId
+            console.log('찾은 사용자 ID:', replyUserId)
+            break
+          }
+          // 답글들도 확인
+          if (comment.replies && Array.isArray(comment.replies)) {
+            for (const replyItem of comment.replies) {
+              if (replyItem.replyUserName === reply.replyUserName) {
+                // 답글 작성자의 ID는 부모 댓글에서 찾아야 할 수도 있음
+                replyUserId = comment.userId // 임시로 부모 댓글 작성자 ID 사용
+                console.log('답글에서 찾은 사용자 ID (부모 댓글 작성자):', replyUserId)
+                break
+              }
+            }
+          }
+        }
+      }
+      
+      console.log('최종 찾은 답글 작성자 ID:', replyUserId)
+      
       // 답글에 대한 답글 모드 설정 (부모 댓글의 ID 사용, 답글의 작성자 ID 사용)
       this.replyingTo = {
         ...reply,
@@ -369,9 +437,17 @@ export default {
         parentCommentId: parentComment.commentId || parentComment.id,
         // 답글의 ID도 저장
         replyId: reply.id,
+        // 답글 작성자의 ID를 mentionUserId로 사용
+        mentionUserId: replyUserId,
         id: reply.id
       }
-      this.newComment = `@${reply.replyUserName} `
+      
+      console.log('설정된 replyingTo:', this.replyingTo)
+      
+      // 답글 작성자 이름을 다양한 필드에서 찾기
+      const replyUserName = reply.replyUserName || reply.replyPetName || reply.userName || reply.username || reply.petName || reply.user?.name || reply.user?.petName || '사용자'
+      this.newComment = `@${replyUserName} `
+      
       // 포커스를 입력 필드로 이동
       this.$nextTick(() => {
         if (this.$refs.commentInput && this.$refs.commentInput.$el) {
@@ -384,7 +460,14 @@ export default {
     },
     
     // 댓글 수정
-    editComment(comment) {
+    async editComment(comment) {
+      // 펫 등록 여부 확인
+      const hasPet = await checkPetExist()
+      if (!hasPet) {
+        this.$router.back()
+        return
+      }
+      
       this.$emit('edit-comment', {
         commentId: comment.commentId || comment.id,
         content: comment.content
@@ -392,14 +475,28 @@ export default {
     },
     
     // 댓글 삭제
-    deleteComment(comment) {
+    async deleteComment(comment) {
+      // 펫 등록 여부 확인
+      const hasPet = await checkPetExist()
+      if (!hasPet) {
+        this.$router.back()
+        return
+      }
+      
       this.$emit('delete-comment', {
         commentId: comment.commentId || comment.id
       })
     },
     
     // 답글 수정
-    editReply(reply) {
+    async editReply(reply) {
+      // 펫 등록 여부 확인
+      const hasPet = await checkPetExist()
+      if (!hasPet) {
+        this.$router.back()
+        return
+      }
+      
       this.$emit('edit-reply', {
         replyId: reply.id,
         content: reply.content
@@ -407,7 +504,14 @@ export default {
     },
     
     // 답글 삭제
-    deleteReply(reply) {
+    async deleteReply(reply) {
+      // 펫 등록 여부 확인
+      const hasPet = await checkPetExist()
+      if (!hasPet) {
+        this.$router.back()
+        return
+      }
+      
       console.log('=== deleteReply 메서드 실행 ===')
       console.log('받은 reply 객체:', reply)
       console.log('reply.id:', reply?.id)
@@ -443,7 +547,14 @@ export default {
     },
     
     // 수정 처리
-    handleEdit() {
+    async handleEdit() {
+      // 펫 등록 여부 확인
+      const hasPet = await checkPetExist()
+      if (!hasPet) {
+        this.$router.back()
+        return
+      }
+      
       console.log('=== 수정 처리 시작 ===')
       console.log('컨텍스트 메뉴 타입:', this.contextMenuType)
       console.log('컨텍스트 메뉴 데이터:', this.contextMenuData)
@@ -477,7 +588,14 @@ export default {
     },
     
     // 삭제 처리
-    handleDelete() {
+    async handleDelete() {
+      // 펫 등록 여부 확인
+      const hasPet = await checkPetExist()
+      if (!hasPet) {
+        this.$router.back()
+        return
+      }
+      
       console.log('=== 삭제 처리 시작 ===')
       console.log('컨텍스트 메뉴 타입:', this.contextMenuType)
       console.log('컨텍스트 메뉴 데이터:', this.contextMenuData)
@@ -625,12 +743,21 @@ export default {
 }
 
 .close-btn {
-  color: #64748B;
+  color: #FF8B8B !important;
+  background-color: #FF8B8B !important;
   transition: all 0.3s ease;
 }
 
+.close-btn :deep(.v-btn__content) {
+  color: white !important;
+}
+
+.close-btn :deep(.v-icon) {
+  color: white !important;
+}
+
 .close-btn:hover {
-  color: #1E293B;
+  background-color: #FF6B6B !important;
   transform: scale(1.1);
 }
 
@@ -961,12 +1088,42 @@ export default {
 
 .reply-item {
   margin-bottom: 8px;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.reply-avatar {
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+  flex-shrink: 0;
+}
+
+.reply-avatar:hover {
+  opacity: 0.8;
 }
 
 .reply-content {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  flex: 1;
+}
+
+.reply-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.reply-username.clickable {
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.reply-username.clickable:hover {
+  color: #FF8B8B;
 }
 
 .reply-username {
@@ -989,11 +1146,27 @@ export default {
 /* 반응형 */
 @media (max-width: 768px) {
   .comments-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     width: 100%;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   
   .comments-modal {
+    width: 95%;
+    max-width: none;
+    max-height: 90vh;
     border-left: none;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.15);
   }
   
   .modal-header,

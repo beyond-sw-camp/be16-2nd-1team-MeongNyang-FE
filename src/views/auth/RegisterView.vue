@@ -414,7 +414,7 @@ export default {
           name: form.name,
           nickname: form.nickname
         })
-        router.push('/dashboard')
+        router.push('/')
       } catch (error) {
         console.error('회원가입 실패:', error)
         let msg = '회원가입에 실패했습니다.'

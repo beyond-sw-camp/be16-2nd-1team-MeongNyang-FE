@@ -29,7 +29,7 @@
         <!-- 사용자 정보 -->
         <div class="user-info">
           <div class="username-section">
-            <h2 class="username">{{ mainPet?.name || userName || '사용자' }}</h2>
+            <h2 class="username">{{ displayUserName }}</h2>
             <div class="badges">
               <v-chip color="light-blue" size="small" class="badge">
                 <v-icon size="16" class="me-1">mdi-check</v-icon>
@@ -129,18 +129,22 @@
     <!-- 팔로우/팔로워 모달 -->
     <FollowModal
       :is-visible="isFollowModalVisible"
-      :user-id="null"
+      :user-id="currentUserId"
       :followers-count="followersCount"
       :followings-count="followingsCount"
       :initial-tab="followModalTab"
       @close="closeFollowModal"
+      @follow-updated="handleFollowUpdated"
+      @unfollow-updated="handleUnfollowUpdated"
     />
   </div>
 </template>
 
 <script>
             import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
+import { validatePetAndRedirect } from '@/utils/petValidation'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import { postAPI, userAPI, petAPI } from '@/services/api'
 import SearchComponent from '@/components/SearchComponent.vue'
 import FollowModal from '@/components/FollowModal.vue'
@@ -153,10 +157,31 @@ export default {
   },
   setup() {
     const $router = useRouter()
+    const authStore = useAuthStore()
     const showMainPetModal = ref(false)
     const selectedPetName = ref(null)
     const isFollowModalVisible = ref(false)
     const followModalTab = ref('followers')
+    
+    // 현재 로그인한 사용자 ID
+    const currentUserId = computed(() => {
+      const user = authStore.user
+      if (!user) return null
+      
+      // 가능한 ID 필드들을 확인
+      const possibleIds = [
+        user.id,
+        user.userId,
+        user.memberId,
+        user.user_id,
+        user.member_id,
+        user.member?.id,
+        user.member?.userId,
+        user.member?.memberId
+      ]
+      
+      return possibleIds.find(id => id != null && id !== undefined)
+    })
     
     // 통계 데이터
     const postsCount = ref(0)
@@ -167,12 +192,29 @@ export default {
     const userPets = ref([])
     const userName = ref('')
     
+    // 사용자 이름 (반응형으로 표시)
+    const displayUserName = computed(() => {
+      console.log('displayUserName computed 실행:', userName.value)
+      return userName.value || mainPet.value?.name || '사용자'
+    })
+    
     // 다이어리 데이터
     const diaryList = ref([])
     
-    // 대표 반려동물 (firstPet이 true인 동물)
+    // 대표 반려동물 (여러 방법으로 찾기)
     const mainPet = computed(() => {
-      return userPets.value.find(pet => pet.firstPet) || null
+      console.log('=== mainPet computed 실행 ===')
+      console.log('현재 userPets:', userPets.value)
+      
+      const foundPet = userPets.value.find(pet => pet.firstPet) || 
+                      userPets.value.find(pet => pet.petOrder === 1) ||
+                      userPets.value.find(pet => pet.isMain) ||
+                      userPets.value.find(pet => pet.mainPet) ||
+                      userPets.value[0] // 첫 번째 반려동물을 대표로 사용
+      
+      console.log('찾은 대표 반려동물:', foundPet)
+      console.log('대표 반려동물 이름:', foundPet?.name)
+      return foundPet || null
     })
     
     // 모달에서 선택된 펫 (기본값은 현재 대표 펫)
@@ -191,9 +233,13 @@ export default {
     // 게시물 개수 가져오기
     const fetchPostsCount = async () => {
       try {
-        const response = await postAPI.getMyPostsCount()
+        // 내 일기 목록을 가져와서 개수 계산
+        const response = await postAPI.getMyPosts({ page: 0, size: 1000 }) // 충분히 큰 size로 모든 일기 가져오기
+        console.log('내 일기 목록 API 응답:', response.data)
         if (response.data && response.data.data) {
-          postsCount.value = response.data.data.totalElements || 0
+          const posts = response.data.data.content || []
+          postsCount.value = posts.length
+          console.log('계산된 게시물 개수:', postsCount.value)
         }
       } catch (error) {
         console.error('게시물 개수 조회 실패:', error)
@@ -204,12 +250,21 @@ export default {
     // 팔로워 개수 가져오기
     const fetchFollowersCount = async () => {
       try {
-        const response = await userAPI.getFollowersCount()
+        console.log('🔍 팔로워 개수 조회 시작 - currentUserId:', currentUserId.value)
+        const response = await userAPI.getUserFollowersCount(currentUserId.value)
+        console.log('📥 팔로워 개수 API 응답:', response)
+        console.log('📥 팔로워 개수 응답 데이터:', response.data)
+        
         if (response.data && response.data.data) {
           followersCount.value = response.data.data.totalElements || 0
+          console.log('✅ 설정된 팔로워 개수:', followersCount.value)
+        } else {
+          console.log('⚠️ 팔로워 개수 데이터가 없음')
+          followersCount.value = 0
         }
       } catch (error) {
-        console.error('팔로워 개수 조회 실패:', error)
+        console.error('❌ 팔로워 개수 조회 실패:', error)
+        console.error('❌ 에러 응답:', error.response?.data)
         followersCount.value = 0
       }
     }
@@ -217,35 +272,73 @@ export default {
     // 팔로잉 개수 가져오기
     const fetchFollowingsCount = async () => {
       try {
-        const response = await userAPI.getFollowingsCount()
+        console.log('🔍 팔로잉 개수 조회 시작 - currentUserId:', currentUserId.value)
+        const response = await userAPI.getUserFollowingsCount(currentUserId.value)
+        console.log('📥 팔로잉 개수 API 응답:', response)
+        console.log('📥 팔로잉 개수 응답 데이터:', response.data)
+        
         if (response.data && response.data.data) {
           followingsCount.value = response.data.data.totalElements || 0
+          console.log('✅ 설정된 팔로잉 개수:', followingsCount.value)
+        } else {
+          console.log('⚠️ 팔로잉 개수 데이터가 없음')
+          followingsCount.value = 0
         }
       } catch (error) {
-        console.error('팔로잉 개수 조회 실패:', error)
+        console.error('❌ 팔로잉 개수 조회 실패:', error)
+        console.error('❌ 에러 응답:', error.response?.data)
         followingsCount.value = 0
       }
     }
     
     // 반려동물 목록 가져오기
     const fetchUserPets = async () => {
+      console.log('=== fetchUserPets 시작 ===')
       try {
+        console.log('petAPI.getUserPets() 호출 시작...')
         const response = await petAPI.getUserPets()
+        console.log('petAPI.getUserPets() 응답:', response)
+        console.log('응답 데이터:', response.data)
+        
         if (response.data && response.data.data) {
+          console.log('반려동물 데이터:', response.data.data)
           userPets.value = response.data.data.pets || []
           userName.value = response.data.data.userName || ''
+          console.log('설정된 userPets:', userPets.value)
+          console.log('설정된 userName:', userName.value)
+          
+          // 반려동물 객체의 모든 필드 확인
+          if (userPets.value.length > 0) {
+            console.log('첫 번째 반려동물의 모든 필드:', Object.keys(userPets.value[0]))
+            console.log('첫 번째 반려동물 상세 데이터:', userPets.value[0])
+          }
+          
+          // 대표 반려동물 확인 (여러 방법 시도)
+          const mainPetData = userPets.value.find(pet => pet.firstPet) || 
+                             userPets.value.find(pet => pet.petOrder === 1) ||
+                             userPets.value.find(pet => pet.isMain) ||
+                             userPets.value.find(pet => pet.mainPet) ||
+                             userPets.value[0] // 첫 번째 반려동물을 대표로 사용
+          console.log('대표 반려동물:', mainPetData)
+          console.log('대표 반려동물 이름:', mainPetData?.name)
+        } else {
+          console.log('응답 데이터 구조가 예상과 다름')
+          userPets.value = []
         }
       } catch (error) {
         console.error('반려동물 목록 조회 실패:', error)
+        console.log('에러 응답:', error.response)
+        console.log('에러 상태:', error.response?.status)
+        console.log('에러 데이터:', error.response?.data)
         userPets.value = []
-        userName.value = ''
       }
+      console.log('=== fetchUserPets 완료 ===')
     }
     
     
                 
                 // 검색 상태
-                const searchType = ref('TITLE')
+                const searchType = ref('CONTENT')
                 const searchKeyword = ref('')
                 
                 // 페이지네이션 상태
@@ -263,8 +356,8 @@ export default {
                       // 검색이 있는 경우
                       response = await postAPI.search(searchType.value, searchKeyword.value.trim(), { page, size: 9 })
                     } else {
-                      // 일반 목록 조회
-                      response = await postAPI.getList({ page, size: 9 })
+                      // 내 일기 목록 조회
+                      response = await postAPI.getMyPosts({ page, size: 9 })
                     }
                     
                     if (response.data && response.data.data) {
@@ -312,13 +405,13 @@ export default {
                 
                 // 검색 처리
                 const handleSearch = (searchData) => {
-                  searchType.value = searchData.type
+                  searchType.value = searchData.searchType
                   searchKeyword.value = searchData.keyword
                   // 검색 시 새로운 검색 페이지로 이동
                   $router.push({
                     path: '/search',
                     query: {
-                      type: searchData.type,
+                      searchType: searchData.searchType,
                       keyword: searchData.keyword
                     }
                   })
@@ -350,7 +443,7 @@ export default {
         }
         
         // 백엔드 API 호출
-        await petAPI.setMainPet(selectedPetData.id)
+        await petAPI.setMainPet()
         
         // 성공 메시지
         alert('대표동물이 변경되었습니다!')
@@ -387,10 +480,41 @@ export default {
       isFollowModalVisible.value = false
     }
     
+    // 팔로우 업데이트 처리
+    const handleFollowUpdated = async () => {
+      console.log('🔄 팔로우 업데이트 - 숫자 재조회')
+      await Promise.all([
+        fetchFollowersCount(),
+        fetchFollowingsCount()
+      ])
+    }
+    
+    // 언팔로우 업데이트 처리
+    const handleUnfollowUpdated = async () => {
+      console.log('🔄 언팔로우 업데이트 - 숫자 재조회')
+      await Promise.all([
+        fetchFollowersCount(),
+        fetchFollowingsCount()
+      ])
+    }
+    
     // 컴포넌트 마운트 시 데이터 가져오기
-                onMounted(() => {
+                onMounted(async () => {
+                  console.log('=== DiaryListView onMounted 시작 ===')
+                  
+                  // 펫 등록 여부 확인
+                  console.log('펫 등록 여부 확인 시작...')
+                  const hasPet = await validatePetAndRedirect($router)
+                  console.log('펫 등록 여부 확인 결과:', hasPet)
+                  if (!hasPet) {
+                    console.log('펫이 없음 - 컴포넌트 마운트 중단')
+                    return
+                  }
+                  
                   // 초기화를 nextTick으로 지연
+                  console.log('nextTick으로 초기화 지연...')
                   nextTick(() => {
+                    console.log('nextTick 실행 - API 호출 시작')
                     fetchPostsCount()
                     fetchFollowersCount()
                     fetchFollowingsCount()
@@ -399,7 +523,9 @@ export default {
                     
                     // 스크롤 이벤트 리스너 추가
                     window.addEventListener('scroll', handleScroll)
+                    console.log('스크롤 이벤트 리스너 추가 완료')
                   })
+                  console.log('=== DiaryListView onMounted 완료 ===')
                 })
     
     // 컴포넌트 언마운트 시 이벤트 리스너 제거
@@ -411,9 +537,10 @@ export default {
                     showMainPetModal,
                     selectedPet,
                     userPets,
-                    userName,
                     mainPet,
                     petBio,
+                    displayUserName,
+                    currentUserId,
                     postsCount,
                     followersCount,
                     followingsCount,
@@ -427,6 +554,8 @@ export default {
                     changeMainPet,
                     openFollowModal,
                     closeFollowModal,
+                    handleFollowUpdated,
+                    handleUnfollowUpdated,
                     handleSearch,
                     handleClearSearch
                   }

@@ -4,7 +4,8 @@
       <!-- 페이지 헤더 -->
       <div class="market-header">
         <h1 class="page-title">멍냥거래</h1>
-        <p class="page-subtitle">안쓰는 애완용품을 거래해보세요 🐱🐶</p>     </div>
+        <p class="page-subtitle">안쓰는 애완용품을 거래해보세요 🐱🐶</p>
+      </div>
 
       <!-- 검색 및 필터 섹션 -->
       <div class="search-filter-section">
@@ -33,6 +34,7 @@
             </button>
           </div>
 
+          
           <!-- 정렬 선택 -->
           <div class="filter-group">
             <div class="dropdown-container">
@@ -94,13 +96,15 @@
             <!-- 이미지 -->
             <div class="post-image">
               <img 
-                :src="post.thumbnailUrl || 'https://via.placeholder.com/400x300/f0f0f0/cccccc?text=이미지+없음'" 
+                v-if="post.thumbnailUrl"
+                :src="post.thumbnailUrl" 
                 :alt="post.title"
                 @error="handleImageError"
               />
-              <!-- 판매상태 배지 -->
-              <div class="status-badge" :class="getStatusClass(post.saleStatus)">
-                {{ getStatusText(post.saleStatus) }}
+              <!-- 이미지가 없는 경우 기본 이미지 표시 -->
+              <div v-else class="default-image">
+                <v-icon icon="mdi-image-off" size="48" color="#E87D7D" />
+                <span class="default-image-text">이미지 없음</span>
               </div>
             </div>
 
@@ -110,19 +114,26 @@
               <div class="post-price">{{ formatPrice(post.price) }}</div>
             </div>
 
-            <!-- 찜하기 버튼과 찜개수 (좌하단) -->
-            <div class="like-section">
-              <button 
-                class="like-btn"
-                @click.stop="toggleLike(post.id)"
-                :class="{ liked: post.isLiked }"
-              >
-                <v-icon 
-                  :icon="post.isLiked ? 'mdi-heart' : 'mdi-heart-outline'" 
-                  size="20"
-                />
-              </button>
-              <!-- 찜개수 제거 -->
+            <!-- 판매상태 배지 -->
+            <div class="status-badge" :class="getStatusClass(post.saleStatus)">
+              {{ getStatusText(post.saleStatus) }}
+            </div>
+            
+            <!-- 찜하기 버튼 -->
+            <button 
+              class="like-btn"
+              @click.stop="toggleLike(post.id)"
+              :class="{ liked: post.isLiked }"
+            >
+              <v-icon 
+                :icon="post.isLiked ? 'mdi-heart' : 'mdi-heart-outline'" 
+                size="20"
+              />
+            </button>
+            
+            <!-- 거리 정보 표시 -->
+            <div v-if="selectedSort === 'distance' && post.distance !== null" class="distance-info">
+              <span class="distance-text">{{ formatDistance(post.distance) }}</span>  
             </div>
           </div>
         </div>
@@ -196,9 +207,18 @@ export default {
         { title: '최신순', value: 'latest' },
         { title: '인기순', value: 'popular' },
         { title: '가격 낮은순', value: 'price-low' },
-        { title: '가격 높은순', value: 'price-high' }
+        { title: '가격 높은순', value: 'price-high' },
+        { title: '📍 거리순', value: 'distance' }
       ],
       likedPosts: new Set(), // 찜한 게시글 ID들을 저장할 Set
+      
+      // 위치 관련 상태
+      userLocation: null, // 사용자 현재 위치 { lat, lng }
+      locationPermission: 'prompt', // 'granted', 'denied', 'prompt'
+      isLocationLoading: false,
+      
+      // 검색 디바운싱
+      searchTimeout: null,
     }
   },
   computed: {
@@ -215,6 +235,85 @@ export default {
     }
   },
   methods: {
+    // 거리 계산 함수 (Haversine 공식)
+    calculateDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371 // 지구 반지름 (km)
+      const dLat = this.toRadians(lat2 - lat1)
+      const dLon = this.toRadians(lon2 - lon1)
+      const a = 
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(this.toRadians(lat1)) * Math.cos(this.toRadians(lat2)) * 
+        Math.sin(dLon / 2) * Math.sin(dLon / 2)
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+      const distance = R * c
+      return Math.round(distance * 100) / 100 // 소수점 둘째 자리까지
+    },
+
+    // 도를 라디안으로 변환
+    toRadians(degrees) {
+      return degrees * (Math.PI / 180)
+    },
+
+    // 거리 포맷팅 (km/m 표시)
+    formatDistance(distance) {
+      if (distance < 1) {
+        return `${Math.round(distance * 1000)}m`
+      } else {
+        return `${distance}km`
+      }
+    },
+
+    // 사용자 위치 가져오기
+    async getUserLocation() {
+      if (!navigator.geolocation) {
+        console.warn('Geolocation is not supported by this browser.')
+        return null
+      }
+
+      return new Promise((resolve, reject) => {
+        this.isLocationLoading = true
+        
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            this.isLocationLoading = false
+            const location = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            }
+            this.userLocation = location
+            this.locationPermission = 'granted'
+            console.log('사용자 위치 획득:', location)
+            resolve(location)
+          },
+          (error) => {
+            this.isLocationLoading = false
+            this.locationPermission = 'denied'
+            console.error('위치 정보 획득 실패:', error)
+            
+            let errorMessage = '위치 정보를 가져올 수 없습니다.'
+            switch(error.code) {
+              case error.PERMISSION_DENIED:
+                errorMessage = '위치 권한이 거부되었습니다.'
+                break
+              case error.POSITION_UNAVAILABLE:
+                errorMessage = '위치 정보를 사용할 수 없습니다.'
+                break
+              case error.TIMEOUT:
+                errorMessage = '위치 정보 요청 시간이 초과되었습니다.'
+                break
+            }
+            
+            reject(new Error(errorMessage))
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 300000 // 5분
+          }
+        )
+      })
+    },
+
     async fetchMarketPosts() {
       this.loading = true
       this.error = null
@@ -249,13 +348,85 @@ export default {
             console.log('Sorted by likeCount:', fetchedPosts.map(p => ({ id: p.id, likeCount: p.likeCount })))
           }
           
+          // 거리순 정렬 처리
+          if (this.selectedSort === 'distance') {
+            if (this.userLocation) {
+              // 각 포스트에 거리 정보 추가
+              fetchedPosts.forEach(post => {
+                if (post.latitude && post.longitude) {
+                  post.distance = this.calculateDistance(
+                    this.userLocation.lat,
+                    this.userLocation.lng,
+                    post.latitude,
+                    post.longitude
+                  )
+                } else {
+                  post.distance = null // 위치 정보가 없는 경우
+                }
+              })
+              
+              // 거리순으로 정렬 (위치 정보가 있는 것만, 가까운 순)
+              fetchedPosts.sort((a, b) => {
+                if (a.distance === null && b.distance === null) return 0
+                if (a.distance === null) return 1
+                if (b.distance === null) return -1
+                return a.distance - b.distance
+              })
+              
+              console.log('Sorted by distance:', fetchedPosts.map(p => ({ 
+                id: p.id, 
+                distance: p.distance,
+                title: p.title 
+              })))
+            } else {
+              // 사용자 위치가 없으면 위치 요청
+              try {
+                await this.getUserLocation()
+                // 위치 획득 후 다시 정렬
+                if (this.userLocation) {
+                  fetchedPosts.forEach(post => {
+                    if (post.latitude && post.longitude) {
+                      post.distance = this.calculateDistance(
+                        this.userLocation.lat,
+                        this.userLocation.lng,
+                        post.latitude,
+                        post.longitude
+                      )
+                    } else {
+                      post.distance = null
+                    }
+                  })
+                  
+                  fetchedPosts.sort((a, b) => {
+                    if (a.distance === null && b.distance === null) return 0
+                    if (a.distance === null) return 1
+                    if (b.distance === null) return -1
+                    return a.distance - b.distance
+                  })
+                }
+              } catch (error) {
+                console.warn('위치 정보를 가져올 수 없어 거리순 정렬을 할 수 없습니다:', error.message)
+                // 위치 정보가 없으면 기본 정렬로 변경
+                this.selectedSort = 'latest'
+              }
+            }
+          }
+          
           this.posts = fetchedPosts
           this.totalElements = response.data.data?.totalElements || 0
           this.totalPages = response.data.data?.totalPages || 0
           
-          // 각 포스트에 isLiked 속성 추가 (로컬스토리지에서 가져온 정보 사용)
+          // 각 포스트에 isLiked 속성 추가 (백엔드에서 받은 liked 필드 사용)
           this.posts.forEach(post => {
-            post.isLiked = this.isPostLiked(post.id)
+            // 백엔드의 'liked' 필드를 'isLiked'로 매핑
+            if (post.liked !== undefined) {
+              post.isLiked = post.liked
+              console.log(`게시글 ${post.id} liked 필드를 isLiked로 매핑:`, post.liked, '→', post.isLiked)
+            } else {
+              // 백엔드에서 liked 필드가 없는 경우 로컬스토리지 정보 사용
+              post.isLiked = this.isPostLiked(post.id)
+            }
+            
             if (!post.createdAt) {
               post.createdAt = new Date().toISOString()
             }
@@ -277,19 +448,29 @@ export default {
         const post = this.posts.find(p => p.id === postId)
         if (!post) return
 
+        console.log('찜하기 토글 시작 - postId:', postId, '현재 상태:', post.isLiked)
+
         if (post.isLiked) {
           // 찜 취소
+          console.log('찜 취소 시도...')
           await marketAPI.unlike(postId)
+          console.log('찜 취소 성공')
           post.likeCount = Math.max(0, (post.likeCount || 0) - 1)
           this.removeLikedPost(postId)
         } else {
           // 찜하기
+          console.log('찜하기 시도...')
           await marketAPI.like(postId)
+          console.log('찜하기 성공')
           post.likeCount = (post.likeCount || 0) + 1
           this.addLikedPost(postId)
         }
         
+        
+        // 상태 토글
         post.isLiked = !post.isLiked
+        console.log('찜 상태 업데이트 완료:', post.isLiked)
+        
       } catch (error) {
         console.error('찜하기/취소 오류:', error)
         // 에러 발생 시 사용자에게 알림
@@ -303,8 +484,7 @@ export default {
     handleCategorySelect(category) {
       this.selectedCategory = category
       this.currentPage = 1
-      // 현재는 백엔드에서 필터링을 지원하지 않으므로 클라이언트 사이드에서 필터링
-      this.filterPostsLocally()
+      this.fetchMarketPosts()
     },
 
     handleSearch() {
@@ -312,47 +492,37 @@ export default {
       clearTimeout(this.searchTimeout)
       this.searchTimeout = setTimeout(() => {
         this.currentPage = 1
-        // 현재는 백엔드에서 검색을 지원하지 않으므로 클라이언트 사이드에서 필터링
-        this.filterPostsLocally()
+        this.fetchMarketPosts()
       }, 500)
-    },
-
-    // 클라이언트 사이드 필터링 (백엔드 필터링 지원 전까지 임시)
-    filterPostsLocally() {
-      // 먼저 모든 데이터를 가져온 후 클라이언트에서 필터링
-      this.fetchMarketPosts().then(() => {
-        let filteredPosts = [...this.posts]
-        
-        // 카테고리 필터링
-        if (this.selectedCategory !== 'all') {
-          filteredPosts = filteredPosts.filter(post => 
-            post.category === this.selectedCategory
-          )
-        }
-        
-        // 검색어 필터링
-        if (this.searchQuery && this.searchQuery.trim()) {
-          const searchTerm = this.searchQuery.toLowerCase().trim()
-          filteredPosts = filteredPosts.filter(post => 
-            post.title.toLowerCase().includes(searchTerm) ||
-            (post.description && post.description.toLowerCase().includes(searchTerm))
-          )
-        }
-        
-        this.posts = filteredPosts
-        this.totalElements = filteredPosts.length
-        this.totalPages = Math.ceil(filteredPosts.length / this.itemsPerPage)
-      })
     },
 
     toggleSortDropdown() {
       this.showSortDropdown = !this.showSortDropdown
     },
 
-    selectSort(sort) {
+    async selectSort(sort) {
       this.selectedSort = sort
       this.showSortDropdown = false
       this.currentPage = 1
+      
+      // 거리순 선택 시 위치 권한 요청
+      if (sort === 'distance') {
+        if (!this.userLocation && this.locationPermission !== 'denied') {
+          try {
+            await this.getUserLocation()
+          } catch (error) {
+            console.warn('위치 정보를 가져올 수 없습니다:', error.message)
+            // 위치 정보가 없으면 기본 정렬로 변경
+            this.selectedSort = 'latest'
+            alert('위치 정보를 가져올 수 없어 최신순으로 정렬합니다.')
+          }
+        } else if (this.locationPermission === 'denied') {
+          // 위치 권한이 거부된 경우
+          this.selectedSort = 'latest'
+          alert('위치 권한이 필요합니다. 브라우저 설정에서 위치 권한을 허용해주세요.')
+        }
+      }
+      
       this.fetchMarketPosts()
     },
 
@@ -400,8 +570,18 @@ export default {
     },
 
     handleImageError(event) {
-      // 이미지 로드 실패 시 플레이스홀더로 대체
-      event.target.src = 'https://via.placeholder.com/400x300/f0f0f0/cccccc?text=이미지+없음'
+      // 이미지 로드 실패 시 기본 이미지로 대체
+      const postImage = event.target.parentElement
+      if (postImage) {
+        // 기존 이미지 숨기기
+        event.target.style.display = 'none'
+        
+        // 기본 이미지 표시
+        const defaultImage = postImage.querySelector('.default-image')
+        if (defaultImage) {
+          defaultImage.style.display = 'flex'
+        }
+      }
     },
 
     changePage(page) {
@@ -430,6 +610,18 @@ export default {
           
           // localStorage 업데이트 (사용자별로 구분)
           this.saveLikedPosts()
+          
+          // posts가 로드된 후에만 isLiked 상태 업데이트
+          if (this.posts.length > 0) {
+            this.posts.forEach(post => {
+              // 백엔드의 liked 필드가 있으면 그것을 사용, 없으면 localStorage 정보 사용
+              if (post.liked !== undefined) {
+                post.isLiked = post.liked
+              } else {
+                post.isLiked = this.isPostLiked(post.id)
+              }
+            })
+          }
         } else {
           console.log('백엔드에서 찜한 게시글을 가져올 수 없음, localStorage 사용')
           this.loadLikedPosts()
@@ -534,24 +726,15 @@ export default {
       return isLiked
     },
 
-    // 찜하기 상태 업데이트 (백엔드 동기화)
-    async updateLikeStatus() {
-      await this.syncLikeStatus()
-      // posts가 로드된 후에만 isLiked 상태 업데이트
-      if (this.posts.length > 0) {
-        this.posts.forEach(post => {
-          post.isLiked = this.isPostLiked(post.id)
-        })
-      }
-    },
+
   },
 
   mounted() {
-    // 백엔드와 찜하기 상태 동기화
-    this.syncLikeStatus()
-    
-    // 초기 데이터 로드
+    // 초기 데이터 로드 (백엔드에서 liked 필드 포함)
     this.fetchMarketPosts()
+    
+    // 백엔드와 찜하기 상태 동기화 (데이터 로드 후)
+    this.syncLikeStatus()
 
     // 드롭다운 외부 클릭 시 닫기
     document.addEventListener('click', (e) => {
@@ -740,7 +923,7 @@ export default {
   border-radius: 12px;
   margin-top: 8px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  z-index: 10;
+  z-index: 1000; /* 판매상태 배지보다 위에 표시 */
   overflow: hidden;
 }
 
@@ -868,30 +1051,43 @@ export default {
 .status-badge {
   position: absolute;
   top: 12px;
-  left: 12px; /* NEW 위치로 이동 */
-  background: #E87D7D;
-  color: white;
+  right: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #2c3e50;
   padding: 6px 10px;
-  border-radius: 8px;
-  font-size: 0.75rem;
-  font-weight: 700;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
   text-transform: uppercase;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  z-index: 10;
 }
 
 .status-sale {
-  background-color: #4CAF50; /* 판매중 */
+  background: rgba(76, 175, 80, 0.9);
+  color: white;
+  border-color: rgba(76, 175, 80, 0.3);
 }
 
 .status-sold {
-  background-color: #F44336; /* 판매완료 */
+  background: rgba(244, 67, 54, 0.9);
+  color: white;
+  border-color: rgba(244, 67, 54, 0.3);
 }
 
 .status-reserved {
-  background-color: #FF9800; /* 예약중 */
+  background: rgba(255, 152, 0, 0.9);
+  color: white;
+  border-color: rgba(255, 152, 0, 0.3);
 }
 
 .status-default {
-  background-color: #9E9E9E; /* 기본 */
+  background: rgba(158, 158, 158, 0.9);
+  color: white;
+  border-color: rgba(158, 158, 158, 0.3);
 }
 
 /* 내용 */
@@ -1193,22 +1389,16 @@ export default {
   }
 }
 
-/* 찜하기 섹션 (좌하단) */
-.like-section {
-  position: absolute;
-  bottom: 16px;
-  left: 16px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
+/* 찜하기 버튼 */
 .like-btn {
+  position: absolute;
+  bottom: 12px;
+  right: 60px;
   background: rgba(255, 255, 255, 0.95);
   border: 2px solid #e9ecef;
   border-radius: 50%;
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1216,7 +1406,7 @@ export default {
   transition: all 0.3s ease;
   backdrop-filter: blur(10px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  flex-shrink: 0;
+  z-index: 10;
 }
 
 .like-btn:hover {
@@ -1236,7 +1426,37 @@ export default {
   color: #6c757d;
 }
 
-/* 찜개수 스타일 제거 */
+/* 거리 정보 */
+.distance-info {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(232, 125, 125, 0.2);
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.distance-info:hover {
+  background: rgba(255, 255, 255, 1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: rgba(232, 125, 125, 0.3);
+}
+
+.distance-text {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #E87D7D;
+  white-space: nowrap;
+}
 
 /* 기존 찜하기 관련 스타일 제거 */
 .post-likes {
@@ -1246,5 +1466,36 @@ export default {
 .like-button-top,
 .like-button-inline {
   display: none;
+}
+
+/* 기본 이미지 스타일 */
+.default-image {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
+  color: #6c757d;
+  min-height: 200px;
+}
+
+.default-image-text {
+  margin-top: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #6c757d;
+}
+
+/* 포스트 이미지 컨테이너 */
+.post-image {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f8f9fa;
 }
 </style>

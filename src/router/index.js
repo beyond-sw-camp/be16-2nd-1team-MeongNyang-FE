@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router"
 import { useAuthStore } from '@/stores/auth'
+import { checkPetExist } from '@/utils/petValidation'
 
 // 뷰 컴포넌트들
 import HomeView from '@/views/HomeView.vue'
@@ -25,6 +26,7 @@ const baseRoutes = [
     component: HomeView,
     meta: { requiresAuth: false }
   },
+
   {
     path: '/dashboard',
     name: 'Dashboard',
@@ -69,6 +71,7 @@ router.beforeEach(async (to, from, next) => {
 
   const authStore = useAuthStore()
 
+
   
   // 인증이 필요한 페이지인지 확인
   if (to.meta.requiresAuth) {
@@ -93,6 +96,39 @@ router.beforeEach(async (to, from, next) => {
     if (to.meta.requiresAdmin && authStore.user?.role !== 'ADMIN') {
       next('/404')
       return
+    }
+    
+    // 다이어리 관련 페이지에서 펫 존재 확인
+    const isDiaryCreate = to.path.startsWith('/diarys/create')
+    const isDiaryEdit = to.path.startsWith('/diary/') && to.path.includes('/edit')
+    
+    console.log('라우터 가드 조건 확인:')
+    console.log('- isDiaryCreate:', isDiaryCreate)
+    console.log('- isDiaryEdit:', isDiaryEdit)
+    console.log('- 전체 조건:', isDiaryCreate || isDiaryEdit)
+    
+    if (isDiaryCreate || isDiaryEdit) {
+      console.log('=== 라우터 가드: 다이어리 관련 페이지 접근 ===')
+      console.log('접근 경로:', to.path)
+      console.log('펫 존재 확인 시작...')
+      
+      try {
+        const hasPet = await checkPetExist()
+        console.log('펫 존재 확인 결과:', hasPet)
+        
+        if (!hasPet) {
+          console.log('펫이 없음 - 대시보드로 리다이렉트')
+          next('/dashboard')
+          return
+        }
+        
+        console.log('펫이 있음 - 정상 진행')
+      } catch (error) {
+        console.error('펫 존재 확인 중 오류:', error)
+        console.log('에러 발생 - 대시보드로 리다이렉트')
+        next('/dashboard')
+        return
+      }
     }
   }
   
