@@ -246,7 +246,7 @@
                 </span>
               </div>
               <span class="comment-content">
-                <template v-for="(part, index) in formatCommentText(comment.content)" :key="index">
+                <template v-for="(part, index) in formatCommentText(comment.content, comment.mentionUserId)" :key="index">
                   <span 
                     v-if="part.isTag" 
                     class="tag-mention clickable"
@@ -839,7 +839,7 @@ export default {
     }
 
     // 댓글 텍스트 포맷팅 (태그 추출)
-    const formatCommentText = (text) => {
+    const formatCommentText = (text, mentionUserId = null) => {
       if (!text) return []
       
       const parts = []
@@ -860,7 +860,7 @@ export default {
         parts.push({
           text: match[0], // @username
           isTag: true,
-          userId: match[1] // username 부분을 userId로 사용 (실제로는 mentionUserId를 사용해야 함)
+          userId: mentionUserId || match[1] // mentionUserId가 있으면 사용, 없으면 username 사용
         })
         
         lastIndex = match.index + match[0].length
@@ -885,7 +885,8 @@ export default {
 
     // 게시글 수정
     const editPost = (postId) => {
-      router.push(`/diarys/edit/${postId}`)
+      console.log('수정 페이지로 이동:', postId)
+      router.push(`/diary/${postId}/edit`)
     }
 
     // 게시글 삭제

@@ -233,7 +233,7 @@
                 </span>
               </div>
               <span class="comment-content">
-                <template v-for="(part, index) in formatCommentText(comment.content)" :key="index">
+                <template v-for="(part, index) in formatCommentText(comment.content, comment.mentionUserId)" :key="index">
                   <span 
                     v-if="part.isTag" 
                     class="tag-mention clickable"
@@ -1033,7 +1033,7 @@ export default {
                 }
                 
                 // 댓글 텍스트 포맷팅 (태그 추출)
-                const formatCommentText = (text) => {
+                const formatCommentText = (text, mentionUserId = null) => {
                   if (!text) return []
                   
                   const parts = []
@@ -1054,7 +1054,7 @@ export default {
                     parts.push({
                       text: match[0], // @username
                       isTag: true,
-                      userId: match[1] // username 부분을 userId로 사용 (실제로는 mentionUserId를 사용해야 함)
+                      userId: mentionUserId || match[1] // mentionUserId가 있으면 사용, 없으면 username 사용
                     })
                     
                     lastIndex = match.index + match[0].length
@@ -1163,6 +1163,11 @@ export default {
   padding-right: 432px; /* 400px(댓글창) + 32px(기존 패딩) */
 }
 
+.diary-detail-page.comments-open .diary-container {
+  max-width: 600px; /* 댓글창 공간만큼 너비 줄임 */
+  margin: 0 auto;
+}
+
 .diary-container {
   max-width: 800px;
   margin: 0 auto;
@@ -1241,7 +1246,7 @@ export default {
 
 .follow-section {
   margin-right: 4px;
-  margin-left: 450px;
+  margin-left: auto; /* 오른쪽 정렬 */
 }
 
 .follow-btn {

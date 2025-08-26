@@ -50,7 +50,7 @@
           :key="user.userId || user.id" 
           class="user-item"
         >
-          <div class="user-info">
+          <div class="user-info" @click="goToUserDiary(user.userId || user.id)">
             <img 
               :src="user.profileImage || '/default-avatar.png'" 
               :alt="user.petName"
@@ -188,6 +188,16 @@ const filteredUsers = computed(() => {
 // Methods
 const closeModal = () => {
   emit('close')
+}
+
+// 사용자 다이어리로 이동하는 메서드
+const goToUserDiary = (userId) => {
+  if (userId) {
+    // 모달을 닫고 해당 사용자의 다이어리로 이동
+    closeModal()
+    // 라우터를 사용하여 페이지 이동
+    window.location.href = `/diarys/${userId}`
+  }
 }
 
 // 팔로우 처리
@@ -479,6 +489,15 @@ watch(() => props.isVisible, (isVisible) => {
   display: flex;
   align-items: center;
   gap: 12px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.user-info:hover {
+  background-color: #f0f0f0;
+  transform: translateY(-1px);
 }
 
 .user-avatar {
@@ -486,11 +505,25 @@ watch(() => props.isVisible, (isVisible) => {
   height: 40px;
   border-radius: 50%;
   object-fit: cover;
+  border: 2px solid transparent;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.user-info:hover .user-avatar {
+  border-color: #FF8B8B;
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(255, 139, 139, 0.2);
 }
 
 .username {
   font-weight: 500;
   color: #333;
+  transition: color 0.2s ease;
+}
+
+.user-info:hover .username {
+  color: #FF8B8B;
 }
 
 .action-buttons {
