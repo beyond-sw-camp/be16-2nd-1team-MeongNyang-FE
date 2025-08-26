@@ -228,9 +228,12 @@ export default {
     const handleResend = async () => {
       if (isResending.value) return
       
+      console.log('🔍 이메일 재전송 시작')
       isResending.value = true
+      
       try {
         // 부모 컴포넌트에 재전송 요청
+        console.log('🔍 부모 컴포넌트에 resend 이벤트 발생')
         emit('resend')
         
         // 타이머 리셋
@@ -240,8 +243,11 @@ export default {
         
         // 에러 메시지 초기화
         errorMessage.value = ''
+        
+        console.log('✅ 재전송 처리 완료, 타이머 리셋됨')
       } catch (error) {
-        console.error('재전송 실패:', error)
+        console.error('❌ 재전송 처리 실패:', error)
+        errorMessage.value = '재전송 처리 중 오류가 발생했습니다.'
       } finally {
         isResending.value = false
       }
