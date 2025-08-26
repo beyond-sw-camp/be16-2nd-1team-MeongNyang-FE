@@ -209,6 +209,32 @@
           </span>
         </div>
 
+        <!-- 댓글 미리보기 -->
+        <div v-if="post.previewComments && post.previewComments.length > 0" class="comments-preview">
+          <div class="comments-preview-header">
+            <span class="comments-preview-title">댓글 {{ post.commentsCount || 0 }}개</span>
+            <span 
+              v-if="post.commentsCount > 5" 
+              class="view-all-comments"
+              @click="goToPostWithComments(post.id)"
+            >
+              모두 보기
+            </span>
+          </div>
+          <div class="comments-preview-list">
+            <div 
+              v-for="comment in post.previewComments.slice(0, 5)" 
+              :key="comment.id" 
+              class="comment-preview-item"
+            >
+              <span class="comment-author">
+                {{ comment.replyUserName || comment.userName || comment.user?.userName || comment.author?.userName || comment.petName || '익명' }}
+              </span>
+              <span class="comment-content">{{ comment.content }}</span>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -338,6 +364,89 @@ export default {
         
       } catch (error) {
         console.error('전체 팔로우 상태 조회 실패:', error)
+      }
+    }
+
+    // 모든 포스트의 댓글 미리보기 가져오기
+    const fetchAllCommentsPreview = async () => {
+      try {
+        console.log('=== 모든 포스트 댓글 미리보기 조회 시작 ===')
+        
+        // 현재 로드된 모든 포스트에 대해 댓글 미리보기 조회
+        const promises = posts.value.map(async (post) => {
+          try {
+            console.log(`포스트 ${post.id} 댓글 미리보기 조회 시작`)
+            const response = await postAPI.getComments(post.id, { page: 0, size: 10 })
+            console.log(`포스트 ${post.id} 댓글 API 응답:`, response.data)
+            
+            if (response.data && response.data.data) {
+              let commentsData = []
+              
+              if (Array.isArray(response.data.data)) {
+                commentsData = response.data.data
+              } else if (response.data.data.content) {
+                commentsData = response.data.data.content
+              } else {
+                commentsData = response.data.data
+              }
+              
+              console.log(`포스트 ${post.id} 추출된 댓글 데이터:`, commentsData)
+              
+              // 댓글과 답글을 모두 포함하여 미리보기 생성
+              let allComments = []
+              if (Array.isArray(commentsData)) {
+                commentsData.forEach(comment => {
+                  console.log(`댓글 ${comment.id} 상세 정보:`, {
+                    id: comment.id,
+                    content: comment.content,
+                    petName: comment.petName,
+                    userName: comment.userName,
+                    user: comment.user,
+                    author: comment.author
+                  })
+                  
+                  // 댓글 추가
+                  allComments.push(comment)
+                  // 답글도 추가 (replies 배열이 있다면)
+                  if (comment.replies && Array.isArray(comment.replies)) {
+                    comment.replies.forEach(reply => {
+                      console.log(`답글 ${reply.id} 상세 정보:`, {
+                        id: reply.id,
+                        content: reply.content,
+                        petName: reply.petName,
+                        userName: reply.userName,
+                        replyUserName: reply.replyUserName,
+                        user: reply.user,
+                        author: reply.author
+                      })
+                    })
+                    allComments.push(...comment.replies)
+                  }
+                })
+              }
+              
+              // 최대 5개까지만 미리보기로 설정
+              post.previewComments = allComments.slice(0, 5)
+              console.log(`포스트 ${post.id} 댓글 미리보기 설정 완료:`, post.previewComments)
+              
+              return { postId: post.id, previewCount: post.previewComments.length }
+            }
+            
+            console.log(`포스트 ${post.id} 댓글 데이터 없음`)
+            post.previewComments = []
+            return { postId: post.id, previewCount: 0 }
+          } catch (error) {
+            console.error(`포스트 ${post.id} 댓글 미리보기 조회 실패:`, error)
+            post.previewComments = []
+            return { postId: post.id, previewCount: 0 }
+          }
+        })
+        
+        const results = await Promise.all(promises)
+        console.log('=== 모든 포스트 댓글 미리보기 조회 완료 ===', results)
+        
+      } catch (error) {
+        console.error('전체 댓글 미리보기 조회 실패:', error)
       }
     }
 
@@ -828,7 +937,8 @@ export default {
         console.log('AllDiaryView로 이동 감지, 댓글 수와 팔로우 상태 새로고침')
         await Promise.all([
           fetchAllCommentsCount(),
-          fetchAllFollowStatus()
+          fetchAllFollowStatus(),
+          fetchAllCommentsPreview()
         ])
       }
     })
@@ -839,10 +949,11 @@ export default {
       console.log('authStore.isLoggedIn:', authStore.isLoggedIn)
       
       await fetchPosts(0, false)
-      // 포스트 로딩 완료 후 댓글 수와 팔로우 상태 조회
+      // 포스트 로딩 완료 후 댓글 수, 팔로우 상태, 댓글 미리보기 조회
       await Promise.all([
         fetchAllCommentsCount(),
-        fetchAllFollowStatus()
+        fetchAllFollowStatus(),
+        fetchAllCommentsPreview()
       ])
       window.addEventListener('scroll', handleScroll)
     })
@@ -883,7 +994,8 @@ export default {
       getDateField,
       formatDate,
       isLikeProcessing,
-      fetchAllFollowStatus
+      fetchAllFollowStatus,
+      fetchAllCommentsPreview
     }
   }
 }
@@ -1073,6 +1185,60 @@ export default {
   font-weight: 500;
   border-radius: 20px;
   text-transform: none;
+}
+
+/* 댓글 미리보기 스타일 */
+.comments-preview {
+  padding: 12px 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.comments-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.comments-preview-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1E293B;
+}
+
+.view-all-comments {
+  font-size: 0.8rem;
+  color: #6c757d;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.view-all-comments:hover {
+  color: #FF8B8B;
+}
+
+.comments-preview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.comment-preview-item {
+  display: flex;
+  gap: 6px;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.comment-author {
+  font-weight: 600;
+  color: #1E293B;
+  white-space: nowrap;
+}
+
+.comment-content {
+  color: #495057;
+  word-break: break-word;
 }
 
 .user-info {

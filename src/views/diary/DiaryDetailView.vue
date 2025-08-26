@@ -196,6 +196,32 @@
           </span>
         </div>
 
+        <!-- 댓글 미리보기 -->
+        <div v-if="postData?.previewComments && postData.previewComments.length > 0" class="comments-preview">
+          <div class="comments-preview-header">
+            <span class="comments-preview-title">댓글 {{ commentsCount }}개</span>
+            <span 
+              v-if="commentsCount > 5" 
+              class="view-all-comments"
+              @click="toggleCommentsModal"
+            >
+              모두 보기
+            </span>
+          </div>
+          <div class="comments-preview-list">
+            <div 
+              v-for="comment in postData.previewComments.slice(0, 5)" 
+              :key="comment.id" 
+              class="comment-preview-item"
+            >
+              <span class="comment-author">
+                {{ comment.replyUserName || comment.userName || comment.user?.userName || comment.author?.userName || comment.petName || '익명' }}
+              </span>
+              <span class="comment-content">{{ comment.content }}</span>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -755,6 +781,66 @@ export default {
                           postData.value.isFollowing = false
                         }
                       }
+                      
+                      // 댓글 미리보기 조회
+                      try {
+                        const commentsResponse = await postAPI.getComments(postId, { page: 0, size: 10 })
+                        console.log('댓글 미리보기 API 응답:', commentsResponse.data)
+                        
+                        if (commentsResponse.data && commentsResponse.data.data) {
+                          let commentsData = []
+                          
+                          if (Array.isArray(commentsResponse.data.data)) {
+                            commentsData = commentsResponse.data.data
+                          } else if (commentsResponse.data.data.content) {
+                            commentsData = commentsResponse.data.data.content
+                          } else {
+                            commentsData = commentsResponse.data.data
+                          }
+                          
+                          console.log('추출된 댓글 데이터:', commentsData)
+                          
+                          // 댓글과 답글을 모두 포함하여 미리보기 생성
+                          let allComments = []
+                          if (Array.isArray(commentsData)) {
+                            commentsData.forEach(comment => {
+                              console.log(`댓글 ${comment.id} 상세 정보:`, {
+                                id: comment.id,
+                                content: comment.content,
+                                petName: comment.petName,
+                                userName: comment.userName,
+                                user: comment.user,
+                                author: comment.author
+                              })
+                              
+                              // 댓글 추가
+                              allComments.push(comment)
+                              // 답글도 추가 (replies 배열이 있다면)
+                              if (comment.replies && Array.isArray(comment.replies)) {
+                                comment.replies.forEach(reply => {
+                                  console.log(`답글 ${reply.id} 상세 정보:`, {
+                                    id: reply.id,
+                                    content: reply.content,
+                                    petName: reply.petName,
+                                    userName: reply.userName,
+                                    replyUserName: reply.replyUserName,
+                                    user: reply.user,
+                                    author: reply.author
+                                  })
+                                })
+                                allComments.push(...comment.replies)
+                              }
+                            })
+                          }
+                          
+                          // 최대 5개까지만 미리보기로 설정
+                          postData.value.previewComments = allComments.slice(0, 5)
+                          console.log('댓글 미리보기 설정 완료:', postData.value.previewComments)
+                        }
+                      } catch (error) {
+                        console.error('댓글 미리보기 조회 실패:', error)
+                        postData.value.previewComments = []
+                      }
                     }
                   } catch (error) {
                     console.error('포스트 데이터 조회 실패:', error)
@@ -1053,6 +1139,60 @@ export default {
   font-weight: 500;
   border-radius: 20px;
   text-transform: none;
+}
+
+/* 댓글 미리보기 스타일 */
+.comments-preview {
+  padding: 12px 20px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.comments-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.comments-preview-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1E293B;
+}
+
+.view-all-comments {
+  font-size: 0.8rem;
+  color: #6c757d;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.view-all-comments:hover {
+  color: #FF8B8B;
+}
+
+.comments-preview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.comment-preview-item {
+  display: flex;
+  gap: 6px;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.comment-author {
+  font-weight: 600;
+  color: #1E293B;
+  white-space: nowrap;
+}
+
+.comment-content {
+  color: #495057;
+  word-break: break-word;
 }
 
 .post-image-container {
