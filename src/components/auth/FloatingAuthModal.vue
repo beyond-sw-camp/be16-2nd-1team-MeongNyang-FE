@@ -166,7 +166,9 @@
                 class="social-btn google-btn mb-3"
                 height="48"
                 rounded="lg"
-                @click="handleOAuthLogin('google')"
+                @click.stop="handleOAuthLogin('google')"
+                @mousedown.stop
+                @touchstart.stop
               >
                 <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" class="social-icon me-3" />
                 Google로 계속하기
@@ -180,7 +182,9 @@
                 class="social-btn kakao-btn mb-3"
                 height="48"
                 rounded="lg"
-                @click="handleOAuthLogin('kakao')"
+                @click.stop="handleOAuthLogin('kakao')"
+                @mousedown.stop
+                @touchstart.stop
               >
                 <img src="https://developers.kakao.com/assets/img/about/logos/kakaolink/kakaolink_btn_small.png" alt="Kakao" class="social-icon me-3" />
                 카카오로 계속하기
@@ -221,7 +225,9 @@
                 class="social-btn google-btn mb-3"
                 height="48"
                 rounded="lg"
-                @click="handleOAuthLogin('google')"
+                @click.stop="handleOAuthLogin('google')"
+                @mousedown.stop
+                @touchstart.stop
               >
                 <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" class="social-icon me-3" />
                 Google로 계속하기
@@ -235,7 +241,9 @@
                 class="social-btn kakao-btn mb-3"
                 height="48"
                 rounded="lg"
-                @click="handleOAuthLogin('kakao')"
+                @click.stop="handleOAuthLogin('kakao')"
+                @mousedown.stop
+                @touchstart.stop
               >
                 <img src="https://developers.kakao.com/assets/img/about/logos/kakaolink/kakaolink_btn_small.png" alt="Kakao" class="social-icon me-3" />
                 카카오로 계속하기
@@ -1340,6 +1348,15 @@ const handleLogin = async () => {
 }
 
 const handleOAuthLogin = async (provider) => {
+  // 이미 처리 중이면 중복 실행 방지
+  if (busy.value) {
+    console.log('⚠️ 이미 OAuth 처리 중입니다.')
+    return
+  }
+  
+  // busy 상태 설정
+  busy.value = true
+  
   const origin = window.location.origin
   
   // 콜백 URL 생성
@@ -1355,6 +1372,7 @@ const handleOAuthLogin = async (provider) => {
       if (!client) { 
         console.error('❌ VUE_APP_GOOGLE_CLIENT_ID 미설정')
         errorMsg.value = 'Google 로그인 설정이 완료되지 않았습니다.'
+        busy.value = false
         return 
       }
 
@@ -1367,12 +1385,16 @@ const handleOAuthLogin = async (provider) => {
       })
       
       console.log('🔗 Google OAuth 리다이렉트 시작')
-      window.location.assign(`https://accounts.google.com/o/oauth2/v2/auth?${params}`)
+      
+      // 즉시 리다이렉트 (더 빠른 방식)
+      window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`
+      
     } else if (provider === 'kakao') {
       const client = process.env.VUE_APP_KAKAO_CLIENT_ID // REST API 키
       if (!client) { 
         console.error('❌ VUE_APP_KAKAO_CLIENT_ID 미설정')
         errorMsg.value = '카카오 로그인 설정이 완료되지 않았습니다.'
+        busy.value = false
         return 
       }
 
@@ -1380,15 +1402,18 @@ const handleOAuthLogin = async (provider) => {
         client_id: client,
         redirect_uri: cbUrl('kakao'),
         response_type: 'code',
-        state: 'google',
+        state: 'kakao', // state를 'google'에서 'kakao'로 수정
       })
       
       console.log('🔗 카카오 OAuth 리다이렉트 시작')
-      window.location.assign(`https://kauth.kakao.com/oauth/authorize?${params}`)
+      
+      // 즉시 리다이렉트 (더 빠른 방식)
+      window.location.href = `https://kauth.kakao.com/oauth/authorize?${params}`
     }
   } catch (error) {
     console.error(`❌ ${provider} OAuth 로그인 실패:`, error)
     errorMsg.value = `${provider === 'google' ? 'Google' : '카카오'} 로그인에 실패했습니다.`
+    busy.value = false
   }
 }
 
@@ -1688,6 +1713,12 @@ watch(() => props.modelValue, (newValue) => {
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   position: relative;
   overflow: hidden;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  pointer-events: auto;
 }
 
 .social-btn:hover {
@@ -1695,13 +1726,28 @@ watch(() => props.modelValue, (newValue) => {
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
+.social-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
 
+.social-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
 
 .social-icon {
   width: 24px;
   height: 24px;
   object-fit: contain;
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 /* 계정 잠금 안내 스타일 */

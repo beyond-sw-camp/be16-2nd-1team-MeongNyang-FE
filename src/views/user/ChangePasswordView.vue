@@ -147,9 +147,17 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { userAPI } from '@/services/api'
+import { inject } from 'vue'
 
 const router = useRouter()
 const userProfile = ref(null) // To store user's socialType
+
+// 인증 상태 확인을 위한 함수
+const checkAuthStatus = () => {
+  // localStorage에서 토큰 확인
+  const token = localStorage.getItem('accessToken')
+  return !!token
+}
 
 // 폼 관련
 const form = reactive({
@@ -214,7 +222,14 @@ const loadUserProfile = async () => {
   } catch (error) {
     console.error('사용자 정보 로드 실패:', error)
     if (error.response?.status === 401) {
-      router.push('/auth/login')
+      // 로그인 모달 띄우기
+      const showLoginModal = inject('showLoginModal')
+      if (showLoginModal) {
+        showLoginModal()
+      } else {
+        // fallback: 홈으로 이동하여 모달 표시
+        router.push({ path: '/', query: { showLogin: 'true' } })
+      }
     }
   }
 }
@@ -245,7 +260,14 @@ const handleSubmit = async () => {
       errorMessage.value = '기존 비밀번호가 올바르지 않습니다.'
     } else if (status === 401) {
       errorMessage.value = '인증이 필요합니다. 다시 로그인해주세요.'
-      router.push('/auth/login')
+      // 로그인 모달 띄우기
+      const showLoginModal = inject('showLoginModal')
+      if (showLoginModal) {
+        showLoginModal()
+      } else {
+        // fallback: 홈으로 이동하여 모달 표시
+        router.push({ path: '/', query: { showLogin: 'true' } })
+      }
       return
     } else {
       errorMessage.value = '비밀번호 변경에 실패했습니다. 다시 시도해주세요.'
@@ -258,6 +280,18 @@ const handleSubmit = async () => {
 }
 
 onMounted(() => {
+  if (!checkAuthStatus()) {
+    // 로그인 모달 띄우기
+    const showLoginModal = inject('showLoginModal')
+    if (showLoginModal) {
+      showLoginModal()
+    } else {
+      // fallback: 홈으로 이동하여 모달 표시
+      router.push({ path: '/', query: { showLogin: 'true' } })
+    }
+    return
+  }
+  
   loadUserProfile()
 })
 </script>

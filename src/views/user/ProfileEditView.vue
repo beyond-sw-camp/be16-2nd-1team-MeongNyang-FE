@@ -148,6 +148,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { userAPI } from '@/services/api'
 import { usePetStore } from '@/stores/pet'
+import { inject } from 'vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -203,7 +204,14 @@ const canSubmit = computed(() => {
 // 프로필 정보 로드
 const loadProfile = async () => {
   if (!authStore.isAuthenticated) {
-    router.push('/auth/login')
+    // 로그인 모달 띄우기
+    const showLoginModal = inject('showLoginModal')
+    if (showLoginModal) {
+      showLoginModal()
+    } else {
+      // fallback: 홈으로 이동하여 모달 표시
+      router.push({ path: '/', query: { showLogin: 'true' } })
+    }
     return
   }
 
@@ -236,7 +244,14 @@ const loadProfile = async () => {
   } catch (error) {
     console.error('프로필 로드 실패:', error)
     if (error.response?.status === 401) {
-      router.push('/auth/login')
+      // 로그인 모달 띄우기
+      const showLoginModal = inject('showLoginModal')
+      if (showLoginModal) {
+        showLoginModal()
+      } else {
+        // fallback: 홈으로 이동하여 모달 표시
+        router.push({ path: '/', query: { showLogin: 'true' } })
+      }
     }
   } finally {
     loading.value = false
@@ -313,7 +328,14 @@ const getSocialTypeLabel = (socialType) => {
         errorMessage.value = '입력한 정보가 올바르지 않습니다.'
       } else if (status === 401) {
         errorMessage.value = '인증이 필요합니다. 다시 로그인해주세요.'
-        router.push('/auth/login')
+        // 로그인 모달 띄우기
+        const showLoginModal = inject('showLoginModal')
+        if (showLoginModal) {
+          showLoginModal()
+        } else {
+          // fallback: 홈으로 이동하여 모달 표시
+          router.push({ path: '/', query: { showLogin: 'true' } })
+        }
         return
       } else {
         errorMessage.value = '프로필 수정에 실패했습니다. 다시 시도해주세요.'
