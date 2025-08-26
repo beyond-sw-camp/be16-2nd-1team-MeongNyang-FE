@@ -175,9 +175,9 @@ export const userAPI = {
   setMainPet: async (petId) => {
     try {
       console.log('🔄 petAPI.setMainPet 시작:', petId)
-      console.log('🔍 API 호출 URL:', `/users/my-page/${petId}/main-pet`)
+      console.log('🔍 API 호출 URL:', `/pets/main`)
       
-      const response = await apiClient.put(`/users/my-page/${petId}/main-pet`)
+      const response = await apiClient.put(`/pets/main`)
       console.log('✅ petAPI.setMainPet 성공:', response)
       return response
     } catch (error) {
@@ -452,6 +452,9 @@ export const petAPI = {
 
   // 반려동물 목록 조회
   getList: () => apiClient.get('/pets'),
+
+  // 반려동물 존재 여부 확인
+  checkExist: () => apiClient.get('/pets/exist'),
 
   // 사용자 반려동물 목록 조회 (프로필용)
   getUserPets: () => apiClient.get('/pets'),
