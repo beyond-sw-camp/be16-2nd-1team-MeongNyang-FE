@@ -211,13 +211,13 @@
     <v-list class="sidebar-menu">
       <!-- 홈 -->
       <v-list-item 
-        @click="goToHome"
-        :class="{ 'active': isHomeActive }"
+        @click="navigateTo('/')"
+        :class="{ 'active': $route.path === '/' && !showNotificationDrawer }"
         class="menu-item"
         density="compact"
       >
         <template v-slot:prepend>
-          <v-icon size="20" :color="isHomeActive ? '#E87D7D' : '#6c757d'">
+          <v-icon size="20" :color="$route.path === '/' && !showNotificationDrawer ? '#E87D7D' : '#6c757d'">
             mdi-home
           </v-icon>
         </template>
@@ -227,13 +227,13 @@
       <!-- 마켓 -->
       <v-list-item 
         v-if="isLoggedIn"
-        @click="$router.push('/market')"
-        :class="{ 'active': $route.path === '/market' }"
+        @click="navigateTo('/market')"
+        :class="{ 'active': $route.path === '/market' && !showNotificationDrawer }"
         class="menu-item"
         density="compact"
       >
         <template v-slot:prepend>
-          <v-icon size="20" :color="$route.path === '/market' ? '#E87D7D' : '#6c757d'">
+          <v-icon size="20" :color="$route.path === '/market' && !showNotificationDrawer ? '#E87D7D' : '#6c757d'">
             mdi-store
           </v-icon>
         </template>
@@ -243,13 +243,13 @@
       <!-- 채팅 -->
       <v-list-item 
         v-if="isLoggedIn"
-        @click="$router.push('/chat')"
-        :class="{ 'active': $route.path === '/chat' }"
+        @click="navigateTo('/chat')"
+        :class="{ 'active': $route.path === '/chat' && !showNotificationDrawer }"
         class="menu-item"
         density="compact"
       >
         <template v-slot:prepend>
-          <v-icon size="20" :color="$route.path === '/chat' ? '#E87D7D' : '#6c757d'">
+          <v-icon size="20" :color="$route.path === '/chat' && !showNotificationDrawer ? '#E87D7D' : '#6c757d'">
             mdi-chat
           </v-icon>
         </template>
@@ -259,13 +259,13 @@
       <!-- 대시보드 -->
       <v-list-item 
         v-if="isLoggedIn"
-        @click="$router.push('/dashboard')"
-        :class="{ 'active': $route.path === '/dashboard' }"
+        @click="navigateTo('/dashboard')"
+        :class="{ 'active': $route.path === '/dashboard' && !showNotificationDrawer }"
         class="menu-item"
         density="compact"
       >
         <template v-slot:prepend>
-          <v-icon size="20" :color="$route.path === '/dashboard' ? '#E87D7D' : '#6c757d'">
+          <v-icon size="20" :color="$route.path === '/dashboard' && !showNotificationDrawer ? '#E87D7D' : '#6c757d'">
             mdi-view-dashboard
           </v-icon>
         </template>
@@ -275,29 +275,50 @@
       <!-- 프로필 -->
       <v-list-item 
         v-if="isLoggedIn"
-        @click="$router.push('/profile')"
-        :class="{ 'active': $route.path === '/profile' }"
+        @click="navigateTo('/profile')"
+        :class="{ 'active': $route.path === '/profile' && !showNotificationDrawer }"
         class="menu-item"
         density="compact"
       >
         <template v-slot:prepend>
-          <v-icon size="20" :color="$route.path === '/profile' ? '#E87D7D' : '#6c757d'">
+          <v-icon size="20" :color="$route.path === '/profile' && !showNotificationDrawer ? '#E87D7D' : '#6c757d'">
             mdi-account
           </v-icon>
         </template>
         <v-list-item-title>프로필</v-list-item-title>
       </v-list-item>
 
-      <!-- 관리자 (관리자인 경우) -->
+      <!-- 알림 -->
       <v-list-item 
-        v-if="isLoggedIn && isAdmin"
-        @click="$router.push('/admin')"
-        :class="{ 'active': $route.path === '/admin' }"
+        v-if="isLoggedIn"
+        @click="openNotificationDrawer"
+        :class="{ 'active': showNotificationDrawer }"
         class="menu-item"
         density="compact"
       >
         <template v-slot:prepend>
-          <v-icon size="20" :color="$route.path === '/admin' ? '#E87D7D' : '#6c757d'">
+          <div class="notification-icon-wrapper">
+            <v-icon size="20" :color="showNotificationDrawer ? '#E87D7D' : '#6c757d'">
+              mdi-bell
+            </v-icon>
+            <span v-if="alarmStore.unreadCount > 0" class="notification-badge">
+              {{ alarmStore.unreadCount > 99 ? '99+' : alarmStore.unreadCount }}
+            </span>
+          </div>
+        </template>
+        <v-list-item-title>알림</v-list-item-title>
+      </v-list-item>
+
+      <!-- 관리자 (관리자인 경우) -->
+      <v-list-item 
+        v-if="isLoggedIn && isAdmin"
+        @click="navigateTo('/admin')"
+        :class="{ 'active': $route.path === '/admin' && !showNotificationDrawer }"
+        class="menu-item"
+        density="compact"
+      >
+        <template v-slot:prepend>
+          <v-icon size="20" :color="$route.path === '/admin' && !showNotificationDrawer ? '#E87D7D' : '#6c757d'">
             mdi-shield-account
           </v-icon>
         </template>
@@ -355,20 +376,29 @@
       </div>
     </template>
   </v-navigation-drawer>
+
+  <!-- 알림 드로워 -->
+  <NotificationDrawer v-model="showNotificationDrawer" />
 </template>
 
 <script>
-import { computed, watch, ref } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useAlarmStore } from '@/stores/alarm'
+import NotificationDrawer from './NotificationDrawer.vue'
 import { usePetStore } from '@/stores/pet'
 
 export default {
   name: 'HeaderComponent',
+  components: {
+    NotificationDrawer
+  },
   setup() {
     const router = useRouter()
     const route = useRoute()
     const authStore = useAuthStore()
+    const alarmStore = useAlarmStore()
     const petStore = usePetStore()
     
     const isLoggedIn = computed(() => authStore.isAuthenticated)
@@ -430,16 +460,37 @@ export default {
       drawer.value = false
     }
     
+    // 알림 드로워 상태
+    const showNotificationDrawer = ref(false)
+    
     const handleLogout = () => {
       authStore.logout()
       router.push('/')
       drawer.value = false
     }
     
+    const openNotificationDrawer = () => {
+      showNotificationDrawer.value = !showNotificationDrawer.value
+    }
+    
+    const navigateTo = (path) => {
+      // 알림 드로워가 열려있으면 닫기
+      if (showNotificationDrawer.value) {
+        showNotificationDrawer.value = false
+      }
+      // 라우터 이동
+      router.push(path)
+    }
+    
     return {
       isLoggedIn,
       user,
       isAdmin,
+      alarmStore,
+      showNotificationDrawer,
+      handleLogout,
+      openNotificationDrawer,
+      navigateTo
       isHomeActive,
       representativePet,
       drawer,
@@ -868,5 +919,26 @@ export default {
   .user-email {
     color: #adb5bd;
   }
+}
+
+.notification-icon-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #E87D7D;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+  line-height: 1;
+  border: 2px solid white;
 }
 </style>

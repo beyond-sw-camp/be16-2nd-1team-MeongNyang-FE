@@ -1,5 +1,13 @@
 <template>
-  <v-card class="chat-room-container d-flex flex-column" flat tile>
+  <v-card 
+    class="chat-room-container d-flex flex-column" 
+    flat 
+    tile
+    @dragenter="handleDragEnter"
+    @dragover="handleDragOver"
+    @dragleave="handleDragLeave"
+    @drop="handleDrop"
+  >
     <!-- 채팅방 헤더 -->
     <div class="chat-header">
       <div class="header-content">
@@ -80,24 +88,23 @@
       </div>
     </div>
     <v-divider></v-divider>
-    <v-card-text 
+    
+        <v-card-text 
       class="chat-messages-container flex-grow-1 pa-4" 
       ref="chatBox"
-      @dragenter="handleDragEnter"
-      @dragover="handleDragOver"
-      @dragleave="handleDragLeave"
-      @drop="handleDrop"
       @scroll="handleScroll"
     >
       <!-- 드래그 앤 드롭 오버레이 -->
       <div 
         v-if="isDragOver" 
         class="drag-drop-overlay"
+        :style="dragOverlayStyle"
       >
         <div class="drag-drop-content">
           <v-icon size="64" color="primary">mdi-cloud-upload</v-icon>
           <div class="text-h6 mt-4">파일을 여기에 놓아주세요</div>
           <div class="text-body-2 text-grey-darken-1">이미지, 문서, 미디어 파일 등을 첨부할 수 있습니다</div>
+          <div class="text-caption text-grey-darken-2 mt-2">파일 크기는 50MB 이하여야 합니다</div>
         </div>
       </div>
       
@@ -327,7 +334,7 @@
           <v-btn 
             icon 
             @click="triggerFileInput" 
-            class="mr-2 file-attach-btn"
+            class="file-attach-btn mr-2"
             :disabled="!stompClient?.connected || isSending"
             color="primary"
             variant="outlined"
@@ -590,7 +597,7 @@ export default {
       '안녕하세요! 👋',
       '반갑습니다 😊',
       '오늘 날씨가 좋네요 ☀️',
-      '무슨 일 하시나요? 🤔',
+      '꿀팁 좀 얻을 수 있을까요? 🤔',
       '좋은 하루 되세요! ✨'
     ])
     
@@ -655,6 +662,25 @@ export default {
       return messagesWithSeparators
     })
     
+    // 드래그 오버레이 스타일 계산
+    const dragOverlayStyle = computed(() => {
+      if (!isDragOver.value || !chatBox.value) {
+        return {}
+      }
+      
+      const container = chatBox.value.$el || chatBox.value
+      const rect = container.getBoundingClientRect()
+      
+      return {
+        position: 'fixed',
+        top: `${rect.top}px`,
+        left: `${rect.left}px`,
+        width: `${rect.width}px`,
+        height: `${rect.height}px`,
+        zIndex: 9999
+      }
+    })
+    
     // 메서드들
     const retryLoad = async () => {
       error.value = null
@@ -693,6 +719,14 @@ export default {
           }
         }
         
+        // 채팅 스토어에 현재 채팅방 설정 (SSE 메시지 카운트 제어용)
+        chatStore.setCurrentRoom(currentRoom.value)
+        console.log('현재 채팅방이 설정되었습니다:', currentRoom.value)
+        
+        // 새 메시지 카운트 초기화 (채팅방 입장 시) - 채팅방 목록 로드 후 실행
+        chatStore.resetMessageCount(props.roomId)
+        console.log('채팅방 입장 시 메시지 카운트 초기화 완료')
+        
         // 메시지와 참여자는 채팅 스토어를 통해 로드
         await chatStore.getMessages(props.roomId)
         await chatStore.getParticipants(props.roomId)
@@ -722,28 +756,33 @@ export default {
       stompClient.value.connect(
         { Authorization: `Bearer ${accessToken}` },
         () => {
-          // 메시지 구독
-          stompClient.value.subscribe(`/topic/chat-rooms/${props.roomId}/chat-message`, (message) => {
+          // 메시지 구독 (구독 ID 저장)
+          const messageSubscription = stompClient.value.subscribe(`/topic/chat-rooms/${props.roomId}/chat-message`, (message) => {
             const parseMessage = JSON.parse(message.body)
-            messages.value.push(parseMessage)
             
-            onlineParticipants.value.forEach(online => {
-              participants.value.forEach(p => {
-                if (p.email === online.email) {
-                  p.lastReadMessageId = parseMessage.id
-                }
+            // 중복 메시지 방지 (같은 ID의 메시지가 이미 있는지 확인)
+            const existingMessage = messages.value.find(msg => msg.id === parseMessage.id)
+            if (!existingMessage) {
+              messages.value.push(parseMessage)
+              
+              onlineParticipants.value.forEach(online => {
+                participants.value.forEach(p => {
+                  if (p.email === online.email) {
+                    p.lastReadMessageId = parseMessage.id
+                  }
+                })
               })
-            })
+            }
           }, { Authorization: `Bearer ${accessToken}` })
           
-          // 참여자 구독
-          stompClient.value.subscribe(`/topic/chat-rooms/${props.roomId}/chat-participants`, (message) => {
+          // 참여자 구독 (구독 ID 저장)
+          const participantsSubscription = stompClient.value.subscribe(`/topic/chat-rooms/${props.roomId}/chat-participants`, (message) => {
             const parseMessage = JSON.parse(message.body)
             participants.value = parseMessage
           }, { Authorization: `Bearer ${accessToken}` })
           
-          // 온라인 참여자 구독
-          stompClient.value.subscribe(`/topic/chat-rooms/${props.roomId}/chat-online-participants`, (message) => {
+          // 온라인 참여자 구독 (구독 ID 저장)
+          const onlineParticipantsSubscription = stompClient.value.subscribe(`/topic/chat-rooms/${props.roomId}/chat-online-participants`, (message) => {
             const parseMessage = JSON.parse(message.body)
             onlineParticipants.value = parseMessage
             
@@ -755,6 +794,11 @@ export default {
               })
             })
           }, { Authorization: `Bearer ${accessToken}` })
+          
+          // 구독 ID들을 저장 (해제 시 사용)
+          stompClient.value.messageSubscription = messageSubscription
+          stompClient.value.participantsSubscription = participantsSubscription
+          stompClient.value.onlineParticipantsSubscription = onlineParticipantsSubscription
           
           // 온라인 상태 전송
           const onlineMessage = { email: senderEmail.value }
@@ -768,9 +812,17 @@ export default {
         const offlineMessage = { email: senderEmail.value }
         stompClient.value.send(`/publish/chat-rooms/${props.roomId}/offline`, JSON.stringify(offlineMessage))
         
-        stompClient.value.unsubscribe(`/topic/chat-rooms/${props.roomId}/chat-message`)
-        stompClient.value.unsubscribe(`/topic/chat-rooms/${props.roomId}/chat-participants`)
-        stompClient.value.unsubscribe(`/topic/chat-rooms/${props.roomId}/chat-online-participants`)
+        // 저장된 구독 ID를 사용하여 구독 해제
+        if (stompClient.value.messageSubscription) {
+          stompClient.value.messageSubscription.unsubscribe()
+        }
+        if (stompClient.value.participantsSubscription) {
+          stompClient.value.participantsSubscription.unsubscribe()
+        }
+        if (stompClient.value.onlineParticipantsSubscription) {
+          stompClient.value.onlineParticipantsSubscription.unsubscribe()
+        }
+        
         stompClient.value.disconnect()
         stompClient.value = null
       }
@@ -922,8 +974,58 @@ export default {
       if (fileInput.value) fileInput.value.click()
     }
     
+    // 파일 크기 제한 (50MB)
+    const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB in bytes
+    
+    const validateFileSize = (file) => {
+      if (file.size > MAX_FILE_SIZE) {
+        throw new Error(`파일 크기가 50MB를 초과합니다: ${file.name} (${formatFileSize(file.size)})`)
+      }
+      return true
+    }
+    
     const onFileChange = (event) => {
-      selectedFiles.value = Array.from(event.target.files)
+      const files = Array.from(event.target.files)
+      const validFiles = []
+      const invalidFiles = []
+      
+      files.forEach(file => {
+        try {
+          validateFileSize(file)
+          validFiles.push(file)
+        } catch (error) {
+          invalidFiles.push(file.name)
+          console.error('파일 크기 검증 실패:', error.message)
+        }
+      })
+      
+      // 유효한 파일들만 추가
+      if (validFiles.length > 0) {
+        selectedFiles.value = [...selectedFiles.value, ...validFiles]
+        
+        // 성공 메시지 표시
+        if (showMessage && validFiles.length > 0) {
+          showMessage({
+            type: 'success',
+            text: `${validFiles.length}개 파일이 첨부되었습니다.`
+          })
+        }
+      }
+      
+      // 크기 초과 파일이 있으면 경고 메시지 표시
+      if (invalidFiles.length > 0) {
+        if (showMessage) {
+          showMessage({
+            type: 'error',
+            text: `다음 파일들은 50MB를 초과하여 제외되었습니다: ${invalidFiles.join(', ')}`
+          })
+        } else {
+          alert(`다음 파일들은 50MB를 초과하여 제외되었습니다: ${invalidFiles.join(', ')}`)
+        }
+      }
+      
+      // 파일 입력 필드 초기화
+      if (fileInput.value) fileInput.value.value = null
     }
     
     const removeFile = (index) => {
@@ -1019,15 +1121,42 @@ export default {
       
       const files = Array.from(event.dataTransfer.files)
       if (files.length > 0) {
-        // 기존 선택된 파일에 추가
-        selectedFiles.value = [...selectedFiles.value, ...files]
+        const validFiles = []
+        const invalidFiles = []
         
-        // 성공 메시지 표시
-        if (showMessage) {
-          showMessage({
-            type: 'success',
-            text: `${files.length}개 파일이 첨브되었습니다.`
-          })
+        files.forEach(file => {
+          try {
+            validateFileSize(file)
+            validFiles.push(file)
+          } catch (error) {
+            invalidFiles.push(file.name)
+            console.error('파일 크기 검증 실패:', error.message)
+          }
+        })
+        
+        // 유효한 파일들만 추가
+        if (validFiles.length > 0) {
+          selectedFiles.value = [...selectedFiles.value, ...validFiles]
+          
+          // 성공 메시지 표시
+          if (showMessage) {
+            showMessage({
+              type: 'success',
+              text: `${validFiles.length}개 파일이 첨부되었습니다.`
+            })
+          }
+        }
+        
+        // 크기 초과 파일이 있으면 경고 메시지 표시
+        if (invalidFiles.length > 0) {
+          if (showMessage) {
+            showMessage({
+              type: 'error',
+              text: `다음 파일들은 50MB를 초과하여 제외되었습니다: ${invalidFiles.join(', ')}`
+            })
+          } else {
+            alert(`다음 파일들은 50MB를 초과하여 제외되었습니다: ${invalidFiles.join(', ')}`)
+          }
         }
       }
     }
@@ -1038,6 +1167,20 @@ export default {
     }
     
     const uploadFiles = async () => {
+      // 업로드 전 최종 파일 크기 검증
+      const invalidFiles = []
+      selectedFiles.value.forEach(file => {
+        try {
+          validateFileSize(file)
+        } catch (error) {
+          invalidFiles.push(file.name)
+        }
+      })
+      
+      if (invalidFiles.length > 0) {
+        throw new Error(`다음 파일들은 50MB를 초과하여 업로드할 수 없습니다: ${invalidFiles.join(', ')}`)
+      }
+      
       const formData = new FormData()
       selectedFiles.value.forEach(file => {
         formData.append('files', file)
@@ -1198,6 +1341,14 @@ export default {
         
         disconnectWebsocket()
         await loadRoomData()
+        
+        // 채팅 스토어에 현재 채팅방 설정 (SSE 메시지 카운트 제어용)
+        chatStore.setCurrentRoom(currentRoom.value)
+        console.log('채팅방 변경 시 현재 채팅방이 설정되었습니다:', currentRoom.value)
+        
+        // 새 메시지 카운트 초기화 (채팅방 입장 시)
+        chatStore.resetMessageCount(newRoomId)
+        console.log('채팅방 변경 시 메시지 카운트 초기화 완료')
         connectWebsocket()
       }
     })
@@ -1288,6 +1439,9 @@ export default {
       
       // ResizeObserver 정리
       cleanupResizeObserver()
+      
+      // 채팅방을 나갈 때 currentRoom 초기화 (SSE 메시지 카운트 제어용)
+      chatStore.setCurrentRoom(null)
     })
     
     // 미디어 로딩 상태 등록
@@ -1450,7 +1604,9 @@ export default {
       cleanupResizeObserver,
       // 빠른 메시지 관련
       quickMessages,
-      sendQuickMessage
+      sendQuickMessage,
+      // 드래그 오버레이 스타일
+      dragOverlayStyle
     }
   }
 }
@@ -1464,6 +1620,7 @@ export default {
   overflow: hidden;
   background: var(--mm-surface);
   border-radius: 0;
+  position: relative;
 }
 
 /* 채팅 헤더 고정 높이 */
@@ -1977,6 +2134,8 @@ export default {
 .file-selection-area {
   width: 100%;
 }
+
+
 
 .selected-files-preview {
   background: linear-gradient(135deg, rgba(232, 125, 125, 0.05) 0%, rgba(255, 255, 255, 0.1) 100%);
@@ -2671,19 +2830,18 @@ export default {
 
 /* 드래그 앤 드롭 스타일 */
 .drag-drop-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
   background: rgba(232, 125, 125, 0.1);
   border: 3px dashed #E87D7D;
   border-radius: var(--mm-radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10;
   backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+
+.drag-drop-overlay * {
+  pointer-events: none;
 }
 
 .drag-drop-content {

@@ -16,12 +16,13 @@
     </div>
     
     <!-- 채팅방 목록 -->
-    <div class="chat-rooms-list">
+    <div class="chat-rooms-list" data-testid="chat-room-list">
       <div
         v-for="chatRoom in filteredChatRoomList"
         :key="chatRoom.id"
         @click="selectChatRoom(chatRoom.id)"
         class="chat-room-item"
+        :data-testid="`chat-room-item`"
         :class="{ 
           'has-unread': chatRoom.newMessageCount > 0,
           'selected': selectedChatRoomId == chatRoom.id

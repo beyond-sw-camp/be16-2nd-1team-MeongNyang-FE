@@ -43,10 +43,14 @@
 
 <script>
 import { useUIStore } from './stores/ui'
+import { useSseStore } from './stores/sse'
+import { useAuthStore } from './stores/auth'
+import { useAlarmStore } from './stores/alarm'
 import HeaderComponent from './components/HeaderComponent.vue'
 // import FooterComponent from './components/FooterComponent.vue'
 import GlobalSnackbar from './components/ui/global/GlobalSnackbar.vue'
 import GlobalLoadingOverlay from './components/ui/global/GlobalLoadingOverlay.vue'
+import { onMounted, onUnmounted, watch } from 'vue'
 
 export default {
   name: 'App',
@@ -58,6 +62,63 @@ export default {
   },
   setup() {
     const uiStore = useUIStore()
+    const sseStore = useSseStore()
+    const authStore = useAuthStore()
+    const alarmStore = useAlarmStore()
+    
+    // SSE 연결 설정
+    const setupSse = async () => {
+      try {
+        await sseStore.connect()
+        console.log('SSE connection established in App.vue')
+      } catch (error) {
+        console.error('Failed to establish SSE connection:', error)
+      }
+    }
+    
+    // SSE 연결 해제
+    const cleanupSse = () => {
+      sseStore.disconnect()
+      console.log('SSE connection cleaned up in App.vue')
+    }
+    
+    // 알림 초기 로드
+    const loadInitialAlarms = async () => {
+      if (authStore.isAuthenticated) {
+        try {
+          await alarmStore.fetchAlarms()
+          console.log('초기 알림 로드 완료')
+        } catch (error) {
+          console.error('초기 알림 로드 실패:', error)
+        }
+      }
+    }
+    
+    // 인증 상태 변경 감지하여 알림 로드
+    watch(() => authStore.isAuthenticated, (isAuthenticated) => {
+      if (isAuthenticated) {
+        loadInitialAlarms()
+      }
+    }, { immediate: true })
+    
+    // 컴포넌트 마운트 시 초기화
+    onMounted(async () => {
+      // 인증 초기화
+      await authStore.initialize()
+      
+      // SSE 연결
+      setupSse()
+      
+      // 로그인된 상태라면 알림 로드
+      if (authStore.isAuthenticated) {
+        loadInitialAlarms()
+      }
+    })
+    
+    // 컴포넌트 언마운트 시 SSE 연결 해제
+    onUnmounted(() => {
+      cleanupSse()
+    })
     
     return {
       uiStore
