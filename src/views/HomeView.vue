@@ -177,6 +177,17 @@ export default {
     
     // OAuth 모달 자동 열기
     onMounted(() => {
+      // 로그인 모달 자동 열기 (라우터 가드에서 리다이렉트된 경우)
+      const { showLogin } = route.query
+      if (showLogin === 'true') {
+        console.log('🔍 라우터 가드에서 로그인 모달 자동 열기')
+        if (openAuthModal) {
+          openAuthModal('login')
+        }
+        // URL에서 쿼리 파라미터 제거
+        window.history.replaceState({}, document.title, '/')
+      }
+      
       // OAuth 추가정보 모달
       const { openOAuthExtra, provider, signupTicket, email } = route.query
       if (openOAuthExtra === 'true' && provider && signupTicket && email) {

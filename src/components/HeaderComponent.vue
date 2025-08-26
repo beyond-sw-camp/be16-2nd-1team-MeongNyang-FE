@@ -458,12 +458,20 @@ export default {
     }
     
     const goToLogin = () => {
-      router.push('/auth/login')
+      // 모달창 로그인 띄우기
+      const showLoginModalFromHeader = inject('showLoginModalFromHeader')
+      if (showLoginModalFromHeader) {
+        showLoginModalFromHeader()
+      }
       drawer.value = false
     }
     
     const goToRegister = () => {
-      router.push('/auth/register')
+      // 모달창 회원가입 띄우기
+      const openAuthModal = inject('openAuthModal')
+      if (openAuthModal) {
+        openAuthModal('register')
+      }
       drawer.value = false
     }
     

@@ -629,6 +629,16 @@ export default {
     provide('openSocialDuplicateModal', openSocialDuplicateModal)
     provide('openDeletedAccountModal', openDeletedAccountModal)
     provide('openOAuthLinkModal', openOAuthLinkModal)
+    
+    // 전역 함수 제공 - 라우터 가드에서 사용
+    provide('showLoginModal', () => {
+      openAuthModal('login')
+    })
+    
+    // 전역 함수 제공 - HeaderComponent에서 사용
+    provide('showLoginModalFromHeader', () => {
+      openAuthModal('login')
+    })
     const sseStore = useSseStore()
     const alarmStore = useAlarmStore()
     

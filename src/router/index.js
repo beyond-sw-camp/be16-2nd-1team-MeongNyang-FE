@@ -71,8 +71,6 @@ router.beforeEach(async (to, from, next) => {
 
   const authStore = useAuthStore()
 
-
-  
   // 인증이 필요한 페이지인지 확인
   if (to.meta.requiresAuth) {
     // 토큰이 있지만 사용자 정보가 없는 경우 사용자 정보 가져오기
@@ -80,15 +78,19 @@ router.beforeEach(async (to, from, next) => {
       try {
         await authStore.getCurrentUser()
       } catch (error) {
-        // 사용자 정보 가져오기 실패 시 로그인 페이지로 리다이렉트
-        next('/auth/login')
+        // 사용자 정보 가져오기 실패 시 모달창 로그인 띄우기
+        console.log('사용자 정보 가져오기 실패 - 모달창 로그인 표시')
+        // 현재 페이지로 리다이렉트하여 모달창이 표시되도록 함
+        next({ path: '/', query: { showLogin: 'true' } })
         return
       }
     }
     
-    // 인증되지 않은 경우 로그인 페이지로 리다이렉트
+    // 인증되지 않은 경우 모달창 로그인 띄우기
     if (!authStore.isAuthenticated) {
-      next('/auth/login')
+      console.log('인증되지 않은 사용자 - 모달창 로그인 표시')
+      // 현재 페이지로 리다이렉트하여 모달창이 표시되도록 함
+      next({ path: '/', query: { showLogin: 'true' } })
       return
     }
     
