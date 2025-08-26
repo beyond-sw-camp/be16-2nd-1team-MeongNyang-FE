@@ -420,10 +420,31 @@ export default {
     
     const handleOtpResend = async () => {
       try {
-        // TODO: 백엔드 API 호출하여 이메일 재전송
         console.log('이메일 재전송 요청:', otpModalEmail.value)
-        // 성공 메시지 표시
-        uiStore.showSnackbar('알림', '인증 이메일이 재전송되었습니다.', 'info')
+        
+        // 백엔드 API 호출하여 이메일 재전송
+        const response = await fetch('/users/verify-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: otpModalEmail.value
+          })
+        })
+        
+        const result = await response.json()
+        
+        if (result.isSuccess === true) {
+          // 성공 메시지 표시
+          uiStore.showSnackbar('알림', '인증 이메일이 재전송되었습니다.', 'info')
+          console.log('✅ 이메일 재전송 성공')
+        } else {
+          // 실패 시 에러 메시지 표시
+          const errorMsg = result.status?.message || '이메일 재전송에 실패했습니다.'
+          uiStore.showSnackbar('오류', errorMsg, 'error')
+          console.error('❌ 이메일 재전송 실패:', result)
+        }
       } catch (error) {
         console.error('이메일 재전송 실패:', error)
         uiStore.showSnackbar('오류', '이메일 재전송에 실패했습니다.', 'error')

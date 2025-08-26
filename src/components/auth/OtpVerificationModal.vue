@@ -17,15 +17,15 @@
       </div>
       
       <!-- 제목 -->
-      <h2 class="otp-title">Verify Your Email</h2>
+      <h2 class="otp-title">이메일 인증</h2>
       
       <!-- 설명 -->
       <p class="otp-description">
-        We've sent an email to <strong>{{ email }}</strong> with a link to verify your email. 
-        You may click the button in the email or enter the verification code below.
+        <strong>{{ email }}</strong>로 이메일 인증 링크를 보냈습니다. 
+        이메일의 버튼을 클릭하거나 아래에 인증 코드를 입력해주세요.
       </p>
       
-      <!-- 검증 코드 입력 섹션 (접혀있음) -->
+      <!-- 검증 코드 입력 섹션 -->
       <div class="otp-input-section">
         <div class="otp-input-header" @click="toggleOtpInput">
           <span class="otp-input-label">검증 코드 입력하기</span>
@@ -61,7 +61,7 @@
       <!-- 타이머 및 재전송 -->
       <div class="timer-section">
         <div v-if="!canResend" class="timer-text">
-          Resend your email if it doesn't arrive in <strong>{{ timeLeftText }}</strong>
+          이메일이 도착하지 않으면 <strong>{{ timeLeftText }}</strong> 후에 재전송할 수 있습니다
         </div>
         <button
           v-else
@@ -228,9 +228,12 @@ export default {
     const handleResend = async () => {
       if (isResending.value) return
       
+      console.log('🔍 이메일 재전송 시작')
       isResending.value = true
+      
       try {
         // 부모 컴포넌트에 재전송 요청
+        console.log('🔍 부모 컴포넌트에 resend 이벤트 발생')
         emit('resend')
         
         // 타이머 리셋
@@ -240,8 +243,11 @@ export default {
         
         // 에러 메시지 초기화
         errorMessage.value = ''
+        
+        console.log('✅ 재전송 처리 완료, 타이머 리셋됨')
       } catch (error) {
-        console.error('재전송 실패:', error)
+        console.error('❌ 재전송 처리 실패:', error)
+        errorMessage.value = '재전송 처리 중 오류가 발생했습니다.'
       } finally {
         isResending.value = false
       }
@@ -340,18 +346,14 @@ export default {
 }
 
 .otp-header {
-  background: #ffffff;
-  border-bottom: 1px solid #e9ecef;
-  padding: 32px 32px 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  position: relative;
+  padding: 16px 24px 0;
+  margin-bottom: 24px;
 }
 
 .back-btn {
-  position: absolute;
-  left: 16px;
   background: none;
   border: none;
   color: #6b7280;
@@ -359,6 +361,9 @@ export default {
   padding: 8px;
   border-radius: 50%;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .back-btn:hover {
@@ -369,16 +374,19 @@ export default {
 .close-btn {
   background: none;
   border: none;
-  color: #94a3b8;
+  color: #6b7280;
   cursor: pointer;
   padding: 8px;
   border-radius: 50%;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .close-btn:hover {
-  color: #64748b;
-  background: rgba(148, 163, 184, 0.1);
+  color: #374151;
+  background: rgba(107, 114, 128, 0.1);
 }
 
 .otp-icon {
@@ -416,23 +424,22 @@ export default {
 .otp-input-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   padding: 12px 16px;
-  background: #f3f4f6;
-  border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s;
   margin-bottom: 16px;
 }
 
 .otp-input-header:hover {
-  background: #e5e7eb;
+  background: transparent;
 }
 
 .otp-input-label {
   font-size: 14px;
-  font-weight: 500;
-  color: #374151;
+  font-weight: 700;
+  color: #3b82f6;
+  text-align: center;
 }
 
 .toggle-icon {
@@ -492,16 +499,14 @@ export default {
 }
 
 .timer-section {
-  background: #fef3c7;
-  padding: 16px;
-  border-radius: 8px;
   text-align: center;
   margin: 0 32px 32px;
 }
 
 .timer-text {
-  color: #92400e;
+  color: #111827;
   font-size: 0.9rem;
+  font-weight: 700;
 }
 
 .resend-btn {
