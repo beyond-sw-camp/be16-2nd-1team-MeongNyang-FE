@@ -67,10 +67,16 @@
               • {{ getCategoryLabel(selectedCategory) }}
             </span>
           </div>
-          <button class="create-post-btn" @click="navigateToCreate">
-            <v-icon icon="mdi-plus" size="18" />
-            거래글 작성
-          </button>
+          <div class="header-buttons">
+            <button class="wishlist-btn" @click="navigateToWishlist">
+              <v-icon icon="mdi-heart" size="18" />
+              찜목록
+            </button>
+            <button class="create-post-btn" @click="navigateToCreate">
+              <v-icon icon="mdi-plus" size="18" />
+              거래글 작성
+            </button>
+          </div>
         </div>
 
         <!-- 로딩 상태 -->
@@ -628,6 +634,10 @@ export default {
       this.$router.push('/market/new')
     },
 
+    navigateToWishlist() {
+      this.$router.push('/market/wishlist')
+    },
+
     navigateToPost(postId) {
       this.$router.push(`/market/${postId}`)
     },
@@ -1004,6 +1014,13 @@ export default {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
+}
+
+.header-buttons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .total-count {
@@ -1035,6 +1052,28 @@ export default {
 }
 
 .create-post-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(232, 125, 125, 0.3);
+}
+
+/* 찜목록 버튼 */
+.wishlist-btn {
+  background: linear-gradient(135deg, #f17b7b 0%, #f69c9c 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(232, 125, 125, 0.2);
+}
+
+.wishlist-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(232, 125, 125, 0.3);
 }
@@ -1389,7 +1428,18 @@ export default {
     align-items: flex-start;
   }
 
+  .header-buttons {
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+  }
+
   .create-post-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .wishlist-btn {
     width: 100%;
     justify-content: center;
   }

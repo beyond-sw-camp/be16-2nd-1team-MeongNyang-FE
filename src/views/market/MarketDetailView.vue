@@ -540,7 +540,7 @@ export default {
               // 좌표-주소 변환 객체 생성
               const geocoder = new window.kakao.maps.services.Geocoder()
               
-                             // 좌표로 주소 검색
+               // 좌표로 주소 검색
                geocoder.coord2Address(longitude, latitude, (result, status) => {
                  if (status === window.kakao.maps.services.Status.OK) {
                    const address = result[0].address
@@ -622,7 +622,7 @@ export default {
         fetchPostDetail()
       })
     
-                                                                                                                                                                                                                                                                                                                               return {
+        return {
            post,
            loading,
            error,
