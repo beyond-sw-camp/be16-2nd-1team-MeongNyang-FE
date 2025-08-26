@@ -56,24 +56,41 @@
               :alt="user.petName"
               class="user-avatar"
             />
-            <span class="username">{{ user.petName }}</span>
+            <span class="username">{{ user.userName || user.petName || '익명' }}</span>
           </div>
           <div class="action-buttons">
+            <!-- 팔로잉 목록에서 언팔로우 버튼 (내 팔로잉 목록일 때만) -->
             <button 
-              v-if="activeTab === 'followings'"
+              v-if="activeTab === 'followings' && props.userId == currentUserId"
               class="action-btn delete-btn" 
               @click="handleUnfollow(user.userId || user.id)"
             >
-              삭제
+              언팔로우
             </button>
+            
+            <!-- 팔로워 목록에서 팔로우/언팔로우 버튼 (내 팔로워 목록일 때만) -->
             <button 
-              v-if="activeTab === 'followers'"
+              v-if="activeTab === 'followers' && props.userId == currentUserId && !user.isFollowing"
               class="action-btn follow-btn" 
               @click="handleFollow(user.userId || user.id)"
             >
               팔로우
             </button>
-            <button class="action-btn block-btn">차단</button>
+            <button 
+              v-if="activeTab === 'followers' && props.userId == currentUserId && user.isFollowing"
+              class="action-btn delete-btn" 
+              @click="handleUnfollow(user.userId || user.id)"
+            >
+              언팔로우
+            </button>
+            
+            <!-- 차단 버튼 (내 목록일 때만) -->
+            <button 
+              v-if="props.userId == currentUserId"
+              class="action-btn block-btn"
+            >
+              차단
+            </button>
           </div>
         </div>
         
@@ -88,6 +105,7 @@
 
 <script setup>
 import { ref, computed, watch, defineProps, defineEmits } from 'vue'
+import { useAuthStore } from '@/stores/auth'
 import { userAPI } from '@/services/api'
 
 // Props
@@ -115,7 +133,10 @@ const props = defineProps({
 })
 
 // Emits
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'follow-updated', 'unfollow-updated'])
+
+// Store
+const authStore = useAuthStore()
 
 // Reactive data
 const activeTab = ref(props.initialTab)
@@ -125,6 +146,26 @@ const searchQuery = ref('')
 const followers = ref([])
 const followings = ref([])
 const isLoading = ref(false)
+
+// 현재 로그인한 사용자 ID
+const currentUserId = computed(() => {
+  const user = authStore.user
+  if (!user) return null
+  
+  // 가능한 ID 필드들을 확인
+  const possibleIds = [
+    user.id,
+    user.userId,
+    user.memberId,
+    user.user_id,
+    user.member_id,
+    user.member?.id,
+    user.member?.userId,
+    user.member?.memberId
+  ]
+  
+  return possibleIds.find(id => id != null && id !== undefined)
+})
 
 // Computed
 const filteredUsers = computed(() => {
@@ -136,9 +177,10 @@ const filteredUsers = computed(() => {
     return users
   }
   
-  const filtered = users.filter(user => 
-    user.petName.toLowerCase().includes(searchQuery.value.toLowerCase())
-  )
+  const filtered = users.filter(user => {
+    const searchTarget = (user.userName || user.petName || '').toLowerCase()
+    return searchTarget.includes(searchQuery.value.toLowerCase())
+  })
   console.log('🔍 검색어:', searchQuery.value, '필터링 결과:', filtered)
   return filtered
 })
@@ -152,7 +194,6 @@ const closeModal = () => {
 const handleFollow = async (id) => {
   try {
     console.log('👆 팔로우 버튼 클릭 - userId:', id)
-    console.log('🔍 현재 사용자 데이터 구조 확인:', followers.value.find(user => (user.userId || user.id) === id))
     
     // id가 undefined인지 확인
     if (!id) {
@@ -161,21 +202,20 @@ const handleFollow = async (id) => {
       return
     }
     
-    // 팔로워 목록에서만 팔로우 가능
-    if (activeTab.value !== 'followers') {
-      console.log('⚠️ 팔로워 목록에서만 팔로우가 가능합니다.')
-      return
-    }
-    
     // 사용자 ID로 팔로우 (path variable 형식)
     console.log('📡 팔로우 API 호출:', id)
     await userAPI.follow(id)
     
-    // 성공 시 목록에서 제거 (팔로우하면 팔로워 목록에서 사라짐)
-    const beforeCount = followers.value.length
-    followers.value = followers.value.filter(user => (user.userId || user.id) !== id)
-    const afterCount = followers.value.length
-    console.log('✅ 팔로우 성공 - 목록에서 제거됨:', beforeCount, '→', afterCount)
+    // 성공 시 현재 탭에 따라 목록 다시 조회
+    console.log('✅ 팔로우 성공 - 현재 탭 목록 재조회')
+    if (activeTab.value === 'followers') {
+      await fetchFollowers()
+    } else if (activeTab.value === 'followings') {
+      await fetchFollowings()
+    }
+    
+    // 부모 컴포넌트에 팔로우 업데이트 이벤트 발생
+    emit('follow-updated')
     
   } catch (error) {
     console.error('❌ 팔로우 실패:', error)
@@ -188,7 +228,6 @@ const handleFollow = async (id) => {
 const handleUnfollow = async (id) => {
   try {
     console.log('👆 언팔로우 버튼 클릭 - userId:', id)
-    console.log('🔍 현재 사용자 데이터 구조 확인:', followings.value.find(user => (user.userId || user.id) === id))
     
     // id가 undefined인지 확인
     if (!id) {
@@ -197,21 +236,20 @@ const handleUnfollow = async (id) => {
       return
     }
     
-    // 팔로잉 목록에서만 언팔로우 가능
-    if (activeTab.value !== 'followings') {
-      console.log('⚠️ 팔로잉 목록에서만 언팔로우가 가능합니다.')
-      return
-    }
-    
     // 사용자 ID로 언팔로우 (path variable 형식)
     console.log('📡 언팔로우 API 호출:', id)
     await userAPI.unfollow(id)
     
-    // 성공 시 목록에서 제거
-    const beforeCount = followings.value.length
-    followings.value = followings.value.filter(user => (user.userId || user.id) !== id)
-    const afterCount = followings.value.length
-    console.log('✅ 언팔로우 성공 - 목록에서 제거됨:', beforeCount, '→', afterCount)
+    // 성공 시 현재 탭에 따라 목록 다시 조회
+    console.log('✅ 언팔로우 성공 - 현재 탭 목록 재조회')
+    if (activeTab.value === 'followers') {
+      await fetchFollowers()
+    } else if (activeTab.value === 'followings') {
+      await fetchFollowings()
+    }
+    
+    // 부모 컴포넌트에 언팔로우 업데이트 이벤트 발생
+    emit('unfollow-updated')
     
   } catch (error) {
     console.error('❌ 언팔로우 실패:', error)
@@ -226,7 +264,8 @@ const fetchFollowers = async () => {
   
   isLoading.value = true
   try {
-    console.log('🔍 팔로워 목록 조회 시작 - userId:', props.userId)
+    console.log('🔍 팔로워 목록 조회 시작 - userId:', props.userId, '타입:', typeof props.userId)
+    console.log('🔍 props.userId가 유효한지:', props.userId && props.userId > 0)
     const response = await userAPI.getUserFollowers(props.userId)
     console.log('📥 팔로워 API 응답:', response)
     
@@ -235,6 +274,18 @@ const fetchFollowers = async () => {
       console.log('✅ 팔로워 목록 데이터:', followers.value)
       console.log('🔍 팔로워 첫 번째 사용자 데이터 구조:', followers.value[0])
       console.log('🔍 팔로워 사용자들의 id 필드 확인:', followers.value.map(user => ({ id: user.id, userId: user.userId, userEmail: user.userEmail })))
+      
+      // 각 팔로워의 팔로우 상태 조회
+      await Promise.all(followers.value.map(async (user) => {
+        try {
+          const followStatusResponse = await userAPI.checkFollowStatus(user.userId || user.id)
+          user.isFollowing = followStatusResponse.data?.data?.isFollowing || false
+          console.log(`팔로워 ${user.userName || user.petName} 팔로우 상태:`, user.isFollowing)
+        } catch (error) {
+          console.error(`팔로워 ${user.userName || user.petName} 팔로우 상태 조회 실패:`, error)
+          user.isFollowing = false
+        }
+      }))
     } else {
       console.log('⚠️ 팔로워 데이터가 없습니다.')
       followers.value = []
@@ -253,7 +304,8 @@ const fetchFollowings = async () => {
   
   isLoading.value = true
   try {
-    console.log('🔍 팔로잉 목록 조회 시작 - userId:', props.userId)
+    console.log('🔍 팔로잉 목록 조회 시작 - userId:', props.userId, '타입:', typeof props.userId)
+    console.log('🔍 props.userId가 유효한지:', props.userId && props.userId > 0)
     const response = await userAPI.getUserFollowings(props.userId)
     console.log('📥 팔로잉 API 응답:', response)
     

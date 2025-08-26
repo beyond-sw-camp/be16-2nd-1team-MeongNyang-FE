@@ -639,6 +639,51 @@ export default {
       }
     }
     
+    // 댓글 미리보기 가져오기
+    const fetchCommentsPreview = async () => {
+      try {
+        const postId = $route.params.id
+        console.log('댓글 미리보기 조회 시작 - postId:', postId)
+        
+        const response = await postAPI.getComments(postId, { page: 0, size: 10 })
+        console.log('댓글 미리보기 응답:', response)
+        
+        if (response.data && response.data.data) {
+          let commentsData = []
+          
+          if (response.data.data.content) {
+            commentsData = response.data.data.content
+          } else if (Array.isArray(response.data.data)) {
+            commentsData = response.data.data
+          } else {
+            commentsData = response.data.data
+          }
+          
+          // 댓글과 답글을 모두 포함하여 미리보기 생성
+          let allComments = []
+          if (Array.isArray(commentsData)) {
+            commentsData.forEach(comment => {
+              // 댓글 추가
+              allComments.push(comment)
+              // 답글도 추가 (replies 배열이 있다면)
+              if (comment.replies && Array.isArray(comment.replies)) {
+                allComments.push(...comment.replies)
+              }
+            })
+          }
+          
+          // 최대 5개까지만 미리보기로 설정
+          postData.value.previewComments = allComments.slice(0, 5)
+          console.log('댓글 미리보기 설정 완료:', postData.value.previewComments)
+        } else {
+          postData.value.previewComments = []
+        }
+      } catch (error) {
+        console.error('댓글 미리보기 조회 실패:', error)
+        postData.value.previewComments = []
+      }
+    }
+    
     // 댓글 추가
     const handleAddComment = async (content) => {
       try {
@@ -654,6 +699,9 @@ export default {
         
         // 댓글 목록 새로고침
         await fetchComments()
+        
+        // 댓글 미리보기 업데이트
+        await fetchCommentsPreview()
       } catch (error) {
         console.error('댓글 추가 실패:', error)
         handleApiError(error, $router, '댓글 작성에 실패했습니다.')
@@ -676,6 +724,9 @@ export default {
         
         // 댓글 목록 새로고침
         await fetchComments()
+        
+        // 댓글 미리보기 업데이트
+        await fetchCommentsPreview()
       } catch (error) {
         console.error('답글 추가 실패:', error)
         handleApiError(error, $router, '답글 작성에 실패했습니다.')
@@ -1074,6 +1125,7 @@ export default {
                     handleLikesModalToggle,
                     toggleCommentsModal,
                     fetchComments,
+                    fetchCommentsPreview,
                     handleAddComment,
                     handleAddReply,
                     handleEditComment,

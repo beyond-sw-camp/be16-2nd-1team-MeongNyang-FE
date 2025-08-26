@@ -218,16 +218,16 @@ export const userAPI = {
   checkFollowStatus: (userId) => apiClient.get(`/users/follows/${userId}/status`),
 
   // 다른 사용자의 팔로워 개수 조회
-  getUserFollowersCount: (userId) => apiClient.get('/users/follows/followers', { params: { userId } }),
+  getUserFollowersCount: (userId) => apiClient.get(`/users/${userId}/follows/followers`),
 
   // 다른 사용자의 팔로잉 개수 조회
-  getUserFollowingsCount: (userId) => apiClient.get('/users/follows/followings', { params: { userId } }),
+  getUserFollowingsCount: (userId) => apiClient.get(`/users/${userId}/follows/followings`),
 
   // 다른 사용자의 팔로워 목록 조회
-  getUserFollowers: (userId, pageable = { page: 0, size: 20 }) => apiClient.get('/users/follows/followers', { params: { userId, ...pageable } }),
+  getUserFollowers: (userId, pageable = { page: 0, size: 20 }) => apiClient.get(`/users/${userId}/follows/followers`, { params: pageable }),
 
   // 다른 사용자의 팔로잉 목록 조회
-  getUserFollowings: (userId, pageable = { page: 0, size: 20 }) => apiClient.get('/users/follows/followings', { params: { userId, ...pageable } }),
+  getUserFollowings: (userId, pageable = { page: 0, size: 20 }) => apiClient.get(`/users/${userId}/follows/followings`, { params: pageable }),
 
   // 다른 사용자의 게시물 개수 조회
   getUserPostsCount: (userId) => apiClient.get('/posts', { params: { userId, page: 0, size: 1 } })

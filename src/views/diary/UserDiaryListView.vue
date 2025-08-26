@@ -97,11 +97,13 @@
     <!-- 팔로우/팔로워 모달 -->
     <FollowModal
       :is-visible="isFollowModalVisible"
-      :user-id="userId"
+      :user-id="$route.params.userId"
       :followers-count="followersCount"
       :followings-count="followingsCount"
       :initial-tab="followModalTab"
       @close="closeFollowModal"
+      @follow-updated="handleFollowUpdated"
+      @unfollow-updated="handleUnfollowUpdated"
     />
   </div>
 </template>
@@ -126,7 +128,23 @@ export default {
     const authStore = useAuthStore()
     
     // 사용자 ID (라우트 파라미터에서 가져옴)
-    const userId = computed(() => $route.params.userId)
+    const userId = computed(() => {
+      const routeUserId = $route.params.userId
+      console.log('🔍 userId computed 호출됨 - 템플릿에서 호출됨')
+      console.log('🔍 $route.params:', $route.params)
+      console.log('🔍 $route.params.userId:', routeUserId)
+      console.log('🔍 $route.fullPath:', $route.fullPath)
+      console.log('🔍 $route.params.userId 타입:', typeof routeUserId)
+      console.log('🔍 $route.params.userId 값이 유효한지:', routeUserId && routeUserId !== '')
+      
+      // routeUserId가 유효하지 않으면 빈 문자열 반환 (undefined 방지)
+      if (!routeUserId || routeUserId === '') {
+        console.warn('⚠️ routeUserId가 유효하지 않음:', routeUserId)
+        return ''
+      }
+      
+      return routeUserId
+    })
     
     // 현재 로그인한 사용자 ID
     const currentUserId = computed(() => {
@@ -293,12 +311,21 @@ export default {
     // 팔로워 개수 가져오기
     const fetchFollowersCount = async () => {
       try {
+        console.log('🔍 팔로워 개수 조회 시작 - userId:', userId.value)
         const response = await userAPI.getUserFollowersCount(userId.value)
+        console.log('📥 팔로워 개수 API 응답:', response)
+        console.log('📥 팔로워 개수 응답 데이터:', response.data)
+        
         if (response.data && response.data.data) {
           followersCount.value = response.data.data.totalElements || 0
+          console.log('✅ 설정된 팔로워 개수:', followersCount.value)
+        } else {
+          console.log('⚠️ 팔로워 개수 데이터가 없음')
+          followersCount.value = 0
         }
       } catch (error) {
-        console.error('팔로워 개수 조회 실패:', error)
+        console.error('❌ 팔로워 개수 조회 실패:', error)
+        console.error('❌ 에러 응답:', error.response?.data)
         followersCount.value = 0
       }
     }
@@ -306,12 +333,21 @@ export default {
     // 팔로잉 개수 가져오기
     const fetchFollowingsCount = async () => {
       try {
+        console.log('🔍 팔로잉 개수 조회 시작 - userId:', userId.value)
         const response = await userAPI.getUserFollowingsCount(userId.value)
+        console.log('📥 팔로잉 개수 API 응답:', response)
+        console.log('📥 팔로잉 개수 응답 데이터:', response.data)
+        
         if (response.data && response.data.data) {
           followingsCount.value = response.data.data.totalElements || 0
+          console.log('✅ 설정된 팔로잉 개수:', followingsCount.value)
+        } else {
+          console.log('⚠️ 팔로잉 개수 데이터가 없음')
+          followingsCount.value = 0
         }
       } catch (error) {
-        console.error('팔로잉 개수 조회 실패:', error)
+        console.error('❌ 팔로잉 개수 조회 실패:', error)
+        console.error('❌ 에러 응답:', error.response?.data)
         followingsCount.value = 0
       }
     }
@@ -457,6 +493,33 @@ export default {
 
     // 팔로우/팔로워 모달 처리
     const openFollowModal = (type) => {
+      console.log('🔍 openFollowModal 호출됨')
+      console.log('🔍 type:', type)
+      console.log('🔍 userId.value:', userId.value)
+      console.log('🔍 userId 타입:', typeof userId.value)
+      console.log('🔍 $route.params:', $route.params)
+      console.log('🔍 $route.fullPath:', $route.fullPath)
+      
+      // 직접 라우트 파라미터에서 userId 가져오기
+      const routeUserId = $route.params.userId
+      console.log('🔍 직접 가져온 routeUserId:', routeUserId)
+      
+      // userId가 유효하지 않으면 모달을 열지 않음
+      if (!routeUserId) {
+        console.error('❌ routeUserId가 유효하지 않아 모달을 열 수 없습니다.')
+        console.error('❌ 현재 라우트 정보:', {
+          params: $route.params,
+          fullPath: $route.fullPath,
+          path: $route.path
+        })
+        alert('사용자 정보를 불러올 수 없습니다.')
+        return
+      }
+      
+      // 모달에 전달할 userId를 routeUserId로 설정
+      const modalUserId = routeUserId
+      console.log('🔍 모달에 전달할 userId:', modalUserId)
+      
       isFollowModalVisible.value = true
       // 모달이 열린 후 탭 설정을 위해 nextTick 사용
       nextTick(() => {
@@ -470,6 +533,24 @@ export default {
 
     const closeFollowModal = () => {
       isFollowModalVisible.value = false
+    }
+    
+    // 팔로우 업데이트 처리
+    const handleFollowUpdated = async () => {
+      console.log('🔄 팔로우 업데이트 - 숫자 재조회')
+      await Promise.all([
+        fetchFollowersCount(),
+        fetchFollowingsCount()
+      ])
+    }
+    
+    // 언팔로우 업데이트 처리
+    const handleUnfollowUpdated = async () => {
+      console.log('🔄 언팔로우 업데이트 - 숫자 재조회')
+      await Promise.all([
+        fetchFollowersCount(),
+        fetchFollowingsCount()
+      ])
     }
     
     // 라우터 가드 - 컴포넌트가 활성화되기 전에 리다이렉트 체크
@@ -616,6 +697,8 @@ export default {
       handleUnfollow,
       openFollowModal,
       closeFollowModal,
+      handleFollowUpdated,
+      handleUnfollowUpdated,
       handleSearch,
       handleClearSearch
     }
