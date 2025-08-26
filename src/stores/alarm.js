@@ -25,11 +25,6 @@ export const useAlarmStore = defineStore('alarm', () => {
       
       const response = await alarmAPI.getMyAlarms()
       
-      console.log('=== 알림 API 응답 디버깅 ===')
-      console.log('전체 응답:', response)
-      console.log('response.data:', response.data)
-      console.log('response.data.data:', response.data?.data)
-      
       // 백엔드 응답 구조에 맞춰 데이터 추출
       if (response.data && response.data.data) {
         alarms.value = response.data.data
@@ -37,10 +32,7 @@ export const useAlarmStore = defineStore('alarm', () => {
         alarms.value = response.data || []
       }
       
-      console.log('최종 알림 데이터:', alarms.value)
-      console.log('첫 번째 알림 객체:', alarms.value[0])
-      console.log('isRead 필드 확인:', alarms.value.map(alarm => ({ id: alarm.id, isRead: alarm.isRead })))
-      console.log('=== 알림 API 응답 디버깅 완료 ===')
+      console.log('알림 데이터 로드 완료:', alarms.value.length, '개')
     } catch (err) {
       console.error('알림 로드 실패:', err)
       error.value = err.message || '알림을 불러오는데 실패했습니다.'
