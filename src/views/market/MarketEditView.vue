@@ -5,56 +5,61 @@
       <!-- 폼 컨테이너 -->
       <!-- 목록으로 버튼과 삭제하기 버튼 -->
       <div class="back-btn-wrapper">
-        <button @click="goBackToDetail" class="back-btn">
-          <v-icon icon="mdi-arrow-left" size="20" />
-          뒤로가기
-        </button>
-        
-        <!-- 삭제하기 버튼 -->
-        <button @click="confirmDelete" class="delete-btn">
-          <v-icon icon="mdi-delete" size="20" />
-          삭제하기
-        </button>
+                 <button type="button" @click="goBackToDetail" class="back-btn">
+           <v-icon icon="mdi-arrow-left" size="20" />
+           뒤로가기
+         </button>
+         
+         <!-- 삭제하기 버튼 -->
+         <button type="button" @click="confirmDelete" class="delete-btn">
+           <v-icon icon="mdi-delete" size="20" />
+           삭제하기
+         </button>
       </div>
 
       <div class="form-container">
         <v-form ref="form" v-model="valid" @submit.prevent="submitForm">
-          <!-- 상품 이미지 섹션 -->
-          <div class="form-section">
-            <div class="section-header">
-              <h3 class="section-title">상품 이미지</h3>
-            </div>
-            
-            <div class="image-upload-section">
-              <!-- 메인 업로드 영역 -->
-              <div class="main-upload-area" :class="{ 'has-images': imageUrls.length > 0 }">
-                <!-- 파일 입력 -->
-                <input
-                  ref="fileInput"
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  class="hidden-file-input"
-                  @change="handleImageChange"
-                />
-                
-                <!-- 이미지가 없을 때 업로드 안내 -->
-                <div v-if="imageCount === 0" class="upload-content" @click="() => { replaceMode.value = false; triggerFileInput(); }">
-                  <div class="upload-icon">
-                    <v-icon icon="mdi-cloud-upload" size="48" color="white" />
-                  </div>
-                  <h4 class="upload-title">사진을 업로드하세요</h4>
-                  <p class="upload-subtitle">최대 10장까지 등록 가능합니다</p>
-                  <div class="upload-hint">
-                    <v-icon icon="mdi-information" size="16" color="#7f8c8d" />
-                    <span>클릭하여 이미지 선택</span>
-                  </div>
-                </div>
-                
-                <!-- 이미지가 있을 때 슬라이더 -->
-                <div v-else-if="imageCount > 0">
-                  <!-- 이미지 슬라이더 -->
-                  <div class="image-slider-container">
+                     <!-- 상품 이미지 섹션 -->
+           <div class="form-section">
+             <div class="section-header">
+               <h3 class="section-title">상품 이미지</h3>
+             </div>
+             
+             <div class="image-upload-section">
+               <!-- 이미지 에러 메시지 -->
+               <div v-if="imageError" class="image-error-message">
+                 <v-icon icon="mdi-alert-circle" size="20" color="#f44336" />
+                 <span>{{ imageError }}</span>
+                 <button type="button" @click="clearImageError" class="error-close-btn">✕</button>
+               </div>
+               
+               <!-- 메인 업로드 영역 -->
+               <div class="main-upload-area" :class="{ 'has-images': imageUrls.length > 0 }">
+                 <!-- 파일 입력 -->
+                 <input
+                   ref="fileInput"
+                   type="file"
+                   multiple
+                   accept="image/*"
+                   class="hidden-file-input"
+                   @change="handleImageChange"
+                 />
+                 
+                 <!-- 이미지가 없을 때 업로드 안내 -->
+                 <div v-if="imageCount === 0" class="upload-content" @click="triggerFileInput">
+                   <div class="upload-icon">
+                     <v-icon icon="mdi-cloud-upload" size="48" color="white" />
+                   </div>
+                   <h4 class="upload-title">사진을 업로드하세요</h4>
+                   <p class="upload-subtitle">최대 10장까지 등록 가능합니다</p>
+                   <div class="upload-hint">
+                     <v-icon icon="mdi-information" size="16" color="#7f8c8d" />
+                     <span>클릭하여 이미지 선택</span>
+                   </div>
+                 </div>
+                 
+                                                       <!-- 이미지가 있을 때 슬라이더 -->
+                  <div v-else class="image-slider-container">
                     <!-- 이미지 슬라이더 -->
                     <div class="image-slider">
                       <div 
@@ -79,6 +84,7 @@
                         
                         <!-- 이미지 제거 버튼 -->
                         <button
+                          type="button"
                           @click.stop="removeImage(index)"
                           class="remove-image-btn"
                         >
@@ -90,6 +96,7 @@
                     <!-- 네비게이션 버튼 -->
                     <div class="slider-nav">
                       <button
+                        type="button"
                         @click="previousSlide"
                         :disabled="currentSlide === 0"
                         class="nav-btn prev-btn"
@@ -108,18 +115,18 @@
                       </div>
                       
                       <button
+                        type="button"
                         @click="nextSlide"
-                        :disabled="currentSlide === imageCount - 1"
+                        :disabled="currentSlide === imageUrls.length - 1"
                         class="nav-btn next-btn"
                       >
                         <v-icon icon="mdi-chevron-right" size="24" />
                       </button>
                     </div>
                   </div>
-                </div>
-              </div>
-            </div>
-          </div>
+               </div>
+             </div>
+           </div>
 
           <!-- 기본 정보 섹션 -->
           <div class="form-section">
@@ -248,13 +255,14 @@
                   </div>
                   
                   <div class="map-controls">
-                    <button
-                      @click="resetMapLocation"
-                      class="map-btn secondary-btn"
-                    >
-                      <v-icon icon="mdi-refresh" size="18" />
-                      위치 초기화
-                    </button>
+                                         <button
+                       type="button"
+                       @click="resetMapLocation"
+                       class="map-btn secondary-btn"
+                     >
+                       <v-icon icon="mdi-refresh" size="18" />
+                       위치 초기화
+                     </button>
                   </div>
                 </div>
                 
@@ -359,6 +367,51 @@ export default {
     const formPrice = ref(null)
     const formDescription = ref('')
 
+    // 폼 상태 변수들
+    const valid = ref(false)
+    const loading = ref(false)
+    
+    // 이미지 관련 상태
+    const images = ref([])
+    const imageUrls = ref([])
+    const mainImageIndex = ref(0)
+    const currentSlide = ref(0)
+    const replaceMode = ref(false)
+    const imageError = ref('')
+    
+    // 지도 관련 상태
+    const map = ref(null)
+    const marker = ref(null)
+    const selectedLocation = ref(null)
+    const mapLoaded = ref(false)
+    
+    // 스낵바 상태
+    const snackbar = reactive({
+      show: false,
+      message: '',
+      color: 'success',
+      icon: 'mdi-check-circle'
+    })
+    
+    // 카테고리 옵션
+    const categoryOptions = ref([
+      { label: '장난감', value: 'TOY' },
+      { label: '사료', value: 'FEED' },
+      { label: '의류', value: 'CLOTH' },
+      { label: '기타', value: 'OTHER' }
+    ])
+
+    // 이미지 관련 computed 속성
+    const imageCount = computed(() => {
+      const count = imageUrls.value?.length || 0
+      console.log('imageCount computed 업데이트:', count, 'imageUrls.length:', imageUrls.value?.length)
+      return count
+    })
+
+    const hasImages = computed(() => {
+      return imageUrls.value.length > 0
+    })
+
     // 기존 거래글 데이터 불러오기
     const fetchPostDetail = async () => {
       try {
@@ -399,14 +452,62 @@ export default {
           console.log('설정 후 formDescription.value:', formDescription.value)
           console.log('=== 폼 데이터 설정 완료 ===')
           
-          // 이미지가 있으면 설정
-          if (postData.productImageList && postData.productImageList.length > 0) {
-            imageUrls.value = postData.productImageList
-            // 대표 이미지 인덱스 찾기
-            const thumbnailIndex = postData.productImageList.findIndex(url => url === postData.thumbnailUrl)
-            mainImageIndex.value = thumbnailIndex >= 0 ? thumbnailIndex : 0
-            console.log('이미지 설정 완료:', imageUrls.value)
-          }
+                     // 이미지가 있으면 설정
+           if (postData.productImageList && postData.productImageList.length > 0) {
+             try {
+               // 기존 이미지 URL 정리
+               imageUrls.value.forEach(url => {
+                 try {
+                   if (url && url.startsWith('blob:')) {
+                     URL.revokeObjectURL(url)
+                   }
+                 } catch (e) {
+                   console.warn('Error revoking existing URL:', e)
+                 }
+               })
+               
+                               // 새 이미지 설정
+                imageUrls.value = [...postData.productImageList]
+                
+                // 대표 이미지 인덱스 찾기
+                const thumbnailIndex = postData.productImageList.findIndex(url => url === postData.thumbnailUrl)
+                mainImageIndex.value = thumbnailIndex >= 0 ? thumbnailIndex : 0
+                currentSlide.value = 0
+                
+                console.log('=== 기존 이미지 설정 완료 ===')
+                console.log('이미지 URL들:', imageUrls.value)
+                console.log('썸네일 URL:', postData.thumbnailUrl)
+                console.log('썸네일 인덱스:', thumbnailIndex)
+                console.log('설정된 mainImageIndex:', mainImageIndex.value)
+                console.log('===============================')
+             } catch (error) {
+               console.error('이미지 설정 중 오류:', error)
+               imageError.value = '기존 이미지를 불러오는 중 오류가 발생했습니다.'
+             }
+           } else {
+             // 이미지가 없는 경우 초기화
+             try {
+               // 기존 blob URL 정리
+               imageUrls.value.forEach(url => {
+                 try {
+                   if (url && url.startsWith('blob:')) {
+                     URL.revokeObjectURL(url)
+                   }
+                 } catch (e) {
+                   console.warn('Error revoking existing URL:', e)
+                 }
+               })
+               
+                               imageUrls.value = []
+                images.value = []
+                mainImageIndex.value = 0
+                currentSlide.value = 0
+               
+               console.log('이미지 없음 - 초기화 완료')
+             } catch (error) {
+               console.error('이미지 초기화 중 오류:', error)
+             }
+           }
           
           // 기존 위치 정보가 있으면 설정
           if (postData.latitude && postData.longitude) {
@@ -618,44 +719,10 @@ export default {
       console.log('========================')
     }
 
-         const valid = ref(false)
-     const loading = ref(false)
-     const images = ref([])
-     const imageUrls = ref([])
-     const mainImageIndex = ref(0)
-     const currentSlide = ref(0)
-     const replaceMode = ref(false)
-    
-    // 지도 관련 상태
-    const map = ref(null)
-    const marker = ref(null)
-    const selectedLocation = ref(null)
-    const mapLoaded = ref(false)
-    
-    // 스낵바 상태
-    const snackbar = reactive({
-      show: false,
-      message: '',
-      color: 'success',
-      icon: 'mdi-check-circle'
-    })
-    
-    // 카테고리 옵션
-    const categoryOptions = ref([
-      { label: '장난감', value: 'TOY' },
-      { label: '사료', value: 'FEED' },
-      { label: '의류', value: 'CLOTH' },
-      { label: '기타', value: 'OTHER' }
-    ])
-
-    // 이미지 관련 computed 속성
-    const imageCount = computed(() => {
-      return imageUrls.value?.length || 0
-    })
-    
-    const hasImages = computed(() => {
-      return imageCount.value > 0
-    })
+    // 이미지 에러 초기화
+    const clearImageError = () => {
+      imageError.value = ''
+    }
 
     // 카테고리 변경 처리
     const handleCategoryChange = (event) => {
@@ -684,159 +751,213 @@ export default {
 
          // 파일 입력 트리거
      const triggerFileInput = () => {
-       const fileInput = document.querySelector('.hidden-file-input')
-       if (fileInput) {
-         fileInput.click()
+       try {
+         clearImageError()
+         const fileInput = document.querySelector('.hidden-file-input')
+         if (fileInput) {
+           fileInput.click()
+         } else {
+           imageError.value = '파일 입력 요소를 찾을 수 없습니다.'
+         }
+       } catch (error) {
+         console.error('파일 입력 트리거 오류:', error)
+         imageError.value = '파일 선택 중 오류가 발생했습니다.'
        }
      }
      
      // 이미지 교체 (기존 이미지를 모두 새 이미지로 교체)
      const replaceAllImages = () => {
-       console.log('이미지 교체 모드 활성화')
-       replaceMode.value = true
-       
-       const fileInput = document.querySelector('.hidden-file-input')
-       if (fileInput) {
-         fileInput.click()
-       }
-     }
-
-         // 이미지 변경 처리
-     const handleImageChange = (event) => {
-       const files = event.target.files
-       if (!files || files.length === 0) return
- 
-       console.log('새 이미지 선택됨 - 파일 개수:', files.length)
- 
-       // 파일 유효성 검사
-       const validFiles = Array.from(files).filter(file => {
-         if (!file || !(file instanceof File)) return false
-         if (!file.type.startsWith('image/')) return false
-         return true
-       })
- 
-       if (validFiles.length === 0) {
-         console.error('유효한 이미지 파일을 선택해주세요')
-         return
-       }
- 
-       // 이미지 교체 모드인지 확인 (replaceMode 상태 추가 필요)
-       if (replaceMode.value) {
-         // 교체 모드: 기존 이미지 모두 제거하고 새 이미지로 교체
-         console.log('이미지 교체 모드 - 기존 이미지 제거 후 새 이미지 추가')
+       try {
+         clearImageError()
+         console.log('이미지 교체 모드 활성화')
          
-         // 기존 URL 정리
-         imageUrls.value.forEach(url => {
-           try {
-             URL.revokeObjectURL(url)
-           } catch (e) {
-             console.warn('Error revoking URL:', e)
-           }
-         })
-         
-         // 새 이미지로 교체
-         images.value = validFiles
-         imageUrls.value = validFiles.map(file => URL.createObjectURL(file))
-         mainImageIndex.value = 0
-         currentSlide.value = 0
-         
-         // 교체 모드 해제
-         replaceMode.value = false
-         
-         console.log('이미지 교체 완료 - 새 이미지 개수:', imageUrls.value.length)
-       } else {
-         // 추가 모드: 기존 이미지에 새 이미지 추가
-         console.log('이미지 추가 모드 - 기존 이미지 유지하면서 새 이미지 추가')
-         
-         const newImages = [...images.value, ...validFiles]
-         images.value = newImages
-         
-         try {
-           // 새 이미지들에 대해서만 URL 생성
-           const newUrls = validFiles.map(file => URL.createObjectURL(file))
-           const allUrls = [...imageUrls.value, ...newUrls]
-           imageUrls.value = allUrls
-           
-           console.log('이미지 추가 완료 - 총 이미지 개수:', imageUrls.value.length)
-           
-           // 인덱스 조정
-           if (mainImageIndex.value >= imageUrls.value.length) {
-             mainImageIndex.value = 0
-           }
-           if (currentSlide.value >= imageUrls.value.length) {
-             currentSlide.value = 0
-           }
-         } catch (error) {
-           console.error('Error creating object URLs:', error)
-           // 에러 발생 시 기존 이미지는 유지
+         const fileInput = document.querySelector('.hidden-file-input')
+         if (fileInput) {
+           fileInput.click()
+         } else {
+           imageError.value = '파일 입력 요소를 찾을 수 없습니다.'
          }
+       } catch (error) {
+         console.error('이미지 교체 오류:', error)
+         imageError.value = '이미지 교체 중 오류가 발생했습니다.'
        }
-       
-       // 파일 입력 초기화 (같은 파일을 다시 선택할 수 있도록)
-       event.target.value = ''
      }
 
-    // 이미지 제거
-    const removeImage = (index) => {
-      try {
-        console.log('이미지 제거 시작 - 인덱스:', index)
-        console.log('제거 전 이미지 개수:', imageUrls.value.length)
-        
-        if (imageUrls.value[index]) {
-          URL.revokeObjectURL(imageUrls.value[index])
-        }
-        imageUrls.value.splice(index, 1)
-        images.value.splice(index, 1)
-        
-        // 이미지가 모두 삭제된 경우
-        if (imageUrls.value.length === 0) {
-          console.log('모든 이미지가 삭제됨')
-          mainImageIndex.value = 0
+         // 이미지 변경 처리 (전체 교체만 지원)
+     const handleImageChange = (event) => {
+       try {
+         clearImageError()
+         const files = event.target.files
+         if (!files || files.length === 0) return
+
+         console.log('새 이미지 선택됨 - 파일 개수:', files.length)
+
+         // 파일 유효성 검사
+         const validFiles = Array.from(files).filter(file => {
+           if (!file || !(file instanceof File)) return false
+           if (!file.type.startsWith('image/')) return false
+           if (file.size > 10 * 1024 * 1024) return false // 10MB 제한
+           return true
+         })
+
+         if (validFiles.length === 0) {
+           imageError.value = '유효한 이미지 파일을 선택해주세요. (JPG, PNG, GIF, 최대 10MB)'
+           return
+         }
+
+         // 최대 이미지 개수 제한 (10장)
+         if (validFiles.length > 10) {
+           imageError.value = '최대 10장까지 선택할 수 있습니다.'
+           return
+         }
+
+                   // 기존 이미지 모두 제거하고 새 이미지로 교체
+          console.log('이미지 교체 - 기존 이미지 제거 후 새 이미지 추가')
+          
+          // 기존 URL 정리
+          imageUrls.value.forEach(url => {
+            try {
+              if (url && url.startsWith('blob:')) {
+                URL.revokeObjectURL(url)
+              }
+            } catch (e) {
+              console.warn('Error revoking URL:', e)
+            }
+          })
+          
+          // 새 이미지로 교체
+          images.value = [...validFiles]
+          imageUrls.value = validFiles.map(file => URL.createObjectURL(file))
+          
+          // 슬라이더 상태 초기화
           currentSlide.value = 0
-        } else {
-          // 인덱스 조정
-          if (mainImageIndex.value >= imageUrls.value.length) {
-            mainImageIndex.value = Math.max(0, imageUrls.value.length - 1)
+          mainImageIndex.value = 0
+          
+          console.log('이미지 교체 완료 - 새 이미지 개수:', imageUrls.value.length)
+          
+          // 파일 입력 초기화 (같은 파일을 다시 선택할 수 있도록)
+          event.target.value = ''
+          
+          // 성공 메시지
+          snackbar.message = '이미지가 성공적으로 교체되었습니다.'
+          snackbar.color = 'success'
+          snackbar.icon = 'mdi-check-circle'
+          snackbar.show = true
+         
+       } catch (error) {
+         console.error('이미지 변경 처리 오류:', error)
+         imageError.value = '이미지 처리 중 오류가 발생했습니다.'
+       }
+           }
+      
+      // 이미지 제거
+      const removeImage = (index) => {
+        try {
+          clearImageError()
+          console.log('이미지 제거 시작 - 인덱스:', index)
+          console.log('제거 전 이미지 개수:', imageUrls.value.length)
+          
+          if (index < 0 || index >= imageUrls.value.length) {
+            imageError.value = '유효하지 않은 이미지 인덱스입니다.'
+            return
           }
-          if (currentSlide.value >= imageUrls.value.length) {
-            currentSlide.value = Math.max(0, imageUrls.value.length - 1)
+          
+          // URL 정리
+          if (imageUrls.value[index]) {
+            try {
+              if (imageUrls.value[index].startsWith('blob:')) {
+                URL.revokeObjectURL(imageUrls.value[index])
+              }
+            } catch (e) {
+              console.warn('Error revoking URL:', e)
+            }
           }
+          
+          // 배열에서 제거
+          imageUrls.value.splice(index, 1)
+          images.value.splice(index, 1)
+          
+          console.log('제거 후 이미지 개수:', imageUrls.value.length)
+          
+          // 슬라이더 상태 조정
+          if (imageUrls.value.length === 0) {
+            currentSlide.value = 0
+            mainImageIndex.value = 0
+            console.log('모든 이미지 제거됨 - 업로드 영역 표시 예정')
+          } else {
+            // 현재 슬라이드가 범위를 벗어나면 조정
+            if (currentSlide.value >= imageUrls.value.length) {
+              currentSlide.value = imageUrls.value.length - 1
+            }
+            // 대표 이미지 인덱스가 범위를 벗어나면 조정
+            if (mainImageIndex.value >= imageUrls.value.length) {
+              mainImageIndex.value = imageUrls.value.length - 1
+            }
+          }
+          
+          // 폼 유효성 검사
+          validateForm()
+          
+          console.log('이미지 제거 완료')
+        } catch (error) {
+          console.error('이미지 제거 중 오류:', error)
+          imageError.value = '이미지 제거 중 오류가 발생했습니다.'
         }
-        
-        console.log('제거 후 이미지 개수:', imageUrls.value.length)
-        console.log('mainImageIndex:', mainImageIndex.value)
-        console.log('currentSlide:', currentSlide.value)
-        
-        // 이미지 삭제 후에는 폼 유효성 검사하지 않음 (위치 정보 유지)
-        // validateForm() 호출 제거
-      } catch (error) {
-        console.error('Error removing image:', error)
       }
-    }
-
-    // 대표 이미지 설정
-    const setMainImage = (index) => {
-      mainImageIndex.value = index
-    }
-    
-    // 슬라이더 관련 함수들
-    const nextSlide = () => {
-      if (currentSlide.value < imageUrls.value.length - 1) {
-        currentSlide.value++
+      
+      // 대표 이미지 설정
+      const setMainImage = (index) => {
+        try {
+          clearImageError()
+          console.log('=== 대표 이미지 설정 시작 ===')
+          console.log('요청된 인덱스:', index)
+          console.log('현재 이미지 개수:', imageUrls.value.length)
+          console.log('현재 mainImageIndex:', mainImageIndex.value)
+          
+          if (index < 0 || index >= imageUrls.value.length) {
+            console.error('유효하지 않은 인덱스:', index, '이미지 개수:', imageUrls.value.length)
+            imageError.value = '유효하지 않은 이미지 인덱스입니다.'
+            return
+          }
+          
+          mainImageIndex.value = index
+          console.log('대표 이미지 설정 완료 - 새 인덱스:', mainImageIndex.value)
+          console.log('=== 대표 이미지 설정 완료 ===')
+          
+          // 성공 메시지
+          snackbar.message = `대표 이미지가 설정되었습니다. (${index + 1}번째 이미지)`
+          snackbar.color = 'success'
+          snackbar.icon = 'mdi-check-circle'
+          snackbar.show = true
+          
+        } catch (error) {
+          console.error('대표 이미지 설정 중 오류:', error)
+          imageError.value = '대표 이미지 설정 중 오류가 발생했습니다.'
+        }
       }
-    }
-    
-    const previousSlide = () => {
-      if (currentSlide.value > 0) {
-        currentSlide.value--
+      
+      // 슬라이더 네비게이션
+      const nextSlide = () => {
+        if (currentSlide.value < imageUrls.value.length - 1) {
+          currentSlide.value++
+        }
       }
-    }
-    
-    const goToSlide = (index) => {
-      currentSlide.value = index
-    }
-
-    // 지도 관련 함수들
+      
+      const previousSlide = () => {
+        if (currentSlide.value > 0) {
+          currentSlide.value--
+        }
+      }
+      
+      const goToSlide = (index) => {
+        if (index >= 0 && index < imageUrls.value.length) {
+          currentSlide.value = index
+        }
+      }
+      
+      
+      
+      // 지도 관련 함수들
     const initMap = () => {
       if (typeof window.kakao === 'undefined') {
         console.warn('Kakao Map API not loaded')
@@ -916,26 +1037,42 @@ export default {
 
     // 컴포넌트 마운트 후 지도 초기화
     onMounted(async () => {
-      // 이미지 배열 안전하게 초기화
-      if (!imageUrls.value || !Array.isArray(imageUrls.value)) {
-        imageUrls.value = []
-      }
-      if (!images.value || !Array.isArray(images.value)) {
-        images.value = []
-      }
-      
-      // 기존 거래글 데이터 불러오기
-      await fetchPostDetail()
-      
-      // Kakao Map API가 로드될 때까지 대기
-      const checkKakaoMap = () => {
-        if (typeof window.kakao !== 'undefined' && window.kakao.maps) {
-          initMap()
-        } else {
-          setTimeout(checkKakaoMap, 100)
+      try {
+        // 이미지 배열 안전하게 초기화
+        if (!imageUrls.value || !Array.isArray(imageUrls.value)) {
+          imageUrls.value = []
         }
+        if (!images.value || !Array.isArray(images.value)) {
+          images.value = []
+        }
+        
+                 // 이미지 관련 상태 초기화
+         mainImageIndex.value = 0
+         currentSlide.value = 0
+         replaceMode.value = false
+         imageError.value = ''
+        
+        console.log('이미지 배열 초기화 완료')
+        console.log('imageUrls:', imageUrls.value)
+        console.log('images:', images.value)
+        
+        // 기존 거래글 데이터 불러오기
+        await fetchPostDetail()
+        
+        // Kakao Map API가 로드될 때까지 대기
+        const checkKakaoMap = () => {
+          if (typeof window.kakao !== 'undefined' && window.kakao.maps) {
+            initMap()
+          } else {
+            setTimeout(checkKakaoMap, 100)
+          }
+        }
+        checkKakaoMap()
+        
+      } catch (error) {
+        console.error('컴포넌트 마운트 중 오류:', error)
+        imageError.value = '페이지 로드 중 오류가 발생했습니다.'
       }
-      checkKakaoMap()
     })
 
     // 뒤로가기 (상세 페이지로)
@@ -951,15 +1088,15 @@ export default {
       
       try {
                           // API 호출을 위한 데이터 준비
-         const postData = {
-           title: formTitle.value,
-           category: formCategory.value,
-           price: formPrice.value,
-           description: formDescription.value,
-           latitude: selectedLocation.value?.lat,
-           longitude: selectedLocation.value?.lng,
-           mainImageIndex: imageUrls.value.length > 0 ? mainImageIndex.value : 0
-         }
+                   const postData = {
+            title: formTitle.value,
+            category: formCategory.value,
+            price: formPrice.value,
+            description: formDescription.value,
+            latitude: selectedLocation.value?.lat,
+            longitude: selectedLocation.value?.lng,
+            mainImageIndex: imageUrls.value.length > 0 ? mainImageIndex.value : 0
+          }
          
          console.log('=== API 호출 준비 ===')
          console.log('전송할 데이터:', postData)
@@ -972,6 +1109,36 @@ export default {
         try {
           // API 호출
           console.log('API 호출 시작...')
+          
+          // 이미지 파일 검증
+          if (images.value && images.value.length > 0) {
+            console.log('새로 추가된 이미지 파일들:', images.value)
+            console.log('이미지 파일 타입:', images.value.map(img => img.type))
+            console.log('이미지 파일 크기:', images.value.map(img => img.size))
+          }
+          
+          // 기존 이미지 URL들 (삭제되지 않은 것들)
+          const existingImageUrls = imageUrls.value.filter(url => !url.startsWith('blob:'))
+          console.log('기존 이미지 URL들 (유지):', existingImageUrls)
+          
+          // 대표이미지 인덱스 처리
+          let finalMainImageIndex = 0
+          if (imageUrls.value.length > 0) {
+            // 새로 추가된 이미지가 있는 경우
+            if (images.value.length > 0) {
+              // 새 이미지들만 있는 경우: mainImageIndex 그대로 사용
+              finalMainImageIndex = mainImageIndex.value
+            } else {
+              // 기존 이미지만 있는 경우: 기존 이미지 중에서 대표이미지 인덱스 사용
+              finalMainImageIndex = mainImageIndex.value
+            }
+          }
+          
+          // postData에 최종 대표이미지 인덱스 설정
+          postData.mainImageIndex = finalMainImageIndex
+          
+          console.log('최종 대표이미지 인덱스:', finalMainImageIndex)
+          console.log('전송할 postData:', postData)
           
           const response = await marketAPI.update(route.params.id, postData, images.value)
           
@@ -988,6 +1155,17 @@ export default {
              snackbar.icon = 'mdi-check-circle'
              snackbar.show = true
              
+             // blob URL 정리
+             try {
+               imageUrls.value.forEach(url => {
+                 if (url && url.startsWith('blob:')) {
+                   URL.revokeObjectURL(url)
+                 }
+               })
+             } catch (e) {
+               console.warn('blob URL 정리 중 오류:', e)
+             }
+             
              setTimeout(() => {
                router.push(`/market/${route.params.id}`)
              }, 2000)
@@ -996,6 +1174,35 @@ export default {
           }
         } catch (apiError) {
           console.error('API 호출 중 오류:', apiError)
+          
+          // API 오류 상세 정보
+          if (apiError.response) {
+            console.error('응답 상태:', apiError.response.status)
+            console.error('응답 데이터:', apiError.response.data)
+            console.error('응답 헤더:', apiError.response.headers)
+            
+            // 400 에러인 경우 상세 메시지 표시
+            if (apiError.response.status === 400) {
+              snackbar.message = `입력 데이터 오류: ${apiError.response.data?.message || '잘못된 입력입니다.'}`
+            } else if (apiError.response.status === 403) {
+              snackbar.message = '권한이 없습니다. 로그인 상태를 확인해주세요.'
+            } else if (apiError.response.status === 404) {
+              snackbar.message = '거래글을 찾을 수 없습니다.'
+            } else {
+              snackbar.message = `서버 오류: ${apiError.response.status}`
+            }
+          } else if (apiError.request) {
+            console.error('요청 오류:', apiError.request)
+            snackbar.message = '네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.'
+          } else {
+            console.error('오류 메시지:', apiError.message)
+            snackbar.message = `오류가 발생했습니다: ${apiError.message}`
+          }
+          
+          snackbar.color = 'error'
+          snackbar.icon = 'mdi-alert-circle'
+          snackbar.show = true
+          
           throw apiError
         }
         
@@ -1021,29 +1228,31 @@ export default {
       loading,
       fetchPostDetail,
       confirmDelete,
-      images,
-      imageUrls,
-      imageCount,
-      hasImages,
-      mainImageIndex,
+             images,
+       imageUrls,
+       imageCount,
+       hasImages,
+       mainImageIndex,
        currentSlide,
        replaceMode,
+       imageError,
+       clearImageError,
        categoryOptions,
-      // 지도 관련 변수들
-      map,
-      marker,
-      selectedLocation,
-      mapLoaded,
-      snackbar,
-             handleCategoryChange,
+       handleCategoryChange,
+       // 지도 관련 변수들
+       map,
+       marker,
+       selectedLocation,
+       mapLoaded,
+       snackbar,
        triggerFileInput,
        replaceAllImages,
        handleImageChange,
-      removeImage,
-      setMainImage,
-      nextSlide,
-      previousSlide,
-      goToSlide,
+       removeImage,
+       setMainImage,
+       nextSlide,
+       previousSlide,
+       goToSlide,
       validateForm,
       logFormChanges,
       handleTitleInput,
@@ -1343,206 +1552,191 @@ export default {
    border-left: 2px solid #E87D7D;
  }
  
- /* 이미지 추가/교체 섹션 */
- .add-image-section {
-   padding: 20px;
-   text-align: center;
-   background: #f8f9fa;
-   border-radius: 12px;
-   border: 2px dashed #dee2e6;
- }
- 
- .add-image-buttons {
-   display: flex;
-   gap: 12px;
-   justify-content: center;
-   margin-bottom: 12px;
- }
- 
- .add-image-btn,
- .replace-image-btn {
-   padding: 12px 20px;
-   border: none;
-   border-radius: 8px;
-   font-size: 0.9rem;
-   font-weight: 500;
-   cursor: pointer;
-   display: flex;
-   align-items: center;
-   gap: 8px;
-   transition: all 0.2s ease;
- }
- 
- .add-image-btn {
-   background: linear-gradient(135deg, #28a745, #20c997);
-   color: white;
- }
- 
- .add-image-btn:hover {
-   transform: translateY(-2px);
-   box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
- }
- 
- .replace-image-btn {
-   background: linear-gradient(135deg, #ffc107, #fd7e14);
-   color: white;
- }
- 
- .replace-image-btn:hover {
-   transform: translateY(-2px);
-   box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
- }
- 
- .add-image-hint {
-   font-size: 0.85rem;
-   color: #6c757d;
-   margin: 0;
- }
+   /* 이미지 슬라이더 */
+  .image-slider-container {
+    width: 100%;
+  }
+  
+  .image-slider {
+    position: relative;
+    width: 100%;
+    height: 300px;
+    overflow: hidden;
+    border-radius: 16px;
+  }
+  
+  .slide {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.3s ease;
+  }
+  
+  .slide-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  /* 대표 이미지 체크박스 */
+  .main-image-checkbox {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    z-index: 10;
+    cursor: pointer;
+  }
+  
+  .checkbox {
+    width: 32px;
+    height: 32px;
+    border: 3px solid white;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(10px);
+  }
+  
+  .checkbox.checked {
+    background: #E87D7D;
+    border-color: white;
+  }
+  
+  .check-mark {
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+  }
+  
+  /* 이미지 제거 버튼 */
+  .remove-image-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(10px);
+  }
+  
+  .remove-image-btn:hover {
+    background: rgba(220, 53, 69, 0.9);
+    transform: scale(1.1);
+  }
+  
+  /* 슬라이더 네비게이션 */
+  .slider-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 16px;
+    padding: 0 16px;
+  }
+  
+  .nav-btn {
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(10px);
+  }
+  
+  .nav-btn:hover:not(:disabled) {
+    background: rgba(0, 0, 0, 0.9);
+    transform: scale(1.1);
+  }
+  
+  .nav-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  /* 슬라이드 인디케이터 */
+  .slide-indicators {
+    display: flex;
+    gap: 8px;
+  }
+  
+  .indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #dee2e6;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .indicator.active {
+    background: #E87D7D;
+    transform: scale(1.2);
+  }
+  
+
 
 /* 숨겨진 파일 입력 */
 .hidden-file-input {
   display: none;
 }
 
-/* 이미지 슬라이더 */
-.image-slider-container {
-  width: 100%;
-  margin-top: 20px;
-}
-
-.image-slider {
-  position: relative;
-  width: 100%;
-  height: 300px;
-  overflow: hidden;
-}
-
-.slide {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  transition: transform 0.3s ease;
-}
-
-.slide-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* 대표 이미지 체크박스 */
-.main-image-checkbox {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  z-index: 10;
-  cursor: pointer;
-}
-
-.checkbox {
-  width: 32px;
-  height: 32px;
-  border: 3px solid white;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.3);
+/* 이미지 에러 메시지 */
+.image-error-message {
   display: flex;
   align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(10px);
-}
-
-.checkbox.checked {
-  background: #E87D7D;
-  border-color: white;
-}
-
-.check-mark {
-  color: white;
-  font-size: 18px;
-  font-weight: bold;
-}
-
-/* 이미지 제거 버튼 */
-.remove-image-btn {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.7);
-  color: white;
-  font-size: 18px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(10px);
-}
-
-.remove-image-btn:hover {
-  background: rgba(220, 53, 69, 0.9);
-  transform: scale(1.1);
-}
-
-/* 슬라이더 네비게이션 */
-.slider-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 20px;
-  padding: 0 20px;
-}
-
-.nav-btn {
-  width: 40px;
-  height: 40px;
-  border: none;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.7);
-  color: white;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(10px);
-}
-
-.nav-btn:hover:not(:disabled) {
-  background: rgba(0, 0, 0, 0.9);
-  transform: scale(1.1);
-}
-
-.nav-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* 슬라이드 인디케이터 */
-.slide-indicators {
-  display: flex;
   gap: 8px;
+  padding: 12px 16px;
+  background: #ffe8e8;
+  border: 1px solid #f44336;
+  border-radius: 8px;
+  color: #595454;
+  font-size: 0.9rem;
+  margin-bottom: 16px;
 }
 
-.indicator {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #dee2e6;
+.error-close-btn {
+  background: none;
+  border: none;
+  color: #f44336;
+  font-size: 18px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  padding: 0;
+  line-height: 1;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
 }
 
-.indicator.active {
-  background: #E87D7D;
-  transform: scale(1.2);
+.error-close-btn:hover {
+  background-color: rgba(244, 67, 54, 0.1);
 }
+
+
+
+
 
 /* 지역 섹션 */
 .region-section {
@@ -1901,13 +2095,11 @@ export default {
     padding: 24px 20px;
   }
   
-  .map-controls {
-    flex-direction: column;
-  }
-  
-  .slider-nav {
-    padding: 0 8px;
-  }
+     .map-controls {
+     flex-direction: column;
+   }
+   
+
   
   .back-btn-wrapper {
     flex-direction: column;
