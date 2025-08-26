@@ -214,10 +214,36 @@
               :key="comment.id" 
               class="comment-preview-item"
             >
-              <span class="comment-author">
-                {{ comment.replyUserName || comment.userName || comment.user?.userName || comment.author?.userName || comment.petName || '익명' }}
+              <div class="comment-user-info">
+                <v-avatar 
+                  size="24" 
+                  class="comment-avatar"
+                  @click="goToUserDiary(comment.replyUserId || comment.userId)"
+                >
+                  <v-img 
+                    :src="comment.profileImage || comment.userImage || '/default-avatar.png'" 
+                    alt="User Avatar"
+                  />
+                </v-avatar>
+                <span 
+                  class="comment-author clickable"
+                  @click="goToUserDiary(comment.replyUserId || comment.userId)"
+                >
+                  {{ comment.replyUserName || comment.userName || comment.user?.userName || comment.author?.userName || comment.petName || '익명' }}
+                </span>
+              </div>
+              <span class="comment-content">
+                <template v-for="(part, index) in formatCommentText(comment.content)" :key="index">
+                  <span 
+                    v-if="part.isTag" 
+                    class="tag-mention clickable"
+                    @click="goToUserDiary(part.userId)"
+                  >
+                    {{ part.text }}
+                  </span>
+                  <span v-else>{{ part.text }}</span>
+                </template>
               </span>
-              <span class="comment-content">{{ comment.content }}</span>
             </div>
           </div>
         </div>
@@ -809,6 +835,8 @@ export default {
                                 content: comment.content,
                                 petName: comment.petName,
                                 userName: comment.userName,
+                                userId: comment.userId,
+                                userImage: comment.userImage,
                                 user: comment.user,
                                 author: comment.author
                               })
@@ -824,6 +852,9 @@ export default {
                                     petName: reply.petName,
                                     userName: reply.userName,
                                     replyUserName: reply.replyUserName,
+                                    replyUserId: reply.replyUserId,
+                                    mentionUserName: reply.mentionUserName,
+                                    profileImage: reply.profileImage,
                                     user: reply.user,
                                     author: reply.author
                                   })
@@ -950,6 +981,45 @@ export default {
                   return text.replace(/#\S+/g, '').replace(/\s+/g, ' ').trim()
                 }
                 
+                // 댓글 텍스트 포맷팅 (태그 추출)
+                const formatCommentText = (text) => {
+                  if (!text) return []
+                  
+                  const parts = []
+                  const tagRegex = /@(\w+)/g
+                  let lastIndex = 0
+                  let match
+                  
+                  while ((match = tagRegex.exec(text)) !== null) {
+                    // 태그 이전 텍스트
+                    if (match.index > lastIndex) {
+                      parts.push({
+                        text: text.slice(lastIndex, match.index),
+                        isTag: false
+                      })
+                    }
+                    
+                    // 태그 부분
+                    parts.push({
+                      text: match[0], // @username
+                      isTag: true,
+                      userId: match[1] // username 부분을 userId로 사용 (실제로는 mentionUserId를 사용해야 함)
+                    })
+                    
+                    lastIndex = match.index + match[0].length
+                  }
+                  
+                  // 마지막 텍스트
+                  if (lastIndex < text.length) {
+                    parts.push({
+                      text: text.slice(lastIndex),
+                      isTag: false
+                    })
+                  }
+                  
+                  return parts
+                }
+
                 // 해시태그 검색 메서드
                 const searchByHashtag = (tag) => {
                   console.log('해시태그 검색:', tag, typeof tag)
@@ -1022,7 +1092,8 @@ export default {
                     removeHashtags,
                     searchByHashtag,
                     goToUserDiary,
-                    isLoggedIn
+                    isLoggedIn,
+                    formatCommentText
                   }
   }
 }
@@ -1182,6 +1253,7 @@ export default {
   gap: 6px;
   font-size: 0.85rem;
   line-height: 1.4;
+  align-items: flex-start;
 }
 
 .comment-author {
@@ -1193,6 +1265,46 @@ export default {
 .comment-content {
   color: #495057;
   word-break: break-word;
+  margin-top: 2px;
+}
+
+.comment-user-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.comment-avatar {
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.comment-avatar:hover {
+  opacity: 0.8;
+}
+
+.comment-author.clickable {
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.comment-author.clickable:hover {
+  color: #FF8B8B;
+}
+
+.tag-mention {
+  font-weight: 700;
+  color: #FF8B8B;
+}
+
+.tag-mention.clickable {
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.tag-mention.clickable:hover {
+  color: #e67e7e;
+  text-decoration: underline;
 }
 
 .post-image-container {

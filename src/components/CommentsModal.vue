@@ -48,15 +48,26 @@
                       :key="reply.id" 
                       class="reply-item"
                     >
+                      <v-avatar 
+                        size="24" 
+                        class="reply-avatar clickable"
+                        @click="goToUserDiary(reply.replyUserId || reply.userId)"
+                      >
+                        <v-img :src="reply.profileImage || reply.userImage || 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=24&h=24&fit=crop&crop=center'"></v-img>
+                      </v-avatar>
                       <div class="reply-content" @contextmenu.prevent="showContextMenu($event, 'reply', reply)">
-                        <span class="reply-username">{{ reply.replyPetName || reply.replyUserName }}</span>
-                        <span class="reply-text">
+                        <div class="reply-header">
+                          <span class="reply-username clickable" @click="goToUserDiary(reply.replyUserId || reply.userId)">
+                            {{ reply.replyPetName || reply.replyUserName }}
+                          </span>
+                          <span class="reply-time">{{ formatDate(reply.createdAt) }}</span>
+                        </div>
+                        <div class="reply-text">
                           <template v-for="(part, partIndex) in formatCommentText(reply.content)" :key="partIndex">
                             <span v-if="part.isTag" class="tag-mention">{{ part.text }}</span>
                             <span v-else>{{ part.text }}</span>
                           </template>
-                        </span>
-                        <span class="reply-time">{{ formatDate(reply.createdAt) }}</span>
+                        </div>
                         
                         <!-- 답글의 답글 버튼 -->
                         <v-btn text size="x-small" class="reply-btn reply-to-reply-btn" @click="replyToReply(reply, comment)">
@@ -1077,12 +1088,42 @@ export default {
 
 .reply-item {
   margin-bottom: 8px;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.reply-avatar {
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+  flex-shrink: 0;
+}
+
+.reply-avatar:hover {
+  opacity: 0.8;
 }
 
 .reply-content {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  flex: 1;
+}
+
+.reply-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.reply-username.clickable {
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.reply-username.clickable:hover {
+  color: #FF8B8B;
 }
 
 .reply-username {
