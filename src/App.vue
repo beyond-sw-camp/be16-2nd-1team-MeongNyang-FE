@@ -61,81 +61,76 @@
       <!-- 소셜 계정 중복 모달 -->
       <v-dialog
         v-model="showSocialDuplicateModal"
-        max-width="500"
+        max-width="480"
         persistent
         class="social-duplicate-modal"
         :retain-focus="false"
       >
-        <v-card class="pa-6" rounded="lg">
-          <v-card-title class="text-h5 text-center mb-4">
-            <div class="d-flex align-center justify-center">
-              <v-icon size="32" color="warning" class="me-3">
-                mdi-alert-circle
-              </v-icon>
-              소셜 계정 중복
+        <v-card class="social-duplicate-card" elevation="24" rounded="xl">
+          <!-- 헤더 -->
+          <div class="modal-header">
+            <div class="header-icon">
+              <v-icon size="28" color="white">mdi-account-alert</v-icon>
             </div>
-          </v-card-title>
-
-          <v-card-text class="text-center pa-0">
-            <div class="mb-6 px-4">
-              <p class="text-body-1 mb-3">
-                <strong class="text-warning">{{ socialDuplicateData?.email }}</strong>으로 가입된 계정이 이미 존재합니다.
-              </p>
-              <p class="text-body-2 text-medium-emphasis">
-                이미 다른 소셜 계정으로 가입되어 있어요!
-              </p>
-              <p class="text-body-2 text-medium-emphasis">
-                다른 소셜 로그인 버튼을 눌러서 로그인해주세요.
-              </p>
-            </div>
-
-            <v-alert
-              type="warning"
-              variant="tonal"
-              density="compact"
-              rounded="lg"
-              class="mb-6 mx-4"
+            <v-btn
+              icon
+              variant="text"
+              @click="handleSocialDuplicateClose"
+              class="close-btn"
             >
-              <template #prepend>
-                <v-icon size="16" color="warning">mdi-information</v-icon>
-              </template>
-              <span class="text-caption">
-                <strong>해결 방법:</strong> 기존에 가입한 소셜 계정으로 로그인하세요.
-              </span>
-            </v-alert>
-          </v-card-text>
+              <v-icon size="20">mdi-close</v-icon>
+            </v-btn>
+          </div>
 
-          <v-card-actions class="pa-0 px-4 pb-4">
-            <div class="d-flex flex-column w-100">
-              <v-btn
-                color="primary"
-                block
-                size="large"
-                @click="handleSocialDuplicateLogin"
-                height="48"
-                rounded="lg"
-                class="font-weight-medium"
-              >
-                로그인으로 이동
-              </v-btn>
-              
-              <v-btn
-                variant="text"
-                block
-                size="large"
-                @click="handleSocialDuplicateClose"
-                height="40"
-                rounded="lg"
-                color="grey-darken-1"
-                class="text-caption"
-                style="text-decoration: underline; font-weight: 500;"
-              >
-                닫기
-              </v-btn>
+          <!-- 컨텐츠 -->
+          <div class="modal-content">
+            <h3 class="modal-title">계정 중복 발견</h3>
+            <p class="modal-description">
+              <strong class="highlight-email">{{ socialDuplicateData?.email }}</strong>으로 가입된 계정이 이미 존재합니다.
+            </p>
+            
+            <div class="info-box">
+              <div class="info-icon">
+                <v-icon size="20" color="#FF8B8B">mdi-information</v-icon>
+              </div>
+              <div class="info-content">
+                <div class="info-title">이미 가입된 계정이 있어요!</div>
+                <div class="info-text">다른 소셜 로그인 버튼을 눌러서 로그인해주세요.</div>
+              </div>
             </div>
-          </v-card-actions>
+          </div>
+
+          <!-- 액션 버튼 -->
+          <div class="modal-actions">
+            <v-btn
+              color="#6366f1"
+              block
+              size="large"
+              @click="handleSocialDuplicateLogin"
+              height="52"
+              rounded="lg"
+              class="primary-btn"
+              elevation="0"
+            >
+              <v-icon start size="20">mdi-login</v-icon>
+              로그인으로 이동
+            </v-btn>
+            
+            <v-btn
+              variant="text"
+              block
+              size="large"
+              @click="handleSocialDuplicateClose"
+              height="44"
+              rounded="lg"
+              color="#6b7280"
+              class="secondary-btn"
+            >
+              닫기
+            </v-btn>
+          </div>
         </v-card>
-              </v-dialog>
+      </v-dialog>
         
         <!-- 삭제된 계정 모달 -->
         <v-dialog
@@ -939,6 +934,177 @@ body {
 
 .social-duplicate-modal .v-card-actions {
   margin-top: auto !important;
+}
+
+
+.social-duplicate-card {
+  background: linear-gradient(135deg, #ffffff 0%, #fdf2f8 100%);
+  border: 1px solid rgba(255, 139, 139, 0.1);
+  overflow: hidden;
+}
+
+.social-duplicate-card .modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 24px 0;
+  margin-bottom: 24px;
+}
+
+.social-duplicate-card .header-icon {
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, #FF8B8B 0%, #E87D7D 100%);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(255, 139, 139, 0.3);
+}
+
+.social-duplicate-card .close-btn {
+  color: #FF8B8B;
+  transition: all 0.2s ease;
+  padding: 4px;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.social-duplicate-card .close-btn:hover {
+  color: #E87D7D;
+  background: transparent !important;
+  transform: scale(1.1);
+}
+
+.social-duplicate-card .close-btn::before {
+  background: transparent !important;
+}
+
+.social-duplicate-card .close-btn::after {
+  background: transparent !important;
+}
+
+.social-duplicate-card .close-btn .v-btn__content {
+  background: transparent !important;
+}
+
+.social-duplicate-card .close-btn .v-btn__overlay {
+  background: transparent !important;
+  opacity: 0 !important;
+}
+
+.social-duplicate-card .close-btn:hover .v-btn__overlay {
+  background: transparent !important;
+  opacity: 0 !important;
+}
+
+.social-duplicate-card .close-btn:focus .v-btn__overlay {
+  background: transparent !important;
+  opacity: 0 !important;
+}
+
+.social-duplicate-card .close-btn:active .v-btn__overlay {
+  background: transparent !important;
+  opacity: 0 !important;
+}
+
+.social-duplicate-card .modal-content {
+  padding: 0 24px 24px;
+}
+
+.social-duplicate-card .modal-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  text-align: center;
+  margin-bottom: 16px;
+  line-height: 1.3;
+}
+
+.social-duplicate-card .modal-description {
+  color: #6b7280;
+  text-align: center;
+  line-height: 1.6;
+  margin-bottom: 24px;
+  font-size: 0.95rem;
+}
+
+.social-duplicate-card .highlight-email {
+  color: #FF8B8B;
+  font-weight: 600;
+}
+
+.social-duplicate-card .info-box {
+  background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%);
+  border: 1px solid rgba(255, 139, 139, 0.15);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.social-duplicate-card .info-icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 139, 139, 0.1);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.social-duplicate-card .info-content {
+  flex: 1;
+}
+
+.social-duplicate-card .info-title {
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 4px;
+  font-size: 0.9rem;
+}
+
+.social-duplicate-card .info-text {
+  color: #6b7280;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.social-duplicate-card .modal-actions {
+  padding: 0 24px 24px;
+}
+
+.social-duplicate-card .primary-btn {
+  background: linear-gradient(135deg, #FF8B8B 0%, #E87D7D 100%) !important;
+  color: white !important;
+  font-weight: 600 !important;
+  font-size: 0.95rem !important;
+  letter-spacing: 0.025em !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 4px 16px rgba(255, 139, 139, 0.3) !important;
+  border: none !important;
+}
+
+.social-duplicate-card .primary-btn:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 24px rgba(255, 139, 139, 0.4) !important;
+}
+
+.social-duplicate-card .secondary-btn {
+  color: #6b7280 !important;
+  font-weight: 500 !important;
+  font-size: 0.9rem !important;
+  transition: all 0.2s ease !important;
+  margin-top: 8px !important;
+}
+
+.social-duplicate-card .secondary-btn:hover {
+  color: #374151 !important;
+  background: rgba(107, 114, 128, 0.1) !important;
 }
 
 /* 삭제된 계정 모달 스타일 */

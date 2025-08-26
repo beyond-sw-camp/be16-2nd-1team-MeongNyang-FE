@@ -108,7 +108,10 @@ onMounted(() => {
   // 필수 데이터 검증
   if (!email.value || !provider.value || !linkTicket.value) {
     console.error('Missing required data for account linking')
-    router.replace({ name: 'Login' })
+    router.replace({ 
+      name: 'Home',
+      query: { showLogin: 'true' }
+    })
     return
   }
 })
@@ -193,7 +196,10 @@ const handleConfirm = async () => {
       alert(`💭 계정 연동에 문제가 생겼어요.\n\n${msg || '다시 시도해주세요!'}`)
     }
     
-    router.replace({ name: 'Login' })
+    router.replace({ 
+      name: 'Home',
+      query: { showLogin: 'true' }
+    })
   } finally {
     loading.value = false
   }
@@ -208,7 +214,10 @@ const handleReject = () => {
 
 // 로그인 화면으로 이동
 const goLogin = () => {
-  router.replace({ name: 'Login' })
+  router.replace({ 
+    name: 'Home',
+    query: { showLogin: 'true' }
+  })
 }
 </script>
 

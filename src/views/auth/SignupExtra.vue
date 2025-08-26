@@ -123,13 +123,19 @@ function tick() {
   if (remainingMs.value <= 0) {
     clearInterval(timer)
     alert('추가정보 입력 시간이 만료되었습니다. 다시 로그인해주세요.')
-    router.replace({ name: 'Login' })
+    router.replace({ 
+      name: 'Home',
+      query: { showLogin: 'true' }
+    })
   }
 }
 
 onMounted(() => {
   if (!signupTicket.value) {
-    router.replace({ name: 'Login' })
+    router.replace({ 
+      name: 'Home',
+      query: { showLogin: 'true' }
+    })
     return
   }
   const saved = Number(sessionStorage.getItem(STORAGE_KEY.value) || 0)
@@ -191,7 +197,10 @@ const checkNicknameDup = async () => {
 const submitExtra = async () => {
   if (expired.value) {
     alert('입력 시간이 만료되었습니다. 다시 로그인해주세요.')
-    router.replace({ name: 'Login' })
+    router.replace({ 
+      name: 'Home',
+      query: { showLogin: 'true' }
+    })
     return
   }
 
@@ -229,7 +238,10 @@ const submitExtra = async () => {
   }
 }
 
-const goLogin = () => router.replace({ name: 'Login' })
+const goLogin = () => router.replace({ 
+  name: 'Home',
+  query: { showLogin: 'true' }
+})
 </script>
 
 <style scoped>
