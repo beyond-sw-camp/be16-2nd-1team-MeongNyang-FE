@@ -1,24 +1,8 @@
 <template>
   <div class="dashboard-container">
     <v-row>
-      <!-- 사이드바 -->
-      <v-col cols="12" md="3" lg="2">
-        <v-card class="sidebar-card">
-          <v-list>
-            <v-list-item
-              v-for="item in menuItems"
-              :key="item.title"
-              :to="item.to"
-              :prepend-icon="item.icon"
-              :title="item.title"
-              class="sidebar-item"
-            />
-          </v-list>
-        </v-card>
-      </v-col>
-      
       <!-- 메인 콘텐츠 -->
-      <v-col cols="12" md="9" lg="10">
+      <v-col cols="12">
         <v-card class="main-content-card">
           <!-- 인사말 섹션 -->
           <div class="greeting-section">
@@ -103,39 +87,105 @@
           <!-- 구분선 -->
           <v-divider class="section-divider"></v-divider>
           
-          <!-- 이번 주 요약 -->
-          <div class="weekly-summary-section">
+          <!-- 인사이트 -->
+          <div class="today-tasks-section">
             <h2 class="section-title">
-              이번 주 요약
+              인사이트
             </h2>
             
             <v-row>
-              <v-col cols="6" md="3">
-                <div class="summary-item">
-                  <div class="summary-number">{{ weeklyDiaryCount }}</div>
-                  <div class="summary-label">작성한 일기</div>
-                </div>
+              <v-col cols="12" md="6">
+                <v-card class="task-card">
+                  <div class="task-header">
+                    <v-icon color="#FF8B8B" size="24">mdi-checkbox-marked-circle</v-icon>
+                    <div class="task-title">반려동물 관리</div>
+                  </div>
+                  
+                  <div class="task-list">
+                    <div class="task-item" v-for="task in todayTasks" :key="task.id">
+                      <v-checkbox 
+                        v-model="task.completed" 
+                        :color="task.color"
+                        hide-details
+                      />
+                      <div class="task-text" :class="{ 'completed': task.completed }">
+                        {{ task.text }}
+                      </div>
+                      <div class="task-time">{{ task.time }}</div>
+                    </div>
+                  </div>
+                </v-card>
               </v-col>
-              <v-col cols="6" md="3">
-                <div class="summary-item">
-                  <div class="summary-number">{{ weeklyMarketCount }}</div>
-                  <div class="summary-label">마켓 활동</div>
-                </div>
-              </v-col>
-              <v-col cols="6" md="3">
-                <div class="summary-item">
-                  <div class="summary-number">{{ weeklyChatCount }}</div>
-                  <div class="summary-label">채팅 메시지</div>
-                </div>
-              </v-col>
-              <v-col cols="6" md="3">
-                <div class="summary-item">
-                  <div class="summary-number">{{ weeklyLoginDays }}</div>
-                  <div class="summary-label">로그인 일수</div>
-                </div>
+              
+              <v-col cols="12" md="6">
+                <v-row>
+                  <!-- 인기 해시태그 섹션 -->
+                  <v-col cols="12">
+                    <v-card class="insight-card">
+                      <div class="insight-header">
+                        <v-icon color="#FF8B8B" size="24">mdi-pound</v-icon>
+                        <div class="insight-title">인기 해시태그</div>
+                      </div>
+                      <div class="hashtag-list">
+                        <div class="hashtag-item" v-for="tag in trendingHashtags" :key="tag.name">
+                          <span class="hashtag-text">#{{ tag.name }}</span>
+                          <span class="hashtag-count">{{ tag.count }}회</span>
+                        </div>
+                      </div>
+                    </v-card>
+                  </v-col>
+
+                  <!-- 오늘의 날씨 섹션 -->
+                  <v-col cols="12">
+                    <v-card class="insight-card">
+                      <div class="insight-header">
+                        <v-icon color="#60A5FA" size="24">mdi-weather-sunny</v-icon>
+                        <div class="insight-title">오늘의 날씨</div>
+                      </div>
+                      <div class="weather-detail">
+                        <div class="weather-main-info">
+                          <div class="weather-temp-large">23°C</div>
+                          <div class="weather-desc">맑음</div>
+                        </div>
+                        <div class="weather-details">
+                          <div class="weather-detail-item">
+                            <span class="detail-label">습도</span>
+                            <span class="detail-value">65%</span>
+                          </div>
+                          <div class="weather-detail-item">
+                            <span class="detail-label">바람</span>
+                            <span class="detail-value">3m/s</span>
+                          </div>
+                          <div class="weather-detail-item">
+                            <span class="detail-label">체감온도</span>
+                            <span class="detail-value">25°C</span>
+                          </div>
+                        </div>
+                      </div>
+                    </v-card>
+                  </v-col>
+
+                  <!-- 활동 팁 섹션 -->
+                  <v-col cols="12">
+                    <v-card class="insight-card">
+                      <div class="insight-header">
+                        <v-icon color="#F59E0B" size="24">mdi-lightbulb</v-icon>
+                        <div class="insight-title">오늘의 팁</div>
+                      </div>
+                      <div class="tip-content">
+                        <div class="tip-text">{{ dailyTip.text }}</div>
+                        <div class="tip-source">- {{ dailyTip.source }}</div>
+                      </div>
+                    </v-card>
+                  </v-col>
+
+
+                </v-row>
               </v-col>
             </v-row>
           </div>
+
+
         </v-card>
       </v-col>
     </v-row>
@@ -165,14 +215,7 @@ export default {
       return pet
     })
     
-    const menuItems = ref([
-      { title: '홈', icon: 'mdi-home', to: '/dashboard' },
-      { title: '반려동물 관리', icon: 'mdi-paw', to: '/pets' },
-      { title: '내 일기', icon: 'mdi-book-open', to: '/diarys' },
-      { title: '내 마켓', icon: 'mdi-store', to: '/market' },
-      { title: '채팅', icon: 'mdi-chat', to: '/chat' },
-      { title: '프로필', icon: 'mdi-account', to: '/profile' }
-    ])
+
     
     // 통계 데이터
     const petCount = ref(0)
@@ -236,11 +279,56 @@ export default {
       }
     }
     
-    // 이번 주 요약 데이터 (더미 데이터)
-    const weeklyDiaryCount = ref(3)
-    const weeklyMarketCount = ref(1)
-    const weeklyChatCount = ref(12)
-    const weeklyLoginDays = ref(5)
+    // 오늘의 할 일 데이터
+    const todayTasks = ref([
+      {
+        id: 1,
+        text: '강아지 산책하기',
+        completed: false,
+        color: '#4ADE80',
+        time: '오전 9시'
+      },
+      {
+        id: 2,
+        text: '사료 보충하기',
+        completed: true,
+        color: '#FF8B8B',
+        time: '오전 8시'
+      },
+      {
+        id: 3,
+        text: '목욕 시키기',
+        completed: false,
+        color: '#60A5FA',
+        time: '오후 3시'
+      },
+      {
+        id: 4,
+        text: '예방접종 일정 확인',
+        completed: false,
+        color: '#F59E0B',
+        time: '오후 6시'
+      }
+    ])
+
+    // 인기 해시태그 데이터
+    const trendingHashtags = ref([
+      { name: '강아지', count: 156 },
+      { name: '산책', count: 89 },
+      { name: '고양이', count: 67 },
+      { name: '장난감', count: 45 },
+      { name: '목욕', count: 34 }
+    ])
+
+    // 오늘의 팁 데이터
+    const dailyTip = ref({
+      text: '강아지와 산책할 때는 항상 목줄을 착용하고, 날씨가 더운 날에는 아침이나 저녁에 산책하는 것이 좋습니다. 오늘은 맑은 날씨라 산책하기 좋은 날이에요!',
+      source: '반려동물 전문가'
+    })
+
+
+
+
     
     // 컴포넌트 마운트 시 데이터 가져오기
     onMounted(async () => {
@@ -266,19 +354,17 @@ export default {
         router.push('/pets/' + representativePet.value.id)
       }
     }
-    
+
     return {
       user,
-      menuItems,
       petCount,
       diaryCount,
       marketCount,
       chatCount,
       representativePet,
-      weeklyDiaryCount,
-      weeklyMarketCount,
-      weeklyChatCount,
-      weeklyLoginDays,
+      todayTasks,
+      trendingHashtags,
+      dailyTip,
       goToRepresentativePet
     }
   }
@@ -292,24 +378,7 @@ export default {
   padding: 24px;
 }
 
-.sidebar-card {
-  background: #FFFFFF !important;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  height: fit-content;
-}
 
-.sidebar-item {
-  border-radius: 8px;
-  margin: 4px 8px;
-  transition: all 0.2s ease;
-}
-
-.sidebar-item:hover {
-  background: rgba(255, 139, 139, 0.08);
-  color: #FF8B8B;
-}
 
 .main-content-card {
   background: #FFFFFF !important;
@@ -532,6 +601,250 @@ export default {
   font-weight: 500;
 }
 
+/* 오늘의 할 일 */
+.today-tasks-section {
+  margin-top: 32px;
+}
+
+.task-card {
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  height: 100%;
+  min-height: 500px;
+}
+
+.task-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.task-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1E293B;
+  margin-left: 12px;
+}
+
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.task-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  background: #F8FAFC;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.task-item:hover {
+  background: #F1F5F9;
+}
+
+.task-text {
+  font-size: 0.875rem;
+  color: #374151;
+  margin-left: 12px;
+  flex: 1;
+  transition: all 0.2s ease;
+}
+
+.task-text.completed {
+  text-decoration: line-through;
+  color: #9CA3AF;
+}
+
+.task-time {
+  font-size: 0.75rem;
+  color: #6B7280;
+  font-weight: 500;
+}
+
+/* 인사이트 카드 */
+.insight-card {
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  height: 100%;
+}
+
+.insight-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.insight-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1E293B;
+  margin-left: 12px;
+}
+
+.insight-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.insight-item {
+  padding: 12px;
+  background: #F8FAFC;
+  border-radius: 8px;
+  border-left: 3px solid #4ADE80;
+}
+
+.insight-label {
+  font-size: 0.75rem;
+  color: #6B7280;
+  font-weight: 500;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.insight-value {
+  font-size: 0.875rem;
+  color: #1E293B;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* 인사이트 카드 */
+.insight-card {
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  margin-bottom: 16px;
+  background: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.insight-card:last-child {
+  margin-bottom: 0;
+}
+
+.insight-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.insight-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1E293B;
+  margin-left: 12px;
+}
+
+/* 해시태그 리스트 */
+.hashtag-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hashtag-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.hashtag-text {
+  font-size: 0.875rem;
+  color: #FF8B8B;
+  font-weight: 500;
+}
+
+.hashtag-count {
+  font-size: 0.75rem;
+  color: #6B7280;
+  background: #F1F5F9;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+/* 날씨 상세 정보 */
+.weather-detail {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.weather-main-info {
+  text-align: center;
+}
+
+.weather-temp-large {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1E293B;
+  margin-bottom: 4px;
+}
+
+.weather-desc {
+  font-size: 0.875rem;
+  color: #6B7280;
+}
+
+.weather-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.weather-detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.detail-label {
+  font-size: 0.75rem;
+  color: #6B7280;
+}
+
+.detail-value {
+  font-size: 0.875rem;
+  color: #1E293B;
+  font-weight: 500;
+}
+
+/* 팁 콘텐츠 */
+.tip-content {
+  padding: 12px;
+  background: #FEF3C7;
+  border-radius: 8px;
+  border-left: 3px solid #F59E0B;
+}
+
+.tip-text {
+  font-size: 0.875rem;
+  color: #92400E;
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+.tip-source {
+  font-size: 0.75rem;
+  color: #B45309;
+  font-style: italic;
+}
+
+
+
+
+
 .activity-item :deep(.v-list-item__prepend) {
   margin-right: 16px;
   margin-top: 2px;
@@ -590,6 +903,34 @@ export default {
   .stat-number {
     font-size: 2rem !important;
   }
+
+  /* 모바일에서 인사이트 섹션 조정 */
+  .today-tasks-section .v-row {
+    flex-direction: column;
+  }
+
+  .task-card {
+    margin-bottom: 16px;
+    min-height: auto;
+  }
+
+  .insight-card {
+    margin-bottom: 16px;
+  }
+
+  .weather-detail {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .weather-details {
+    flex-direction: row;
+    justify-content: space-around;
+  }
+
+  .community-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 600px) {
@@ -616,6 +957,29 @@ export default {
   
   .section-divider {
     margin: 24px 0;
+  }
+
+  /* 작은 모바일에서 추가 조정 */
+  .stat-card {
+    padding: 16px;
+  }
+
+  .stat-number {
+    font-size: 1.75rem !important;
+  }
+
+  .weather-temp-large {
+    font-size: 1.5rem;
+  }
+
+  .community-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .hashtag-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
   }
 }
 </style>

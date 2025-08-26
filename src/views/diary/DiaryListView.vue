@@ -29,7 +29,7 @@
         <!-- 사용자 정보 -->
         <div class="user-info">
           <div class="username-section">
-            <h2 class="username">{{ mainPet?.name || '사용자' }}</h2>
+            <h2 class="username">{{ displayUserName }}</h2>
             <div class="badges">
               <v-chip color="light-blue" size="small" class="badge">
                 <v-icon size="16" class="me-1">mdi-check</v-icon>
@@ -129,11 +129,13 @@
     <!-- 팔로우/팔로워 모달 -->
     <FollowModal
       :is-visible="isFollowModalVisible"
-      :user-id="null"
+      :user-id="currentUserId"
       :followers-count="followersCount"
       :followings-count="followingsCount"
       :initial-tab="followModalTab"
       @close="closeFollowModal"
+      @follow-updated="handleFollowUpdated"
+      @unfollow-updated="handleUnfollowUpdated"
     />
   </div>
 </template>
@@ -142,6 +144,7 @@
             import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { validatePetAndRedirect } from '@/utils/petValidation'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import { postAPI, userAPI, petAPI } from '@/services/api'
 import SearchComponent from '@/components/SearchComponent.vue'
 import FollowModal from '@/components/FollowModal.vue'
@@ -154,10 +157,31 @@ export default {
   },
   setup() {
     const $router = useRouter()
+    const authStore = useAuthStore()
     const showMainPetModal = ref(false)
     const selectedPetName = ref(null)
     const isFollowModalVisible = ref(false)
     const followModalTab = ref('followers')
+    
+    // 현재 로그인한 사용자 ID
+    const currentUserId = computed(() => {
+      const user = authStore.user
+      if (!user) return null
+      
+      // 가능한 ID 필드들을 확인
+      const possibleIds = [
+        user.id,
+        user.userId,
+        user.memberId,
+        user.user_id,
+        user.member_id,
+        user.member?.id,
+        user.member?.userId,
+        user.member?.memberId
+      ]
+      
+      return possibleIds.find(id => id != null && id !== undefined)
+    })
     
     // 통계 데이터
     const postsCount = ref(0)
@@ -166,6 +190,13 @@ export default {
     
     // 반려동물 데이터
     const userPets = ref([])
+    const userName = ref('')
+    
+    // 사용자 이름 (반응형으로 표시)
+    const displayUserName = computed(() => {
+      console.log('displayUserName computed 실행:', userName.value)
+      return userName.value || mainPet.value?.name || '사용자'
+    })
     
     // 다이어리 데이터
     const diaryList = ref([])
@@ -219,12 +250,21 @@ export default {
     // 팔로워 개수 가져오기
     const fetchFollowersCount = async () => {
       try {
-        const response = await userAPI.getFollowersCount()
+        console.log('🔍 팔로워 개수 조회 시작 - currentUserId:', currentUserId.value)
+        const response = await userAPI.getUserFollowersCount(currentUserId.value)
+        console.log('📥 팔로워 개수 API 응답:', response)
+        console.log('📥 팔로워 개수 응답 데이터:', response.data)
+        
         if (response.data && response.data.data) {
           followersCount.value = response.data.data.totalElements || 0
+          console.log('✅ 설정된 팔로워 개수:', followersCount.value)
+        } else {
+          console.log('⚠️ 팔로워 개수 데이터가 없음')
+          followersCount.value = 0
         }
       } catch (error) {
-        console.error('팔로워 개수 조회 실패:', error)
+        console.error('❌ 팔로워 개수 조회 실패:', error)
+        console.error('❌ 에러 응답:', error.response?.data)
         followersCount.value = 0
       }
     }
@@ -232,12 +272,21 @@ export default {
     // 팔로잉 개수 가져오기
     const fetchFollowingsCount = async () => {
       try {
-        const response = await userAPI.getFollowingsCount()
+        console.log('🔍 팔로잉 개수 조회 시작 - currentUserId:', currentUserId.value)
+        const response = await userAPI.getUserFollowingsCount(currentUserId.value)
+        console.log('📥 팔로잉 개수 API 응답:', response)
+        console.log('📥 팔로잉 개수 응답 데이터:', response.data)
+        
         if (response.data && response.data.data) {
           followingsCount.value = response.data.data.totalElements || 0
+          console.log('✅ 설정된 팔로잉 개수:', followingsCount.value)
+        } else {
+          console.log('⚠️ 팔로잉 개수 데이터가 없음')
+          followingsCount.value = 0
         }
       } catch (error) {
-        console.error('팔로잉 개수 조회 실패:', error)
+        console.error('❌ 팔로잉 개수 조회 실패:', error)
+        console.error('❌ 에러 응답:', error.response?.data)
         followingsCount.value = 0
       }
     }
@@ -254,7 +303,9 @@ export default {
         if (response.data && response.data.data) {
           console.log('반려동물 데이터:', response.data.data)
           userPets.value = response.data.data.pets || []
+          userName.value = response.data.data.userName || ''
           console.log('설정된 userPets:', userPets.value)
+          console.log('설정된 userName:', userName.value)
           
           // 반려동물 객체의 모든 필드 확인
           if (userPets.value.length > 0) {
@@ -429,6 +480,24 @@ export default {
       isFollowModalVisible.value = false
     }
     
+    // 팔로우 업데이트 처리
+    const handleFollowUpdated = async () => {
+      console.log('🔄 팔로우 업데이트 - 숫자 재조회')
+      await Promise.all([
+        fetchFollowersCount(),
+        fetchFollowingsCount()
+      ])
+    }
+    
+    // 언팔로우 업데이트 처리
+    const handleUnfollowUpdated = async () => {
+      console.log('🔄 언팔로우 업데이트 - 숫자 재조회')
+      await Promise.all([
+        fetchFollowersCount(),
+        fetchFollowingsCount()
+      ])
+    }
+    
     // 컴포넌트 마운트 시 데이터 가져오기
                 onMounted(async () => {
                   console.log('=== DiaryListView onMounted 시작 ===')
@@ -470,6 +539,8 @@ export default {
                     userPets,
                     mainPet,
                     petBio,
+                    displayUserName,
+                    currentUserId,
                     postsCount,
                     followersCount,
                     followingsCount,
@@ -483,6 +554,8 @@ export default {
                     changeMainPet,
                     openFollowModal,
                     closeFollowModal,
+                    handleFollowUpdated,
+                    handleUnfollowUpdated,
                     handleSearch,
                     handleClearSearch
                   }

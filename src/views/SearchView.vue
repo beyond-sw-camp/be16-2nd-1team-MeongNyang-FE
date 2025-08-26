@@ -218,7 +218,7 @@ export default {
 <style scoped>
 .search-page {
   min-height: 100vh;
-  background: #FFFAF0;
+  background: #F8FAFC;
   padding-top: 32px;
   display: flex;
   flex-direction: column;
