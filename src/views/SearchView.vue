@@ -42,7 +42,7 @@ export default {
     const $route = useRoute()
     
                     // 검색 상태
-                const searchType = ref('TITLE')
+                const searchType = ref('CONTENT')
                 const searchKeyword = ref('')
                 const showSearchResults = ref(false)
                 const searchResults = ref([])
@@ -52,11 +52,15 @@ export default {
     
                     // URL 쿼리 파라미터에서 초기 검색어 설정
                 onMounted(() => {
+                  console.log('SearchView - URL 쿼리 파라미터:', $route.query)
+                  
                   if ($route.query.searchType) {
                     searchType.value = $route.query.searchType
+                    console.log('SearchView - 설정된 searchType:', searchType.value)
                   }
                   if ($route.query.keyword) {
                     searchKeyword.value = $route.query.keyword
+                    console.log('SearchView - 설정된 keyword:', searchKeyword.value)
                     showSearchResults.value = true
                     performSearch(searchType.value, searchKeyword.value)
                   }
@@ -74,11 +78,12 @@ export default {
                 const performSearch = async (searchType, keyword) => {
                   try {
                     console.log('=== 검색 실행 ===')
-                    console.log('검색 타입:', searchType)
-                    console.log('검색어:', keyword)
+                    console.log('검색 타입:', searchType, typeof searchType)
+                    console.log('검색어:', keyword, typeof keyword)
                     
                     isLoading.value = true
                     searchResults.value = []
+                    currentPage.value = 0
                     
                     const response = await postAPI.search(searchType, keyword, { page: 0, size: 20 })
                     console.log('검색 응답:', response)
@@ -111,9 +116,54 @@ export default {
                   }
                 }
                 
+                // 무한 스크롤용 검색 (추가 페이지)
+                const performSearchMore = async (page) => {
+                  try {
+                    console.log('=== 무한 스크롤 검색 실행 ===')
+                    console.log('페이지:', page)
+                    
+                    isLoading.value = true
+                    
+                    const response = await postAPI.search(searchType.value, searchKeyword.value, { page, size: 20 })
+                    console.log('무한 스크롤 검색 응답:', response)
+                    
+                    if (response.data && response.data.data) {
+                      let searchData = []
+                      
+                      if (response.data.data.content) {
+                        // Page 구조: response.data.data.content
+                        searchData = response.data.data.content
+                      } else if (Array.isArray(response.data.data)) {
+                        // 직접 배열 구조
+                        searchData = response.data.data
+                      } else {
+                        searchData = response.data.data
+                      }
+                      
+                      console.log('추출된 무한 스크롤 검색 데이터:', searchData)
+                      
+                      // 기존 결과에 추가
+                      searchResults.value = [...searchResults.value, ...(Array.isArray(searchData) ? searchData : [])]
+                      
+                      // 더 불러올 데이터가 있는지 확인
+                      hasMore.value = !response.data.data.last
+                      currentPage.value = page
+                    } else {
+                      console.log('무한 스크롤 검색 결과 데이터가 없음')
+                      hasMore.value = false
+                    }
+                  } catch (error) {
+                    console.error('무한 스크롤 검색 실패:', error)
+                    hasMore.value = false
+                    handleApiError(error, $router, '추가 검색에 실패했습니다.')
+                  } finally {
+                    isLoading.value = false
+                  }
+                }
+                
                 // 검색 처리
                 const handleSearch = (searchData) => {
-                  searchType.value = searchData.searchType || searchData.type
+                  searchType.value = searchData.searchType
                   searchKeyword.value = searchData.keyword
                   showSearchResults.value = true
                   currentPage.value = 0
@@ -143,7 +193,8 @@ export default {
                   const documentHeight = document.documentElement.scrollHeight
                   
                   if (scrollTop + windowHeight >= documentHeight - 100 && !isLoading.value && hasMore.value) {
-                    performSearch(currentPage.value + 1, true)
+                    // 무한 스크롤 시 다음 페이지 검색
+                    performSearchMore(currentPage.value + 1)
                   }
                 }
     
@@ -157,7 +208,8 @@ export default {
                   handleSearch,
                   handleClearSearch,
                   handleSearchResultClick,
-                  handleScroll
+                  handleScroll,
+                  performSearchMore
                 }
   }
 }
@@ -166,7 +218,7 @@ export default {
 <style scoped>
 .search-page {
   min-height: 100vh;
-  background: #FFFAF0;
+  background: #F8FAFC;
   padding-top: 32px;
   display: flex;
   flex-direction: column;

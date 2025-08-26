@@ -6,7 +6,16 @@
       <router-view />
     </v-main>
     
-    <FooterComponent />
+    <!-- 맨 위로 버튼 -->
+    <div 
+      v-show="showScrollToTop"
+      class="scroll-to-top-btn"
+      @click="scrollToTop"
+    >
+      <v-icon size="24" color="white">mdi-chevron-up</v-icon>
+    </div>
+    
+    <!-- <FooterComponent v-if="!isChatPage" /> -->
     
           <!-- 플로팅 인증 모달 -->
       <FloatingAuthModal
@@ -321,21 +330,26 @@
 import { ref, provide } from 'vue'
 
 import { useUIStore } from './stores/ui'
+
 import { useAuthStore } from './stores/auth'
 import { userAPI } from './services/api'
+import { useSseStore } from './stores/sse'
+import { useAuthStore } from './stores/auth'
+import { useAlarmStore } from './stores/alarm'
 import HeaderComponent from './components/HeaderComponent.vue'
-import FooterComponent from './components/FooterComponent.vue'
+// import FooterComponent from './components/FooterComponent.vue'
 import GlobalSnackbar from './components/ui/global/GlobalSnackbar.vue'
 import GlobalLoadingOverlay from './components/ui/global/GlobalLoadingOverlay.vue'
 import FloatingAuthModal from './components/auth/FloatingAuthModal.vue'
 import OtpVerificationModal from './components/auth/OtpVerificationModal.vue'
 import FinalRegistrationModal from './components/auth/FinalRegistrationModal.vue'
+import { onMounted, onUnmounted, watch } from 'vue'
 
 export default {
   name: 'App',
   components: {
     HeaderComponent,
-    FooterComponent,
+    // FooterComponent,
     GlobalSnackbar,
     GlobalLoadingOverlay,
     FloatingAuthModal,
@@ -344,6 +358,7 @@ export default {
   },
   setup() {
     const uiStore = useUIStore()
+
     const authStore = useAuthStore()
     
     // 플로팅 모달 상태 관리
@@ -597,6 +612,63 @@ export default {
     provide('openSocialDuplicateModal', openSocialDuplicateModal)
     provide('openDeletedAccountModal', openDeletedAccountModal)
     provide('openOAuthLinkModal', openOAuthLinkModal)
+    const sseStore = useSseStore()
+    const authStore = useAuthStore()
+    const alarmStore = useAlarmStore()
+    
+    // SSE 연결 설정
+    const setupSse = async () => {
+      try {
+        await sseStore.connect()
+        console.log('SSE connection established in App.vue')
+      } catch (error) {
+        console.error('Failed to establish SSE connection:', error)
+      }
+    }
+    
+    // SSE 연결 해제
+    const cleanupSse = () => {
+      sseStore.disconnect()
+      console.log('SSE connection cleaned up in App.vue')
+    }
+    
+    // 알림 초기 로드
+    const loadInitialAlarms = async () => {
+      if (authStore.isAuthenticated) {
+        try {
+          await alarmStore.fetchAlarms()
+          console.log('초기 알림 로드 완료')
+        } catch (error) {
+          console.error('초기 알림 로드 실패:', error)
+        }
+      }
+    }
+    
+    // 인증 상태 변경 감지하여 알림 로드
+    watch(() => authStore.isAuthenticated, (isAuthenticated) => {
+      if (isAuthenticated) {
+        loadInitialAlarms()
+      }
+    }, { immediate: true })
+    
+    // 컴포넌트 마운트 시 초기화
+    onMounted(async () => {
+      // 인증 초기화
+      await authStore.initialize()
+      
+      // SSE 연결
+      setupSse()
+      
+      // 로그인된 상태라면 알림 로드
+      if (authStore.isAuthenticated) {
+        loadInitialAlarms()
+      }
+    })
+    
+    // 컴포넌트 언마운트 시 SSE 연결 해제
+    onUnmounted(() => {
+      cleanupSse()
+    })
     
     return {
       uiStore,
@@ -630,6 +702,32 @@ export default {
       handleDeletedAccountRegister,
       handleOAuthLink
     }
+  },
+  data() {
+    return {
+      showScrollToTop: false
+    }
+  },
+  mounted() {
+    // 스크롤 이벤트 리스너 추가
+    window.addEventListener('scroll', this.handleScroll)
+  },
+  beforeUnmount() {
+    // 컴포넌트 제거 시 이벤트 리스너 제거
+    window.removeEventListener('scroll', this.handleScroll)
+  },
+  methods: {
+    handleScroll() {
+      // 스크롤 위치가 300px 이상일 때 버튼 표시
+      this.showScrollToTop = window.scrollY > 300
+    },
+    scrollToTop() {
+      // 부드러운 스크롤로 맨 위로 이동
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      })
+    }
   }
 }
 </script>
@@ -654,7 +752,77 @@ export default {
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
-  margin-top: 60px;
+  /* margin-top: 60px; */
+}
+
+/* 전역 스타일 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Noto Sans KR', sans-serif;
+  background-color: #f5f5f5;
+}
+
+/* 맨 위로 버튼 스타일 */
+.scroll-to-top-btn {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 56px;
+  height: 56px;
+  background: #FF8B8B;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(255, 139, 139, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1000;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeInUp 0.3s ease forwards;
+}
+
+.scroll-to-top-btn:hover {
+  background: #FF6B6B;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(255, 139, 139, 0.4);
+}
+
+.scroll-to-top-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(255, 139, 139, 0.3);
+}
+
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 반응형 조정 */
+@media (max-width: 768px) {
+  .scroll-to-top-btn {
+    bottom: 20px;
+    right: 20px;
+    width: 48px;
+    height: 48px;
+  }
+}
+
+@media (max-width: 480px) {
+  .scroll-to-top-btn {
+    bottom: 16px;
+    right: 16px;
+    width: 44px;
+    height: 44px;
+  }
 }
 
 /* OAuth 연동 모달 스타일 */

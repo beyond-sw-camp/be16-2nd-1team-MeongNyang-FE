@@ -1,7 +1,9 @@
 <template>
   <div class="home-view">
-    <!-- 히어로 섹션 -->
-    <section class="hero-section">
+    <!-- 로그인하지 않은 경우: 기존 홈페이지 -->
+    <template v-if="!isLoggedIn">
+      <!-- 히어로 섹션 -->
+      <section class="hero-section">
       <div class="hero-background">
         <div class="hero-overlay"></div>
         <div class="floating-shapes">
@@ -143,29 +145,29 @@
         </div>
       </div>
     </section>
-    
 
+    </template>
+
+    <!-- 로그인한 경우: 전체 일기 목록 -->
+    <template v-else>
+      <AllPostsView />
+    </template>
   </div>
 </template>
 
 <script>
-import { computed, inject, onMounted } from 'vue'
+import { computed, inject, onMounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRoute } from 'vue-router'
+import AllPostsView from '@/views/diary/AllDiaryView.vue'
 
 export default {
   name: 'HomeView',
-
-  setup() {
-    const authStore = useAuthStore()
-    const route = useRoute()
+  components: {
+    AllPostsView
+  },
     
-    // App.vue에서 제공하는 함수 inject
-    const openAuthModal = inject('openAuthModal')
-    
-    const isLoggedIn = computed(() => authStore.isAuthenticated)
-    
-    // OAuth 모달 자동 열기
+// OAuth 모달 자동 열기
     onMounted(() => {
       // OAuth 추가정보 모달
       const { openOAuthExtra, provider, signupTicket, email } = route.query
@@ -197,7 +199,7 @@ export default {
         window.history.replaceState({}, document.title, '/')
       }
       
-      // OAuth 추가정보 모달
+      // OAuth 추가정보 모달 (중복 제거)
       const { openOAuthExtra: extraFlag, provider: extraProvider, email: extraEmail, signupTicket: extraTicket } = route.query
       if (extraFlag === 'true' && extraProvider && extraEmail && extraTicket) {
         const openOAuthExtraModal = inject('openOAuthExtraModal')
@@ -239,6 +241,11 @@ export default {
         window.history.replaceState({}, document.title, '/')
       }
     })
+    
+    // 로그인 상태 변화를 감지하기 위해 watch 추가
+    watch(() => authStore.isAuthenticated, (newValue) => {
+      console.log('로그인 상태 변화 감지:', newValue)
+    }, { immediate: true })
     
     return {
       isLoggedIn,

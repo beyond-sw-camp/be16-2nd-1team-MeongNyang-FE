@@ -22,7 +22,7 @@
                 <v-img :src="like.profileImage || 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=32&h=32&fit=crop&crop=center'"></v-img>
               </v-avatar>
               <div class="like-info">
-                <span class="like-username clickable" @click="goToUserDiary(like.userId)">{{ like.petName || like.userName || like.username }}</span>
+                <span class="like-username clickable" @click="goToUserDiary(like.userId)">{{ like.userName || like.username || like.petName || '익명' }}</span>
                 <span class="like-date">{{ like.date }}</span>
               </div>
             </div>

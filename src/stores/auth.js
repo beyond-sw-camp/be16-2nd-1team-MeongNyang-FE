@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { userAPI } from '@/services/api'
 import { 
   getToken, 
@@ -22,7 +22,14 @@ export const useAuthStore = defineStore('auth', () => {
 
   // 계산된 속성
   const isAuthenticated = computed(() => {
-    return !!accessToken.value && !!user.value && isValidToken(accessToken.value)
+    const authenticated = !!accessToken.value && !!user.value && isValidToken(accessToken.value)
+    console.log('isAuthenticated 계산:', {
+      hasAccessToken: !!accessToken.value,
+      hasUser: !!user.value,
+      isValidToken: isValidToken(accessToken.value),
+      result: authenticated
+    })
+    return authenticated
   })
 
   // 액션
@@ -65,7 +72,9 @@ export const useAuthStore = defineStore('auth', () => {
       // 토큰 자동 갱신 설정
       setupTokenRefresh(refreshAccessToken)
       
+
       return { success: true }
+
     } finally {
       loading.value = false
     }

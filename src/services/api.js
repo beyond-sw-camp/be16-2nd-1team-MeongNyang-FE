@@ -124,31 +124,31 @@ apiClient.interceptors.response.use(
 export const userAPI = {
   // 이메일 중복 확인
   checkEmail: (email) => apiClient.post('/users/check-email', { email }),
-  
+
   // 이메일 인증번호 발송
   verifyEmail: (email) => apiClient.post('/users/verify-email', { email }),
-  
+
   // 이메일 인증번호 확인
   verifyEmailCheck: (email, code) => apiClient.post('/users/verify-email-check', { email, code }),
-  
+
   // 닉네임 중복 확인
   checkNickname: (nickname) => apiClient.post('/users/check-nickname', { nickname }),
-  
+
   // 회원가입
   signup: (userData) => apiClient.post('/users/sign', userData),
-  
+
   // 로그인
   login: (credentials) => apiClient.post('/users/login', credentials),
-  
+
   // 임시 비밀번호 발급
   lostPassword: (userData) => apiClient.post('/users/lost-password', userData),
-  
+
   // 계정 잠금 해제
       unlock: (userData) => apiClient.post('/users/lost-password', userData),
-  
+
   // 비밀번호 변경
   changePassword: (passwordData) => apiClient.put('/users/change/password', passwordData),
-  
+
   // 회원 탈퇴
   delete: (refreshToken) =>
     apiClient.post('/users/delete', null, { headers: { [RT_HEADER_RAW]: refreshToken } }),
@@ -161,9 +161,9 @@ export const userAPI = {
   // --- 소셜 계정 연동 확정 ---
   confirmLink: (linkTicket) => apiClient.post('/users/link/confirm', { linkTicket }),
   // --- 소셜 신규 유저 추가정보 제출 ---
-  signupExtra: (payload) => apiClient.post('/users/signup-extra', payload), 
-  
-    // ✅ AT 재발급(헤더 RT)
+  signupExtra: (payload) => apiClient.post('/users/signup-extra', payload),
+
+  // ✅ AT 재발급(헤더 RT)
   refreshAT: (refreshToken) =>
     apiClient.post('/users/token/refresh', null, { headers: { [RT_HEADER_RAW]: refreshToken } }),
   // ✅ 로그아웃(헤더 RT)
@@ -171,6 +171,7 @@ export const userAPI = {
     apiClient.post('/users/logout', null, { headers: { [RT_HEADER_RAW]: refreshToken } }),
 
   // 대표 동물 설정
+
   setMainPet: async (petId) => {
     try {
       console.log('🔄 petAPI.setMainPet 시작:', petId)
@@ -187,10 +188,11 @@ export const userAPI = {
       throw error
     }
   },
+
   
   // 마이페이지 정보 조회
   getMyPage: () => apiClient.get('/users/my-page'),
-  
+
   // 프로필 업데이트
   updateProfile: async (profileData) => {
     console.log('프로필 업데이트 요청:', profileData)
@@ -205,116 +207,118 @@ export const userAPI = {
       throw error
     }
   },
-  
+
   // 팔로우
   follow: (userId) => apiClient.post(`/users/follows/${userId}`),
-  
+
   // 언팔로우
   unfollow: (userId) => apiClient.delete(`/users/follows/${userId}`),
-  
+
   // 팔로워 목록 조회
   getFollowers: (pageable) => apiClient.get('/users/follows/followers', { params: pageable }),
-  
+
   // 팔로잉 목록 조회
   getFollowings: (pageable) => apiClient.get('/users/follows/followings', { params: pageable }),
-  
+
   // 팔로워 개수 조회 (프로필용)
   getFollowersCount: () => apiClient.get('/users/follows/followers', { params: { page: 0, size: 1 } }),
-  
+
   // 팔로잉 개수 조회 (프로필용)
   getFollowingsCount: () => apiClient.get('/users/follows/followings', { params: { page: 0, size: 1 } }),
-  
+
   // 사용자 차단
   block: (userId) => apiClient.post(`/users/blocks/${userId}`),
-  
+
   // 사용자 차단 해제
   unblock: (userId) => apiClient.delete(`/users/blocks/${userId}`),
-  
+
   // 차단 목록 조회
   getBlocks: (pageable, type) => apiClient.get('/users/blocks', { params: { ...pageable, type } }),
-  
+
   // 다른 사용자 프로필 조회
   getUserProfile: (userId) => apiClient.get(`/users/${userId}/profile`),
-  
+
   // 팔로우 상태 확인
   checkFollowStatus: (userId) => apiClient.get(`/users/follows/${userId}/status`),
-  
+
   // 다른 사용자의 팔로워 개수 조회
-  getUserFollowersCount: (userId) => apiClient.get('/users/follows/followers', { params: { userId } }),
-  
+  getUserFollowersCount: (userId) => apiClient.get(`/users/${userId}/follows/followers`),
+
   // 다른 사용자의 팔로잉 개수 조회
-  getUserFollowingsCount: (userId) => apiClient.get('/users/follows/followings', { params: { userId } }),
-  
+  getUserFollowingsCount: (userId) => apiClient.get(`/users/${userId}/follows/followings`),
+
   // 다른 사용자의 팔로워 목록 조회
-  getUserFollowers: (userId, pageable = { page: 0, size: 20 }) => apiClient.get('/users/follows/followers', { params: { userId, ...pageable } }),
-  
+  getUserFollowers: (userId, pageable = { page: 0, size: 20 }) => apiClient.get(`/users/${userId}/follows/followers`, { params: pageable }),
+
   // 다른 사용자의 팔로잉 목록 조회
-  getUserFollowings: (userId, pageable = { page: 0, size: 20 }) => apiClient.get('/users/follows/followings', { params: { userId, ...pageable } }),
-  
+  getUserFollowings: (userId, pageable = { page: 0, size: 20 }) => apiClient.get(`/users/${userId}/follows/followings`, { params: pageable }),
+
   // 다른 사용자의 게시물 개수 조회
   getUserPostsCount: (userId) => apiClient.get('/posts', { params: { userId, page: 0, size: 1 } })
 }
 
 // 게시글 관련 API
 export const postAPI = {
-  // 내 일기 목록 조회 (대시보드용)
-  getMyPosts: (pageable = { page: 0, size: 1 }) => apiClient.get('/posts', { params: pageable }),
+  // 전체 일기 목록 조회
+  getAllPosts: (pageable = { page: 0, size: 9 }) => apiClient.get('/posts', { params: pageable }),
   
+  // 내 일기 목록 조회 (대시보드용)
+  getMyPosts: (pageable = { page: 0, size: 1 }) => apiClient.get('/posts/me', { params: pageable }),
   // 내 게시물 개수 조회 (프로필용)
   getMyPostsCount: () => apiClient.get('/posts', { params: { page: 0, size: 1 } }),
-  
+
   // 일기 작성
   create: (formData) => {
     return apiClient.post('/posts', formData)
   },
-  
+
   // 일기 수정
   update: (postId, formData) => {
     return apiClient.patch(`/posts/${postId}`, formData)
   },
-  
+
   // 일기 삭제
   delete: (postId) => apiClient.delete(`/posts/${postId}`),
-  
+
   // 일기 목록 조회
   getList: (pageable) => apiClient.get('/posts', { params: pageable }),
-  
+
   // 다른 사용자의 일기 목록 조회
-  getUserPosts: (userId, pageable) => apiClient.get('/posts', { params: { ...pageable, userId } }),
+  getUserPosts: (userId, pageable) => apiClient.get(`/posts/${userId}`, { params: pageable }),
   
   // 일기 상세 조회
-  getDetail: (postId) => apiClient.get(`/posts/${postId}`),
+  getDetail: (postId) => apiClient.get(`/posts/detail/${postId}`),
   
   // 좋아요
   like: (postId) => apiClient.post(`/posts/${postId}/like`),
-  
+
   // 좋아요 취소
   unlike: (postId) => apiClient.delete(`/posts/${postId}/like`),
-  
+
   // 좋아요 목록 조회
   getLikes: (postId, pageable) => apiClient.get(`/posts/${postId}/like`, { params: pageable }),
-  
+
   // 댓글 작성
   createComment: (postId, content) => apiClient.post(`/posts/${postId}/comments`, { content }),
-  
+
   // 대댓글 작성
   createReply: (commentId, content, mentionUserId) => {
     return apiClient.post(`/posts/comments/${commentId}/reply`, { content, mentionUserId })
   },
-  
+
   // 댓글 수정
   updateComment: (commentId, content) => apiClient.patch(`/posts/comments/${commentId}`, { content }),
-  
+
   // 댓글 삭제
   deleteComment: (commentId) => apiClient.delete(`/posts/comments/${commentId}`),
-  
+
   // 댓글 목록 조회
   getComments: (postId, pageable) => apiClient.get(`/posts/${postId}/comments`, { params: pageable }),
-  
+
   // 검색
-  search: (searchType, keyword, pageable) => 
+  search: (searchType, keyword, pageable) =>
     apiClient.get('/posts/search', { params: { searchType, keyword, ...pageable } }),
-  
+
   // 신고
   report: (postId, reason) => apiClient.post(`/posts/${postId}/reports`, { reason })
 }
@@ -326,47 +330,59 @@ export const marketAPI = {
   // 거래글 등록
   create: (postData, imageFiles) => {
     const formData = new FormData()
-    formData.append('marketPostCreateReq', JSON.stringify(postData))
-    if (imageFiles) {
-      imageFiles.forEach(file => formData.append('files', file))
+    formData.append(
+      'post',
+      new Blob([JSON.stringify(postData)], { type: 'application/json' })
+    )
+
+    if (imageFiles && imageFiles.length > 0) {
+      imageFiles.forEach(file => formData.append('imageFiles', file))
     }
+
+    // FormData는 axios 인터셉터에서 자동으로 Content-Type 설정
     return apiClient.post('/markets/posts', formData)
   },
-  
+
   // 거래글 수정
   update: (postId, postData, imageFiles) => {
     const formData = new FormData()
-    formData.append('marketPostUpdateReq', JSON.stringify(postData))
-    if (imageFiles) {
-      imageFiles.forEach(file => formData.append('files', file))
+  
+    formData.append(
+      'post',
+      new Blob([JSON.stringify(postData)], { type: 'application/json' })
+    )
+  
+    if (imageFiles && imageFiles.length > 0) {
+      imageFiles.forEach(file => formData.append('imageFiles', file))
     }
+  
     return apiClient.patch(`/markets/${postId}`, formData)
   },
-  
+
   // 거래글 삭제
   delete: (postId) => apiClient.delete(`/markets/${postId}`),
-  
+
   // 거래글 목록 조회
   getList: (pageable) => apiClient.get('/markets/posts', { params: pageable }),
-  
+
   // 거래글 상세 조회
   getDetail: (postId) => apiClient.get(`/markets/posts/${postId}`),
-  
+
   // 구매목록 조회
   getPurchases: (pageable) => apiClient.get('/markets/purchases', { params: pageable }),
-  
+
   // 판매목록 조회
   getSales: (pageable = { page: 0, size: 1 }) => apiClient.get('/markets/sales', { params: pageable }),
-  
+
   // 찜하기
   like: (postId) => apiClient.post(`/markets/${postId}/like`),
-  
+
   // 찜 취소
   unlike: (postId) => apiClient.delete(`/markets/${postId}/like`),
-  
+
   // 찜 목록 조회
   getLikes: (pageable) => apiClient.get('/markets/like', { params: pageable }),
-  
+
   // 사용자의 찜한 게시글 목록 조회
   getUserLikedPosts() {
     return apiClient.get('/markets/likes/user')
@@ -395,8 +411,7 @@ export const petAPI = {
       // 백엔드 Pet.java의 @RequestPart 어노테이션에 맞는 필드명 시도
       formData.append('url', petImg)  // Pet.java에서 petProfileUrl = req.getUrl()이므로
       console.log('✅ 이미지 파일 추가됨 (url 필드):', petImg.name, petImg.size, 'bytes')
-    }
-    
+
     // FormData 디버깅
     console.log('=== FormData 구조 ===')
     for (let [key, value] of formData.entries()) {
@@ -411,38 +426,44 @@ export const petAPI = {
         console.log(`  - File size: ${value.size}`)
       }
     }
-    
+
+    console.log('=== End FormData Debug ===')
+
+    console.log('=== API 요청 시작 ===')
+    console.log('요청 URL:', '/pets/register')
+    console.log('요청 헤더:', { 'Content-Type': undefined })
+
     try {
       const response = await apiClient.post('/pets/register', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       })
+
       console.log('✅ FormData 등록 성공:', response.data)
+      
       return response
     } catch (error) {
       console.log('❌ FormData 등록 실패:', error.response?.data)
       throw error
     }
   },
-  
+
   // 반려동물 목록 조회
   getList: () => apiClient.get('/pets'),
-  
+
   // 사용자 반려동물 목록 조회 (프로필용)
   getUserPets: () => apiClient.get('/pets'),
-  
+
   // 다른 사용자의 반려동물 목록 조회
   getOtherUserPets: (userId) => apiClient.get('/pets', { params: { userId } }),
   
-  // // 대표 펫 설정
-  // setMainPet: (petId) => apiClient.put(`/pets/${petId}/main`),
-  
-  // // 대표 반려동물 설정 (다른 엔드포인트)
-  // setMainPetAlt: (petId) => apiClient.put(`/users/my-page/${petId}/main-pet`),
-  
+  // 대표 반려동물 설정 (다른 엔드포인트)
+  setMainPetAlt: () => apiClient.put(`/users/pets/main`),
+
   // 반려동물 수정
   update: async (petId, petData, petImg) => {
+
     console.log('🔥🔥🔥 === 반려동물 수정 API 호출 시작 === 🔥🔥🔥')
     console.log('🔍 petId:', petId)
     console.log('🔍 petData:', petData)
@@ -513,6 +534,7 @@ export const petAPI = {
         }
       }
     }
+
     if (!hasUrlField) {
       console.log('🗑️ URL 필드 없음 = 백엔드에서 이미지 삭제됨!')
     } else {
@@ -526,14 +548,16 @@ export const petAPI = {
           'Content-Type': 'multipart/form-data'
         }
       })
+
       console.log('✅ FormData 수정 성공:', response.data)
+
       return response
     } catch (error) {
       console.log('❌ FormData 수정 실패:', error.response?.data)
       throw error
     }
   },
-  
+
   // 반려동물 삭제
   delete: (petId) => apiClient.delete(`/pets/${petId}`)
 }
@@ -542,7 +566,7 @@ export const petAPI = {
 export const speciesAPI = {
   // 종류 목록 조회
   getList: () => apiClient.get('/species/list'),
-  
+
   // 종류 검색
   search: (searchData) => apiClient.get('/species/search', { params: searchData })
 }
@@ -552,35 +576,35 @@ export const chatAPI = {
   // 채팅방 개설
   createRoom: (roomData) => {
     const { roomName, participantEmails = [] } = roomData
-    
+
     // 백엔드 API 형식에 맞춰 요청 데이터 구성
     const requestData = {
       roomName,
       userEmailList: participantEmails
     }
-    
+
     return apiClient.post('/chat-rooms', requestData)
   },
-  
+
   // 채팅방 목록 조회
   getRooms: () => apiClient.get('/chat-rooms'),
-  
+
   // 내 채팅방 목록 조회
   getMyChatRooms: () => apiClient.get('/chat-rooms'),
-  
+
   // 메시지 목록 조회
   getMessages: (roomId) => apiClient.get(`/chat-rooms/${roomId}/messages`),
-  
+
   // 참여자 추가
-  addParticipants: (roomId, participants) => 
+  addParticipants: (roomId, participants) =>
     apiClient.post(`/chat-rooms/${roomId}/participants`, participants),
-  
+
   // 채팅방 나가기
   leaveRoom: (roomId) => apiClient.delete(`/chat-rooms/${roomId}/participants/me`),
-  
+
   // 참여자 목록 조회
   getParticipants: (roomId) => apiClient.get(`/chat-rooms/${roomId}/participants`),
-  
+
   // 파일 업로드
   uploadFiles: (roomId, files) => {
     const formData = new FormData()
@@ -593,18 +617,36 @@ export const chatAPI = {
 export const adminAPI = {
   // 회원 목록 조회
   getUsers: () => apiClient.get('/admin/users/list'),
-  
+
   // 회원 상세 조회
   getUserDetail: (userId) => apiClient.get(`/admin/users/detail/${userId}`),
-  
+
   // 신고 목록 조회
   getReports: (pageable) => apiClient.get('/admin/reports', { params: pageable }),
-  
+
   // 신고 상세 조회
   getReportDetail: (reportId) => apiClient.get(`/admin/reports/${reportId}`),
-  
+
   // 신고 처리
   processReport: (reportId, resultData) => apiClient.post(`/admin/reports/${reportId}`, resultData)
+}
+
+// 알림 관련 API
+export const alarmAPI = {
+  // 내 알림 목록 조회
+  getMyAlarms: () => apiClient.get('/notifications'),
+  
+  // 알림 읽음 처리
+  markAsRead: (alarmId) => apiClient.patch(`/notifications/${alarmId}`),
+  
+  // 모든 알림 읽음 처리
+  markAllAsRead: () => apiClient.patch('/notifications'),
+  
+  // 알림 삭제
+  deleteAlarm: (alarmId) => apiClient.delete(`/notifications/${alarmId}`),
+  
+  // 모든 알림 삭제
+  deleteAllAlarms: () => apiClient.delete('/notifications')
 }
 
 export default apiClient
