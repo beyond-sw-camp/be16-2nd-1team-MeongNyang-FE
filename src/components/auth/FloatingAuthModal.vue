@@ -110,7 +110,7 @@
                   class="forgot-password-btn"
                   density="compact"
                 >
-                  비밀번호를 잊으셨어요?
+                  임시비밀번호 받기
                 </v-btn>
                 <v-btn
                   variant="text"
@@ -529,7 +529,7 @@
           <div class="forgot-password-icon mb-3">
             <v-icon size="32" color="white">mdi-lock-reset</v-icon>
           </div>
-          <h3 class="text-h6 font-weight-semibold mb-2 text-dark">비밀번호 찾기</h3>
+          <h3 class="text-h6 font-weight-semibold mb-2 text-dark">임시비밀번호 발급</h3>
           <p class="text-body-2 text-medium-emphasis">
             가입한 이름과 이메일을 입력하시면 임시 비밀번호를 발송해드립니다
           </p>
