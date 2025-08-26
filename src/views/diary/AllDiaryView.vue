@@ -27,7 +27,7 @@
               ></v-img>
             </v-avatar>
             <div class="user-info">
-              <span class="username clickable" @click="goToUserDiary(post.userId)">{{ post.petName || '익명' }}</span>
+                              <span class="username clickable" @click="goToUserDiary(post.userId)">{{ post.userName || post.petName || '익명' }}</span>
               <span class="date">{{ getDateField(post) ? formatDate(getDateField(post)) : '날짜 없음' }}</span>
             </div>
           </div>
@@ -193,7 +193,7 @@
 
         <!-- 캡션 -->
         <div class="caption" v-if="post.content">
-          <span class="caption-username">{{ post.petName }}</span>
+          <span class="caption-username">{{ post.userName || post.petName }}</span>
           <span class="caption-text">{{ removeHashtags(post.content) }}</span>
         </div>
 
@@ -555,6 +555,18 @@ export default {
           
           console.log('가져온 포스트 목록:', newPosts)
           
+          // 첫 번째 포스트의 전체 구조 확인
+          if (newPosts.length > 0) {
+            console.log('첫 번째 포스트 전체 구조:', JSON.stringify(newPosts[0], null, 2))
+            console.log('첫 번째 포스트 사용자 관련 필드들:', {
+              userId: newPosts[0].userId,
+              userName: newPosts[0].userName,
+              petName: newPosts[0].petName,
+              author: newPosts[0].author,
+              user: newPosts[0].user
+            })
+          }
+          
                     // 각 포스트의 미디어 리스트에서 빈 URL 필터링 (URL 배열 형태)
           newPosts.forEach(post => {
             if (post.mediaList && Array.isArray(post.mediaList)) {
@@ -906,18 +918,10 @@ export default {
         const response = await userAPI.follow(userId)
         console.log('팔로우 API 응답:', response)
         
-        // 팔로우 상태 다시 조회
-        const followStatusResponse = await userAPI.checkFollowStatus(userId)
-        const isFollowing = followStatusResponse.data?.data?.isFollowing || false
+        // 모든 포스트의 팔로우 상태 다시 조회
+        await fetchAllFollowStatus()
+        console.log('팔로우 후 모든 포스트 팔로우 상태 재조회 완료')
         
-        // 포스트 상태 업데이트
-        const post = posts.value.find(p => p.userId === userId)
-        if (post) {
-          post.isFollowing = isFollowing
-          console.log(`포스트 ${post.id} 팔로우 상태 업데이트:`, post.isFollowing)
-        } else {
-          console.error('팔로우할 포스트를 찾을 수 없음:', userId)
-        }
       } catch (error) {
         console.error('팔로우 실패:', error)
         alert('팔로우에 실패했습니다.')
@@ -937,18 +941,10 @@ export default {
         const response = await userAPI.unfollow(userId)
         console.log('언팔로우 API 응답:', response)
         
-        // 팔로우 상태 다시 조회
-        const followStatusResponse = await userAPI.checkFollowStatus(userId)
-        const isFollowing = followStatusResponse.data?.data?.isFollowing || false
+        // 모든 포스트의 팔로우 상태 다시 조회
+        await fetchAllFollowStatus()
+        console.log('언팔로우 후 모든 포스트 팔로우 상태 재조회 완료')
         
-        // 포스트 상태 업데이트
-        const post = posts.value.find(p => p.userId === userId)
-        if (post) {
-          post.isFollowing = isFollowing
-          console.log(`포스트 ${post.id} 언팔로우 상태 업데이트:`, post.isFollowing)
-        } else {
-          console.error('언팔로우할 포스트를 찾을 수 없음:', userId)
-        }
       } catch (error) {
         console.error('언팔로우 실패:', error)
         alert('언팔로우에 실패했습니다.')

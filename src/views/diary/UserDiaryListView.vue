@@ -25,7 +25,7 @@
         <!-- 사용자 정보 -->
         <div class="user-info">
           <div class="username-section">
-            <h2 class="username">{{ mainPet?.name || userName || '사용자' }}</h2>
+            <h2 class="username">{{ userName || mainPet?.name || '사용자' }}</h2>
             <div class="badges">
               <v-chip color="light-blue" size="small" class="badge">
                 <v-icon size="16" class="me-1">mdi-check</v-icon>
@@ -227,6 +227,8 @@ export default {
           
           console.log('설정된 반려동물 목록:', userPets.value)
           console.log('설정된 사용자명:', userName.value)
+          console.log('userName 타입:', typeof userName.value)
+          console.log('userName 길이:', userName.value ? userName.value.length : 0)
           
           // 각 반려동물의 상세 정보 로깅
           userPets.value.forEach((pet, index) => {

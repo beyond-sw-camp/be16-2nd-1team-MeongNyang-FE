@@ -23,7 +23,7 @@
                             ></v-img>
                           </v-avatar>
                           <div class="user-info">
-                            <span class="username clickable" @click="goToUserDiary(postData?.userId)">{{ postData?.petName || '로딩 중...' }}</span>
+                            <span class="username clickable" @click="goToUserDiary(postData?.userId)">{{ postData?.userName || postData?.petName || '로딩 중...' }}</span>
                             <span class="date">{{ postData?.date || '로딩 중...' }}</span>
                           </div>
                         </div>
@@ -180,7 +180,7 @@
 
         <!-- 캡션 -->
         <div class="caption" v-if="postData?.content">
-          <span class="caption-username">{{ postData?.petName }}</span>
+          <span class="caption-username">{{ postData?.userName || postData?.petName }}</span>
           <span class="caption-text">{{ removeHashtags(postData?.content) }}</span>
         </div>
 

@@ -29,7 +29,7 @@
         <!-- 사용자 정보 -->
         <div class="user-info">
           <div class="username-section">
-            <h2 class="username">{{ mainPet?.name || '사용자' }}</h2>
+            <h2 class="username">{{ displayUserName }}</h2>
             <div class="badges">
               <v-chip color="light-blue" size="small" class="badge">
                 <v-icon size="16" class="me-1">mdi-check</v-icon>
@@ -166,6 +166,13 @@ export default {
     
     // 반려동물 데이터
     const userPets = ref([])
+    const userName = ref('')
+    
+    // 사용자 이름 (반응형으로 표시)
+    const displayUserName = computed(() => {
+      console.log('displayUserName computed 실행:', userName.value)
+      return userName.value || mainPet.value?.name || '사용자'
+    })
     
     // 다이어리 데이터
     const diaryList = ref([])
@@ -254,7 +261,9 @@ export default {
         if (response.data && response.data.data) {
           console.log('반려동물 데이터:', response.data.data)
           userPets.value = response.data.data.pets || []
+          userName.value = response.data.data.userName || ''
           console.log('설정된 userPets:', userPets.value)
+          console.log('설정된 userName:', userName.value)
           
           // 반려동물 객체의 모든 필드 확인
           if (userPets.value.length > 0) {
@@ -470,6 +479,7 @@ export default {
                     userPets,
                     mainPet,
                     petBio,
+                    displayUserName,
                     postsCount,
                     followersCount,
                     followingsCount,
