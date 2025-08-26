@@ -325,6 +325,19 @@ export default {
           sort: 'id,desc' // 기본 정렬
         }
 
+        // 카테고리 필터링 파라미터 추가
+        if (this.selectedCategory && this.selectedCategory !== 'all') {
+          // Spring Boot에서 일반적으로 사용하는 파라미터 이름
+          pageable.category = this.selectedCategory
+          console.log('카테고리 필터링 적용:', this.selectedCategory)
+        }
+
+        // 검색어 파라미터 추가
+        if (this.searchQuery && this.searchQuery.trim()) {
+          pageable.search = this.searchQuery.trim()
+          console.log('검색어 필터링 적용:', this.searchQuery.trim())
+        }
+
         // 정렬 옵션에 따른 정렬 설정
         if (this.selectedSort === 'price-low') {
           pageable.sort = 'price,asc'
@@ -341,6 +354,26 @@ export default {
         
         if (response.data && response.data.isSuccess) {
           let fetchedPosts = response.data.data?.content || []
+          
+          // 백엔드에서 필터링이 지원되지 않는 경우 클라이언트 사이드에서 필터링
+          
+          // 카테고리 필터링
+          if (this.selectedCategory && this.selectedCategory !== 'all') {
+            const originalLength = fetchedPosts.length
+            fetchedPosts = fetchedPosts.filter(post => post.category === this.selectedCategory)
+            console.log(`카테고리 필터링: ${originalLength}개 → ${fetchedPosts.length}개 (${this.selectedCategory})`)
+          }
+          
+          // 검색어 필터링
+          if (this.searchQuery && this.searchQuery.trim()) {
+            const originalLength = fetchedPosts.length
+            const searchTerm = this.searchQuery.toLowerCase().trim()
+            fetchedPosts = fetchedPosts.filter(post => 
+              post.title.toLowerCase().includes(searchTerm) ||
+              (post.description && post.description.toLowerCase().includes(searchTerm))
+            )
+            console.log(`검색어 필터링: ${originalLength}개 → ${fetchedPosts.length}개 ("${searchTerm}")`)
+          }
           
           // 인기순 정렬은 클라이언트 사이드에서 처리
           if (this.selectedSort === 'popular') {
@@ -582,6 +615,7 @@ export default {
           defaultImage.style.display = 'flex'
         }
       }
+      
     },
 
     changePage(page) {
