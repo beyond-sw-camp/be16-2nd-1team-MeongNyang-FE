@@ -447,7 +447,8 @@ export const petAPI = {
       console.log('❌ FormData 등록 실패:', error.response?.data)
       throw error
     }
-  },
+  }
+},
 
   // 반려동물 목록 조회
   getList: () => apiClient.get('/pets'),
