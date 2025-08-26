@@ -383,8 +383,8 @@
 
 <script>
 
-import { computed, ref, onMounted, inject } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, ref, onMounted, inject, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useAlarmStore } from '@/stores/alarm'
 import NotificationDrawer from './NotificationDrawer.vue'
@@ -406,7 +406,6 @@ export default {
     const openAuthModal = inject('openAuthModal')
 
     const alarmStore = useAlarmStore()
-    const petStore = usePetStore()
 
     
     const isLoggedIn = computed(() => authStore.isAuthenticated)
@@ -515,15 +514,13 @@ export default {
       isLoggedIn,
       user,
       isAdmin,
-
-      representativePetImage,
       handleLogout,
-      openAuthModal
+      representativePetImage,
+      openAuthModal,
       alarmStore,
       showNotificationDrawer,
-      handleLogout,
       openNotificationDrawer,
-      navigateTo
+      navigateTo,
       isHomeActive,
       representativePet,
       drawer,
@@ -535,7 +532,7 @@ export default {
       goToAdmin,
       goToLogin,
       goToRegister,
-      handleLogout
+
     }
   }
 }

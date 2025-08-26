@@ -327,14 +327,11 @@
 </template>
 
 <script>
-import { ref, provide } from 'vue'
-
+import { ref, provide, onMounted, onUnmounted, watch } from 'vue'
 import { useUIStore } from './stores/ui'
-
 import { useAuthStore } from './stores/auth'
 import { userAPI } from './services/api'
 import { useSseStore } from './stores/sse'
-import { useAuthStore } from './stores/auth'
 import { useAlarmStore } from './stores/alarm'
 import HeaderComponent from './components/HeaderComponent.vue'
 // import FooterComponent from './components/FooterComponent.vue'
@@ -343,7 +340,6 @@ import GlobalLoadingOverlay from './components/ui/global/GlobalLoadingOverlay.vu
 import FloatingAuthModal from './components/auth/FloatingAuthModal.vue'
 import OtpVerificationModal from './components/auth/OtpVerificationModal.vue'
 import FinalRegistrationModal from './components/auth/FinalRegistrationModal.vue'
-import { onMounted, onUnmounted, watch } from 'vue'
 
 export default {
   name: 'App',
@@ -613,7 +609,6 @@ export default {
     provide('openDeletedAccountModal', openDeletedAccountModal)
     provide('openOAuthLinkModal', openOAuthLinkModal)
     const sseStore = useSseStore()
-    const authStore = useAuthStore()
     const alarmStore = useAlarmStore()
     
     // SSE 연결 설정

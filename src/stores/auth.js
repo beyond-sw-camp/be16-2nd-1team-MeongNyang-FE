@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed} from 'vue'
 import { userAPI } from '@/services/api'
 import { 
   getToken, 

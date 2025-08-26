@@ -166,8 +166,16 @@ export default {
   components: {
     AllPostsView
   },
+  setup() {
+    const authStore = useAuthStore()
+    const route = useRoute()
     
-// OAuth 모달 자동 열기
+    // App.vue에서 제공하는 함수 inject
+    const openAuthModal = inject('openAuthModal')
+    
+    const isLoggedIn = computed(() => authStore.isAuthenticated)
+    
+    // OAuth 모달 자동 열기
     onMounted(() => {
       // OAuth 추가정보 모달
       const { openOAuthExtra, provider, signupTicket, email } = route.query
