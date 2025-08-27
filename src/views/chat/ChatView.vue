@@ -1,36 +1,38 @@
 <template>
-  <v-container fluid class="chat-view-container pa-0">
-    <v-row no-gutters class="fill-height">
-      <!-- 채팅방 목록 컬럼 -->
-      <v-col 
-        :cols="$vuetify.display.mdAndUp ? 4 : 12" 
-        :class="[
-          'chat-list-column fill-height',
-          $vuetify.display.mdAndUp ? 'desktop-list' : 'mobile-list'
-        ]"
-      >
-        <chat-list 
-          :selected-chat-room-id="selectedChatRoomId"
-          @chat-selected="onChatSelected" 
-          @show-message="showMessage"
-        />
-      </v-col>
+  <div class="chat-view-wrapper">
+    <v-container fluid class="chat-view-container pa-0">
+      <v-row no-gutters class="fill-height">
+        <!-- 채팅방 목록 컬럼 -->
+        <v-col 
+          :cols="$vuetify.display.mdAndUp ? 4 : 12" 
+          :class="[
+            'chat-list-column fill-height',
+            $vuetify.display.mdAndUp ? 'desktop-list' : 'mobile-list'
+          ]"
+        >
+          <chat-list 
+            :selected-chat-room-id="selectedChatRoomId"
+            @chat-selected="onChatSelected" 
+            @show-message="showMessage"
+          />
+        </v-col>
+        
+        <!-- 채팅방 컬럼 -->
+        <v-col 
+          :cols="$vuetify.display.mdAndUp ? 8 : 12" 
+          :class="[
+            'chat-room-column fill-height',
+            $vuetify.display.mdAndUp ? 'desktop-room' : 'mobile-room'
+          ]"
+        >
+          <router-view :key="$route.fullPath"></router-view>
+        </v-col>
+      </v-row>
       
-      <!-- 채팅방 컬럼 -->
-      <v-col 
-        :cols="$vuetify.display.mdAndUp ? 8 : 12" 
-        :class="[
-          'chat-room-column fill-height',
-          $vuetify.display.mdAndUp ? 'desktop-room' : 'mobile-room'
-        ]"
-      >
-        <router-view :key="$route.fullPath"></router-view>
-      </v-col>
-    </v-row>
-    
-    <!-- 전역 스낵바 -->
-    <GlobalSnackbar />
-  </v-container>
+      <!-- 전역 스낵바 -->
+      <GlobalSnackbar />
+    </v-container>
+  </div>
 </template>
 
 <script>
@@ -116,23 +118,28 @@ export default {
 </script>
 
 <style scoped>
-.chat-view-container {
-  height: 100vh;
-  max-height: 100vh;
+.chat-view-wrapper {
+  margin: 24px;
+  border-radius: 16px;
+  height: calc(100vh - 48px);
   overflow: hidden;
+  box-shadow: var(--mm-shadow-xl);
+}
+
+.chat-view-container {
+  height: 100%;
   background: linear-gradient(135deg, #FFFDF6 0%, #FAF9F6 100%);
 }
 
 .fill-height {
-  height: 100vh;
-  max-height: 100vh;
+  height: 100%;
+  max-height: 100%;
 }
 
 /* 데스크톱 채팅방 목록 */
 .desktop-list {
   border-right: 1px solid var(--mm-border-light);
   background: var(--mm-surface);
-  box-shadow: var(--mm-shadow-md);
   transition: all var(--mm-transition-normal);
   position: relative;
   overflow: hidden;
@@ -192,9 +199,11 @@ export default {
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {
-  .chat-view-container {
+  .chat-view-wrapper {
     height: 100vh;
-    background: var(--mm-surface);
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
   }
   
   .fill-height {

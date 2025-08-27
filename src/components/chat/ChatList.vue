@@ -208,8 +208,8 @@ export default {
 <style scoped>
 /* 채팅 목록 컨테이너 */
 .chat-list-container {
-  height: 100vh;
-  max-height: 100vh;
+  height: 100%;
+  max-height: 100%;
   overflow: hidden;
   background: var(--mm-surface);
   display: flex;
@@ -274,8 +274,6 @@ export default {
   padding: 16px;
   overflow-y: auto;
   overflow-x: hidden;
-  height: calc(100vh - 72px);
-  max-height: calc(100vh - 72px);
   scroll-behavior: smooth;
   flex: 1;
 }
