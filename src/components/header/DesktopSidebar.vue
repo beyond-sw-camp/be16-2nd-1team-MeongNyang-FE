@@ -84,7 +84,7 @@
   }
 
   /* 반응형 디자인 : expand on hover로 동작하게 끔 */
-  @media (max-width: 1280px) {
+  /* @media (max-width: 1280px) {
     .modern-sidebar {
       width: 80px !important;
       transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -102,18 +102,18 @@
 
     .modern-sidebar:hover .sidebar-header {
       justify-content: flex-start;
-    }
+    } */
 
     /* Hide text and other elements when collapsed */
-    .modern-sidebar:not(:hover) :deep(.v-list-item-title),
+    /* .modern-sidebar:not(:hover) :deep(.v-list-item-title),
     .modern-sidebar:not(:hover) :deep(.brand-title),
     .modern-sidebar:not(:hover) :deep(.user-details),
     .modern-sidebar:not(:hover) :deep(.logout-btn) {
       display: none;
-    }
+    } */
 
     /* Adjust layout for collapsed state */
-    .modern-sidebar:not(:hover) :deep(.v-list-item__prepend) {
+    /* .modern-sidebar:not(:hover) :deep(.v-list-item__prepend) {
       display: flex;
       justify-content: center;
       width: 100%;
@@ -127,7 +127,7 @@
     .modern-sidebar:not(:hover) .sidebar-header {
       justify-content: center;
     }
-  }
+  } */
 
 
 
