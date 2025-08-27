@@ -246,7 +246,7 @@ export default {
 
 <style scoped>
 .notification-drawer:not(.is-open) {
-  display: none !important;
+  visibility: hidden;
 }
 
 .notification-drawer {
