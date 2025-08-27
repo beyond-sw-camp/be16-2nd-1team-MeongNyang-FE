@@ -29,14 +29,24 @@
                 >
                   <v-img :src="comment.profileImage || 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=32&h=32&fit=crop&crop=center'"></v-img>
                 </v-avatar>
-                <div class="comment-content">
-                  <div class="comment-header" @contextmenu.prevent="showContextMenu($event, 'comment', comment)">
+                <div 
+                  class="comment-content"
+                  :class="{ 'my-comment': isMyComment(comment) }"
+                  @contextmenu.prevent.stop="showContextMenu($event, 'comment', comment)"
+                >
+                  <div class="comment-header">
                     <span class="comment-username clickable" @click="goToUserDiary(comment.userId)">{{ comment.petName || comment.userName || comment.username }}</span>
                     <span class="comment-time">{{ formatDate(comment.createdAt) || comment.time }}</span>
                   </div>
                   <div class="comment-text">
-                    <template v-for="(part, index) in formatCommentText(comment.content || comment.text)" :key="index">
-                      <span v-if="part.isTag" class="tag-mention">{{ part.text }}</span>
+                    <template v-for="(part, index) in formatCommentText(comment.content || comment.text, comment.userId)" :key="index">
+                      <span 
+                        v-if="part.isTag" 
+                        class="tag-mention clickable"
+                        @click="goToUserDiary(part.userId)"
+                      >
+                        {{ part.text }}
+                      </span>
                       <span v-else>{{ part.text }}</span>
                     </template>
                   </div>
@@ -55,7 +65,11 @@
                       >
                         <v-img :src="reply.profileImage || reply.userImage || 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=24&h=24&fit=crop&crop=center'"></v-img>
                       </v-avatar>
-                      <div class="reply-content" @contextmenu.prevent="showContextMenu($event, 'reply', reply)">
+                      <div 
+                        class="reply-content" 
+                        :class="{ 'my-comment': isMyReply(reply) }"
+                        @contextmenu.prevent.stop="showContextMenu($event, 'reply', reply)"
+                      >
                         <div class="reply-header">
                           <span class="reply-username clickable" @click="goToUserDiary(reply.replyUserId || reply.userId)">
                             {{ reply.replyPetName || reply.replyUserName }}
@@ -63,8 +77,14 @@
                           <span class="reply-time">{{ formatDate(reply.createdAt) }}</span>
                         </div>
                         <div class="reply-text">
-                          <template v-for="(part, partIndex) in formatCommentText(reply.content)" :key="partIndex">
-                            <span v-if="part.isTag" class="tag-mention">{{ part.text }}</span>
+                          <template v-for="(part, partIndex) in formatCommentText(reply.content, reply.mentionUserId)" :key="partIndex">
+                            <span 
+                              v-if="part.isTag" 
+                              class="tag-mention clickable" 
+                              @click="goToUserDiary(part.userId)"
+                            >
+                              {{ part.text }}
+                            </span>
                             <span v-else>{{ part.text }}</span>
                           </template>
                         </div>
@@ -164,6 +184,7 @@
 
 <script>
 import { checkPetExist } from '@/utils/petValidation'
+import { useAuthStore } from '@/stores/auth'
 
 export default {
   name: 'CommentsModal',
@@ -182,6 +203,13 @@ export default {
     }
   },
   emits: ['update:modelValue', 'add-comment', 'add-reply', 'edit-comment', 'delete-comment', 'edit-reply', 'delete-reply', 'refresh-comments'],
+  setup() {
+    const authStore = useAuthStore()
+    
+    return {
+      authStore
+    }
+  },
   data() {
     return {
       newComment: '',
@@ -253,6 +281,9 @@ export default {
           // 수정 모드일 때
           if (this.editingItem) {
             console.log('=== 수정 모드 처리 ===')
+            console.log('editingItem:', this.editingItem)
+            console.log('editingType:', this.editingType)
+            
             if (this.editingType === 'comment') {
               console.log('댓글 수정:', this.editingItem)
               this.$emit('edit-comment', {
@@ -261,8 +292,11 @@ export default {
               })
             } else if (this.editingType === 'reply') {
               console.log('답글 수정:', this.editingItem)
+              // 답글의 경우 replyId 필드를 우선적으로 사용
+              const replyId = this.editingItem.replyId || this.editingItem.id
+              console.log('사용할 replyId:', replyId)
               this.$emit('edit-reply', {
-                replyId: this.editingItem.id,
+                replyId: replyId,
                 content: this.newComment
               })
             }
@@ -497,8 +531,17 @@ export default {
         return
       }
       
+      console.log('=== editReply 메서드 실행 ===')
+      console.log('받은 reply 객체:', reply)
+      console.log('reply.id:', reply?.id)
+      console.log('reply.replyId:', reply?.replyId)
+      
+      // 답글의 경우 replyId 필드를 우선적으로 사용
+      const replyId = reply.replyId || reply.id
+      console.log('사용할 replyId:', replyId)
+      
       this.$emit('edit-reply', {
-        replyId: reply.id,
+        replyId: replyId,
         content: reply.content
       })
     },
@@ -517,8 +560,12 @@ export default {
       console.log('reply.id:', reply?.id)
       console.log('reply.replyId:', reply?.replyId)
       
+      // 답글의 경우 replyId 필드를 우선적으로 사용
+      const replyId = reply.replyId || reply.id
+      console.log('사용할 replyId:', replyId)
+      
       this.$emit('delete-reply', {
-        replyId: reply.id
+        replyId: replyId
       })
     },
     
@@ -528,6 +575,25 @@ export default {
       console.log('=== 컨텍스트 메뉴 표시 ===')
       console.log('타입:', type)
       console.log('데이터:', data)
+      
+      // 현재 사용자 ID 가져오기
+      const currentUserId = this.authStore.user?.userId || this.authStore.user?.id
+      console.log('현재 사용자 ID:', currentUserId)
+      
+      // 댓글 작성자 ID 확인
+      let commentUserId
+      if (type === 'comment') {
+        commentUserId = data.userId
+      } else if (type === 'reply') {
+        commentUserId = data.replyUserId || data.userId
+      }
+      console.log('댓글 작성자 ID:', commentUserId)
+      
+      // 본인 댓글이 아니면 컨텍스트 메뉴 표시하지 않음
+      if (currentUserId !== commentUserId) {
+        console.log('본인 댓글이 아니므로 컨텍스트 메뉴를 표시하지 않습니다.')
+        return
+      }
       
       this.contextMenuType = type
       this.contextMenuData = data
@@ -567,9 +633,43 @@ export default {
         this.replyingTo = null // 답글 모드 초기화
       } else if (this.contextMenuType === 'reply') {
         console.log('답글 수정 모드로 전환')
+        console.log('=== 답글 수정 디버깅 시작 ===')
+        console.log('contextMenuData:', this.contextMenuData)
+        console.log('contextMenuData 타입:', typeof this.contextMenuData)
+        console.log('contextMenuData가 null인가?', this.contextMenuData === null)
+        console.log('contextMenuData가 undefined인가?', this.contextMenuData === undefined)
+        
         this.editingItem = this.contextMenuData
         this.editingType = 'reply'
-        this.newComment = this.contextMenuData.content
+        
+        // 답글 객체의 모든 필드 확인
+        console.log('=== 답글 객체 상세 분석 ===')
+        console.log('답글 객체 전체:', this.contextMenuData)
+        console.log('답글 객체 키 목록:', Object.keys(this.contextMenuData))
+        
+        // 각 필드별로 값 확인
+        const fieldsToCheck = ['content', 'text', 'replyContent', 'replyText', 'message', 'description', 'comment', 'reply']
+        fieldsToCheck.forEach(field => {
+          console.log(`${field}:`, this.contextMenuData[field], `(타입: ${typeof this.contextMenuData[field]})`)
+        })
+        
+        // 모든 가능한 필드에서 내용 찾기
+        const possibleContentFields = [
+          this.contextMenuData.content,
+          this.contextMenuData.text,
+          this.contextMenuData.replyContent,
+          this.contextMenuData.replyText,
+          this.contextMenuData.message,
+          this.contextMenuData.description,
+          this.contextMenuData.comment,
+          this.contextMenuData.reply
+        ]
+        
+        this.newComment = possibleContentFields.find(field => field && typeof field === 'string') || ''
+        console.log('최종 선택된 답글 내용:', this.newComment)
+        console.log('newComment 길이:', this.newComment.length)
+        console.log('=== 답글 수정 디버깅 완료 ===')
+        
         this.replyingTo = null // 답글 모드 초기화
       }
       
@@ -644,11 +744,13 @@ export default {
       }
     },
     
-    formatCommentText(text) {
-      // @태그를 감지하여 배열로 분리
+    formatCommentText(text, mentionUserId = null) {
+      if (!text) return []
+      
       const parts = []
+      // @username 패턴을 더 정확하게 매칭 (한글, 영문, 숫자, 언더스코어 포함)
+      const tagRegex = /@([a-zA-Z0-9가-힣_]+)/g
       let lastIndex = 0
-      const tagRegex = /(@\w+)/g
       let match
       
       while ((match = tagRegex.exec(text)) !== null) {
@@ -659,12 +761,15 @@ export default {
             isTag: false
           })
         }
-        // 태그
+        
+        // 태그 부분
         parts.push({
-          text: match[1],
-          isTag: true
+          text: match[0], // @username
+          isTag: true,
+          userId: mentionUserId || match[1] // mentionUserId가 있으면 사용, 없으면 username 사용
         })
-        lastIndex = match.index + match[1].length
+        
+        lastIndex = match.index + match[0].length
       }
       
       // 마지막 텍스트
@@ -690,6 +795,16 @@ export default {
     cancelEdit() {
       this.editingItem = null
       this.newComment = ''
+    },
+
+    isMyComment(comment) {
+      const currentUserId = this.authStore.user?.userId || this.authStore.user?.id
+      return currentUserId === comment.userId
+    },
+
+    isMyReply(reply) {
+      const currentUserId = this.authStore.user?.userId || this.authStore.user?.id
+      return currentUserId === reply.replyUserId || currentUserId === reply.userId
     }
   }
 }
@@ -801,8 +916,48 @@ export default {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 6px;
-  justify-content: flex-start;
+  margin-bottom: 4px;
+  font-size: 0.8rem;
+}
+
+.comment-content.my-comment {
+  position: relative;
+  cursor: context-menu;
+}
+
+.comment-content.my-comment::after {
+  content: '우클릭으로 수정/삭제';
+  position: absolute;
+  right: 0;
+  top: -20px;
+  font-size: 0.7rem;
+  color: #94A3B8;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.comment-content.my-comment:hover::after {
+  opacity: 1;
+}
+
+.reply-content.my-comment {
+  position: relative;
+}
+
+.reply-content.my-comment::after {
+  content: '우클릭으로 수정/삭제';
+  position: absolute;
+  right: 0;
+  top: -20px;
+  font-size: 0.7rem;
+  color: #94A3B8;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.reply-content.my-comment:hover::after {
+  opacity: 1;
 }
 
 .comment-username {
@@ -838,6 +993,16 @@ export default {
 .tag-mention {
   font-weight: 700 !important;
   color: #FF8B8B !important;
+}
+
+.tag-mention.clickable {
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.tag-mention.clickable:hover {
+  color: #e67e7e !important;
+  text-decoration: underline;
 }
 
 .reply-btn {

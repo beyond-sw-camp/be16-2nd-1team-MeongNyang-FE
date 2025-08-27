@@ -250,8 +250,8 @@ export default {
     // 팔로워 개수 가져오기
     const fetchFollowersCount = async () => {
       try {
-        console.log('🔍 팔로워 개수 조회 시작 - currentUserId:', currentUserId.value)
-        const response = await userAPI.getUserFollowersCount(currentUserId.value)
+        console.log('🔍 팔로워 개수 조회 시작')
+        const response = await userAPI.getFollowersCount()
         console.log('📥 팔로워 개수 API 응답:', response)
         console.log('📥 팔로워 개수 응답 데이터:', response.data)
         
@@ -272,8 +272,8 @@ export default {
     // 팔로잉 개수 가져오기
     const fetchFollowingsCount = async () => {
       try {
-        console.log('🔍 팔로잉 개수 조회 시작 - currentUserId:', currentUserId.value)
-        const response = await userAPI.getUserFollowingsCount(currentUserId.value)
+        console.log('🔍 팔로잉 개수 조회 시작')
+        const response = await userAPI.getFollowingsCount()
         console.log('📥 팔로잉 개수 API 응답:', response)
         console.log('📥 팔로잉 개수 응답 데이터:', response.data)
         

@@ -276,7 +276,7 @@ const fetchFollowers = async () => {
   try {
     console.log('🔍 팔로워 목록 조회 시작 - userId:', props.userId, '타입:', typeof props.userId)
     console.log('🔍 props.userId가 유효한지:', props.userId && props.userId > 0)
-    const response = await userAPI.getUserFollowers(props.userId)
+    const response = await userAPI.getFollowers(props.userId)
     console.log('📥 팔로워 API 응답:', response)
     
     if (response.data && response.data.data) {
@@ -316,7 +316,7 @@ const fetchFollowings = async () => {
   try {
     console.log('🔍 팔로잉 목록 조회 시작 - userId:', props.userId, '타입:', typeof props.userId)
     console.log('🔍 props.userId가 유효한지:', props.userId && props.userId > 0)
-    const response = await userAPI.getUserFollowings(props.userId)
+    const response = await userAPI.getFollowings(props.userId)
     console.log('📥 팔로잉 API 응답:', response)
     
     if (response.data && response.data.data) {
