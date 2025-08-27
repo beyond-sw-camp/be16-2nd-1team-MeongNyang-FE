@@ -3,8 +3,9 @@
     v-model="isOpen"
     location="left"
     temporary
+    absolute
     width="400"
-    class="notification-drawer"
+    :class="['notification-drawer', { 'is-open': isOpen }]"
   >
     <!-- 헤더 -->
     <div class="drawer-header">
@@ -244,6 +245,10 @@ export default {
 </script>
 
 <style scoped>
+.notification-drawer:not(.is-open) {
+  display: none !important;
+}
+
 .notification-drawer {
   background: #FFFFFF;
   border-right: 1px solid rgba(0, 0, 0, 0.08);
@@ -435,7 +440,6 @@ export default {
 }
 
 
-
 /* 다크 모드 지원 */
 @media (prefers-color-scheme: dark) {
   .notification-drawer {
@@ -475,4 +479,5 @@ export default {
     color: #6B7280 !important;
   }
 }
+
 </style>

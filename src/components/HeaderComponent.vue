@@ -224,11 +224,4 @@ export default {
 </script>
 
 <style scoped>
-/* 반응형 디자인 */
-@media (min-width: 961px) {
-  .mobile-header,
-  .mobile-drawer {
-    display: none;
-  }
-}
 </style>
