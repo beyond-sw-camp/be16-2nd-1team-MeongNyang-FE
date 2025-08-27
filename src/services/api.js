@@ -214,23 +214,23 @@ export const userAPI = {
   // 언팔로우
   unfollow: (userId) => apiClient.delete(`/users/follows/${userId}`),
 
-  // 내 팔로워 목록 조회
+  // 내 팔로워 목록 조회(채팅만 사용)
   getMyFollowers: (pageable) => apiClient.get('/users/follows/followers', { params: pageable }),
 
-  // 내 팔로워 목록 조회
+  // 내 팔로잉 목록 조회(채팅만 사용)
   getMyFollowings: (pageable) => apiClient.get('/users/follows/followings', { params: pageable }),
 
-  // 팔로잉 목록 조회
-  getFollowers: (pageable) => apiClient.get('/users/id/follows/followers', { params: pageable }),
+  // 특정 사용자의 팔로워 목록 조회
+  getFollowers: (userId, pageable = { page: 0, size: 20 }) => apiClient.get(`/users/${userId}/follows/followers`, { params: pageable }),
 
-  // 팔로잉 목록 조회
-  getFollowings: (pageable) => apiClient.get('/users/id/follows/followings', { params: pageable }),
+  // 특정 사용자의 팔로잉 목록 조회
+  getFollowings: (userId, pageable = { page: 0, size: 20 }) => apiClient.get(`/users/${userId}/follows/followings`, { params: pageable }),
 
-  // 팔로워 개수 조회 (프로필용)
-  getFollowersCount: () => apiClient.get('/users/id/follows/followers', { params: { page: 0, size: 1 } }),
+  // 내 팔로워 개수 조회
+  getFollowersCount: () => apiClient.get('/users/follows/followers', { params: { page: 0, size: 1 } }),
 
-  // 팔로잉 개수 조회 (프로필용)
-  getFollowingsCount: () => apiClient.get('/users/id/follows/followings', { params: { page: 0, size: 1 } }),
+  // 내 팔로잉 개수 조회
+  getFollowingsCount: () => apiClient.get('/users/follows/followings', { params: { page: 0, size: 1 } }),
 
   // 사용자 차단
   block: (userId) => apiClient.post(`/users/blocks/${userId}`),

@@ -1037,7 +1037,8 @@ export default {
                   if (!text) return []
                   
                   const parts = []
-                  const tagRegex = /@(\w+)/g
+                  // @username 패턴을 더 정확하게 매칭 (한글, 영문, 숫자, 언더스코어 포함)
+                  const tagRegex = /@([a-zA-Z0-9가-힣_]+)/g
                   let lastIndex = 0
                   let match
                   

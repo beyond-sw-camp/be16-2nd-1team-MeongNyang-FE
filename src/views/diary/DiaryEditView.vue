@@ -39,6 +39,7 @@
                 :src="currentMedia.url" 
                 class="main-media"
                 cover
+                @error="handleImageError(currentMediaIndex.value)"
               ></v-img>
               
               <!-- 비디오 미리보기 -->
@@ -48,6 +49,7 @@
                 class="main-media"
                 controls
                 preload="metadata"
+                @error="handleImageError(currentMediaIndex.value)"
               ></video>
               
               <!-- 삭제 버튼 -->
@@ -97,7 +99,7 @@
               :key="index"
               class="indicator"
               :class="{ active: index === currentMediaIndex }"
-              @click="currentMediaIndex = index"
+              @click="setCurrentMediaIndex(index)"
             ></div>
           </div>
         </div>
@@ -131,7 +133,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { validatePetAndRedirect } from '@/utils/petValidation'
 import { useRouter, useRoute } from 'vue-router'
 import { postAPI } from '@/services/api'
@@ -160,7 +162,9 @@ export default {
     // 현재 미디어
     const currentMedia = computed(() => {
       if (mediaList.value.length === 0) return null
-      return mediaList.value[currentMediaIndex.value]
+      // 인덱스가 범위를 벗어나면 안전한 인덱스 반환
+      const safeIndex = Math.min(currentMediaIndex.value, mediaList.value.length - 1)
+      return mediaList.value[safeIndex]
     })
     
     // 제출 가능 여부
@@ -168,7 +172,14 @@ export default {
       return content.value.trim() && mediaList.value.length > 0
     })
     
-               // 수정사항이 있는지 확인
+    // 미디어 인덱스 범위 감시
+    watch([currentMediaIndex, mediaList], ([index, list]) => {
+      if (list.length > 0 && index >= list.length) {
+        currentMediaIndex.value = Math.max(0, list.length - 1)
+      }
+    })
+    
+    // 수정사항이 있는지 확인
            const hasChanges = computed(() => {
              console.log('=== 수정사항 확인 시작 ===')
              console.log('기존 미디어 개수:', existingMedia.value.length)
@@ -263,27 +274,51 @@ export default {
           // 기존 미디어 설정
           if (post.mediaList && post.mediaList.length > 0) {
             console.log('기존 미디어 리스트:', post.mediaList)
-            existingMedia.value = post.mediaList.map((media, index) => {
-              // media가 문자열인지 객체인지 확인
+            
+            // 유효한 미디어만 필터링
+            const validMedia = []
+            
+            for (let i = 0; i < post.mediaList.length; i++) {
+              const media = post.mediaList[i]
               const mediaUrl = typeof media === 'string' ? media : media.url || media.fileName
-              const mediaType = mediaUrl.includes('.mp4') ? 'video' : 'image'
               
-              console.log(`기존 미디어 ${index}:`, {
-                original: media,
-                url: mediaUrl,
-                type: mediaType
-              })
-              
-              return {
-                url: mediaUrl,
-                type: mediaType,
-                isExisting: true,
-                index: index,
-                originalData: media // 원본 데이터 보존
+              // URL 유효성 확인
+              if (mediaUrl && mediaUrl.trim() !== '') {
+                try {
+                  // URL 형식 검증
+                  new URL(mediaUrl)
+                  
+                  const mediaType = mediaUrl.includes('.mp4') ? 'video' : 'image'
+                  
+                  console.log(`기존 미디어 ${i} (유효함):`, {
+                    original: media,
+                    url: mediaUrl,
+                    type: mediaType
+                  })
+                  
+                  validMedia.push({
+                    url: mediaUrl,
+                    type: mediaType,
+                    isExisting: true,
+                    index: validMedia.length, // 유효한 미디어의 새로운 인덱스
+                    originalData: media // 원본 데이터 보존
+                  })
+                } catch (error) {
+                  console.warn(`기존 미디어 ${i} (유효하지 않음):`, {
+                    original: media,
+                    url: mediaUrl,
+                    error: error.message
+                  })
+                }
+              } else {
+                console.warn(`기존 미디어 ${i} (빈 URL):`, media)
               }
-            })
+            }
+            
+            existingMedia.value = validMedia
             mediaList.value = [...existingMedia.value]
-            console.log('설정된 기존 미디어:', existingMedia.value)
+            console.log('설정된 유효한 기존 미디어:', existingMedia.value)
+            console.log('총 미디어 개수:', mediaList.value.length)
           }
           
           console.log('포스트 데이터 설정 완료')
@@ -305,13 +340,33 @@ export default {
     // URL을 File 객체로 변환
     const urlToFile = async (url, fileName) => {
       try {
+        console.log('URL을 File로 변환 시작:', url)
+        
         const response = await fetch(url)
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
         }
         
         const blob = await response.blob()
-        const file = new File([blob], fileName, { type: blob.type })
+        
+        // blob 크기 확인
+        if (blob.size === 0) {
+          throw new Error('빈 파일입니다')
+        }
+        
+        // blob 타입 확인
+        if (!blob.type || blob.type === 'application/octet-stream') {
+          console.warn('알 수 없는 파일 타입, 기본 이미지 타입으로 설정')
+        }
+        
+        const file = new File([blob], fileName, { type: blob.type || 'image/jpeg' })
+        
+        console.log('File 객체 생성 완료:', {
+          name: file.name,
+          type: file.type,
+          size: file.size
+        })
+        
         return file
       } catch (error) {
         console.error('URL을 File로 변환 실패:', error)
@@ -536,17 +591,30 @@ export default {
               console.log(`기존 파일 ${i} 처리 시작:`, media.url)
               const file = await urlToFile(media.url, extractFileNameFromUrl(media.url))
               console.log(`기존 파일 ${i} 변환 완료:`, file.name, file.type, file.size)
+              
+              // 파일 크기가 0이거나 너무 작으면 제외
+              if (file.size === 0 || file.size < 100) {
+                console.warn(`기존 파일 ${i} 크기가 너무 작음 (${file.size} bytes) - 제외`)
+                continue
+              }
+              
               allFiles.push(file)
             } catch (error) {
               console.error(`기존 파일 ${i} 변환 실패:`, error)
-              // 변환 실패 시 빈 파일로 대체
-              const fileName = extractFileNameFromUrl(media.url)
-              const emptyFile = new File([''], fileName, { type: 'image/jpeg' })
-              allFiles.push(emptyFile)
+              console.warn(`기존 파일 ${i} 제외됨:`, media.url)
+              // 변환 실패 시 파일 제외 (빈 파일로 대체하지 않음)
+              continue
             }
           } else {
             // 새 파일: 실제 파일 사용
             console.log(`새 파일 ${i} 처리:`, media.file.name, media.file.type, media.file.size)
+            
+            // 새 파일도 크기 확인
+            if (media.file.size === 0 || media.file.size < 100) {
+              console.warn(`새 파일 ${i} 크기가 너무 작음 (${media.file.size} bytes) - 제외`)
+              continue
+            }
+            
             allFiles.push(media.file)
           }
         }
@@ -557,7 +625,11 @@ export default {
         // 모든 파일을 FormData에 추가
         allFiles.forEach((file, index) => {
           console.log(`파일 ${index} 추가:`, file.name, file.type, file.size)
-          formData.append('files', file)
+          if (file.size > 0) {
+            formData.append('files', file)
+          } else {
+            console.warn(`파일 ${index} 크기가 0이므로 제외:`, file.name)
+          }
         })
         
         // 기존 미디어 URL들을 JSON에 포함 (삭제된 파일은 제외)
@@ -582,8 +654,8 @@ export default {
         
         // 파일이 없으면 빈 파일 추가 (백엔드 요구사항)
         if (allFiles.length === 0) {
-          const emptyFile = new File([''], 'empty.txt', { type: 'text/plain' })
-          formData.append('files', emptyFile)
+          console.warn('업로드할 파일이 없습니다. 빈 파일을 추가하지 않습니다.')
+          // 빈 파일 추가하지 않음 - 백엔드에서 처리하도록 함
         }
         
         // 해시태그 추출 및 로깅 (해시태그 뒤 글자도 포함)
@@ -729,6 +801,36 @@ export default {
       console.log('=== 드래그 앤 드롭 처리 완료 ===')
     }
     
+    // 이미지 로드 실패 처리
+    const handleImageError = (index) => {
+      console.warn(`이미지 로드 실패 (인덱스 ${index}):`, mediaList.value[index])
+      
+      // 해당 미디어 제거
+      if (index < mediaList.value.length) {
+        const removedMedia = mediaList.value[index]
+        mediaList.value.splice(index, 1)
+        
+        // 현재 인덱스 조정
+        if (currentMediaIndex.value >= mediaList.value.length) {
+          currentMediaIndex.value = Math.max(0, mediaList.value.length - 1)
+        }
+        
+        console.log('이미지 로드 실패로 미디어 제거됨. 현재 미디어 개수:', mediaList.value.length)
+        
+        // 사용자에게 알림 (선택적)
+        if (removedMedia && removedMedia.isExisting) {
+          console.log('기존 미디어 로드 실패로 제거됨:', removedMedia.url)
+        }
+      }
+    }
+
+    // 미디어 인디케이터 클릭 시 현재 미디어 인덱스 변경
+    const setCurrentMediaIndex = (index) => {
+      if (index >= 0 && index < mediaList.value.length) {
+        currentMediaIndex.value = index;
+      }
+    };
+    
     onMounted(async () => {
       // 펫 등록 여부 확인
       const hasPet = await validatePetAndRedirect($router)
@@ -767,7 +869,9 @@ export default {
       handleDragOver,
       handleDrop,
       handleContentInput,
-      handleSubmit
+      handleSubmit,
+      handleImageError,
+      setCurrentMediaIndex
     }
   }
 }
