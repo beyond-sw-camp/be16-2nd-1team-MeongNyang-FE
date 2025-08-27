@@ -8,17 +8,14 @@
         density="compact"
       >
         <template v-slot:prepend>
-          <div v-if="item.path === '/notifications'" class="notification-icon-wrapper">
-            <v-icon size="20" :color="showNotificationDrawer ? '#E87D7D' : '#6c757d'">
+          <div class="icon-wrapper">
+            <v-icon size="20" :color="getIconColor(item.path)">
               {{ item.icon }}
             </v-icon>
-            <span v-if="alarmStore.unreadCount > 0" class="notification-badge">
+            <span v-if="item.path === '/notifications' && alarmStore.unreadCount > 0" class="notification-badge">
               {{ alarmStore.unreadCount > 99 ? '99+' : alarmStore.unreadCount }}
             </span>
           </div>
-          <v-icon v-else size="20" :color="getIconColor(item.path)">
-            {{ item.icon }}
-          </v-icon>
         </template>
         <v-list-item-title>{{ item.title }}</v-list-item-title>
       </v-list-item>
@@ -176,7 +173,7 @@ export default {
   background: rgba(99, 102, 241, 0.08);
 }
 
-.notification-icon-wrapper {
+.icon-wrapper {
   position: relative;
   display: inline-block;
 }
