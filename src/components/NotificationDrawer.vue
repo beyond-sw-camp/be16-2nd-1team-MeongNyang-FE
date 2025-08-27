@@ -123,6 +123,12 @@ export default {
     const alarmStore = useAlarmStore()
     const { showSnackbar } = useSnackbar()
 
+    // 공통 스낵바 헬퍼
+    const notifySuccess = (title, message) =>
+      showSnackbar({ title, message, type: 'success' })
+    const notifyError = (title, message) =>
+      showSnackbar({ title, message, type: 'error' })
+
     const isOpen = computed({
       get: () => props.modelValue,
       set: (value) => emit('update:modelValue', value)
@@ -139,11 +145,7 @@ export default {
       try {
         await alarmStore.fetchAlarms()
       } catch (error) {
-        showSnackbar({
-          title: '알림 로드 실패',
-          message: '알림을 불러오는데 실패했습니다.',
-          type: 'error'
-        })
+        notifyError('알림 로드 실패', '알림을 불러오는데 실패했습니다.')
       }
     }
 
@@ -185,79 +187,43 @@ export default {
           }
         }
       } catch (error) {
-        showSnackbar({
-          title: '알림 처리 실패',
-          message: '알림을 처리하는데 실패했습니다.',
-          type: 'error'
-        })
+        notifyError('알림 처리 실패', '알림을 처리하는데 실패했습니다.')
       }
     }
 
     const markAllAsRead = async () => {
       try {
         await alarmStore.markAllAlarmsAsRead()
-        showSnackbar({
-          title: '알림 처리 완료',
-          message: '모든 알림을 읽음 처리했습니다.',
-          type: 'success'
-        })
+        notifySuccess('알림 처리 완료', '모든 알림을 읽음 처리했습니다.')
       } catch (error) {
-        showSnackbar({
-          title: '알림 처리 실패',
-          message: '알림을 처리하는데 실패했습니다.',
-          type: 'error'
-        })
+        notifyError('알림 처리 실패', '알림을 처리하는데 실패했습니다.')
       }
     }
 
     const deleteAllAlarms = async () => {
       try {
         await alarmStore.deleteAllAlarms()
-        showSnackbar({
-          title: '알림 삭제 완료',
-          message: '모든 알림을 삭제했습니다.',
-          type: 'success'
-        })
+        notifySuccess('알림 삭제 완료', '모든 알림을 삭제했습니다.')
       } catch (error) {
-        showSnackbar({
-          title: '알림 삭제 실패',
-          message: '알림을 삭제하는데 실패했습니다.',
-          type: 'error'
-        })
+        notifyError('알림 삭제 실패', '알림을 삭제하는데 실패했습니다.')
       }
     }
 
     const deleteAlarm = async (alarmId) => {
       try {
         await alarmStore.deleteAlarm(alarmId)
-        showSnackbar({
-          title: '알림 삭제 완료',
-          message: '알림을 삭제했습니다.',
-          type: 'success'
-        })
+        notifySuccess('알림 삭제 완료', '알림을 삭제했습니다.')
       } catch (error) {
-        showSnackbar({
-          title: '알림 삭제 실패',
-          message: '알림을 삭제하는데 실패했습니다.',
-          type: 'error'
-        })
+        notifyError('알림 삭제 실패', '알림을 삭제하는데 실패했습니다.')
       }
     }
 
     const markAlarmAsRead = async (alarmId) => {
       try {
         await alarmStore.markAlarmAsRead(alarmId)
-        showSnackbar({
-          title: '알림 처리 완료',
-          message: '알림을 읽음 처리했습니다.',
-          type: 'success'
-        })
+        notifySuccess('알림 처리 완료', '알림을 읽음 처리했습니다.')
       } catch (error) {
-        showSnackbar({
-          title: '알림 처리 실패',
-          message: '알림을 처리하는데 실패했습니다.',
-          type: 'error'
-        })
+        notifyError('알림 처리 실패', '알림을 처리하는데 실패했습니다.')
       }
     }
 
