@@ -434,37 +434,7 @@ export default {
   background-clip: content-box;
 }
 
-/* 반응형 */
-@media (max-width: 600px) {
-  .notification-drawer {
-    width: 100% !important;
-  }
-  
-  .drawer-header {
-    padding: 20px 16px;
-  }
-  
-  .drawer-title {
-    font-size: 1.2rem;
-  }
-  
-  .notification-list {
-    padding: 16px;
-  }
-  
-  .drawer-actions {
-    padding: 16px;
-  }
-  
-  .action-buttons {
-    flex-direction: column;
-  }
-  
-  .simple-text-btn {
-    text-align: center;
-    justify-content: center;
-  }
-}
+
 
 /* 다크 모드 지원 */
 @media (prefers-color-scheme: dark) {
