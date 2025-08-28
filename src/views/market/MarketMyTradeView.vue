@@ -377,13 +377,32 @@ export default {
             console.log('가격 높은순 정렬 적용 (클라이언트 사이드)')
             fetchedPosts.sort((a, b) => (b.price || 0) - (a.price || 0))
             console.log('Sorted by price (high to low):', fetchedPosts.map(p => ({ id: p.id, price: p.price })))
+          } else if (this.selectedSort === 'popular') {
+            console.log('인기순 정렬 적용 (클라이언트 사이드)')
+            fetchedPosts.sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0))
+            console.log('Sorted by popularity:', fetchedPosts.map(p => ({ id: p.id, likeCount: p.likeCount })))
           } else if (this.selectedSort === 'latest') {
             console.log('최신순 정렬 적용 (클라이언트 사이드)')
             fetchedPosts.sort((a, b) => (b.id || 0) - (a.id || 0))
             console.log('Sorted by latest:', fetchedPosts.map(p => ({ id: p.id })))
           }
         } else {
-          // 개별 거래내역(구매/판매)인 경우 거리순만 클라이언트 사이드 처리
+          // 개별 거래내역(구매/판매)인 경우 클라이언트 사이드 정렬 처리
+          if (this.selectedSort === 'price-low') {
+            console.log('가격 낮은순 정렬 적용 (클라이언트 사이드)')
+            fetchedPosts.sort((a, b) => (a.price || 0) - (b.price || 0))
+          } else if (this.selectedSort === 'price-high') {
+            console.log('가격 높은순 정렬 적용 (클라이언트 사이드)')
+            fetchedPosts.sort((a, b) => (b.price || 0) - (a.price || 0))
+          } else if (this.selectedSort === 'popular') {
+            console.log('인기순 정렬 적용 (클라이언트 사이드)')
+            fetchedPosts.sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0))
+          } else if (this.selectedSort === 'latest') {
+            console.log('최신순 정렬 적용 (클라이언트 사이드)')
+            fetchedPosts.sort((a, b) => (b.id || 0) - (a.id || 0))
+          }
+          
+          // 거리순 정렬은 distance가 선택되었을 때만 실행
           if (this.selectedSort === 'distance' && this.userLocation) {
             fetchedPosts.forEach(post => {
               if (post.latitude && post.longitude) {

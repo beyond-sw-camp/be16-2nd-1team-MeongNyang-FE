@@ -357,7 +357,8 @@ export default {
          if (this.selectedSort === 'popular') {
            console.log('인기순 정렬 적용 (클라이언트 사이드)')
            fetchedPosts.sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0))
-           console.log('Sorted by likeCount:', fetchedPosts.map(p => ({ id: p.id, likeCount: p.likeCount })))
+           console.log('Sorted by likeCount:', fetchedPosts.map(p => ({ id: p.id, 
+            likeCount: p.likeCount })))
          }
          
          // 거리순 정렬 처리
@@ -370,6 +371,7 @@ export default {
                if (post.latitude && post.longitude) {
                  post.distance = this.calculateDistance(
                    this.userLocation.lat,
+                   
                    this.userLocation.lng,
                    post.latitude,
                    post.longitude
@@ -1393,3 +1395,4 @@ export default {
   }
 }
 </style>
+
