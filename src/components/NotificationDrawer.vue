@@ -3,7 +3,7 @@
     v-model="isOpen"
     location="left"
     temporary
-    absolute
+    fixed
     width="400"
     :class="['notification-drawer', { 'is-open': isOpen }]"
   >

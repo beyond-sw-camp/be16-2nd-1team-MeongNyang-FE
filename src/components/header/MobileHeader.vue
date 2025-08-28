@@ -8,16 +8,16 @@
     
     <v-spacer></v-spacer>
 
-    <div class="brand-container">
+    <router-link to="/" class="brand-container">
       <img src="@/assets/logo.png" alt="멍냥냥 로고" class="header-logo" />
       <span class="service-name">멍냥냥냥</span>
-    </div>
+    </router-link>
 
     <v-spacer></v-spacer>
 
     <!-- 모바일 사용자 아바타 또는 플레이스홀더 -->
     <div v-if="isLoggedIn" class="mobile-user-section">
-      <v-avatar size="32" class="mobile-avatar" @click="$emit('avatar-click')">
+      <v-avatar size="32" class="mobile-avatar" >
         <v-img v-if="representativePet?.url" :src="representativePet.url" :alt="representativePet.name"></v-img>
         <v-img v-else-if="user?.profileImage" :src="user.profileImage" alt="사용자 프로필"></v-img>
         <v-icon v-else>mdi-account</v-icon>
@@ -76,6 +76,8 @@ export default {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
+  text-decoration: none;
+  color: inherit;
 }
 
 .header-logo {
@@ -100,7 +102,6 @@ export default {
 }
 
 .mobile-avatar {
-  cursor: pointer;
   border: 2px solid #FF8B8B;
 }
 </style>
