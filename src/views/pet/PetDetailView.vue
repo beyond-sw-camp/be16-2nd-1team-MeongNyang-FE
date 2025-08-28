@@ -200,8 +200,12 @@
                 <v-icon :size="20" color="#ec4899">mdi-paw</v-icon>
                 종류 *
               </div>
-              <v-text-field
-                v-model="editData.species"
+              <v-autocomplete
+                v-model="editData.speciesId"
+                :items="speciesOptions"
+                item-title="species"
+                item-value="speciesId"
+                placeholder="종류를 검색하세요"
                 variant="outlined"
                 density="comfortable"
                 hide-details="auto"
@@ -215,11 +219,18 @@
                 <v-icon :size="20" color="#ec4899">mdi-gender-male</v-icon>
                 성별 *
               </div>
-              <v-chip-group v-model="editData.gender" column mandatory>
-                <v-chip value="FEMALE" prepend-icon="mdi-gender-female">암컷</v-chip>
-                <v-chip value="MALE" prepend-icon="mdi-gender-male">수컷</v-chip>
-                <v-chip value="NEUTRALITY" prepend-icon="mdi-help-circle-outline">중성</v-chip>
-              </v-chip-group>
+              <v-select
+                v-model="editData.gender"
+                :items="genderOptions"
+                item-title="title"
+                item-value="value"
+                placeholder="성별을 선택하세요"
+                variant="outlined"
+                density="comfortable"
+                hide-details="auto"
+                class="edit-input"
+                required
+              />
             </div>
             
             <div class="info-item">
@@ -426,6 +437,7 @@ const snackbarIcon = ref('mdi-check-circle')
 // 수정 모드 데이터
 const editData = ref({
   name: '',
+  speciesId: null,
   species: '',
   gender: '',
   age: null,
@@ -436,6 +448,27 @@ const editData = ref({
   imageFile: null
 })
 const imageInput = ref(null)
+
+// 종류 옵션
+const speciesOptions = computed(() => {
+  const species = petStore.getSpecies
+  
+  if (species && species.length > 0) {
+    // 백엔드 데이터 구조에 맞게 매핑
+    return species.map(s => ({
+      species: s.species,
+      speciesId: s.id || s.speciesId || null
+    }))
+  }
+  return []
+})
+
+// 성별 옵션
+const genderOptions = [
+  { value: 'MALE', title: '수컷' },
+  { value: 'FEMALE', title: '암컷' },
+  { value: 'NEUTRALITY', title: '중성' }
+]
 
 // computed properties
 const isRepresentative = computed(() => {
@@ -624,6 +657,17 @@ const enterEditMode = () => {
     imageFile: null
   })
   
+  // 종류 ID 찾기 (speciesOptions에서 현재 펫의 종류와 일치하는 것 찾기)
+  if (speciesOptions.value.length > 0) {
+    const matchingSpecies = speciesOptions.value.find(s => s.species === pet.value.species)
+    if (matchingSpecies) {
+      editData.value.speciesId = matchingSpecies.speciesId
+      console.log('✅ 종류 ID 찾음:', matchingSpecies.speciesId, '종류:', matchingSpecies.species)
+    } else {
+      console.log('⚠️ 종류 ID를 찾을 수 없음:', pet.value.species)
+    }
+  }
+  
   // birthday 형식 정규화 (YYYY-MM-DD로 변환)
   if (editData.value.birthday && typeof editData.value.birthday === 'string') {
     if (editData.value.birthday.includes('.')) {
@@ -756,6 +800,9 @@ onMounted(async () => {
     console.log('펫 목록이 비어있음, 펫 목록 로드 중...')
     await petStore.fetchPets()
   }
+  
+  // 종류 데이터 로드
+  await petStore.fetchSpecies()
   
   await loadPet()
   
