@@ -255,14 +255,22 @@
                   </div>
                   
                   <div class="map-controls">
-                                         <button
-                       type="button"
-                       @click="resetMapLocation"
-                       class="map-btn secondary-btn"
-                     >
-                       <v-icon icon="mdi-refresh" size="18" />
-                       위치 초기화
-                     </button>
+                    <button
+                      type="button"
+                      @click="moveToCurrentLocation"
+                      class="map-btn primary-btn"
+                    >
+                      <v-icon icon="mdi-crosshairs-gps" size="18" />
+                      내 위치로
+                    </button>
+                    <button
+                      type="button"
+                      @click="resetMapLocation"
+                      class="map-btn secondary-btn"
+                    >
+                      <v-icon icon="mdi-refresh" size="18" />
+                      위치 초기화
+                    </button>
                   </div>
                 </div>
                 
@@ -452,7 +460,20 @@ export default {
           console.log('설정 후 formDescription.value:', formDescription.value)
           console.log('=== 폼 데이터 설정 완료 ===')
           
-                     // 이미지가 있으면 설정
+          // 위치 정보 설정
+          if (postData.latitude && postData.longitude) {
+            selectedLocation.value = {
+              lat: postData.latitude,
+              lng: postData.longitude,
+              address: postData.address || '주소 정보 없음'
+            }
+            console.log('기존 위치 정보 설정:', selectedLocation.value)
+          } else {
+            selectedLocation.value = null
+            console.log('위치 정보 없음 - 초기화')
+          }
+          
+          // 이미지가 있으면 설정
            if (postData.productImageList && postData.productImageList.length > 0) {
              try {
                // 기존 이미지 URL 정리
@@ -968,8 +989,19 @@ export default {
         const mapContainer = document.getElementById('location-map')
         if (!mapContainer) return
 
+        // 기존 DB 데이터 또는 기본 위치로 지도 초기화
+        let initialLat = 37.5665  // 기본값: 서울시청
+        let initialLng = 126.9780
+
+        // 기존 거래글의 위치 정보가 있으면 사용
+        if (selectedLocation.value && selectedLocation.value.lat && selectedLocation.value.lng) {
+          initialLat = selectedLocation.value.lat
+          initialLng = selectedLocation.value.lng
+          console.log('기존 위치 정보로 지도 초기화:', { lat: initialLat, lng: initialLng })
+        }
+
         const mapOption = {
-          center: new window.kakao.maps.LatLng(37.5665, 126.9780), // 서울시청
+          center: new window.kakao.maps.LatLng(initialLat, initialLng),
           level: 3
         }
 
@@ -997,7 +1029,12 @@ export default {
           updateLocationFromCoordinates(latlng.getLat(), latlng.getLng())
         })
 
-        console.log('Map initialized successfully')
+        // 기존 위치 정보가 있으면 설정, 없으면 초기화
+        if (selectedLocation.value && selectedLocation.value.lat && selectedLocation.value.lng) {
+          updateLocationFromCoordinates(initialLat, initialLng)
+        }
+        
+        console.log('Map initialized successfully with existing location')
         mapLoaded.value = true
       } catch (error) {
         console.error('Error initializing map:', error)
@@ -1020,6 +1057,63 @@ export default {
           }
           validateForm()
         }
+      })
+    }
+
+        // 사용자 현재 위치 가져오기
+    const getUserLocation = () => {
+      return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+          reject(new Error('Geolocation is not supported by this browser.'))
+          return
+        }
+
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const location = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            }
+            console.log('사용자 위치 획득:', location)
+            resolve(location)
+          },
+          (error) => {
+            console.error('위치 정보 획득 실패:', error)
+            let errorMessage = '위치 정보를 가져올 수 없습니다.'
+            switch(error.code) {
+              case error.PERMISSION_DENIED:
+                errorMessage = '위치 권한이 거부되었습니다.'
+                break
+              case error.POSITION_UNAVAILABLE:
+                errorMessage = '위치 정보를 사용할 수 없습니다.'
+                break
+              case error.TIMEOUT:
+                errorMessage = '위치 정보 요청 시간이 초과되었습니다.'
+                break
+            }
+            reject(new Error(errorMessage))
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 300000 // 5분
+          }
+        )
+      })
+    }
+
+    // GPS 버튼 클릭 시 현재 위치로 이동
+    const moveToCurrentLocation = () => {
+      getUserLocation().then(userLocation => {
+        if (map.value && marker.value) {
+          const newCenter = new window.kakao.maps.LatLng(userLocation.lat, userLocation.lng)
+          map.value.setCenter(newCenter)
+          marker.value.setPosition(newCenter)
+          updateLocationFromCoordinates(userLocation.lat, userLocation.lng)
+          console.log('현재 위치로 이동했습니다:', userLocation)
+        }
+      }).catch(error => {
+        alert('현재 위치를 가져올 수 없습니다: ' + error.message)
       })
     }
 
@@ -1265,7 +1359,8 @@ export default {
       goBackToDetail,
       initMap,
       updateLocationFromCoordinates,
-      resetMapLocation
+      resetMapLocation,
+      moveToCurrentLocation
     }
   }
 }
@@ -1839,6 +1934,23 @@ export default {
   justify-content: center;
   gap: 8px;
   transition: all 0.2s ease;
+}
+
+.primary-btn {
+  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
+  color: white;
+  box-shadow: 0 4px 15px rgba(232, 125, 125, 0.3);
+}
+
+.primary-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(232, 125, 125, 0.4);
+}
+
+.primary-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .secondary-btn {

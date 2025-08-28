@@ -76,10 +76,10 @@
               <v-icon icon="mdi-heart" size="18" />
               찜목록
             </button>
-            <button class="create-post-btn" @click="navigateToCreate">
-              <v-icon icon="mdi-plus" size="18" />
+          <button class="create-post-btn" @click="navigateToCreate">
+            <v-icon icon="mdi-plus" size="18" />
               판매하기
-            </button>
+          </button>
           </div>
         </div>
 
@@ -130,16 +130,16 @@
             </div>
             
             <!-- 찜하기 버튼 -->
-            <button 
-              class="like-btn"
-              @click.stop="toggleLike(post.id)"
-              :class="{ liked: post.isLiked }"
-            >
-              <v-icon 
-                :icon="post.isLiked ? 'mdi-heart' : 'mdi-heart-outline'" 
-                size="20"
-              />
-            </button>
+              <button 
+                class="like-btn"
+                @click.stop="toggleLike(post.id)"
+                :class="{ liked: post.isLiked }"
+              >
+                <v-icon 
+                  :icon="post.isLiked ? 'mdi-heart' : 'mdi-heart-outline'" 
+                  size="20"
+                />
+              </button>
             
             <!-- 거리 정보 표시 -->
             <div v-if="selectedSort === 'distance' && post.distance !== null" class="distance-info">
