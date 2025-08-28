@@ -9,7 +9,7 @@
             <p class="page-subtitle">우리 가족을 관리하고 추억을 기록하세요</p>
           </div>
           <v-btn
-            color="primary"
+            color="#E87D7D"
             variant="flat"
             prepend-icon="mdi-plus"
             @click="showAddForm = true"
@@ -58,24 +58,155 @@
       </div>
     </div>
 
-
-
-    <!-- 반려동물 목록 -->
+    <!-- 새로운 레이아웃: 좌측 대표동물 + 우측 다른 동물들 -->
     <div class="pets-section">
       <div class="container">
-        <div v-if="filteredPets.length > 0" class="pets-grid">
-          <div
-            v-for="pet in filteredPets"
-            :key="`pet-${pet.id}-${pet.url || 'no-image'}`"
-            class="pet-card-wrapper"
-          >
-            <PetCard
-              :pet="pet"
-              :representative-pet="representativePet"
-              @set-representative="setAsRepresentative"
-              @view-details="viewPet"
-              @delete="confirmDelete"
-            />
+        <div v-if="pets.length > 0" class="pets-layout">
+          <!-- 좌측: 대표동물 (전체 정보) -->
+          <div class="representative-pet-section">
+            <div v-if="representativePet" class="representative-pet-card">
+              <div class="representative-header">
+                <h3 class="representative-title">대표 반려동물</h3>
+                <div class="representative-badge">
+                  <v-icon color="amber" size="20">mdi-star</v-icon>
+                  <span>대표</span>
+                </div>
+              </div>
+              
+              <!-- 대표동물 전체 정보 -->
+              <div class="representative-content">
+                <div class="pet-image-large">
+                  <v-img
+                    v-if="representativePet.url && representativePet.url.trim() !== ''"
+                    :src="representativePet.url"
+                    :alt="representativePet.name"
+                    class="large-pet-image"
+                    aspect-ratio="1"
+                    cover
+                  >
+                    <template v-slot:error>
+                      <div class="large-image-placeholder">
+                        <v-icon :size="80" :color="getSpeciesIconColor(representativePet.petOrder)" :icon="getSpeciesIcon(representativePet.petOrder)" />
+                      </div>
+                    </template>
+                  </v-img>
+                  <div v-else class="large-image-placeholder">
+                    <v-icon :size="80" :color="getSpeciesIconColor(representativePet.petOrder)" :icon="getSpeciesIcon(representativePet.petOrder)" />
+                  </div>
+                </div>
+                
+                <div class="pet-details-large">
+                  <h2 class="pet-name-large">{{ representativePet.name }}</h2>
+                  
+                  <!-- 기본 정보 태그들 -->
+                  <div class="pet-tags-large">
+                    <v-chip 
+                      size="medium" 
+                      variant="tonal" 
+                      :color="getSpeciesIconColor(representativePet.petOrder)"
+                      :prepend-icon="getSpeciesIcon(representativePet.petOrder)"
+                    >
+                      {{ representativePet.species || '알 수 없음' }}
+                    </v-chip>
+                    
+                    <v-chip 
+                      size="medium" 
+                      variant="tonal" 
+                      :color="getGenderColor(representativePet.gender)"
+                      :prepend-icon="getGenderIcon(representativePet.gender)"
+                    >
+                      {{ getGenderLabel(representativePet.gender) }}
+                    </v-chip>
+                    
+                    <v-chip 
+                      size="medium" 
+                      variant="tonal" 
+                      color="orange"
+                      prepend-icon="mdi-cake-variant"
+                    >
+                      {{ representativePet.age }}살
+                    </v-chip>
+                  </div>
+                  
+                  <!-- 추가 정보 -->
+                  <div class="additional-info-large">
+                    <div class="info-row">
+                      <v-icon size="20" color="grey-darken-1">mdi-weight</v-icon>
+                      <span>{{ representativePet.weight || '알 수 없음' }}kg</span>
+                    </div>
+                    <div class="info-row">
+                      <v-icon size="20" color="grey-darken-1">mdi-calendar</v-icon>
+                      <span>{{ formatBirthday(representativePet.birthday) }}</span>
+                    </div>
+                  </div>
+                  
+                  <!-- 소개글 -->
+                  <div v-if="representativePet.introduce" class="introduction-large">
+                    <h4 class="introduction-title">소개글</h4>
+                    <p class="introduction-text">{{ representativePet.introduce }}</p>
+                  </div>
+                  
+                  <!-- 액션 버튼들 -->
+                  <div class="action-buttons-large">
+                    <v-btn
+                      icon="mdi-pencil"
+                      variant="text"
+                      size="large"
+                      color="grey-darken-1"
+                      @click="$emit('view-details', representativePet)"
+                      density="comfortable"
+                    />
+                    <v-btn
+                      icon="mdi-delete"
+                      variant="text"
+                      size="large"
+                      color="error"
+                      @click="$emit('delete', representativePet)"
+                      density="comfortable"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 대표동물이 없을 때 -->
+            <div v-else class="no-representative">
+              <div class="no-representative-icon">
+                <v-icon size="80" color="grey-lighten-1">mdi-star-outline</v-icon>
+              </div>
+              <h3 class="no-representative-title">대표 반려동물을 설정해보세요</h3>
+              <p class="no-representative-description">
+                가장 소중한 가족 구성원을 대표로 설정하면 좌측에 전체 정보가 표시됩니다
+              </p>
+            </div>
+          </div>
+          
+          <!-- 우측: 다른 동물들 (간단한 PetCard) -->
+          <div class="other-pets-section">
+            <h3 class="other-pets-title">등록된 다른 동물들</h3>
+            <div class="other-pets-grid">
+              <div
+                v-for="pet in otherPets"
+                :key="`pet-${pet.id}-${pet.url || 'no-image'}`"
+                class="pet-card-wrapper"
+              >
+                <PetCard
+                  :pet="pet"
+                  :representative-pet="representativePet"
+                  @set-representative="setAsRepresentative"
+                  @view-details="viewPet"
+                  @delete="confirmDelete"
+                />
+              </div>
+            </div>
+            
+            <!-- 다른 동물이 없을 때 -->
+            <div v-if="otherPets.length === 0" class="no-other-pets">
+              <div class="no-other-pets-icon">
+                <v-icon size="60" color="grey-lighten-1">mdi-paw-outline</v-icon>
+              </div>
+              <p class="no-other-pets-text">등록된 다른 반려동물이 없습니다</p>
+            </div>
           </div>
         </div>
         
@@ -89,7 +220,7 @@
             소중한 가족 구성원을 등록하고 추억을 기록해보세요
           </p>
           <v-btn
-            color="primary"
+            color="#E87D7D"
             variant="flat"
             prepend-icon="mdi-plus"
             @click="showAddForm = true"
@@ -103,27 +234,27 @@
     </div>
 
     <!-- 나머지 모달들은 기존과 동일 -->
-            <!-- 펫 추가/수정 폼 모달 -->
-        <v-dialog
-          v-model="showAddForm"
-          max-width="800"
-          class="pet-form-dialog"
-          @click:outside="closeForm"
-        >
-          <v-card class="pet-form-card" rounded="xl">
-            <v-card-title class="form-header">
-              <div class="form-title">
-                <span class="text-h4">새 반려동물 등록</span>
-              </div>
-            </v-card-title>
-            <v-card-text class="form-content">
-                        <PetForm
+    <!-- 펫 추가/수정 폼 모달 -->
+    <v-dialog
+      v-model="showAddForm"
+      max-width="800"
+      class="pet-form-dialog"
+      @click:outside="closeForm"
+    >
+      <v-card class="pet-form-card" rounded="xl">
+        <v-card-title class="form-header">
+          <div class="form-title">
+            <span class="text-h4">새 반려동물 등록</span>
+          </div>
+        </v-card-title>
+        <v-card-text class="form-content">
+          <PetForm
             @close="closeForm"
             @success="handleFormSuccess"
           />
-            </v-card-text>
-          </v-card>
-        </v-dialog>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
 
     <!-- 삭제 확인 모달 -->
     <ModalDialog
@@ -149,19 +280,16 @@
         <div class="delete-actions">
           <v-btn
             variant="outlined"
+            color="grey-darken-1"
             @click="showDeleteConfirm = false"
-            size="large"
-            rounded="pill"
           >
             취소
           </v-btn>
           <v-btn
             color="error"
+            variant="flat"
             @click="deletePet"
             :loading="deleting"
-            size="large"
-            rounded="pill"
-            prepend-icon="mdi-delete"
           >
             삭제
           </v-btn>
@@ -172,425 +300,291 @@
 </template>
 
 <script>
-// script 부분은 기존과 동일
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePetStore } from '@/stores/pet'
-import { useAuthStore } from '@/stores/auth'
 import { useSnackbar } from '@/composables/useSnackbar'
-import ModalDialog from '@/components/ui/organisms/ModalDialog.vue'
 import PetCard from './PetCard.vue'
 import PetForm from './PetForm.vue'
+import ModalDialog from '@/components/ui/organisms/ModalDialog.vue'
 
 export default {
   name: 'PetList',
   components: {
-    ModalDialog,
     PetCard,
-    PetForm
+    PetForm,
+    ModalDialog
   },
-  
+  emits: ['set-representative', 'view-details', 'delete'],
   setup() {
     const router = useRouter()
     const petStore = usePetStore()
-    const authStore = useAuthStore()
     const { showSnackbar } = useSnackbar()
     
-    // 반응형 데이터
     const showAddForm = ref(false)
     const showDeleteConfirm = ref(false)
-
     const petToDelete = ref(null)
+    const deleting = ref(false)
     
-    // 계산된 속성
-    const pets = computed(() => {
-      const petsData = petStore.getPets || []
-      console.log('=== PetList pets computed ===')
-      console.log('petStore.getPets:', petStore.getPets)
-      console.log('petsData:', petsData)
-      
-      if (petsData.length > 0) {
-        console.log('첫 번째 펫:', petsData[0])
-        console.log('첫 번째 펫 ID:', petsData[0]?.id)
-      }
-      
-      return petsData
+    // 반려동물 데이터
+    const pets = computed(() => petStore.pets)
+    const loading = computed(() => petStore.loading)
+    
+    // 대표 반려동물 (PetStore에서 관리)
+    const representativePet = computed(() => petStore.representativePet)
+    
+    // 대표가 아닌 다른 동물들
+    const otherPets = computed(() => {
+      if (!representativePet.value) return pets.value
+      return pets.value.filter(pet => pet.id !== representativePet.value.id)
     })
-    const representativePet = computed(() => {
-      // ✅ authStore의 mainPetId를 우선으로 사용
-      const mainPetId = authStore.myPageInfo?.mainPetId
-      if (mainPetId) {
-        const mainPet = pets.value.find(pet => pet.id === mainPetId)
-        if (mainPet) {
-          console.log('✅ mainPetId 기반 대표 반려동물:', mainPet)
-          return mainPet
-        }
+    
+    // 강아지/고양이 수 계산
+    const getDogCount = () => pets.value.filter(pet => pet.petOrder === 'DOG').length
+    const getCatCount = () => pets.value.filter(pet => pet.petOrder === 'CAT').length
+    
+    // 생일 포맷팅
+    const formatBirthday = (birthday) => {
+      if (!birthday) return '알 수 없음'
+      try {
+        const date = new Date(birthday)
+        if (isNaN(date.getTime())) return '알 수 없음'
+        return `${date.getFullYear()}. ${String(date.getMonth() + 1).padStart(2, '0')}. ${String(date.getDate()).padStart(2, '0')}.`
+      } catch (error) {
+        return '알 수 없음'
       }
-      
-      // fallback: 첫 번째 펫 사용
-      const fallbackPet = pets.value[0] || null
-      console.log('⚠️ fallback 대표 반려동물:', fallbackPet)
-      return fallbackPet
-    })
-    const loading = computed(() => petStore.isLoading)
+    }
     
-    // 반려동물 목록 (필터링 없음)
-    const filteredPets = computed(() => pets.value)
-    
-    // 종류에 따른 아이콘 반환 (백엔드 응답의 petOrder 직접 사용)
+    // 종 아이콘 관련 함수들
     const getSpeciesIcon = (petOrder) => {
-      if (petOrder === '강아지') return 'mdi-dog'
-      if (petOrder === '고양이') return 'mdi-cat'
-      return 'mdi-paw'
+      const icons = {
+        DOG: 'mdi-dog',
+        CAT: 'mdi-cat',
+        OTHER: 'mdi-paw'
+      }
+      return icons[petOrder] || 'mdi-paw'
     }
-
-    // 종류에 따른 아이콘 색상 반환 (백엔드 응답의 petOrder 직접 사용)
+    
     const getSpeciesIconColor = (petOrder) => {
-      if (petOrder === '강아지') return 'primary'
-      if (petOrder === '고양이') return 'secondary'
-      return 'info'
-    }
-
-    // 성별에 따른 아이콘 반환
-    const getGenderIcon = (gender) => {
-      console.log('🔍 PetList Gender 아이콘 확인:', gender, typeof gender)
-      
-      // 다양한 중성 표현 방식 체크 (알 수 없음도 중성으로 처리)
-      if (!gender || 
-          gender === 'UNKNOWN' || 
-          gender === 'NEUTERED' || 
-          gender === 'NEUTRAL' ||
-          gender === 'NEUTRALITY' ||  // 🔥 실제 백엔드 값 추가!
-          gender === '중성' ||
-          gender === '알 수 없음' ||
-          gender === 'N' ||
-          gender === null ||
-          gender === undefined) {
-        return 'mdi-circle-outline'  // 원형 아이콘
+      const colors = {
+        DOG: '#E87D7D',
+        CAT: '#FF6B6B',
+        OTHER: '#6B7280'
       }
-      return gender === 'MALE' || gender === '수컷' || gender === 'M' ? 'mdi-gender-male' : 'mdi-gender-female'
+      return colors[petOrder] || '#6B7280'
     }
-
-    // 성별에 따른 색상 반환
+    
     const getGenderColor = (gender) => {
-      console.log('🎨 PetList Gender 색상 확인:', gender)
-      
-      // 다양한 중성 표현 방식 체크 (알 수 없음도 중성으로 처리)
-      if (!gender || 
-          gender === 'UNKNOWN' || 
-          gender === 'NEUTERED' || 
-          gender === 'NEUTRAL' ||
-          gender === 'NEUTRALITY' ||  // 🔥 실제 백엔드 값 추가!
-          gender === '중성' ||
-          gender === '알 수 없음' ||
-          gender === 'N' ||
-          gender === null ||
-          gender === undefined) {
-        return 'grey'
+      const colors = {
+        MALE: '#3B82F6',
+        FEMALE: '#EC4899',
+        NEUTERED: '#6B7280'
       }
-      return gender === 'MALE' || gender === '수컷' || gender === 'M' ? 'blue' : 'pink'
+      return colors[gender] || '#6B7280'
     }
-
+    
+    const getGenderIcon = (gender) => {
+      const icons = {
+        MALE: 'mdi-gender-male',
+        FEMALE: 'mdi-gender-female',
+        NEUTERED: 'mdi-gender-male-female'
+      }
+      return icons[gender] || 'mdi-gender-male-female'
+    }
+    
     const getGenderLabel = (gender) => {
-      console.log('🏷️ PetList Gender 라벨 확인:', gender)
-      
-      // 다양한 중성 표현 방식 체크 (알 수 없음도 중성으로 처리)
-      if (!gender || 
-          gender === 'UNKNOWN' || 
-          gender === 'NEUTERED' || 
-          gender === 'NEUTRAL' ||
-          gender === 'NEUTRALITY' ||  // 🔥 실제 백엔드 값 추가!
-          gender === '중성' ||
-          gender === '알 수 없음' ||
-          gender === 'N' ||
-          gender === null ||
-          gender === undefined) {
-        return '중성'
+      const labels = {
+        MALE: '수컷',
+        FEMALE: '암컷',
+        NEUTERED: '중성'
       }
-      
-      if (gender === 'MALE' || gender === '수컷' || gender === 'M') return '수컷'
-      if (gender === 'FEMALE' || gender === '암컷' || gender === 'F') return '암컷'
-      
-      // 예상치 못한 값이 올 경우도 중성으로 처리
-      console.warn('⚠️ PetList 예상치 못한 성별 값:', gender, '- 중성으로 처리')
-      return '중성'
-    }
-
-    // 펫 상세보기
-    const viewPet = (pet) => {
-      router.push(`/pets/${pet.id}`)
+      return labels[gender] || '알 수 없음'
     }
     
-    // 통계 카드용 계산된 속성들 (백엔드 응답의 petOrder 직접 사용)
-    const dogCount = computed(() => {
-      return pets.value.filter(pet => pet.petOrder === '강아지').length
-    })
-    
-    const catCount = computed(() => {
-      return pets.value.filter(pet => pet.petOrder === '고양이').length
-    })
-    
-    // 호환성을 위한 함수들 (템플릿에서 함수 호출로 사용)
-    const getDogCount = () => dogCount.value
-    const getCatCount = () => catCount.value
-    
-    const formatDate = (dateString) => {
-      if (!dateString) return ''
-      const date = new Date(dateString)
-      return date.toLocaleDateString('ko-KR')
-    }
-    
-    // 이벤트 핸들러
-    const selectPet = (pet) => {
-      console.log('=== selectPet 디버깅 ===')
-      console.log('전체 펫 객체:', pet)
-      console.log('펫 ID:', pet.id)
-      console.log('펫 ID 타입:', typeof pet.id)
-      console.log('펫 이름:', pet.name)
-      
-      // 백엔드에서 ID가 전송되지 않는 경우를 대비한 임시 처리
-      let petId = pet.id
-      if (!petId) {
-        // pets 배열에서 해당 펫의 인덱스를 찾아 임시 ID 생성
-        const petIndex = pets.value.findIndex(p => 
-          p.name === pet.name && 
-          p.speciesId === pet.speciesId &&
-          p.gender === pet.gender
-        )
-        
-        if (petIndex !== -1) {
-          petId = `temp_${petIndex + 1}`
-          console.log('⚠️ 백엔드에서 ID가 전송되지 않음. 임시 ID 생성:', petId)
-          showSnackbar('백엔드에서 ID가 전송되지 않아 임시 ID를 사용합니다.', 'warning')
-        } else {
-          console.error('펫을 찾을 수 없습니다!')
-          showSnackbar('펫을 찾을 수 없습니다.', 'error')
-          return
-        }
-      }
-      
-      petStore.selectPet(pet)
-      // 상세 페이지로 이동
-      const url = `/pets/${petId}`
-      console.log('이동할 URL:', url)
-      router.push(url)
-      console.log('=== selectPet 디버깅 끝 ===')
-    }
-    
-
-    
+    // 대표 반려동물 설정
     const setAsRepresentative = async (pet) => {
       try {
-        console.log('🔄 대표 반려동물 설정 시작:', pet.id)
-        
-        // ✅ 중복 호출 방지
-        if (pet.id === authStore.myPageInfo?.mainPetId) {
-          console.log('⚠️ 이미 대표 반려동물로 설정되어 있음')
-          showSnackbar('이미 대표 반려동물로 설정되어 있습니다.', 'info')
-          return
-        }
-        
-        // ✅ petStore의 setRepresentativePet 사용 (이미 백엔드 API 호출 포함)
-        console.log('📞 petStore.setRepresentativePet 호출 시작')
-        const result = await petStore.setRepresentativePet(pet)
-        console.log('📞 petStore.setRepresentativePet 호출 완료, 결과:', result)
-        
-        if (result.success) {
-          console.log('✅ 대표 반려동물 설정 성공')
-          
-          // ✅ UI 즉시 반영
-          await nextTick()
-          console.log('✅ UI 업데이트 완료')
-          
-          showSnackbar('대표 반려동물이 설정되었습니다.', 'success')
-        } else {
-          console.error('❌ 대표 반려동물 설정 실패:', result.message)
-          showSnackbar(result.message || '대표 반려동물 설정에 실패했습니다.', 'error')
-        }
+        await petStore.setRepresentativePet(pet)
+        showSnackbar('대표 반려동물이 변경되었습니다.', 'success')
       } catch (error) {
-        console.error('❌ 대표 반려동물 설정 에러:', error)
-        console.error('❌ 에러 상세:', error.response?.data)
-        console.error('❌ 에러 상태:', error.response?.status)
-        console.error('❌ 에러 메시지:', error.message)
-        console.error('❌ 에러 스택:', error.stack)
         showSnackbar('대표 반려동물 설정에 실패했습니다.', 'error')
       }
     }
     
+    // 반려동물 상세보기
+    const viewPet = (pet) => {
+      router.push(`/pets/${pet.id}`)
+    }
+    
+    // 삭제 확인
     const confirmDelete = (pet) => {
-      if (!pet.id) {
-        showSnackbar('ID가 없어 삭제할 수 없습니다. 백엔드 관리자에게 문의하세요.', 'error')
-        return
-      }
       petToDelete.value = pet
       showDeleteConfirm.value = true
     }
     
+    // 반려동물 삭제
     const deletePet = async () => {
       if (!petToDelete.value) return
       
       try {
-        const result = await petStore.deletePet(petToDelete.value.id)
-        if (result.success) {
-          showSnackbar('반려동물이 삭제되었습니다.', 'success')
-          showDeleteConfirm.value = false
-          petToDelete.value = null
-        }
+        deleting.value = true
+        await petStore.deletePet(petToDelete.value.id)
+        showSnackbar('반려동물이 삭제되었습니다.', 'success')
+        showDeleteConfirm.value = false
+        petToDelete.value = null
       } catch (error) {
         showSnackbar('반려동물 삭제에 실패했습니다.', 'error')
+      } finally {
+        deleting.value = false
       }
     }
     
+    // 폼 관련
     const closeForm = () => {
-      console.log('🔄 closeForm 호출됨')
-      
       showAddForm.value = false
-      
-      console.log('✅ 폼 닫기 완료')
     }
     
-    const handleFormSuccess = async (message) => {
-      console.log('=== handleFormSuccess 시작 ===')
-      console.log('성공 메시지:', message)
-      
-      showSnackbar(message, 'success')
-      closeForm()
-      
-      // 펫 등록/수정 후 목록 새로고침
-      console.log('폼 성공 후 목록 새로고침 시작')
-      try {
-        await petStore.fetchPets()
-        console.log('목록 새로고침 완료')
-        console.log('새로고침 후 펫 목록:', petStore.getPets)
-      } catch (error) {
-        console.error('목록 새로고침 실패:', error)
-      }
-      console.log('=== handleFormSuccess 완료 ===')
+    const handleFormSuccess = () => {
+      showAddForm.value = false
+      showSnackbar('반려동물이 성공적으로 등록되었습니다.', 'success')
     }
     
-    // 컴포넌트 마운트 시 데이터 로드
+    // 컴포넌트 마운트 시 반려동물 데이터 로드
     onMounted(async () => {
-      await petStore.fetchPets()
-      await petStore.fetchSpecies()
-      await authStore.fetchMyPageInfo() // 마이페이지 정보 가져오기
+      console.log('🔄 PetList 컴포넌트 마운트 시작')
+      
+      if (pets.value.length === 0) {
+        console.log('📥 반려동물 데이터 로드 시작')
+        await petStore.fetchPets()
+        console.log('📥 반려동물 데이터 로드 완료')
+      }
+      
+      console.log('🔍 현재 상태 확인:')
+      console.log('- pets.value.length:', pets.value.length)
+      console.log('- representativePet.value:', representativePet.value)
+      console.log('- pets.value:', pets.value)
+      
+      // 대표 반려동물이 설정되지 않은 경우 첫 번째 펫을 대표로 설정
+      if (!representativePet.value && pets.value.length > 0) {
+        console.log('⭐ 첫 번째 펫을 대표로 설정')
+        await petStore.setRepresentativePet(pets.value[0])
+        console.log('⭐ 대표 반려동물 설정 완료')
+      }
+      
+      console.log('🔄 PetList 컴포넌트 마운트 완료')
     })
     
     return {
-      // 반응형 데이터
       showAddForm,
       showDeleteConfirm,
-
       petToDelete,
-      
-      // 계산된 속성
+      deleting,
       pets,
-      representativePet,
       loading,
-      filteredPets,
-      
-      // 메서드
-      getGenderIcon,
-      getGenderColor,
-      getGenderLabel,
-      getSpeciesIcon,
-      getSpeciesIconColor,
-      formatDate,
+      representativePet,
+      otherPets,
       getDogCount,
       getCatCount,
-
-      selectPet,
-
+      formatBirthday,
+      getSpeciesIcon,
+      getSpeciesIconColor,
+      getGenderColor,
+      getGenderIcon,
+      getGenderLabel,
       setAsRepresentative,
+      viewPet,
       confirmDelete,
       deletePet,
       closeForm,
-      handleFormSuccess,
-      viewPet
+      handleFormSuccess
     }
   }
 }
 </script>
 
 <style scoped>
-/* 🎨 완전히 새로운 모던 디자인 */
 .pet-list {
-  background: #fafafa;
   min-height: 100vh;
+  background-color: #f8f9fa;
 }
 
 .container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 20px;
 }
 
-/* ✨ 헤더 섹션 */
+/* 헤더 섹션 */
 .header-section {
   background: white;
-  border-bottom: 1px solid #e5e7eb;
   padding: 40px 0;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .header-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 24px;
 }
 
 .page-title {
-  font-size: 2.25rem;
+  font-size: 2.5rem;
   font-weight: 700;
-  color: #111827;
+  color: #1f2937;
   margin: 0 0 8px 0;
-  letter-spacing: -0.025em;
 }
 
 .page-subtitle {
-  font-size: 1.125rem;
+  font-size: 1.1rem;
   color: #6b7280;
   margin: 0;
-  font-weight: 400;
 }
 
 .add-button {
+  background: #E87D7D !important;
+  color: white !important;
   font-weight: 600;
-  text-transform: none;
-  letter-spacing: -0.01em;
+  box-shadow: 0 4px 12px rgba(232, 125, 125, 0.3);
+  transition: all 0.3s ease;
 }
 
-/* 📊 통계 섹션 */
+.add-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(232, 125, 125, 0.4);
+}
+
+/* 통계 섹션 */
 .stats-section {
   background: white;
-  padding: 24px 0;
+  padding: 30px 0;
   border-bottom: 1px solid #e5e7eb;
 }
 
 .stats-overview {
   display: flex;
-  gap: 32px;
+  gap: 40px;
   justify-content: center;
 }
 
 .stat-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 16px 24px;
-  background: #f9fafb;
-  border-radius: 12px;
-  min-width: 120px;
+  gap: 16px;
 }
 
 .stat-icon {
-  width: 40px;
-  height: 40px;
-  background: #e5e7eb;
-  border-radius: 8px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #6b7280;
+}
+
+.stat-icon .v-icon {
+  color: white;
+  font-size: 28px;
 }
 
 .stat-info {
@@ -598,45 +592,224 @@ export default {
 }
 
 .stat-number {
-  font-size: 1.5rem;
+  font-size: 2rem;
   font-weight: 700;
-  color: #111827;
+  color: #1f2937;
   line-height: 1;
-  margin-bottom: 4px;
 }
 
 .stat-label {
-  font-size: 0.875rem;
+  font-size: 0.9rem;
   color: #6b7280;
-  font-weight: 500;
+  margin-top: 4px;
 }
 
-/* 🐾 펫 목록 섹션 */
+/* 반려동물 레이아웃 */
 .pets-section {
   padding: 40px 0;
 }
 
-.pets-grid {
+.pets-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+/* 상단: 대표동물 섹션 */
+.representative-pet-section {
+  background: white;
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 3px solid #E87D7D;
+  width: 100%;
+}
+
+.representative-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.representative-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+.representative-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.representative-content {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+}
+
+.pet-image-large {
+  flex-shrink: 0;
+}
+
+.large-pet-image {
+  width: 240px;
+  height: 240px;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.large-image-placeholder {
+  width: 240px;
+  height: 240px;
+  border-radius: 20px;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed #d1d5db;
+}
+
+.pet-details-large {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pet-name-large {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+.pet-tags-large {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.additional-info-large {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #6b7280;
+  font-size: 1rem;
+}
+
+.introduction-large {
+  background: #f9fafb;
+  padding: 20px;
+  border-radius: 12px;
+  border-left: 4px solid #E87D7D;
+}
+
+.introduction-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 12px 0;
+}
+
+.introduction-text {
+  color: #4b5563;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.action-buttons-large {
+  display: flex;
+  gap: 12px;
+  margin-top: auto;
+}
+
+/* 대표동물이 없을 때 */
+.no-representative {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.no-representative-icon {
+  margin-bottom: 20px;
+}
+
+.no-representative-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin: 0 0 12px 0;
+}
+
+.no-representative-description {
+  color: #9ca3af;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* 하단: 다른 동물들 섹션 */
+.other-pets-section {
+  background: white;
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  width: 100%;
+}
+
+.other-pets-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 24px 0;
+}
+
+.other-pets-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 24px;
-  margin-bottom: 40px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
 }
 
 .pet-card-wrapper {
-  transition: transform 0.2s ease;
+  width: 100%;
 }
 
-.pet-card-wrapper:hover {
-  transform: translateY(-2px);
+/* 다른 동물이 없을 때 */
+.no-other-pets {
+  text-align: center;
+  padding: 40px 20px;
 }
 
-/* 😊 빈 상태 */
+.no-other-pets-icon {
+  margin-bottom: 16px;
+}
+
+.no-other-pets-text {
+  color: #9ca3af;
+  margin: 0;
+}
+
+/* 빈 상태 */
 .empty-state {
   text-align: center;
   padding: 80px 20px;
-  max-width: 400px;
-  margin: 0 auto;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
 .empty-icon {
@@ -646,84 +819,117 @@ export default {
 .empty-title {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #374151;
+  color: #1f2937;
   margin: 0 0 12px 0;
 }
 
 .empty-description {
-  font-size: 1rem;
   color: #6b7280;
   margin: 0 0 32px 0;
   line-height: 1.5;
 }
 
-/* 📱 반응형 디자인 */
-@media (max-width: 768px) {
-  .container {
-    padding: 0 16px;
-  }
-  
-  .header-section {
-    padding: 24px 0;
-  }
-  
-  .header-content {
-    flex-direction: column;
-    text-align: center;
+/* 반응형 디자인 */
+@media (max-width: 1024px) {
+  .other-pets-grid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 16px;
   }
   
-  .page-title {
-    font-size: 1.875rem;
+  .representative-content {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
   }
   
-  .page-subtitle {
-    font-size: 1rem;
+  .pet-image-large {
+    margin-bottom: 20px;
+  }
+  
+  .action-buttons-large {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    gap: 24px;
+    text-align: center;
   }
   
   .stats-overview {
     flex-direction: column;
-    gap: 16px;
-    max-width: 300px;
-    margin: 0 auto;
+    gap: 24px;
+    align-items: center;
   }
   
-  .stat-item {
-    justify-content: center;
+  .representative-pet-section,
+  .other-pets-section {
+    padding: 20px;
   }
   
-  .pets-grid {
-    grid-template-columns: 1fr;
-    gap: 16px;
+  .large-pet-image,
+  .large-image-placeholder {
+    width: 180px;
+    height: 180px;
   }
   
-  .empty-state {
-    padding: 60px 20px;
+  .pet-name-large {
+    font-size: 1.5rem;
   }
 }
 
-/* 🧹 기존 스타일 정리 완료 - 모던한 디자인만 남김 */
+/* 모달 스타일 */
+.pet-form-dialog {
+  z-index: 1000;
+}
 
-/* 📝 폼 헤더 스타일 */
+.pet-form-card {
+  border-radius: 20px;
+}
+
 .form-header {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 24px 24px 16px;
-  border-bottom: none;
-  background: transparent;
+  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
+  color: white;
+  border-radius: 20px 20px 0 0;
+  padding: 24px;
 }
 
 .form-title {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   text-align: center;
 }
 
-.form-title .text-h4 {
-  color: #374151;
-  font-weight: 600;
-  margin: 0;
+.form-content {
+  padding: 24px;
+}
+
+/* 삭제 확인 모달 */
+.delete-confirm-content {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.delete-icon-container {
+  margin-bottom: 20px;
+}
+
+.delete-warning {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #fef3c7;
+  color: #92400e;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-top: 16px;
+}
+
+.delete-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
 }
 </style>
+
