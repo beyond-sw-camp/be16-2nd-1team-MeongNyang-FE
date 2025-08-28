@@ -176,7 +176,7 @@ export const userAPI = {
       console.log('🔄 petAPI.setMainPet 시작:', petId)
       console.log('🔍 API 호출 URL:', `/pets/main`)
       
-      const response = await apiClient.put(`/pets/main`)
+      const response = await apiClient.put(`/users/main-pet/${petId}`)
       console.log('✅ petAPI.setMainPet 성공:', response)
       return response
     } catch (error) {
