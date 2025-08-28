@@ -339,49 +339,7 @@
       </div>
     </div>
 
-    <!-- 펫을 찾을 수 없음 -->
-    <div v-else-if="!loading" class="not-found-container">
-      <v-card class="not-found-card" elevation="8" rounded="xl">
-        <div class="not-found-content">
-          <v-icon size="80" color="error" class="mb-4">mdi-alert-circle</v-icon>
-          <h3 class="text-h4 mb-3">펫을 찾을 수 없습니다</h3>
-          <p class="text-body-1 text-grey-darken-1 mb-6">
-            요청하신 펫 정보를 찾을 수 없습니다.
-          </p>
-          
-          <div class="debug-info mb-6">
-            <v-chip variant="outlined" class="ma-1" color="info">
-              요청 ID: {{ petId }}
-            </v-chip>
-            <v-chip variant="outlined" class="ma-1" color="warning">
-              펫 개수: {{ petStore.getPets.length }}
-            </v-chip>
-          </div>
-          
-          <div class="not-found-actions">
-            <v-btn
-              variant="outlined"
-              color="info"
-              @click="reloadPets"
-              prepend-icon="mdi-refresh"
-              size="large"
-              rounded="xl"
-            >
-              다시 로드
-            </v-btn>
-            <v-btn
-              color="primary"
-              @click="$router.push('/pets')"
-              prepend-icon="mdi-arrow-left"
-              size="large"
-              rounded="xl"
-            >
-              목록으로 돌아가기
-            </v-btn>
-          </div>
-        </div>
-      </v-card>
-    </div>
+
 
     <!-- 삭제 확인 모달 -->
     <ModalDialog
@@ -822,8 +780,6 @@ onMounted(async () => {
   position: relative;
 }
 
-
-
 .loading-container {
   display: flex;
   flex-direction: column;
@@ -1145,39 +1101,7 @@ onMounted(async () => {
   padding: 24px;
 }
 
-.not-found-container {
-  padding: 0 20px 30px;
-}
 
-.not-found-card {
-  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-  border: 1px solid var(--v-border-color);
-  transition: all 0.3s ease;
-}
-
-.not-found-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-}
-
-.not-found-content {
-  text-align: center;
-  padding: 40px 20px;
-}
-
-.not-found-content .v-icon {
-  font-size: 80px;
-  color: var(--v-theme-error);
-  margin-bottom: 20px;
-}
-
-.not-found-content .text-h4 {
-  margin-bottom: 15px;
-}
-
-.not-found-content .text-body-1 {
-  margin-bottom: 25px;
-}
 
 /* 새로운 레이아웃 스타일 */
 .main-info-section {
@@ -1365,12 +1289,7 @@ onMounted(async () => {
   font-size: 0.9rem;
 }
 
-.not-found-actions {
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-  flex-wrap: wrap;
-}
+
 
 .delete-confirm-content {
   display: flex;
@@ -1524,10 +1443,7 @@ onMounted(async () => {
     flex-direction: column;
     gap: 10px;
   }
-  .not-found-actions .v-btn {
-    width: 100%;
-    min-width: 200px;
-  }
+
 }
 
 @media (max-width: 768px) {
@@ -1607,22 +1523,6 @@ onMounted(async () => {
   }
   .edit-content {
     padding: 10px;
-  }
-  .not-found-content {
-    padding: 20px 15px;
-  }
-  .not-found-content .text-h4 {
-    font-size: 1.8rem;
-  }
-  .not-found-content .text-body-1 {
-    font-size: 0.8rem;
-  }
-  .debug-info .v-chip {
-    font-size: 0.8rem;
-  }
-  .not-found-actions .v-btn {
-    font-size: 0.9rem;
-    padding: 10px 20px;
   }
 }
 
