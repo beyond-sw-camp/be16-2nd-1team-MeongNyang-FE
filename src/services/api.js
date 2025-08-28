@@ -406,11 +406,11 @@ export const petAPI = {
     })
     formData.append('PetRegisterReq', petDataBlob)
     
-    // 이미지 파일 추가 (선택사항) - 다시 활성화
+    // 이미지 파일 추가 (선택사항)
     if (petImg) {
-      // 백엔드 Pet.java의 @RequestPart 어노테이션에 맞는 필드명 시도
-      formData.append('url', petImg)  // Pet.java에서 petProfileUrl = req.getUrl()이므로
+      formData.append('url', petImg)
       console.log('✅ 이미지 파일 추가됨 (url 필드):', petImg.name, petImg.size, 'bytes')
+    }
 
     // FormData 디버깅
     console.log('=== FormData 구조 ===')
@@ -427,28 +427,18 @@ export const petAPI = {
       }
     }
 
-    console.log('=== End FormData Debug ===')
-
     console.log('=== API 요청 시작 ===')
     console.log('요청 URL:', '/pets/register')
-    console.log('요청 헤더:', { 'Content-Type': undefined })
 
     try {
-      const response = await apiClient.post('/pets/register', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      })
-
+      const response = await apiClient.post('/pets/register', formData)
       console.log('✅ FormData 등록 성공:', response.data)
-      
       return response
     } catch (error) {
       console.log('❌ FormData 등록 실패:', error.response?.data)
       throw error
     }
-  }
-},
+  },
 
   // 반려동물 목록 조회
   getList: () => apiClient.get('/pets'),

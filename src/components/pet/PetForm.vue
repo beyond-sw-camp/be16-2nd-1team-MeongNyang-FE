@@ -1,18 +1,42 @@
 <template>
-  <div class="pet-form-container">
-    <v-form ref="form" v-model="isValid" @submit.prevent="handleSubmit">
-      <!-- 반려동물 이미지 업로드 -->
+  <v-card class="no-inner-surface" variant="text" elevation="0">
+    <!-- 단계별 진행 표시 -->
+    <div class="step-indicator">
+      <div class="step" :class="{ active: currentStep === 1, completed: currentStep > 1 }">
+        <div class="step-number">1</div>
+        <div class="step-label">이미지 업로드</div>
+      </div>
+      <div class="step-line" :class="{ completed: currentStep > 1 }"></div>
+      <div class="step" :class="{ active: currentStep === 2, completed: currentStep > 2 }">
+        <div class="step-number">2</div>
+        <div class="step-label">기본 정보</div>
+      </div>
+      <div class="step-line" :class="{ completed: currentStep > 2 }"></div>
+      <div class="step" :class="{ active: currentStep === 3 }">
+        <div class="step-number">3</div>
+        <div class="step-label">소개글</div>
+      </div>
+    </div>
+
+    <!-- 1단계: 이미지 업로드 -->
+    <div v-if="currentStep === 1" class="step-content">
+      <div class="step-header">
+        <h2>프로필 사진 선택하기</h2>
+        <p>마음에 드는 반려동물 사진이 있나요? 지금 업로드하세요.</p>
+      </div>
+      
       <div class="image-upload-section">
-        <div class="image-container">
+        <div class="image-container upload-surface">
           <v-avatar
-            :size="120"
-            class="pet-avatar"
+            :size="240"
+            class="pet-avatar clickable-avatar"
             color="grey-lighten-4"
+            @click="handleImageClick"
           >
             <!-- 이미지 제거 상태이거나 이미지가 없는 경우: 기본 아이콘 표시 -->
             <v-icon 
               v-if="imageRemoved || !previewImage" 
-              :size="48" 
+              :size="100" 
               :color="getSpeciesIconColor()" 
               :icon="getSpeciesIcon()" 
             />
@@ -23,31 +47,10 @@
               :alt="`${petData.name || '반려동물'} 사진`"
               cover
               :key="`preview-${previewImage}`"
+              class="clickable-image"
+              @dblclick="clearImage"
             />
           </v-avatar>
-          
-          <div class="image-actions">
-            <v-btn
-              variant="outlined"
-              prepend-icon="mdi-camera"
-              @click="handleImageClick"
-              class="upload-btn"
-              rounded="lg"
-            >
-              {{ previewImage ? '이미지 변경' : '이미지 추가' }}
-            </v-btn>
-            
-            <v-btn
-              v-if="previewImage && !imageRemoved"
-              variant="text"
-              size="small"
-              @click="clearImage"
-              class="remove-btn"
-              color="error"
-            >
-              제거
-            </v-btn>
-          </div>
           
           <div class="image-hint">
             <span>이미지 크기는 5MB 이하 권장</span>
@@ -63,10 +66,41 @@
         </div>
       </div>
 
-      <!-- 입력 필드 섹션 -->
+      <div class="step-actions">
+        <v-btn
+          variant="outlined"
+          @click="$emit('close')"
+          class="cancel-btn"
+          rounded="lg"
+          size="large"
+        >
+          취소
+        </v-btn>
+        
+        <v-btn
+          :disabled="!previewImage || imageRemoved"
+          @click="nextStep"
+          class="next-btn"
+          rounded="lg"
+          size="large"
+        >
+          다음
+        </v-btn>
+      </div>
+    </div>
+    
+    
+
+    <!-- 2단계: 기본 정보 -->
+    <div v-if="currentStep === 2" class="step-content">
+      <div class="step-header">
+        <h2>기본 정보 입력</h2>
+        <p>반려동물의 기본 정보를 입력해주세요.</p>
+      </div>
+      
+      <v-form ref="form" v-model="isValid">
       <div class="form-fields-section">
-        <div class="form-grid">
-          <!-- 반려동물 이름 -->
+          <!-- 이름 -->
           <div class="form-field">
             <label class="field-label">반려동물 이름 *</label>
             <v-text-field
@@ -82,7 +116,7 @@
             />
           </div>
 
-          <!-- 반려동물 종류 -->
+          <!-- 종류 -->
           <div class="form-field">
             <label class="field-label">반려동물 종류 *</label>
             <v-autocomplete
@@ -98,13 +132,12 @@
               class="form-input"
               hide-details="auto"
               density="comfortable"
-              @update:model-value="handleSpeciesIdChange"
             />
           </div>
 
           <!-- 성별 -->
           <div class="form-field">
-            <label class="field-label">성별</label>
+            <label class="field-label">성별 *</label>
             <v-select
               v-model="petData.gender"
               :items="genderOptions"
@@ -116,16 +149,18 @@
               class="form-input"
               hide-details="auto"
               density="comfortable"
+              required
+              :rules="[v => !!v || '성별을 선택해주세요']"
             />
           </div>
 
           <!-- 나이 -->
           <div class="form-field">
-            <label class="field-label">나이</label>
+            <label class="field-label">나이 *</label>
             <v-text-field
               v-model="petData.age"
               type="number"
-              :placeholder="petData.birthday ? '생일로 자동 계산됨' : '나이를 입력하세요'"
+              placeholder="나이를 입력하세요"
               variant="outlined"
               rounded="lg"
               class="form-input"
@@ -133,17 +168,14 @@
               density="comfortable"
               min="0"
               max="30"
-              :readonly="!!petData.birthday"
-              :disabled="!!petData.birthday"
+              required
+              :rules="[v => !!v || '나이를 입력해주세요']"
             />
-            <div class="field-hint" v-if="petData.birthday">
-              <span>생일이 설정되어 나이가 자동 계산됩니다</span>
-            </div>
           </div>
 
           <!-- 몸무게 -->
           <div class="form-field">
-            <label class="field-label">몸무게 (kg)</label>
+            <label class="field-label">몸무게 (kg) *</label>
             <v-text-field
               v-model="petData.weight"
               type="number"
@@ -156,6 +188,8 @@
               min="0"
               max="100"
               step="0.1"
+              required
+              :rules="[v => !!v || '몸무게를 입력해주세요']"
             />
           </div>
 
@@ -163,35 +197,18 @@
           <div class="form-field">
             <label class="field-label">생일 (선택사항)</label>
             <div class="birthday-input-container">
-              <v-menu
-                v-model="showBirthdayPicker"
-                :close-on-content-click="false"
-                transition="scale-transition"
-                offset-y
-                min-width="auto"
-              >
-                <template v-slot:activator="{ props }">
                   <v-text-field
-                    v-model="formattedBirthday"
+                :model-value="formattedBirthday"
                     placeholder="생일을 선택하세요"
                     readonly
-                    v-bind="props"
                     variant="outlined"
                     rounded="lg"
                     class="form-input"
                     hide-details="auto"
                     density="comfortable"
                     prepend-inner-icon="mdi-calendar"
-                  />
-                </template>
-                <v-date-picker
-                  v-model="petData.birthday"
-                  @update:model-value="onBirthdayChange"
-                  :max="maxDate"
-                  color="primary"
-                  class="birthday-picker"
-                />
-              </v-menu>
+                @click="showBirthdayPicker = true"
+              />
               
               <!-- 생일 삭제 버튼 -->
               <v-btn
@@ -205,13 +222,45 @@
                 aria-label="생일 삭제"
               />
             </div>
+            
             <div class="field-hint">
               <span>생일을 입력하면 나이가 자동으로 계산됩니다</span>
             </div>
           </div>
         </div>
+      </v-form>
+      
+      <div class="step-actions">
+        <v-btn
+          variant="outlined"
+          @click="previousStep"
+          class="cancel-btn"
+          rounded="lg"
+          size="large"
+        >
+          이전
+        </v-btn>
+        
+        <v-btn
+          :disabled="!isValid"
+          @click="nextStep"
+          class="next-btn"
+          rounded="lg"
+          size="large"
+        >
+          다음
+        </v-btn>
+      </div>
+    </div>
 
-        <!-- 소개글 -->
+    <!-- 3단계: 소개글 -->
+    <div v-if="currentStep === 3" class="step-content">
+      <div class="step-header">
+        <h2>소개글 작성</h2>
+        <p>반려동물을 소개해주세요.</p>
+      </div>
+      
+      <div class="form-fields-section">
         <div class="form-field full-width">
           <label class="field-label">소개글 (선택사항)</label>
           <v-textarea
@@ -221,8 +270,8 @@
             rounded="lg"
             class="form-input"
             hide-details="auto"
-            rows="3"
-            max-rows="5"
+            rows="5"
+            max-rows="8"
             counter="500"
             maxlength="500"
             density="comfortable"
@@ -233,23 +282,22 @@
         </div>
       </div>
 
-      <!-- 액션 버튼 -->
-      <div class="form-actions">
+      <div class="step-actions">
         <v-btn
           variant="outlined"
-          @click="$emit('close')"
+          @click="previousStep"
           class="cancel-btn"
           rounded="lg"
           size="large"
         >
-          취소
+          이전
         </v-btn>
         
         <v-btn
           type="submit"
-          color="primary"
           :loading="submitting"
-          :disabled="!isValid || submitting"
+          :disabled="submitting"
+          @click="handleSubmit"
           class="submit-btn"
           rounded="lg"
           size="large"
@@ -257,19 +305,40 @@
           {{ isEdit ? '수정' : '등록' }}
         </v-btn>
       </div>
-    </v-form>
   </div>
+
+    <!-- 생일 선택기 모달 -->
+    <v-dialog v-model="showBirthdayPicker" max-width="400">
+      <v-card>
+        <v-card-title class="text-h6">생일 선택</v-card-title>
+        <v-card-text>
+          <v-date-picker
+            v-model="petData.birthday"
+            :max="maxDate"
+            :min="minDate"
+            @update:model-value="onBirthdayChange"
+          />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn
+            variant="text"
+            @click="showBirthdayPicker = false"
+          >
+            확인
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+  </v-card>
 </template>
 
 <script>
-import { ref, reactive, computed, watch, onMounted, nextTick } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { usePetStore } from '@/stores/pet'
 
 export default {
   name: 'PetForm',
-  components: {
-    // SpeciesAutocomplete 대신 v-autocomplete 사용
-  },
   
   props: {
     pet: {
@@ -289,13 +358,17 @@ export default {
     const form = ref(null)
     const fileInput = ref(null)
     
+    // 단계 관리
+    const currentStep = ref(1)
+    
     // 반응형 데이터
     const previewImage = ref(null)
     const imageFile = ref(null)
-    const imageRemoved = ref(false) // 🔥 이미지 제거 상태 추가
+    const imageRemoved = ref(false)
     const submitting = ref(false)
+    const showBirthdayPicker = ref(false)
     
-    // 펫 데이터 - 먼저 선언
+    // 펫 데이터
     const petData = reactive({
       name: '',
       speciesId: null,
@@ -304,27 +377,33 @@ export default {
       age: null,
       weight: null,
       birthday: null,
-      introduce: ''  // 백엔드 Pet.java에서 추가된 소개글 필드
+      introduce: ''
     })
     
-    // 폼 유효성 검사 - petData 선언 후에 정의
+    // 단계 이동 메서드들
+    const nextStep = () => {
+      if (currentStep.value < 3) {
+        currentStep.value++
+      }
+    }
+    
+    const previousStep = () => {
+      if (currentStep.value > 1) {
+        currentStep.value--
+      }
+    }
+    
+    // 폼 유효성 검사
     const isValid = computed(() => {
-      console.log('폼 유효성 검사:', {
-        name: petData.name,
-        speciesId: petData.speciesId,
-        gender: petData.gender,
-        age: petData.age,
-        weight: petData.weight,
-        birthday: petData.birthday
-      })
+      // 2단계에서만 검사
+      if (currentStep.value !== 2) return true
       
-      // 기본 필수 필드 검사
       const hasRequiredFields = petData.name && 
                                petData.speciesId && 
                                petData.gender && 
-                               petData.weight !== null
+                               petData.weight !== null && 
+                               petData.weight !== ''
       
-      // 나이 검사: 생일이 있으면 자동 계산되거나, 없으면 수동 입력 필요 (0살 허용)
       const ageValue = Number(petData.age)
       const hasValidAge = petData.age !== null && 
                          petData.age !== '' && 
@@ -341,22 +420,36 @@ export default {
     // 종류 옵션
     const speciesOptions = computed(() => {
       const species = petStore.getSpecies
-      console.log('=== 종 데이터 구조 확인 ===')
-      console.log('전체 종 데이터:', species)
+      console.log('🔍 petStore.getSpecies:', species)
+      
       if (species && species.length > 0) {
-        console.log('첫 번째 종:', species[0])
-        console.log('ID 필드:', species[0]?.id, typeof species[0]?.id)
-        console.log('species 필드:', species[0]?.species, typeof species[0]?.species)
-        console.log('전체 키들:', Object.keys(species[0]))
+        // 백엔드 데이터 구조에 맞게 매핑
+        const mapped = species.map(s => {
+          console.log('🔍 개별 species 객체:', s)
+          console.log('🔍 s.species:', s.species)
+          console.log('🔍 s.id:', s.id)
+          console.log('🔍 s.speciesId:', s.speciesId)
+          
+          return {
+            species: s.species,
+            speciesId: s.id || s.speciesId || null
+          }
+        })
+        console.log('🔍 mapped speciesOptions:', mapped)
+        return mapped
       }
-      console.log('=== 종 데이터 구조 확인 완료 ===')
-      return species
+      console.log('⚠️ species가 비어있음')
+      return []
     })
     
-    // 달력 관련 상태
-    const showBirthdayPicker = ref(false)
+    // 성별 옵션
+    const genderOptions = [
+      { value: 'MALE', title: '수컷' },
+      { value: 'FEMALE', title: '암컷' },
+      { value: 'NEUTRALITY', title: '중성' }
+    ]
     
-    // 날짜 제한 (최대: 오늘, 최소: 30년 전)
+    // 날짜 제한
     const maxDate = computed(() => {
       const today = new Date()
       return today.toISOString().split('T')[0]
@@ -368,7 +461,7 @@ export default {
       return thirtyYearsAgo.toISOString().split('T')[0]
     })
     
-    // 포맷된 생일 표시 (사용자 친화적)
+    // 포맷된 생일 표시
     const formattedBirthday = computed(() => {
       if (!petData.birthday) return ''
       
@@ -400,7 +493,7 @@ export default {
       return `${formattedDate} (${age}살, ${daysUntilBirthday}일 후)`
     })
     
-    // 나이 계산 함수 - 먼저 선언
+    // 나이 계산 함수
     const calculateAge = (birthday) => {
       if (!birthday) return null
       const today = new Date()
@@ -414,453 +507,385 @@ export default {
       return age
     }
     
-
-    
-    // 성별 옵션 (백엔드 Enum과 정확히 일치)
-    const genderOptions = [
-      { value: 'MALE', title: '수컷' },
-      { value: 'FEMALE', title: '암컷' },
-      { value: 'NEUTRALITY', title: '중성' }
-    ]
-    
-    // 수정 모드일 때 기존 데이터 로드
-    watch(() => props.pet, (newPet) => {
-      console.log('🔄 watch props.pet 트리거됨')
-      console.log('새 펫 데이터:', newPet)
-      console.log('props.isEdit:', props.isEdit)
-      
-      if (newPet) {
-        console.log('🔍 수정 모드 - 기존 펫 데이터:', newPet)
-        
-        petData.name = newPet.name || ''
-        
-        // 🔥 종 정보: species 이름으로 speciesId 찾기
-        if (newPet.species) {
-          const foundSpecies = petStore.getSpecies.find(s => s.species === newPet.species)
-          if (foundSpecies) {
-            petData.speciesId = foundSpecies.speciesId
-            console.log('✅ 종 정보 매칭됨:', newPet.species, '→', foundSpecies.speciesId)
-          } else {
-            console.log('⚠️ 종 정보 매칭 실패:', newPet.species)
-            petData.speciesId = null
-          }
-        } else if (newPet.speciesId) {
-          // fallback: speciesId가 직접 있는 경우
-          petData.speciesId = parseInt(newPet.speciesId)
-        } else {
-          petData.speciesId = null
-        }
-        
-        petData.gender = newPet.gender || ''
-        petData.age = newPet.age !== undefined && newPet.age !== null ? parseInt(newPet.age) : null
-        petData.weight = newPet.weight !== undefined && newPet.weight !== null ? parseFloat(newPet.weight) : null
-        petData.birthday = newPet.birthday || null
-        petData.introduce = newPet.introduce || ''
-        
-        // 기존 이미지 상태 초기화
-        console.log('🖼️ 이미지 상태 초기화 시작')
-        console.log('기존 펫 이미지 URL:', newPet.url)
-        console.log('수정 모드 여부:', props.isEdit)
-        console.log('현재 previewImage:', previewImage.value)
-        console.log('현재 imageFile:', imageFile.value)
-        console.log('현재 imageRemoved:', imageRemoved.value)
-        
-        // 수정 모드일 때만 기존 이미지 보존
-        if (props.isEdit) {
-          // 🚨 수정 모드: 기존 이미지 절대 삭제하지 않음!
-          imageFile.value = null  // 새 파일은 없음
-          imageRemoved.value = false  // 🔥 제거 상태를 false로 강제 설정
-          
-          // 기존 이미지가 있으면 미리보기 설정
-          if (newPet.url && newPet.url.trim() !== '') {
-            previewImage.value = newPet.url
-            console.log('✅ 수정 모드 - 기존 이미지 미리보기 유지:', newPet.url)
-            console.log('🔥 imageRemoved 강제 false 설정:', imageRemoved.value)
-          } else {
-            previewImage.value = null
-            console.log('✅ 수정 모드 - 기존 이미지 없음')
-          }
-        } else {
-          // 새 등록 모드: 모든 상태 초기화
-          imageFile.value = null
-          imageRemoved.value = false
-          previewImage.value = null
-          console.log('✅ 새 등록 모드 - 모든 이미지 상태 초기화')
-        }
-        
-        // 강제로 상태 동기화
-        nextTick(() => {
-          console.log('🔄 nextTick - 이미지 상태 최종 확인:', {
-            previewImage: previewImage.value,
-            imageFile: imageFile.value,
-            imageRemoved: imageRemoved.value,
-            isEdit: props.isEdit
-          })
-        })
-      } else {
-        console.log('🔄 펫 데이터가 null - 새 등록 모드로 추정')
-        // 펫 데이터가 없으면 새 등록 모드
-        imageFile.value = null
-        imageRemoved.value = false
-        previewImage.value = null
-        console.log('✅ 새 등록 모드 (null) - 모든 이미지 상태 초기화')
-      }
-    }, { immediate: true })
-
-    // isEdit 상태 변화 감지
-    watch(() => props.isEdit, (newIsEdit, oldIsEdit) => {
-      console.log('🔄 watch props.isEdit 트리거됨')
-      console.log('이전 isEdit:', oldIsEdit, '→ 새 isEdit:', newIsEdit)
-      console.log('현재 pet:', props.pet)
-      console.log('현재 previewImage:', previewImage.value)
-    }, { immediate: true })
-
     // 생일 변경 시 나이 자동 계산
-    watch(() => petData.birthday, (newBirthday) => {
-      if (newBirthday) {
-        const calculatedAge = calculateAge(newBirthday)
-        if (calculatedAge !== null && calculatedAge >= 0 && calculatedAge <= 30) {
-          // 🔥 생일이 설정되면 항상 나이를 자동 계산 (덮어쓰기)
-          petData.age = calculatedAge
-          console.log('✅ 생일 기반으로 나이 자동 계산:', calculatedAge)
-        }
-      } else {
-        // 🔥 생일이 삭제되면 나이도 초기화 (수동 입력 가능하게)
-        if (petData.age !== null) {
-          console.log('🔄 생일이 삭제되어 나이를 초기화합니다')
-          petData.age = null
-        }
+    const onBirthdayChange = (birthday) => {
+      if (birthday) {
+        const age = calculateAge(birthday)
+        petData.age = age
       }
-    })
+      showBirthdayPicker.value = false
+    }
+    
+    // 생일 삭제
+    const clearBirthday = () => {
+      petData.birthday = null
+      petData.age = null
+    }
+    
 
-
-
-    // 이미지 클릭 처리 (안전한 DOM 접근)
+    
+    // 이미지 관련 메서드들
     const handleImageClick = () => {
-      if (fileInput.value) {
-        fileInput.value.click()
-      } else {
-        console.error('파일 입력 요소가 아직 준비되지 않았습니다.')
-      }
+      fileInput.value?.click()
     }
-
-    // 종류 ID 변경 처리 (v-model용)
-    const handleSpeciesIdChange = (speciesId) => {
-      console.log('=== handleSpeciesIdChange 호출 ===')
-      console.log('받은 speciesId:', speciesId, typeof speciesId)
-      
-      // 🔥 강제 숫자 변환! 문자열이 들어와도 숫자로 변환
-      const numericSpeciesId = parseInt(speciesId) || null
-      console.log('숫자 변환 후:', numericSpeciesId, typeof numericSpeciesId)
-      
-      petData.speciesId = numericSpeciesId
-      
-      // 종류명도 자동으로 설정
-      if (numericSpeciesId) {
-        // speciesId로 종 찾기 (백엔드 데이터 구조가 id가 아니라 speciesId)
-        const selectedSpecies = petStore.getSpecies.find(s => s.speciesId === numericSpeciesId)
-        console.log('선택된 종 객체:', selectedSpecies)
-        if (selectedSpecies) {
-          petData.speciesName = selectedSpecies.species
-          console.log('설정된 종류명:', petData.speciesName)
-        }
-      } else {
-        petData.speciesName = ''
-      }
-      
-      console.log('최종 petData.speciesId:', petData.speciesId, typeof petData.speciesId)
-      console.log('최종 petData.speciesName:', petData.speciesName)
-      console.log('=== handleSpeciesIdChange 완료 ===')
-    }
-
-    // handleSpeciesChange 제거 - v-autocomplete가 직접 처리
-
-    // 이미지 변경 처리
+    
     const handleImageChange = (event) => {
       const file = event.target.files[0]
       if (file) {
-        // 파일 크기 검증 (5MB)
         if (file.size > 5 * 1024 * 1024) {
-          alert('이미지 크기는 5MB 이하여야 합니다.')
+          alert('이미지 크기는 5MB 이하로 선택해주세요.')
           return
         }
         
         imageFile.value = file
-        
-        // 미리보기 생성
-        const reader = new FileReader()
-        reader.onload = (e) => {
-          previewImage.value = e.target.result
-        }
-        reader.readAsDataURL(file)
+        previewImage.value = URL.createObjectURL(file)
+          imageRemoved.value = false
       }
     }
     
-    // 이미지 제거 - 사용자가 명시적으로 삭제 버튼을 클릭했을 때만 호출
     const clearImage = () => {
-      console.log('🗑️ 사용자 의도적 이미지 제거 버튼 클릭됨')
-      console.log('제거 전 상태:', {
-        imageFile: imageFile.value,
-        previewImage: previewImage.value,
-        imageRemoved: imageRemoved.value
-      })
-      
-      // 사용자가 명시적으로 이미지 삭제를 요청한 상태로 설정
-      imageFile.value = null
-      previewImage.value = null
-      imageRemoved.value = true  // 🔥 사용자 의도적 삭제 표시
-      
-      console.log('🗑️ 사용자 의도적 이미지 제거 완료:', {
-        imageFile: imageFile.value,
-        previewImage: previewImage.value,
-        imageRemoved: imageRemoved.value
-      })
-      
-      // 강제로 UI 업데이트 - 여러 방법 시도
-      nextTick(() => {
-        console.log('🔄 nextTick 완료')
-        // 추가 강제 업데이트
-        imageRemoved.value = true
-      })
-      
-      // 추가 강제 업데이트
-      setTimeout(() => {
-        imageRemoved.value = true
-        console.log('⏰ setTimeout 강제 업데이트 완료')
-      }, 100)
+        imageFile.value = null
+        previewImage.value = null
+      imageRemoved.value = true
     }
     
-    // 메시지 표시
-    const showMessage = (message, type = 'success') => {
-      // 간단한 alert로 표시 (나중에 스낵바로 변경 가능)
-      if (type === 'error') {
-        alert(`❌ ${message}`)
-      } else {
-        alert(`✅ ${message}`)
+    // 종류 변경 시 종류 이름 업데이트
+    const handleSpeciesIdChange = () => {
+      const selectedSpecies = speciesOptions.value.find(s => s.speciesId === petData.speciesId)
+      if (selectedSpecies) {
+        petData.speciesName = selectedSpecies.species
       }
     }
-
-    // 폼 제출 처리
+    
+    // 종류 아이콘 관련
+    const getSpeciesIcon = () => {
+      if (petData.speciesId) {
+        return 'mdi-paw'
+      }
+      return 'mdi-plus'
+    }
+    
+    const getSpeciesIconColor = () => {
+      if (petData.speciesId) {
+        return '#ec4899'
+      }
+      return '#9ca3af'
+    }
+    
+    // 폼 제출
     const handleSubmit = async () => {
-      // 폼이 마운트되지 않았을 경우 처리
-      if (!form.value) {
-        console.error('폼이 아직 마운트되지 않았습니다.')
+      console.log('=== handleSubmit 시작 ===')
+      console.log('isValid:', isValid.value)
+      console.log('currentStep:', currentStep.value)
+      console.log('petData:', petData)
+      console.log('imageFile:', imageFile.value)
+      console.log('imageRemoved:', imageRemoved.value)
+      
+      if (!isValid.value) {
+        console.log('❌ 폼이 유효하지 않음')
         return
       }
       
-      // 폼 유효성 검사
-      const validationResult = form.value.validate()
-      if (!validationResult) return
+      submitting.value = true
       
       try {
-        submitting.value = true
+        const formData = new FormData()
         
-        // 폼 데이터 준비 (백엔드 Pet.java와 일치하도록)
-        const submitData = {
-          name: petData.name,
-          speciesId: parseInt(petData.speciesId) || null,  // 🔥 강제 숫자 변환!
-          gender: petData.gender,
-          age: petData.age !== null && petData.age !== '' ? parseInt(petData.age) : null,  // 🔥 0살 허용!
-          weight: parseFloat(petData.weight) || null,       // 🔥 몸무게도 숫자 변환!
-          birthday: petData.birthday,
-          introduce: petData.introduce || ''
+        // speciesName 자동 설정
+        if (!petData.speciesName && petData.speciesId) {
+          const selectedSpecies = speciesOptions.value.find(s => s.speciesId === petData.speciesId)
+          if (selectedSpecies) {
+            petData.speciesName = selectedSpecies.species
+            console.log(`✅ speciesName 자동 설정됨:`, selectedSpecies.species)
+          }
         }
         
-        console.log('=== 전송할 데이터 최종 확인 ===')
-        console.log('submitData:', submitData)
-        console.log('submitData.speciesId:', submitData.speciesId, typeof submitData.speciesId)
-        console.log('submitData의 모든 필드 타입:')
-        Object.keys(submitData).forEach(key => {
-          console.log(`  ${key}:`, submitData[key], typeof submitData[key])
-        })
-        console.log('=== 전송할 데이터 확인 완료 ===')
+        // speciesId가 문자열인 경우 숫자로 변환
+        if (petData.speciesId && typeof petData.speciesId === 'string') {
+          console.log('🔍 speciesId 변환 시작:', petData.speciesId)
+          console.log('🔍 speciesOptions:', speciesOptions.value)
+          
+          const selectedSpecies = speciesOptions.value.find(s => s.species === petData.speciesId)
+          if (selectedSpecies && selectedSpecies.speciesId) {
+            petData.speciesId = selectedSpecies.speciesId
+            petData.speciesName = selectedSpecies.species
+            console.log(`✅ speciesId 변환됨: "${petData.speciesId}" -> ${selectedSpecies.speciesId}`)
+      } else {
+            console.log(`❌ speciesId 변환 실패: "${petData.speciesId}"에 해당하는 종을 찾을 수 없음`)
+            console.log('사용 가능한 종들:', speciesOptions.value)
+            // 변환 실패 시 원본 값 유지
+            console.log('⚠️ 원본 speciesId 값 유지:', petData.speciesId)
+          }
+        }
         
-        let result
+        // 기존에 잘 되던 로직으로 되돌리기 (백엔드 구조에 맞게)
+        // 1. 개별 필드들을 FormData에 추가
+        Object.keys(petData).forEach(key => {
+          if (petData[key] !== null && petData[key] !== '') {
+            formData.append(key, petData[key])
+            console.log(`✅ ${key} 추가됨:`, petData[key])
+          } else {
+            console.log(`⚠️ ${key} 값 없음:`, petData[key])
+          }
+        })
+        
+        // 2. 이미지 파일 추가 (기존 키 'image' 사용)
+        if (imageFile.value && !imageRemoved.value) {
+          console.log('🖼️ 이미지 파일 상세 정보:', {
+            name: imageFile.value.name,
+            size: imageFile.value.size,
+            type: imageFile.value.type,
+            lastModified: imageFile.value.lastModified
+          })
+          
+          formData.append('image', imageFile.value)  // 기존 키 사용
+          console.log('✅ 이미지 파일 추가됨 (image 키):', imageFile.value.name)
+      } else {
+          console.log('⚠️ 이미지 파일 없음 또는 제거됨')
+        }
+        
+        console.log('=== FormData 내용 ===')
+        for (let [key, value] of formData.entries()) {
+          console.log(`${key}:`, value)
+        }
+        
+        console.log('=== 최종 FormData 검증 ===')
+        console.log('이미지 파일 존재:', !!imageFile.value)
+        console.log('이미지 제거 상태:', imageRemoved.value)
+        console.log('FormData 크기:', formData.entries().length)
+        
+        // FormData 내용을 다시 한번 확인
+        console.log('=== 최종 FormData 내용 재확인 ===')
+        const formDataArray = []
+        for (let [key, value] of formData.entries()) {
+          formDataArray.push({ key, value })
+          console.log(`🔍 ${key}:`, value)
+        }
+        console.log('FormData 배열:', formDataArray)
+        
         if (props.isEdit) {
           // 수정 모드
-          console.log('🔄 펫 수정 모드')
-          console.log('이미지 제거 상태:', imageRemoved.value)
-          console.log('새 이미지 파일:', imageFile.value)
-          
-          // 이미지 처리 로직:
-          // 1. imageRemoved가 true이고 imageFile이 null이면 → 이미지 제거
-          // 2. imageFile이 있으면 → 새 이미지로 교체
-          // 3. 둘 다 없으면 → 기존 이미지 유지 (백엔드에 이미지 필드를 보내지 않음)
-          let imageToSend = null
-          
-          console.log('🔍 이미지 처리 상태 분석:')
-          console.log('  - imageRemoved.value:', imageRemoved.value)
-          console.log('  - imageFile.value:', imageFile.value)
-          console.log('  - previewImage.value:', previewImage.value)
-          
-          // 🚨 이미지 처리 로직 강화 - 의도하지 않은 삭제 방지
-          if (imageRemoved.value === true && !imageFile.value) {
-            // 사용자가 명시적으로 이미지 제거 버튼을 클릭한 경우만
-            imageToSend = 'REMOVE_IMAGE'
-            console.log('🗑️ 사용자 의도적 이미지 제거 요청 - 삭제 버튼 클릭됨')
-          } else if (imageFile.value && imageFile.value instanceof File) {
-            // 사용자가 새 이미지를 선택한 경우
-            imageToSend = imageFile.value
-            console.log('📷 새 이미지 업로드:', imageFile.value.name)
-          } else {
-            // 🔥 기존 이미지 유지 (아무 변경 없음) - 가장 안전한 옵션
-            imageToSend = null
-            console.log('🛡️ 기존 이미지 보존 - 백엔드에 이미지 필드 전송하지 않음')
-            console.log('   → imageRemoved:', imageRemoved.value)
-            console.log('   → imageFile:', imageFile.value)
-          }
-          
-          result = await petStore.updatePet(props.pet.id, submitData, imageToSend)
+          console.log('🔄 수정 모드 - updatePet 호출')
+          await petStore.updatePet(props.pet.id, petData, imageFile.value)
+          emit('success', '반려동물이 수정되었습니다.')
         } else {
           // 등록 모드
-          result = await petStore.registerPet(submitData, imageFile.value)
+          console.log('🆕 등록 모드 - registerPet 호출')
+          
+          console.log('=== 전송할 데이터 확인 ===')
+          console.log('petData 객체:', {
+            name: petData.name,
+            speciesId: petData.speciesId,
+            speciesName: petData.speciesName,
+            gender: petData.gender,
+            age: petData.age,
+            weight: petData.weight,
+            birthday: petData.birthday,
+            introduce: petData.introduce
+          })
+          console.log('이미지 파일:', imageFile.value)
+          
+          // ✅ 올바른 방식: petData 객체와 imageFile을 별도로 전달
+          await petStore.registerPet(petData, imageFile.value)
+          emit('success', '반려동물이 등록되었습니다.')
         }
         
-        if (result.success) {
-          showMessage(result.message || '반려동물이 성공적으로 처리되었습니다.', 'success')
-          emit('success', result.message || '반려동물이 성공적으로 처리되었습니다.')
-        } else {
-          showMessage(result.message || '처리에 실패했습니다.', 'error')
-        }
+        console.log('✅ 성공적으로 저장됨')
+        emit('close')
       } catch (error) {
-        console.error('펫 처리 실패:', error)
-        showMessage('처리 중 오류가 발생했습니다.', 'error')
+        console.error('❌ 펫 저장 오류:', error)
+        console.error('에러 상세:', error.message)
+        console.error('에러 스택:', error.stack)
+        alert('저장 중 오류가 발생했습니다.')
       } finally {
         submitting.value = false
+        console.log('=== handleSubmit 완료 ===')
       }
     }
     
-    // 컴포넌트 마운트 시 종류 목록 로드
+    // 수정 모드일 때 기존 데이터 로드
+    watch(() => props.pet, (newPet) => {
+      if (newPet && props.isEdit) {
+        petData.name = newPet.name || ''
+        petData.speciesId = newPet.speciesId || null
+        petData.speciesName = newPet.speciesName || ''
+        petData.gender = newPet.gender || ''
+        petData.age = newPet.age || null
+        petData.weight = newPet.weight || null
+        petData.birthday = newPet.birthday || null
+        petData.introduce = newPet.introduce || ''
+        
+        // 기존 이미지가 있으면 표시
+        if (newPet.imageUrl) {
+          previewImage.value = newPet.imageUrl
+          imageRemoved.value = false
+        }
+      }
+    }, { immediate: true })
+    
+    // 컴포넌트 마운트 시 종류 데이터 로드
     onMounted(async () => {
-      console.log('🔄 PetForm 마운트됨')
-      console.log('마운트 시 props.pet:', props.pet)
-      console.log('마운트 시 props.isEdit:', props.isEdit)
-      console.log('마운트 시 previewImage:', previewImage.value)
-      
-      if (petStore.getSpecies.length === 0) {
-        console.log('fetchSpecies', await petStore.fetchSpecies())
-      }
+      await petStore.fetchSpecies()
     })
-
-    // 나이 힌트 메시지 계산
-    const getAgeHint = () => {
-      if (petData.birthday) {
-        const age = calculateAge(petData.birthday)
-        if (age !== null && age >= 0 && age <= 30) {
-          return `생일 기반 계산: ${age}살 (수동 입력도 가능)`
-        }
-      }
-      return '나이를 직접 입력하거나 생일을 입력하여 자동 계산할 수 있습니다'
-    }
-
-    // 생일 힌트 메시지 계산
-    const getBirthdayHint = () => {
-      if (petData.birthday) {
-        const age = calculateAge(petData.birthday)
-        if (age !== null && age >= 0 && age <= 30) {
-          return `자동 계산된 나이: ${age}살 (나이 입력 필드에서 확인)`
-        }
-      }
-      return '생일을 입력하면 나이가 자동으로 계산됩니다 (선택사항)'
-    }
-
-    // 생일 기반으로 나이 계산 버튼 클릭 시 호출되는 함수
-    const calculateAgeFromBirthday = () => {
-      const calculatedAge = calculateAge(petData.birthday)
-      if (calculatedAge !== null && calculatedAge >= 0 && calculatedAge <= 30) {
-        petData.age = calculatedAge
-        console.log('생일 기반으로 나이 자동 계산:', calculatedAge)
-      } else {
-        console.warn('생일 기반으로 나이 계산 실패 또는 범위 초과:', calculatedAge)
-        alert('생일 기반으로 나이를 계산할 수 없거나, 범위를 벗어났습니다.')
-      }
-    }
-    
-    // 생일 변경 이벤트 핸들러
-    const onBirthdayChange = (newDate) => {
-      console.log('🎂 생일 변경:', newDate)
-      petData.birthday = newDate
-      showBirthdayPicker.value = false  // 달력 닫기
-    }
-    
-    // 생일 초기화
-    const clearBirthday = () => {
-      petData.birthday = null
-      console.log('🗑️ 생일 초기화됨 - 수동 나이 입력 가능')
-    }
-
-    // 유틸리티 함수들
-    const getSpeciesIcon = () => {
-      if (petData.speciesId) {
-        // speciesId로 종 찾기 (백엔드 데이터 구조가 id가 아니라 speciesId)
-        const species = petStore.getSpecies.find(s => s.speciesId === petData.speciesId)
-        if (species && species.petOrder === 'DOG') return 'mdi-dog'
-        if (species && species.petOrder === 'CAT') return 'mdi-cat'
-        return 'mdi-paw'
-      }
-      return 'mdi-paw'
-    }
-
-    const getSpeciesIconColor = () => {
-      if (petData.speciesId) {
-        // speciesId로 종 찾기 (백엔드 데이터 구조가 id가 아니라 speciesId)
-        const species = petStore.getSpecies.find(s => s.speciesId === petData.speciesId)
-        if (species && species.petOrder === 'DOG') return 'primary'
-        if (species && species.petOrder === 'CAT') return 'secondary'
-        return 'info'
-      }
-      return 'info'
-    }
-
-    // 종류 ID에 따른 종류 이름 반환 - 이미 위에서 선언됨
     
     return {
+      // 단계 관리
+      currentStep,
+      nextStep,
+      previousStep,
+      
+      // 폼 관련
       form,
       fileInput,
       isValid,
+      submitting,
+      
+      // 데이터
       petData,
-      loading,
-      speciesOptions,
       previewImage,
       imageFile,
-      submitting,
+      imageRemoved,
+      loading,
+      speciesOptions,
       genderOptions,
-      calculateAge,
-      handleImageClick,
-      handleSpeciesIdChange,
-      handleImageChange,
-      clearImage,
-      handleSubmit,
-      getAgeHint,
-      getBirthdayHint,
-      calculateAgeFromBirthday,
-      onBirthdayChange,
-      clearBirthday,
+      
+      // UI 상태
       showBirthdayPicker,
       maxDate,
       minDate,
       formattedBirthday,
+      
+      // 메서드들
+      handleImageClick,
+      handleImageChange,
+      clearImage,
+      handleSpeciesIdChange,
+      onBirthdayChange,
+      clearBirthday,
+      getSpeciesIcon,
       getSpeciesIconColor,
-      getSpeciesIcon
+      handleSubmit
     }
   }
 }
 </script>
 
 <style scoped>
+/* no-inner-surface 클래스 - 내부 카드 느낌 제거 */
+.no-inner-surface {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+}
+
 .pet-form-container {
-  max-width: 800px;
+  max-width: 600px;
   margin: 0 auto;
   background: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e5e7eb;
+  border-radius: 24px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+  border: 1px solid #f1f5f9;
   overflow: hidden;
+}
+
+/* 단계별 진행 표시 */
+.step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 60px 40px;
+  background: transparent;
+  border-bottom: none;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.step-number {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.step.active .step-number {
+  background: #f43f5e;
+  color: white;
+}
+
+.step.completed .step-number {
+  background: #10b981;
+  color: white;
+}
+
+.step-label {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.step.active .step-label {
+  color: #f43f5e;
+  font-weight: 600;
+}
+
+.step.completed .step-label {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.step-line {
+  width: 80px;
+  height: 2px;
+  background: #d1d5db;
+  margin: 0 16px;
+  transition: all 0.3s ease;
+}
+
+.step-line.completed {
+  background: #10b981;
+}
+
+
+
+/* 단계별 콘텐츠 */
+.step-content {
+  padding: 48px 60px;
+}
+
+.step-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.step-header h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 8px;
+}
+
+.step-header p {
+  font-size: 16px;
+  color: #6b7280;
+  line-height: 1.5;
 }
 
 /* 이미지 업로드 섹션 */
 .image-upload-section {
-  padding: 40px 32px 32px;
+  padding: 0;
   text-align: center;
   background: #ffffff;
 }
@@ -869,14 +894,40 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
+  gap: 32px;
+  margin-bottom: 40px;
+}
+
+.upload-surface {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
 }
 
 .pet-avatar {
-  border: 3px solid #e5e7eb;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: none;
+  box-shadow: none;
   transition: all 0.2s ease;
 }
+
+.clickable-avatar {
+  cursor: pointer;
+}
+
+.clickable-avatar:hover {
+  transform: scale(1.02);
+  opacity: 0.9;
+}
+
+.clickable-image {
+  cursor: pointer;
+}
+
+.clickable-image:hover {
+  opacity: 0.9;
+}
+
+
 
 .pet-avatar:hover {
   transform: scale(1.02);
@@ -891,10 +942,13 @@ export default {
 }
 
 .upload-btn {
-  border-color: #d1d5db;
-  color: #374151;
+  border-color: #cbd5e1;
+  color: #334155;
   font-weight: 500;
   transition: all 0.2s ease;
+  border-radius: 16px;
+  padding: 16px 32px;
+  font-size: 16px;
 }
 
 .upload-btn:hover {
@@ -903,8 +957,9 @@ export default {
 }
 
 .remove-btn {
-  font-weight: 500;
-  transition: all 0.2s ease;
+  font-size: 12px;
+  padding: 4px 8px;
+  min-width: auto;
 }
 
 .remove-btn:hover {
@@ -912,26 +967,37 @@ export default {
 }
 
 .image-hint {
-  color: #9ca3af;
-  font-size: 14px;
+  color: #64748b;
+  font-size: 13px;
   font-weight: 400;
 }
 
-/* 폼 필드 섹션 */
+/* 입력 필드 섹션 */
 .form-fields-section {
-  padding: 0 32px 32px;
-  background: #ffffff;
+  padding: 0 0 24px;
 }
 
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+/* 평면 레이어 입력 필드 */
+.form-fields-section {
+  display: flex;
+  flex-direction: column;
   gap: 24px;
-  margin-bottom: 24px;
 }
 
 .form-field {
-  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-field.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .form-field.full-width {
@@ -939,47 +1005,19 @@ export default {
 }
 
 .field-label {
-  display: block;
-  margin-bottom: 8px;
-  font-size: 14px;
   font-weight: 600;
   color: #374151;
-  line-height: 1.4;
+  font-size: 14px;
 }
 
 .form-input {
-  width: 100%;
-}
-
-.form-input :deep(.v-field) {
-  border-radius: 12px;
-  background-color: #ffffff;
-}
-
-.form-input :deep(.v-field__outline) {
-  border-radius: 12px;
-  border-color: #d1d5db;
-}
-
-.form-input :deep(.v-field--focused .v-field__outline) {
-  border-color: #3b82f6;
-  border-width: 2px;
-}
-
-.form-input :deep(.v-field__input) {
-  color: #111827;
-  font-size: 16px;
-}
-
-.form-input :deep(.v-field__input::placeholder) {
-  color: #9ca3af;
+  border-radius: 8px;
 }
 
 .field-hint {
-  margin-top: 6px;
   color: #6b7280;
-  font-size: 13px;
-  line-height: 1.4;
+  font-size: 12px;
+  margin-top: 4px;
 }
 
 /* 생일 입력 컨테이너 */
@@ -989,42 +1027,31 @@ export default {
   align-items: center;
 }
 
-.birthday-input-container .form-input {
-  flex: 1;
-}
-
 .clear-birthday-btn {
   position: absolute;
   right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 2;
+  z-index: 1;
 }
 
-/* 생일 선택기 */
-.birthday-picker {
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-}
-
-/* 액션 버튼 */
-.form-actions {
+/* 단계별 액션 버튼 */
+.step-actions {
   display: flex;
-  justify-content: center;
-  gap: 16px;
-  padding: 24px 32px;
-  background: #f8fafc;
-  border-top: 1px solid #e5e7eb;
+  gap: 20px;
+  justify-content: space-between;
+  padding-top: 40px;
+  border-top: 1px solid #f1f5f9;
+  margin-top: 40px;
 }
 
+/* 버튼 스타일 */
 .cancel-btn {
-  min-width: 120px;
-  height: 48px;
-  border-color: #d1d5db;
-  color: #374151;
+  border-color: #cbd5e1;
+  color: #334155;
   font-weight: 500;
   transition: all 0.2s ease;
+  border-radius: 16px;
+  padding: 16px 32px;
+  font-size: 16px;
 }
 
 .cancel-btn:hover {
@@ -1032,23 +1059,40 @@ export default {
   background-color: #f9fafb;
 }
 
+.next-btn {
+  background: #f43f5e !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 16px;
+  padding: 16px 32px;
+  font-size: 16px;
+}
+
+.next-btn:hover {
+  background: #db2777 !important;
+}
+
+.next-btn:disabled {
+  background: #f3e8ff !important;
+  color: #a855f7 !important;
+}
+
 .submit-btn {
-  min-width: 120px;
-  height: 48px;
-  background-color: #3b82f6;
-  color: white;
+  background: #3b82f6 !important;
+  color: white !important;
+  border: none !important;
   font-weight: 600;
   transition: all 0.2s ease;
 }
 
 .submit-btn:hover {
-  background-color: #2563eb;
+  background: #2563eb !important;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .submit-btn:disabled {
-  background-color: #9ca3af;
+  background: #9ca3af !important;
   transform: none;
   box-shadow: none;
 }
@@ -1060,6 +1104,19 @@ export default {
     border-radius: 12px;
   }
   
+  .step-content {
+    padding: 24px;
+  }
+  
+  .form-fields-section {
+    gap: 20px;
+  }
+  
+  .step-actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
   .image-upload-section {
     padding: 32px 24px 24px;
   }
@@ -1069,27 +1126,6 @@ export default {
     align-items: center;
     gap: 8px;
   }
-  
-  .form-fields-section {
-    padding: 0 24px 24px;
-  }
-  
-  .form-grid {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-  
-  .form-actions {
-    flex-direction: column;
-    gap: 12px;
-    padding: 20px 24px;
-  }
-  
-  .cancel-btn,
-  .submit-btn {
-    width: 100%;
-    min-width: auto;
-  }
 }
 
 @media (max-width: 480px) {
@@ -1098,65 +1134,13 @@ export default {
     border-radius: 8px;
   }
   
+  .step-content {
+    padding: 20px;
+  }
+  
   .image-upload-section {
     padding: 24px 20px 20px;
   }
-  
-  .form-fields-section {
-    padding: 0 20px 20px;
-  }
-  
-  .form-actions {
-    padding: 16px 20px;
-  }
-}
-
-/* 닫기 버튼 스타일 */
-.close-btn {
-  color: #6b7280;
-  transition: all 0.2s ease;
-  padding: 8px;
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  border-radius: 50%;
-}
-
-.close-btn:hover {
-  color: #374151;
-  background: rgba(107, 114, 128, 0.1) !important;
-}
-
-.close-btn::before {
-  background: transparent !important;
-}
-
-.close-btn::after {
-  background: transparent !important;
-}
-
-.close-btn .v-btn__content {
-  background: transparent !important;
-}
-
-.close-btn .v-btn__overlay {
-  background: transparent !important;
-  opacity: 0 !important;
-}
-
-.close-btn:hover .v-btn__overlay {
-  background: transparent !important;
-  opacity: 0 !important;
-}
-
-.close-btn:focus .v-btn__overlay {
-  background: transparent !important;
-  opacity: 0 !important;
-}
-
-.close-btn:active .v-btn__overlay {
-  background: transparent !important;
-  opacity: 0 !important;
 }
 </style>
 
