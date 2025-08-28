@@ -5,7 +5,7 @@
       <v-avatar 
         :size="avatarSize" 
         :class="avatarClass" 
-        @click="$emit('avatar-click')"
+        
       >
         <v-img 
           v-if="representativePet?.url" 

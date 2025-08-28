@@ -17,7 +17,7 @@
 
     <!-- 모바일 사용자 아바타 또는 플레이스홀더 -->
     <div v-if="isLoggedIn" class="mobile-user-section">
-      <v-avatar size="32" class="mobile-avatar" @click="$emit('avatar-click')">
+      <v-avatar size="32" class="mobile-avatar" >
         <v-img v-if="representativePet?.url" :src="representativePet.url" :alt="representativePet.name"></v-img>
         <v-img v-else-if="user?.profileImage" :src="user.profileImage" alt="사용자 프로필"></v-img>
         <v-icon v-else>mdi-account</v-icon>
@@ -100,7 +100,6 @@ export default {
 }
 
 .mobile-avatar {
-  cursor: pointer;
   border: 2px solid #FF8B8B;
 }
 </style>
