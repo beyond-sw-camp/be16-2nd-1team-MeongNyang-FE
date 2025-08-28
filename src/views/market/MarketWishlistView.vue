@@ -219,7 +219,7 @@ export default {
         { title: '가격 높은순', value: 'price-high' },
         { title: '📍 거리순', value: 'distance' }
       ],
-      likedPosts: new Set(), // 찜한 게시글 ID들을 저장할 Set
+
       
       // 위치 관련 상태
       userLocation: null, // 사용자 현재 위치 { lat, lng }
@@ -584,7 +584,6 @@ export default {
         if (isLiked) {
           // 찜하기 취소 - 찜목록에서 완전히 제거
           await marketAPI.unlikeMarket(postId)
-          this.removeLikedPost(postId)
           
           // 찜목록 페이지에서는 찜을 취소한 게시글을 목록에서 제거
           this.posts = this.posts.filter(post => post.id !== postId)
@@ -600,64 +599,15 @@ export default {
             this.fetchWishlistPosts()
           }
           
-          
           alert('찜목록에서 제거되었습니다.')
         } else {
           // 찜하기 (찜목록 페이지에서는 일반적으로 발생하지 않음)
           await marketAPI.likeMarket(postId)
-          this.addLikedPost(postId)
           alert('찜목록에 추가되었습니다.')
         }
       } catch (error) {
         console.error('Error toggling like:', error)
         alert('찜하기 처리 중 오류가 발생했습니다.')
-      }
-    },
-
-    // 게시글을 찜한 게시글 목록에 추가 (수정)
-    addLikedPost(postId) {
-      this.likedPosts.add(postId)
-      this.saveLikedPosts()
-      console.log(`게시글 ${postId} 찜하기 추가됨`)
-    },
-
-    // 게시글을 찜한 게시글 목록에서 제거 (수정)
-    removeLikedPost(postId) {
-      this.likedPosts.delete(postId)
-      this.saveLikedPosts()
-      console.log(`게시글 ${postId} 찜하기 제거됨`)
-    },
-
-    // 특정 게시글이 찜해져 있는지 확인 (수정)
-    isPostLiked(postId) {
-      const isLiked = this.likedPosts.has(postId)
-      console.log(`게시글 ${postId} 찜 상태:`, isLiked)
-      return isLiked
-    },
-
-    // localStorage에 찜한 게시글 저장
-    saveLikedPosts() {
-      try {
-        const likedArray = Array.from(this.likedPosts)
-        localStorage.setItem('likedPosts', JSON.stringify(likedArray))
-        console.log('찜한 게시글 저장됨:', likedArray)
-      } catch (error) {
-        console.error('찜한 게시글 저장 실패:', error)
-      }
-    },
-
-    // localStorage에서 찜한 게시글 불러오기
-    loadLikedPosts() {
-      try {
-        const saved = localStorage.getItem('likedPosts')
-        if (saved) {
-          const likedArray = JSON.parse(saved)
-          this.likedPosts = new Set(likedArray)
-          console.log('찜한 게시글 불러옴:', likedArray)
-        }
-      } catch (error) {
-        console.error('찜한 게시글 불러오기 실패:', error)
-        this.likedPosts = new Set()
       }
     },
 
@@ -696,9 +646,6 @@ export default {
   mounted() {
     // 초기 데이터 로드 (백엔드에서 liked 필드 포함)
     this.fetchWishlistPosts()
-    
-    // localStorage에서 찜한 게시글 불러오기
-    this.loadLikedPosts()
     
     // 드롭다운 외부 클릭 시 닫기
     document.addEventListener('click', (e) => {

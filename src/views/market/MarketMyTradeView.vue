@@ -3,8 +3,7 @@
     <v-container class="market-container">
       <!-- 페이지 헤더 -->
       <div class="market-header">
-        <h1 class="page-title">
-          거래내역</h1>
+        <h1 class="page-title">거래내역</h1>
         <p class="page-subtitle">내가 구매하고 판매한 거래글을 확인해보세요 📋</p>
       </div>
 
@@ -553,7 +552,8 @@ export default {
           const post = this.posts.find(p => p.id === postId)
           if (post) {
             post.isLiked = false
-            console.log(`거래내역 게시글 ${postId} 찜 상태 업데이트: ${post.isLiked}`)
+            console.log(`거래내역 게시글 ${postId} 찜 상태 업데이트: ${post.
+            isLiked}`)
           }
         } else {
           // 찜하지 않은 상태: 찜하기
