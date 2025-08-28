@@ -8,10 +8,10 @@
     
     <v-spacer></v-spacer>
 
-    <div class="brand-container">
+    <router-link to="/" class="brand-container">
       <img src="@/assets/logo.png" alt="멍냥냥 로고" class="header-logo" />
       <span class="service-name">멍냥냥냥</span>
-    </div>
+    </router-link>
 
     <v-spacer></v-spacer>
 
@@ -76,6 +76,8 @@ export default {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
+  text-decoration: none;
+  color: inherit;
 }
 
 .header-logo {
