@@ -242,6 +242,13 @@
                   
                   <div class="map-controls">
                     <button
+                      @click="moveToCurrentLocation"
+                      class="map-btn primary-btn"
+                    >
+                      <v-icon icon="mdi-crosshairs-gps" size="18" />
+                      내 위치로
+                    </button>
+                    <button
                       @click="resetMapLocation"
                       class="map-btn secondary-btn"
                     >
@@ -665,37 +672,75 @@ export default {
         const mapContainer = document.getElementById('location-map')
         if (!mapContainer) return
 
-        const mapOption = {
-          center: new window.kakao.maps.LatLng(37.5665, 126.9780), // 서울시청
-          level: 3
-        }
+        // 사용자 위치를 가져와서 지도 중심 설정
+        getUserLocation().then(userLocation => {
+          const mapOption = {
+            center: new window.kakao.maps.LatLng(userLocation.lat, userLocation.lng),
+            level: 3
+          }
 
-        map.value = new window.kakao.maps.Map(mapContainer, mapOption)
-        
-        // 마커 생성
-        marker.value = new window.kakao.maps.Marker({
-          position: mapOption.center,
-          draggable: true
+          map.value = new window.kakao.maps.Map(mapContainer, mapOption)
+          
+          // 마커 생성
+          marker.value = new window.kakao.maps.Marker({
+            position: mapOption.center,
+            draggable: true
+          })
+
+          // 마커를 지도에 표시
+          marker.value.setMap(map.value)
+
+          // 마커 드래그 이벤트
+          window.kakao.maps.event.addListener(marker.value, 'dragend', function() {
+            const position = marker.value.getPosition()
+            updateLocationFromCoordinates(position.getLat(), position.getLng())
+          })
+
+          // 지도 클릭 이벤트
+          window.kakao.maps.event.addListener(map.value, 'click', function(mouseEvent) {
+            const latlng = mouseEvent.latLng
+            marker.value.setPosition(latlng)
+            updateLocationFromCoordinates(latlng.getLat(), latlng.getLng())
+          })
+
+          // 초기 위치 정보 설정
+          updateLocationFromCoordinates(userLocation.lat, userLocation.lng)
+          
+          console.log('Map initialized successfully with user location')
+          mapLoaded.value = true
+        }).catch(error => {
+          console.warn('사용자 위치를 가져올 수 없어 기본 위치(서울시청)로 설정합니다:', error)
+          // 기본 위치로 설정
+          const mapOption = {
+            center: new window.kakao.maps.LatLng(37.5665, 126.9780), // 서울시청
+            level: 3
+          }
+
+          map.value = new window.kakao.maps.Map(mapContainer, mapOption)
+          
+          marker.value = new window.kakao.maps.Marker({
+            position: mapOption.center,
+            draggable: true
+          })
+
+          marker.value.setMap(map.value)
+
+          // 마커 드래그 이벤트
+          window.kakao.maps.event.addListener(marker.value, 'dragend', function() {
+            const position = marker.value.getPosition()
+            updateLocationFromCoordinates(position.getLat(), position.getLng())
+          })
+
+          // 지도 클릭 이벤트
+          window.kakao.maps.event.addListener(map.value, 'click', function(mouseEvent) {
+            const latlng = mouseEvent.latLng
+            marker.value.setPosition(latlng)
+            updateLocationFromCoordinates(latlng.getLat(), latlng.getLng())
+          })
+
+          console.log('Map initialized successfully with default location')
+          mapLoaded.value = true
         })
-
-        // 마커를 지도에 표시
-        marker.value.setMap(map.value)
-
-        // 마커 드래그 이벤트
-        window.kakao.maps.event.addListener(marker.value, 'dragend', function() {
-          const position = marker.value.getPosition()
-          updateLocationFromCoordinates(position.getLat(), position.getLng())
-        })
-
-        // 지도 클릭 이벤트
-        window.kakao.maps.event.addListener(map.value, 'click', function(mouseEvent) {
-          const latlng = mouseEvent.latLng
-          marker.value.setPosition(latlng)
-          updateLocationFromCoordinates(latlng.getLat(), latlng.getLng())
-        })
-
-        console.log('Map initialized successfully')
-        mapLoaded.value = true
       } catch (error) {
         console.error('Error initializing map:', error)
       }
@@ -720,6 +765,63 @@ export default {
       })
     }
 
+    // 사용자 현재 위치 가져오기
+    const getUserLocation = () => {
+      return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+          reject(new Error('Geolocation is not supported by this browser.'))
+          return
+        }
+
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const location = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            }
+            console.log('사용자 위치 획득:', location)
+            resolve(location)
+          },
+          (error) => {
+            console.error('위치 정보 획득 실패:', error)
+            let errorMessage = '위치 정보를 가져올 수 없습니다.'
+            switch(error.code) {
+              case error.PERMISSION_DENIED:
+                errorMessage = '위치 권한이 거부되었습니다.'
+                break
+              case error.POSITION_UNAVAILABLE:
+                errorMessage = '위치 정보를 사용할 수 없습니다.'
+                break
+              case error.TIMEOUT:
+                errorMessage = '위치 정보 요청 시간이 초과되었습니다.'
+                break
+            }
+            reject(new Error(errorMessage))
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 300000 // 5분
+          }
+        )
+      })
+    }
+
+    // GPS 버튼 클릭 시 현재 위치로 이동
+    const moveToCurrentLocation = () => {
+      getUserLocation().then(userLocation => {
+        if (map.value && marker.value) {
+          const newCenter = new window.kakao.maps.LatLng(userLocation.lat, userLocation.lng)
+          map.value.setCenter(newCenter)
+          marker.value.setPosition(newCenter)
+          updateLocationFromCoordinates(userLocation.lat, userLocation.lng)
+          console.log('현재 위치로 이동했습니다:', userLocation)
+        }
+      }).catch(error => {
+        alert('현재 위치를 가져올 수 없습니다: ' + error.message)
+      })
+    }
+
     const resetMapLocation = () => {
       if (map.value && marker.value) {
         const center = new window.kakao.maps.LatLng(37.5665, 126.9780)
@@ -728,7 +830,7 @@ export default {
         selectedLocation.value = null
         validateForm()
         
-                 console.log('위치가 초기화되었습니다')
+        console.log('위치가 초기화되었습니다')
       }
     }
 
@@ -894,7 +996,8 @@ export default {
       submitForm,
       initMap,
       updateLocationFromCoordinates,
-      resetMapLocation
+      resetMapLocation,
+      moveToCurrentLocation
     }
   }
 }
