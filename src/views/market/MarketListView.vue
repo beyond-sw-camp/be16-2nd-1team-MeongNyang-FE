@@ -68,13 +68,17 @@
             </span>
           </div>
           <div class="header-buttons">
+            <button class="my-trade-btn" @click="navigateToMyTrade">
+              <v-icon icon="mdi-format-list-bulleted" size="18" />
+              거래내역
+            </button>
             <button class="wishlist-btn" @click="navigateToWishlist">
               <v-icon icon="mdi-heart" size="18" />
               찜목록
             </button>
             <button class="create-post-btn" @click="navigateToCreate">
               <v-icon icon="mdi-plus" size="18" />
-              거래글 작성
+              판매하기
             </button>
           </div>
         </div>
@@ -143,6 +147,7 @@
             </div>
           </div>
         </div>
+        
 
         <!-- 빈 상태 -->
         <div v-else class="empty-container">
@@ -492,14 +497,14 @@ export default {
         if (post.isLiked) {
           // 찜 취소
           console.log('찜 취소 시도...')
-          await marketAPI.unlike(postId)
+          await marketAPI.unlikeMarket(postId)
           console.log('찜 취소 성공')
           post.likeCount = Math.max(0, (post.likeCount || 0) - 1)
           this.removeLikedPost(postId)
         } else {
           // 찜하기
           console.log('찜하기 시도...')
-          await marketAPI.like(postId)
+          await marketAPI.likeMarket(postId)
           console.log('찜하기 성공')
           post.likeCount = (post.likeCount || 0) + 1
           this.addLikedPost(postId)
@@ -632,6 +637,10 @@ export default {
 
     navigateToCreate() {
       this.$router.push('/market/new')
+    },
+
+    navigateToMyTrade() {
+      this.$router.push('/market/my-trade')
     },
 
     navigateToWishlist() {
@@ -1036,7 +1045,7 @@ export default {
 
 /* 거래글 작성 버튼 */
 .create-post-btn {
-  background: linear-gradient(135deg, #E87D7D 0%, #d65a5a 100%);
+  background: linear-gradient(135deg, #ff8a8a 0%, #ff6b6b 100%);
   color: white;
   border: none;
   padding: 12px 24px;
@@ -1044,21 +1053,44 @@ export default {
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
+  
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
   gap: 8px;
-  box-shadow: 0 4px 12px rgba(232, 125, 125, 0.2);
+  box-shadow: 0 4px 12px rgba(255, 138, 138, 0.2);
 }
 
 .create-post-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(232, 125, 125, 0.3);
+  box-shadow: 0 6px 16px rgba(255, 138, 138, 0.3);
+}
+
+/* 내 거래내역 버튼 */
+.my-trade-btn {
+  background: linear-gradient(135deg, #ff8a8a 0%, #ff6b6b 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(255, 138, 138, 0.2);
+}
+
+.my-trade-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 138, 138, 0.3);
 }
 
 /* 찜목록 버튼 */
 .wishlist-btn {
-  background: linear-gradient(135deg, #f17b7b 0%, #f69c9c 100%);
+  background: linear-gradient(135deg, #ff8a8a 0%, #ff6b6b 100%);
   color: white;
   border: none;
   padding: 12px 24px;
@@ -1070,12 +1102,12 @@ export default {
   display: flex;
   align-items: center;
   gap: 8px;
-  box-shadow: 0 4px 12px rgba(232, 125, 125, 0.2);
+  box-shadow: 0 4px 12px rgba(255, 138, 138, 0.2);
 }
 
 .wishlist-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(232, 125, 125, 0.3);
+  box-shadow: 0 6px 16px rgba(255, 138, 138, 0.3);
 }
 
 /* 거래글 그리드 (3x3) */
@@ -1435,6 +1467,11 @@ export default {
   }
 
   .create-post-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .my-trade-btn {
     width: 100%;
     justify-content: center;
   }

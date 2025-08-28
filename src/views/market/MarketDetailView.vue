@@ -2,10 +2,10 @@
   <div class="market-detail-page">
     <!-- 헤더 섹션 -->
     <div class="back-btn-wrapper">
-      <button @click="$router.push('/market')" class="back-btn">
-        <v-icon icon="mdi-arrow-left" size="20" />
-        목록으로
-      </button>
+  <button @click="$router.push('/market')" class="back-btn">
+    <v-icon icon="mdi-arrow-left" size="20" />
+    목록으로
+  </button>
       
          <!-- 수정 버튼 - 본인이 작성한 게시글인 경우에만 표시 -->
          <button 
@@ -16,7 +16,7 @@
            <v-icon icon="mdi-pencil" size="20" />
            수정하기
          </button>
-    </div>
+</div>
 
     <!-- 로딩 상태 -->
     <div v-if="loading" class="loading-container">
@@ -88,7 +88,7 @@
            </div>
         </div>
         
-         <!-- 이미지 썸네일 -->
+                 <!-- 이미지 썸네일 -->
          <div v-if="post.productImageList && post.productImageList.length > 1" class="thumbnails">
            <div 
              v-for="(image, index) in post.productImageList" 
@@ -111,7 +111,7 @@
           </div>
           <div class="seller-profile">
             <div class="profile-image-container">
-              <img 
+                                            <img 
                  v-if="getProfileImage(post.sellerProfileUrl)"
                  :src="getProfileImage(post.sellerProfileUrl)" 
                  :alt="post.sellerNickname || '판매자'"
@@ -127,7 +127,7 @@
                />
                <!-- <div class="online-indicator"></div> -->
             </div>
-              <div class="seller-details">
+                         <div class="seller-details">
                <div class="seller-name">{{ post.sellerNickname || '판매자' }}</div>
              </div>
           </div>
@@ -175,22 +175,22 @@
           </div>
         </div>
 
-          <!-- 거래 위치 -->
-          <div class="location-section">
-            <div class="location-header">
-              <h3>거래 위치</h3>
+                 <!-- 거래 위치 -->
+         <div class="location-section">
+           <div class="location-header">
+             <h3>거래 위치</h3>
               <span class="location-detail">{{ getLocationDisplay() }}</span>
-            </div>
+           </div>
             
             
-            <div class="map-container" ref="mapContainer">
+                     <div class="map-container" ref="mapContainer">
               <!-- 지도 로딩 상태 표시 -->
               <div class="map-loading">
                 <div class="map-loading-spinner"></div>
                 <p>지도를 불러오는 중...</p>
               </div>
-            </div>
-         </div>
+           </div>
+        </div>
 
       </div>
     </div>
@@ -206,15 +206,15 @@ import { getToken } from '@/utils/auth'
 export default {
   name: 'MarketDetailView',
   setup() {
-          const route = useRoute()
+         const route = useRoute()
           const router = useRouter()
     
-         // 반응형 데이터
-     const post = ref(null)
-     const loading = ref(true)
-     const error = ref(null)
-     const currentImageIndex = ref(0)
-           const mapContainer = ref(null)
+    // 반응형 데이터
+    const post = ref(null)
+    const loading = ref(true)
+    const error = ref(null)
+    const currentImageIndex = ref(0)
+    const mapContainer = ref(null)
       const locationAddress = ref('위치 정보를 불러오는 중...')
       
              // 현재 사용자 정보 (JWT 토큰에서 추출)
@@ -230,12 +230,12 @@ export default {
     }
     
          // 현재 이미지
-    const currentImage = computed(() => {
+     const currentImage = computed(() => {
       if (!post.value || !post.value.productImageList || post.value.productImageList.length === 0) {
         return null
-      }
+       }
       return post.value.productImageList[currentImageIndex.value]
-    })
+     })
     
          // 거래글 상세 조회
      const fetchPostDetail = async () => {
@@ -263,15 +263,15 @@ export default {
            }
              // 위도, 경도가 있으면 주소 정보 가져오기
              if (post.value.latitude && post.value.longitude) {
-               nextTick(() => {
-                 // 카카오맵 API 로딩 대기
-                 waitForKakaoMap().then(() => {
+             nextTick(() => {
+               // 카카오맵 API 로딩 대기
+               waitForKakaoMap().then(() => {
                    getAddressFromCoordinates(post.value.latitude, post.value.longitude)
-                   initKakaoMap()
-                 }).catch(() => {
-                   console.error('카카오맵 API 로딩 실패')
-                 })
+                 initKakaoMap()
+               }).catch(() => {
+                 console.error('카카오맵 API 로딩 실패')
                })
+             })
              } else {
                // 위도, 경도가 없는 경우
                locationAddress.value = '위치 정보 없음'
@@ -345,25 +345,25 @@ export default {
        })
      }
      
-           // 카카오맵 초기화
-      const initKakaoMap = () => {
-        if (!post.value || !mapContainer.value) return
-        
-        // 카카오맵 API 로딩 확인
-        if (typeof window.kakao === 'undefined' || !window.kakao.maps) {
-          console.error('카카오맵 API가 로드되지 않았습니다.')
-          // 지도 컨테이너에 에러 메시지 표시
-          mapContainer.value.innerHTML = `
-            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #6c757d;">
-              <v-icon icon="mdi-map-marker-off" size="48" color="#E87D7D" />
-              <p style="margin: 10px 0 5px 0; font-size: 0.9rem;">지도를 불러올 수 없습니다</p>
-              <small style="color: #adb5bd; font-size: 0.8rem;">카카오맵 API 로딩 중...</small>
-            </div>
-          `
-          return
-        }
-        
-        try {
+     // 카카오맵 초기화
+     const initKakaoMap = () => {
+       if (!post.value || !mapContainer.value) return
+       
+       // 카카오맵 API 로딩 확인
+       if (typeof window.kakao === 'undefined' || !window.kakao.maps) {
+         console.error('카카오맵 API가 로드되지 않았습니다.')
+         // 지도 컨테이너에 에러 메시지 표시
+         mapContainer.value.innerHTML = `
+           <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #6c757d;">
+             <v-icon icon="mdi-map-marker-off" size="48" color="#E87D7D" />
+             <p style="margin: 10px 0 5px 0; font-size: 0.9rem;">지도를 불러올 수 없습니다</p>
+             <small style="color: #adb5bd; font-size: 0.8rem;">카카오맵 API 로딩 중...</small>
+           </div>
+         `
+         return
+       }
+       
+       try {
           // 위도, 경도 정보가 있는지 확인
           if (post.value.latitude && post.value.longitude) {
             console.log('정확한 좌표 정보로 지도 초기화:', post.value.latitude, post.value.longitude)
@@ -372,34 +372,34 @@ export default {
              mapContainer.value.innerHTML = ''
              
              // 카카오맵 생성 (위도, 경도로 중심 설정)
-             const map = new window.kakao.maps.Map(mapContainer.value, {
+         const map = new window.kakao.maps.Map(mapContainer.value, {
                center: new window.kakao.maps.LatLng(post.value.latitude, post.value.longitude),
                level: 3,
                zoomControl: true,
                scaleControl: true
              })
-            
-            // 마커 생성
-            const marker = new window.kakao.maps.Marker({
+             
+             // 마커 생성
+             const marker = new window.kakao.maps.Marker({
               position: new window.kakao.maps.LatLng(post.value.latitude, post.value.longitude)
-            })
-            
-            // 마커를 지도에 표시
-            marker.setMap(map)
-            
-            // 인포윈도우 생성
-            const infowindow = new window.kakao.maps.InfoWindow({
+             })
+             
+             // 마커를 지도에 표시
+             marker.setMap(map)
+             
+             // 인포윈도우 생성
+             const infowindow = new window.kakao.maps.InfoWindow({
               content: `<div style="padding:8px;font-size:13px;font-weight:600;color:#2c3e50;">
                 <div style="margin-bottom:4px;">${post.value.title}</div>
                 <div style="font-size:11px;color:#6c757d;">${formatPrice(post.value.price)}</div>
               </div>`
-            })
-            
-            // 마커 클릭 시 인포윈도우 표시
-            window.kakao.maps.event.addListener(marker, 'click', () => {
-              infowindow.open(map, marker)
-            })
-            
+             })
+             
+             // 마커 클릭 시 인포윈도우 표시
+             window.kakao.maps.event.addListener(marker, 'click', () => {
+               infowindow.open(map, marker)
+             })
+             
             // 마커에 마우스 오버 시 인포윈도우 표시
             window.kakao.maps.event.addListener(marker, 'mouseover', () => {
               infowindow.open(map, marker)
@@ -412,7 +412,7 @@ export default {
             
             console.log('카카오맵 초기화 완료 - 좌표 기반:', post.value.latitude, post.value.longitude)
             
-          } else {
+           } else {
              // 위도, 경도가 없는 경우
              console.log('위치 정보가 없어 지도를 표시할 수 없습니다.')
              mapContainer.value.innerHTML = `
@@ -424,19 +424,19 @@ export default {
              `
              return
            }
-          
-        } catch (error) {
-          console.error('카카오맵 초기화 오류:', error)
-          // 에러 메시지 표시
-          mapContainer.value.innerHTML = `
-            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #6c757d;">
-              <v-icon icon="mdi-map-marker-off" size="48" color="#E87D7D" />
-              <p style="margin: 10px 0 5px 0; font-size: 0.9rem;">지도 로딩 오류</p>
-              <small style="color: #adb5bd; font-size: 0.8rem;">${error.message}</small>
-            </div>
-          `
-        }
-      }
+         
+       } catch (error) {
+         console.error('카카오맵 초기화 오류:', error)
+         // 에러 메시지 표시
+         mapContainer.value.innerHTML = `
+           <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #6c757d;">
+             <v-icon icon="mdi-map-marker-off" size="48" color="#E87D7D" />
+             <p style="margin: 10px 0 5px 0; font-size: 0.9rem;">지도 로딩 오류</p>
+             <small style="color: #adb5bd; font-size: 0.8rem;">${error.message}</small>
+           </div>
+         `
+       }
+     }
      
      // 찜하기 토글
     const toggleLike = async () => {
@@ -455,12 +455,12 @@ export default {
         if (isLiked) {
           // 찜 취소
           console.log('찜 취소 시도...')
-          await marketAPI.unlike(postId)
+          await marketAPI.unlikeMarket(postId)
           console.log('찜 취소 성공')
         } else {
           // 찜하기
           console.log('찜하기 시도...')
-          await marketAPI.like(postId)
+          await marketAPI.likeMarket(postId)
           console.log('찜하기 성공')
         }
         
@@ -492,9 +492,9 @@ export default {
        }
      }
     
-         const setCurrentImage = (index) => {
-       currentImageIndex.value = index
-     }
+    const setCurrentImage = (index) => {
+      currentImageIndex.value = index
+    }
      
      // 수정 페이지로 이동
      const goToEditPage = () => {
@@ -575,11 +575,11 @@ export default {
               console.error('주소 가져오기 오류:', error)
               locationAddress.value = '주소 정보를 가져올 수 없습니다'
             }
-          }
+     }
     
-                   onMounted(() => {
-        console.log('MarketDetailView 마운트됨')
-        console.log('카카오맵 API 상태:', typeof window.kakao, window.kakao?.maps)
+         onMounted(() => {
+       console.log('MarketDetailView 마운트됨')
+       console.log('카카오맵 API 상태:', typeof window.kakao, window.kakao?.maps)
         
         // 현재 사용자 정보 설정
         const token = getToken('accessToken')
@@ -619,34 +619,34 @@ export default {
           }
         }
         
-        fetchPostDetail()
-      })
+       fetchPostDetail()
+     })
     
-        return {
-           post,
-           loading,
-           error,
-           currentImageIndex,
-           currentImage,
-           mapContainer,
+         return {
+       post,
+       loading,
+       error,
+       currentImageIndex,
+       currentImage,
+       mapContainer,
            locationAddress,
            currentUserId,
            currentUserEmail,
-           fetchPostDetail,
-           toggleLike,
-           previousImage,
-           nextImage,
-           setCurrentImage,
-           getCategoryLabel,
-           getStatusLabel,
-           formatPrice,
-           formatDate,
+       fetchPostDetail,
+       toggleLike,
+       previousImage,
+       nextImage,
+       setCurrentImage,
+       getCategoryLabel,
+       getStatusLabel,
+       formatPrice,
+       formatDate,
            getLocationDisplay,
-           initKakaoMap,
-           getProfileImage,
+       initKakaoMap,
+       getProfileImage,
            handleImageError,
            goToEditPage
-         }
+     }
   }
 }
 </script>
@@ -684,7 +684,7 @@ export default {
 
 .back-btn:hover {
   transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(232, 125, 125, 0.3);
+  box-shadow: 0 8px 25px rgba(232, 125, 125, 0.3);
 }
 
 .detail-content {
@@ -1203,18 +1203,18 @@ export default {
   text-align: center;
 }
 
- .map-container {
+.map-container {
     height: 350px;
-    background: #f8f9fa;
-    border-radius: 20px;
-    border: 2px solid #dee2e6;
-    overflow: hidden;
-    position: relative;
-  }
+   background: #f8f9fa;
+   border-radius: 20px;
+   border: 2px solid #dee2e6;
+   overflow: hidden;
+   position: relative;
+ }
 
- .map-container:hover {
-   border-color: #E87D7D;
-   background: #f1f3f4;
+.map-container:hover {
+  border-color: #E87D7D;
+  background: #f1f3f4;
  }
 
 /* 지도 로딩 상태 스타일 */

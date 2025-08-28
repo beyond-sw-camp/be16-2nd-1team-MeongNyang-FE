@@ -6,6 +6,12 @@ export default [
     meta: { requiresAuth: true }
   },
   {
+    path: '/market/my-trade',
+    name: 'MarketMyTrade',
+    component: () => import('@/views/market/MarketMyTradeView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/market/wishlist',
     name: 'MarketWishlist',
     component: () => import('@/views/market/MarketWishlistView.vue'),

@@ -583,7 +583,7 @@ export default {
       try {
         if (isLiked) {
           // 찜하기 취소 - 찜목록에서 완전히 제거
-          await marketAPI.unlike(postId)
+          await marketAPI.unlikeMarket(postId)
           this.removeLikedPost(postId)
           
           // 찜목록 페이지에서는 찜을 취소한 게시글을 목록에서 제거
@@ -600,10 +600,11 @@ export default {
             this.fetchWishlistPosts()
           }
           
+          
           alert('찜목록에서 제거되었습니다.')
         } else {
           // 찜하기 (찜목록 페이지에서는 일반적으로 발생하지 않음)
-          await marketAPI.like(postId)
+          await marketAPI.likeMarket(postId)
           this.addLikedPost(postId)
           alert('찜목록에 추가되었습니다.')
         }
