@@ -73,9 +73,8 @@
               :pet="pet"
               :representative-pet="representativePet"
               @set-representative="setAsRepresentative"
-              @edit="editPet"
-              @delete="confirmDelete"
               @view-details="viewPet"
+              @delete="confirmDelete"
             />
           </div>
         </div>
@@ -114,16 +113,14 @@
           <v-card class="pet-form-card" rounded="xl">
             <v-card-title class="form-header">
               <div class="form-title">
-                <span class="text-h4">{{ editingPet ? '반려동물 수정' : '새 반려동물 등록' }}</span>
+                <span class="text-h4">새 반려동물 등록</span>
               </div>
             </v-card-title>
             <v-card-text class="form-content">
-              <PetForm
-                :pet="editingPet"
-                :is-edit="!!editingPet"
-                @close="closeForm"
-                @success="handleFormSuccess"
-              />
+                        <PetForm
+            @close="closeForm"
+            @success="handleFormSuccess"
+          />
             </v-card-text>
           </v-card>
         </v-dialog>
@@ -202,7 +199,7 @@ export default {
     // 반응형 데이터
     const showAddForm = ref(false)
     const showDeleteConfirm = ref(false)
-    const editingPet = ref(null)
+
     const petToDelete = ref(null)
     
     // 계산된 속성
@@ -380,24 +377,7 @@ export default {
       console.log('=== selectPet 디버깅 끝 ===')
     }
     
-    const editPet = (pet) => {
-      console.log('🔄 editPet 호출됨')
-      console.log('편집할 펫 데이터:', pet)
-      console.log('펫 ID:', pet.id)
-      console.log('펫 이미지 URL:', pet.url)
-      
-      if (!pet.id) {
-        showSnackbar('ID가 없어 수정할 수 없습니다. 백엔드 관리자에게 문의하세요.', 'error')
-        return
-      }
-      
-      console.log('✅ editingPet 설정 전 상태:', editingPet.value)
-      editingPet.value = pet
-      console.log('✅ editingPet 설정 후 상태:', editingPet.value)
-      
-      showAddForm.value = true
-      console.log('✅ 수정 폼 모달 열림')
-    }
+
     
     const setAsRepresentative = async (pet) => {
       try {
@@ -463,10 +443,8 @@ export default {
     
     const closeForm = () => {
       console.log('🔄 closeForm 호출됨')
-      console.log('폼 닫기 전 editingPet:', editingPet.value)
       
       showAddForm.value = false
-      editingPet.value = null
       
       console.log('✅ 폼 닫기 완료')
     }
@@ -501,7 +479,7 @@ export default {
       // 반응형 데이터
       showAddForm,
       showDeleteConfirm,
-      editingPet,
+
       petToDelete,
       
       // 계산된 속성
@@ -521,7 +499,7 @@ export default {
       getCatCount,
 
       selectPet,
-      editPet,
+
       setAsRepresentative,
       confirmDelete,
       deletePet,

@@ -52,7 +52,7 @@
             size="small"
             color="grey-darken-1"
             :disabled="!pet.id"
-            @click="$emit('edit', pet)"
+            @click="$emit('view-details', pet)"
             density="comfortable"
           />
           <v-btn

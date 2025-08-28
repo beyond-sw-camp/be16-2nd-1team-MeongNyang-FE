@@ -13,42 +13,89 @@
 
     <!-- 펫 정보 표시 (읽기 모드) -->
     <div v-else-if="pet && !isEditMode" class="pet-detail-content">
-      <!-- 헤더 섹션 -->
-      <div class="pet-hero-section">
-        <div class="hero-background"></div>
-        
-        <div class="hero-content">
-          <div class="pet-avatar-container">
-            <div class="pet-avatar-wrapper">
-              <v-avatar size="160" class="pet-avatar">
-                <v-img
-                  v-if="pet.url"
-                  :src="pet.url"
-                  :alt="pet.name"
-                  cover
-                  class="pet-image"
-                />
-                <div v-else class="avatar-placeholder">
-                  <v-icon :size="80" :color="getSpeciesIconColor(pet.petOrder)" :icon="getSpeciesIcon(pet.petOrder)" />
-                </div>
-              </v-avatar>
-              
-              <!-- 대표 반려동물 배지 -->
-              <div v-if="isRepresentative" class="representative-badge">
-                <v-icon color="amber" size="20">mdi-star</v-icon>
-                <span>대표</span>
-              </div>
+      <!-- 메인 정보 섹션 -->
+      <div class="main-info-section">
+        <!-- 좌측: 프로필 사진 -->
+        <div class="profile-image-section">
+          <v-avatar size="200" class="profile-avatar">
+            <v-img
+              v-if="pet.url"
+              :src="pet.url"
+              :alt="pet.name"
+              cover
+              class="pet-image"
+            />
+            <div v-else class="avatar-placeholder">
+              <v-icon :size="100" :color="getSpeciesIconColor(pet.petOrder)" :icon="getSpeciesIcon(pet.petOrder)" />
             </div>
-          </div>
+          </v-avatar>
           
-          <div class="pet-info-header">
-            <h1 class="pet-name">{{ petName }}</h1>
-            <div class="pet-species">
-              <v-icon :size="24" :color="getSpeciesIconColor(pet.petOrder)" :icon="getSpeciesIcon(pet.petOrder)" />
-              <span>{{ petSpecies }}</span>
-            </div>
-            <p class="pet-description">{{ petDescription }}</p>
+          <!-- 대표 반려동물 배지 -->
+          <div v-if="isRepresentative" class="representative-badge">
+            <v-icon color="amber" size="24">mdi-star</v-icon>
+            <span>대표</span>
           </div>
+        </div>
+        
+        <!-- 우측: 기본 정보 -->
+        <div class="basic-info-section">
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-label">
+                <v-icon :size="20" color="#ec4899">mdi-account</v-icon>
+                이름
+              </div>
+              <div class="info-value">{{ pet.name }}</div>
+            </div>
+            
+            <div class="info-item">
+              <div class="info-label">
+                <v-icon :size="20" color="#ec4899">mdi-paw</v-icon>
+                종류
+              </div>
+              <div class="info-value">{{ pet.species }}</div>
+            </div>
+            
+            <div class="info-item">
+              <div class="info-label">
+                <v-icon :size="20" color="#ec4899">mdi-gender-male</v-icon>
+                성별
+              </div>
+              <div class="info-value">{{ getGenderLabel(pet.gender) }}</div>
+            </div>
+            
+            <div class="info-item">
+              <div class="info-label">
+                <v-icon :size="20" color="#ec4899">mdi-cake-variant</v-icon>
+                나이
+              </div>
+              <div class="info-value">{{ pet.age }}살</div>
+            </div>
+            
+            <div class="info-item">
+              <div class="info-label">
+                <v-icon :size="20" color="#ec4899">mdi-weight</v-icon>
+                체중
+              </div>
+              <div class="info-value">{{ pet.weight }}kg</div>
+            </div>
+            
+            <div class="info-item">
+              <div class="info-label">
+                <v-icon :size="20" color="#ec4899">mdi-calendar</v-icon>
+                생일
+              </div>
+              <div class="info-value">{{ formatBirthday(pet.birthday) }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 소개글 섹션 -->
+      <div class="introduction-section">
+        <h3 class="section-title">소개</h3>
+        <div class="introduction-content">
+          {{ pet.introduce || '소개글이 없습니다.' }}
         </div>
       </div>
 
@@ -58,7 +105,7 @@
           <v-btn
             v-if="!isRepresentative"
             variant="elevated"
-            background="linear-gradient(135deg, #6366f1, #8b5cf6)"
+            background="linear-gradient(135deg, #ec4899, #db2777)"
             rounded="xl"
             size="large"
             prepend-icon="mdi-star"
@@ -69,11 +116,11 @@
           </v-btn>
           <v-btn
             variant="outlined"
-            color="primary"
+            color="#ec4899"
             rounded="xl"
             size="large"
             prepend-icon="mdi-pencil"
-            @click="isEditMode = true"
+            @click="enterEditMode"
             class="action-btn"
           >
             수정
@@ -91,114 +138,205 @@
           </v-btn>
         </div>
       </div>
+    </div>
 
-      <!-- 정보 카드 섹션 -->
-      <div class="info-section">
-        <h2 class="section-title">기본 정보</h2>
+    <!-- 수정 모드 -->
+    <div v-if="pet && isEditMode" class="pet-detail-content">
+      <!-- 메인 정보 섹션 (수정 모드) -->
+      <div class="main-info-section">
+        <!-- 좌측: 프로필 사진 (수정 가능) -->
+        <div class="profile-image-section">
+          <v-avatar size="200" class="profile-avatar">
+            <v-img
+              v-if="editData.profileImageUrl || pet.url"
+              :src="editData.profileImageUrl || pet.url"
+              :alt="pet.name"
+              cover
+              class="pet-image"
+            />
+            <div v-else class="avatar-placeholder">
+              <v-icon :size="100" :color="getSpeciesIconColor(pet.petOrder)" :icon="getSpeciesIcon(pet.petOrder)" />
+            </div>
+          </v-avatar>
+          
+          <!-- 이미지 업로드 버튼 -->
+          <v-btn
+            icon="mdi-camera"
+            size="small"
+            color="#ec4899"
+            class="image-upload-btn"
+            @click="triggerImageUpload"
+          />
+          
+          <input
+            ref="imageInput"
+            type="file"
+            accept="image/*"
+            @change="handleImageChange"
+            style="display: none"
+          />
+        </div>
         
-        <div class="info-cards">
-          <div class="info-card">
-            <div class="card-icon">
-              <v-icon size="28" color="primary">mdi-account</v-icon>
+        <!-- 우측: 기본 정보 (수정 가능) -->
+        <div class="basic-info-section">
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-label">
+                <v-icon :size="20" color="#ec4899">mdi-account</v-icon>
+                이름 *
+              </div>
+              <v-text-field
+                v-model="editData.name"
+                variant="outlined"
+                density="comfortable"
+                hide-details="auto"
+                class="edit-input"
+                required
+              />
             </div>
-            <div class="card-content">
-              <h3 class="card-label">이름</h3>
-              <p class="card-value">{{ pet.name }}</p>
+            
+            <div class="info-item">
+              <div class="info-label">
+                <v-icon :size="20" color="#ec4899">mdi-paw</v-icon>
+                종류 *
+              </div>
+              <v-text-field
+                v-model="editData.species"
+                variant="outlined"
+                density="comfortable"
+                hide-details="auto"
+                class="edit-input"
+                required
+              />
+            </div>
+            
+            <div class="info-item">
+              <div class="info-label">
+                <v-icon :size="20" color="#ec4899">mdi-gender-male</v-icon>
+                성별 *
+              </div>
+              <v-chip-group v-model="editData.gender" column mandatory>
+                <v-chip value="FEMALE" prepend-icon="mdi-gender-female">암컷</v-chip>
+                <v-chip value="MALE" prepend-icon="mdi-gender-male">수컷</v-chip>
+                <v-chip value="NEUTRALITY" prepend-icon="mdi-help-circle-outline">중성</v-chip>
+              </v-chip-group>
+            </div>
+            
+            <div class="info-item">
+              <div class="info-label">
+                <v-icon :size="20" color="#ec4899">mdi-cake-variant</v-icon>
+                나이 *
+              </div>
+              <v-text-field
+                v-model.number="editData.age"
+                type="number"
+                variant="outlined"
+                density="comfortable"
+                hide-details="auto"
+                class="edit-input"
+                required
+              />
+            </div>
+            
+            <div class="info-item">
+              <div class="info-label">
+                <v-icon :size="20" color="#ec4899">mdi-weight</v-icon>
+                체중 (kg) *
+              </div>
+              <v-text-field
+                v-model.number="editData.weight"
+                type="number"
+                variant="outlined"
+                density="comfortable"
+                hide-details="auto"
+                class="edit-input"
+                suffix="kg"
+                required
+              />
+            </div>
+            
+            <div class="info-item">
+              <div class="info-label">
+                <v-icon :size="20" color="#ec4899">mdi-calendar</v-icon>
+                생일
+              </div>
+              <v-text-field
+                v-model="editData.birthday"
+                type="date"
+                variant="outlined"
+                density="comfortable"
+                hide-details="auto"
+                class="edit-input"
+              />
             </div>
           </div>
-          
-          <div class="info-card">
-            <div class="card-icon">
-              <v-icon :size="28" :color="getSpeciesIconColor(pet.petOrder)" :icon="getSpeciesIcon(pet.petOrder)" />
-            </div>
-            <div class="card-content">
-              <h3 class="card-label">종류</h3>
-              <p class="card-value">{{ pet.species || '알 수 없음' }}</p>
-            </div>
-          </div>
-          
-          <div class="info-card">
-            <div class="card-icon">
-              <v-icon 
-                size="28" 
-                :color="pet.gender === 'MALE' ? 'blue' : 'red'"
-              >
-                mdi-gender-{{ pet.gender === 'MALE' ? 'male' : 'female' }}
-              </v-icon>
-            </div>
-            <div class="card-content">
-              <h3 class="card-label">성별</h3>
-              <p class="card-value">{{ getGenderLabel(pet.gender) }}</p>
-            </div>
-          </div>
-          
-          <div class="info-card">
-            <div class="card-icon">
-              <v-icon size="28" color="orange">mdi-cake-variant</v-icon>
-            </div>
-            <div class="card-content">
-              <h3 class="card-label">나이</h3>
-              <p class="card-value">{{ pet.age }}살</p>
-            </div>
-          </div>
-          
-          <div class="info-card">
-            <div class="card-icon">
-              <v-icon size="28" color="teal">mdi-weight</v-icon>
-            </div>
-            <div class="card-content">
-              <h3 class="card-label">체중</h3>
-              <p class="card-value">{{ pet.weight }}kg</p>
-            </div>
-          </div>
-          
-          <div class="info-card">
-            <div class="card-icon">
-              <v-icon size="28" color="indigo">mdi-calendar</v-icon>
-            </div>
-            <div class="card-content">
-              <h3 class="card-label">생일</h3>
-              <p class="card-value">{{ formatBirthday(pet.birthday) }}</p>
-            </div>
-          </div>
-          
-
         </div>
       </div>
 
-      <!-- 하단 액션 버튼 -->
-      <div class="bottom-actions">
-        <v-btn
+      <!-- 소개글 섹션 (수정 가능) -->
+      <div class="introduction-section">
+        <h3 class="section-title">소개</h3>
+        <v-textarea
+          v-model="editData.introduce"
           variant="outlined"
-          color="primary"
-          prepend-icon="mdi-arrow-left"
-          @click="$router.push('/pets')"
-          class="back-btn"
-          size="large"
-          rounded="xl"
-        >
-          목록으로 돌아가기
-        </v-btn>
+          rows="4"
+          auto-grow
+          placeholder="반려동물에 대한 소개를 입력하세요"
+          class="edit-textarea"
+        />
       </div>
-    </div>
 
-    <!-- 펫 수정 폼 (수정 모드) -->
-    <div v-else-if="pet && isEditMode" class="edit-mode-container">
-      <v-card class="edit-card" elevation="8" rounded="xl">
-        <v-card-title class="edit-header">
-          <div class="edit-title">
-            <span class="text-h4">{{ pet.name }} 수정</span>
-          </div>
-        </v-card-title>
-        <v-card-text class="edit-content">
-          <PetForm
-            :pet="pet"
-            :is-edit="true"
-            @close="exitEditMode"
-            @success="handleEditSuccess"
-          />
-        </v-card-text>
-      </v-card>
+      <!-- 액션 버튼 섹션 (수정 모드) -->
+      <div class="action-section">
+        <div class="action-buttons">
+          <v-btn
+            v-if="!isRepresentative"
+            variant="elevated"
+            background="linear-gradient(135deg, #ec4899, #db2777)"
+            rounded="xl"
+            size="large"
+            prepend-icon="mdi-star"
+            @click="setAsRepresentative"
+            class="action-btn primary-action"
+          >
+            대표로 설정
+          </v-btn>
+          <v-btn
+            variant="outlined"
+            color="error"
+            rounded="xl"
+            size="large"
+            prepend-icon="mdi-close"
+            @click="cancelEdit"
+            class="action-btn"
+          >
+            취소
+          </v-btn>
+          <v-btn
+            :disabled="!isFormDirty"
+            variant="elevated"
+            background="linear-gradient(135deg, #ec4899, #db2777)"
+            rounded="xl"
+            size="large"
+            prepend-icon="mdi-content-save"
+            @click="saveEdit"
+            class="action-btn"
+          >
+            수정
+          </v-btn>
+          <v-btn
+            variant="outlined"
+            color="error"
+            rounded="xl"
+            size="large"
+            prepend-icon="mdi-delete"
+            @click="showDeleteConfirm = true"
+            class="action-btn"
+          >
+            삭제
+          </v-btn>
+        </div>
+      </div>
     </div>
 
     <!-- 펫을 찾을 수 없음 -->
@@ -309,7 +447,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePetStore } from '@/stores/pet'
-import PetForm from '@/components/pet/PetForm.vue'
+
 import ModalDialog from '@/components/ui/organisms/ModalDialog.vue'
 
 const route = useRoute()
@@ -327,37 +465,46 @@ const snackbarMessage = ref('')
 const snackbarColor = ref('success')
 const snackbarIcon = ref('mdi-check-circle')
 
+// 수정 모드 데이터
+const editData = ref({
+  name: '',
+  species: '',
+  gender: '',
+  age: null,
+  weight: null,
+  birthday: null,
+  introduce: '',
+  profileImageUrl: null,
+  imageFile: null
+})
+const imageInput = ref(null)
+
 // computed properties
 const isRepresentative = computed(() => {
   if (!pet.value || !petStore.representativePet) return false
   return pet.value.id === petStore.representativePet.id
 })
 
-const petName = computed(() => pet.value?.name || '알 수 없음')
-const petSpecies = computed(() => pet.value?.species || '알 수 없음')
-const petDescription = computed(() => {
-  if (!pet.value) return ''
-  
-  // 소개글이 있으면 소개글 표시, 없으면 기본 메시지
-  if (pet.value.introduce && pet.value.introduce.trim() && pet.value.introduce !== '1') {
-    return pet.value.introduce
-  }
-  
-  // 기본 메시지 (더 따뜻하고 개성 있는 메시지)
-  const defaultMessages = [
-    `${pet.value.name}와(과) 함께하는 특별한 순간들을 기록해보세요`,
-    `${pet.value.name}와(과)의 행복한 일상을 담아보세요`,
-    `${pet.value.name}와(과) 함께하는 소중한 추억을 만들어가요`,
-    `${pet.value.name}와(과)의 사랑스러운 모습을 기록해보세요`
-  ]
-  
-  // 랜덤하게 기본 메시지 선택
-  const randomIndex = Math.floor(Math.random() * defaultMessages.length)
-  return defaultMessages[randomIndex]
-})
+
 
 // 계산된 속성
 const petId = computed(() => route.params.id)
+
+// 수정 모드 computed
+const isFormDirty = computed(() => {
+  if (!pet.value) return false
+  
+  return (
+    editData.value.name !== pet.value.name ||
+    editData.value.species !== pet.value.species ||
+    editData.value.gender !== pet.value.gender ||
+    editData.value.age !== pet.value.age ||
+    editData.value.weight !== pet.value.weight ||
+    editData.value.birthday !== pet.value.birthday ||
+    editData.value.introduce !== pet.value.introduce ||
+    editData.value.imageFile !== null
+  )
+})
 
 // 펫 정보 로드
 const loadPet = async () => {
@@ -405,17 +552,7 @@ const loadPet = async () => {
 }
 
 // 수정 모드 종료
-const exitEditMode = () => {
-  isEditMode.value = false
-}
 
-// 수정 성공 처리
-const handleEditSuccess = (message) => {
-  showMessage(message, 'success')
-  exitEditMode()
-  // 펫 정보 새로고침
-  loadPet()
-}
 
 // 대표 반려동물 설정
 const setAsRepresentative = async () => {
@@ -488,13 +625,168 @@ const getSpeciesIconColor = (petOrder) => {
 
 const getGenderLabel = (gender) => {
   if (!gender) return '알 수 없음'
-  return gender === 'MALE' ? '수컷' : '암컷'
+  if (gender === 'MALE') return '수컷'
+  if (gender === 'FEMALE') return '암컷'
+  if (gender === 'NEUTRALITY') return '중성'
+  return '알 수 없음'
 }
 
 const formatBirthday = (birthday) => {
   if (!birthday) return '알 수 없음'
-  const date = new Date(birthday)
-  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`
+  
+  // 이미 'YYYY. MM. DD.' 형식인 경우 그대로 반환
+  if (typeof birthday === 'string' && birthday.includes('.')) {
+    return birthday
+  }
+  
+  // Date 객체로 변환하여 형식화
+  try {
+    const date = new Date(birthday)
+    if (isNaN(date.getTime())) return '알 수 없음'
+    return `${date.getFullYear()}. ${String(date.getMonth() + 1).padStart(2, '0')}. ${String(date.getDate()).padStart(2, '0')}.`
+  } catch (error) {
+    return '알 수 없음'
+  }
+}
+
+// 수정 모드 메서드들
+const enterEditMode = () => {
+  console.log('🔄 수정 모드 진입')
+  
+  // 현재 펫 데이터를 수정 데이터로 복사
+  Object.assign(editData.value, {
+    name: pet.value.name || '',
+    species: pet.value.species || '',
+    gender: pet.value.gender || '',
+    age: pet.value.age || null,
+    weight: pet.value.weight || null,
+    birthday: pet.value.birthday || null,
+    introduce: pet.value.introduce || '',
+    profileImageUrl: null,
+    imageFile: null
+  })
+  
+  // birthday 형식 정규화 (YYYY-MM-DD로 변환)
+  if (editData.value.birthday && typeof editData.value.birthday === 'string') {
+    if (editData.value.birthday.includes('.')) {
+      // '2025. 08. 28.' -> '2025-08-28'
+      editData.value.birthday = editData.value.birthday.replace(/\./g, ' ').trim().replace(/\s+/g, '-')
+    }
+  }
+  
+  isEditMode.value = true
+  console.log('✅ 수정 데이터 초기화 완료:', editData.value)
+}
+
+const cancelEdit = () => {
+  console.log('🔄 수정 모드 취소')
+  isEditMode.value = false
+  
+  // 수정 데이터 초기화
+  Object.assign(editData.value, {
+    name: '',
+    species: '',
+    gender: '',
+    age: null,
+    weight: null,
+    birthday: null,
+    introduce: '',
+    profileImageUrl: null,
+    imageFile: null
+  })
+  
+  console.log('✅ 수정 모드 취소 완료')
+}
+
+const saveEdit = async () => {
+  if (!isFormDirty.value) {
+    showMessage('변경된 내용이 없습니다.', 'warning')
+    return
+  }
+  
+  console.log('🔄 수정 저장 시작')
+  
+  try {
+    // 수정할 데이터 준비
+    const updateData = {
+      name: editData.value.name,
+      species: editData.value.species,
+      gender: editData.value.gender,
+      age: editData.value.age,
+      weight: editData.value.weight,
+      birthday: editData.value.birthday,
+      introduce: editData.value.introduce
+    }
+    
+    // birthday 형식 정규화 (YYYY-MM-DD로 변환)
+    if (updateData.birthday && typeof updateData.birthday === 'string') {
+      if (updateData.birthday.includes('.')) {
+        // '2025. 08. 28.' -> '2025-08-28'
+        updateData.birthday = updateData.birthday.replace(/\./g, ' ').trim().replace(/\s+/g, '-')
+      }
+    }
+    
+    // 이미지가 변경된 경우 FormData 사용
+    let payload = updateData
+    if (editData.value.imageFile) {
+      const form = new FormData()
+      Object.keys(updateData).forEach(key => {
+        if (updateData[key] != null) {
+          form.append(key, updateData[key])
+        }
+      })
+      form.append('profileImage', editData.value.imageFile)
+      payload = form
+    }
+    
+    // API 호출
+    const result = await petStore.updatePet(pet.value.id, payload)
+    
+    if (result.success) {
+      showMessage('반려동물 정보가 수정되었습니다.', 'success')
+      
+      // 수정 모드 종료
+      isEditMode.value = false
+      
+      // 펫 데이터 새로고침
+      await loadPet()
+    } else {
+      showMessage(result.message || '수정에 실패했습니다.', 'error')
+    }
+  } catch (error) {
+    console.error('수정 저장 실패:', error)
+    showMessage('수정 중 오류가 발생했습니다.', 'error')
+  }
+}
+
+// 이미지 업로드 관련 메서드들
+const triggerImageUpload = () => {
+  imageInput.value?.click()
+}
+
+const handleImageChange = (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    if (file.size > 5 * 1024 * 1024) {
+      showMessage('이미지 크기는 5MB 이하로 선택해주세요.', 'error')
+      return
+    }
+    
+    if (!file.type.startsWith('image/')) {
+      showMessage('이미지 파일만 업로드할 수 있습니다.', 'error')
+      return
+    }
+    
+    // 미리보기 URL 생성
+    if (editData.value.profileImageUrl) {
+      URL.revokeObjectURL(editData.value.profileImageUrl)
+    }
+    
+    editData.value.profileImageUrl = URL.createObjectURL(file)
+    editData.value.imageFile = file
+    
+    showMessage('이미지가 선택되었습니다.', 'success')
+  }
 }
 
 // 컴포넌트 마운트 시 데이터 로드
@@ -522,13 +814,15 @@ onMounted(async () => {
 <style scoped>
 .pet-detail-container {
   min-height: 100vh;
-  background-color: #fafafa;
-  padding: 20px 0;
+  background: var(--v-theme-surface-light);
+  padding: 32px 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
   position: relative;
 }
+
+
 
 .loading-container {
   display: flex;
@@ -552,8 +846,15 @@ onMounted(async () => {
 .pet-detail-content {
   width: 100%;
   max-width: 1200px;
-  padding: 0 20px;
+  margin: 0 auto;
+  padding: 32px;
   box-sizing: border-box;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e9ecef;
+  overflow: hidden;
+  position: relative;
 }
 
 /* 히어로 섹션 */
@@ -878,6 +1179,181 @@ onMounted(async () => {
   margin-bottom: 25px;
 }
 
+/* 새로운 레이아웃 스타일 */
+.main-info-section {
+  display: flex;
+  gap: 50px;
+  margin-bottom: 50px;
+  align-items: flex-start;
+  padding: 20px 0;
+}
+
+.profile-image-section {
+  position: relative;
+  flex-shrink: 0;
+  padding: 20px;
+}
+
+.profile-avatar {
+  border: 6px solid rgba(255, 139, 139, 0.2);
+  box-shadow: 0 20px 40px rgba(255, 139, 139, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.profile-avatar:hover {
+  transform: scale(1.05);
+  box-shadow: 0 25px 50px rgba(255, 139, 139, 0.4);
+}
+
+.image-upload-btn {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.basic-info-section {
+  flex: 1;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.info-item {
+  background: white;
+  padding: 20px;
+  border-radius: 16px;
+  border: 2px solid #e9ecef;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.info-item:hover {
+  border-color: #E87D7D;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(232, 125, 125, 0.15);
+}
+
+.info-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.info-value {
+  font-size: 16px;
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.introduction-section {
+  background: white;
+  padding: 32px;
+  border-radius: 20px;
+  border: 1px solid #e9ecef;
+  margin-bottom: 32px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.section-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 20px;
+  text-align: center;
+  position: relative;
+}
+
+.introduction-content {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #4b5563;
+  text-align: center;
+  min-height: 60px;
+}
+
+.action-section {
+  padding: 20px 0;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0.5px;
+  padding: 12px 18px;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  min-width: 120px;
+  border-radius: 12px;
+  border: 2px solid #e9ecef;
+  background: white;
+  color: #6c757d;
+}
+
+.action-btn:hover {
+  border-color: #E87D7D;
+  color: #E87D7D;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(232, 125, 125, 0.15);
+}
+
+.primary-action {
+  background: #E87D7D !important;
+  color: white !important;
+  border-color: #E87D7D !important;
+}
+
+.primary-action:hover {
+  background: #d66b6b !important;
+  border-color: #d66b6b !important;
+}
+
+/* 수정 모드 스타일 */
+.edit-input {
+  width: 100%;
+}
+
+.edit-textarea {
+  width: 100%;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .main-info-section {
+    flex-direction: column;
+    gap: 30px;
+  }
+  
+  .info-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .action-btn {
+    width: 100%;
+    max-width: 300px;
+  }
+}
+
 .debug-info {
   display: flex;
   justify-content: center;
@@ -1156,3 +1632,4 @@ onMounted(async () => {
 
 
 </style>
+
