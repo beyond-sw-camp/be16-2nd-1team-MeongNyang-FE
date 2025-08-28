@@ -104,7 +104,7 @@ export default {
 .user-details {
   flex: 1;
   min-width: 0;
-  text-align: left;
+  text-align: center;
 }
 
 .user-name {
