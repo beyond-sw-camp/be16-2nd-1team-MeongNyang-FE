@@ -262,6 +262,39 @@ export const usePetStore = defineStore('pet', () => {
 
 
 
+  const updateField = async (petId, fieldName, value, existingPetData) => {
+    try {
+      setLoading(true)
+      clearError()
+      
+      const response = await petAPI.updateField(petId, fieldName, value, existingPetData)
+
+      if (response.data.isSuccess) {
+        // 수정 후 목록 새로고침
+        await fetchPets()
+        return { success: true, message: response.data.data || '필드가 성공적으로 수정되었습니다.' }
+      } else {
+        setError(response.data.message || '필드 수정에 실패했습니다.')
+        return { success: false, message: response.data.message }
+      }
+    } catch (error) {
+      console.error('필드 수정 에러:', error)
+      
+      // 백엔드 에러 메시지 추출
+      let errorMessage = '필드 수정 중 오류가 발생했습니다.'
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message
+      } else if (error.response?.data?.status?.message) {
+        errorMessage = error.response.data.status.message
+      }
+      
+      setError(errorMessage)
+      return { success: false, message: errorMessage }
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const updatePet = async (petId, petData, petImage = null) => {
     try {
       setLoading(true)
@@ -504,6 +537,34 @@ export const usePetStore = defineStore('pet', () => {
   }
   }
 
+  // 반려동물 이미지 업데이트
+  const updatePetImage = async (petId, formData) => {
+    try {
+      setLoading(true)
+      clearError()
+      console.log('📷 petStore.updatePetImage 시작')
+      console.log('🔍 petId:', petId)
+      console.log('🔍 formData:', formData)
+      
+      const response = await petAPI.updatePetImage(petId, formData)
+      console.log('✅ 이미지 업데이트 성공:', response.data)
+      
+      return { success: true, message: '프로필 사진이 성공적으로 변경되었습니다.' }
+    } catch (error) {
+      console.error('❌ petStore.updatePetImage 에러:', error)
+      console.error('❌ 에러 상세:', error.response?.data)
+      console.error('❌ 에러 상태:', error.response?.status)
+      console.error('❌ 에러 메시지:', error.message)
+      
+      const errorMessage = error.response?.data?.message || '프로필 사진 변경에 실패했습니다.'
+      setError(errorMessage)
+      return { success: false, message: errorMessage }
+    } finally {
+      setLoading(false)
+      console.log('🔄 petStore.updatePetImage 완료')
+    }
+  }
+
   // Utility Actions
   const getPetById = (petId) => {
     return pets.value.find(pet => pet.id === petId)
@@ -546,8 +607,10 @@ export const usePetStore = defineStore('pet', () => {
     clearError,
     fetchPets,
     registerPet,
+    updateField,
     updatePet,
     deletePet,
+    updatePetImage,
     fetchSpecies,
     searchSpecies,
     selectPet,
