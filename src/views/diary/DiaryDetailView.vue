@@ -23,10 +23,37 @@
                             ></v-img>
                           </v-avatar>
                           <div class="user-info">
-                            <span class="username clickable" @click="goToUserDiary(postData?.userId)">{{ postData?.petName || '로딩 중...' }}</span>
+                            <span class="username clickable" @click="goToUserDiary(postData?.userId)">{{ postData?.userName || postData?.petName || '로딩 중...' }}</span>
                             <span class="date">{{ postData?.date || '로딩 중...' }}</span>
                           </div>
                         </div>
+                      <!-- 팔로우/언팔로우 버튼 (내 게시글이 아닌 경우에만) -->
+                      <div v-if="postData?.userId !== currentUserId" class="follow-section">
+                        <v-btn
+                          v-if="!postData?.isFollowing"
+                          size="small"
+                          variant="filled"
+                          color="#FF8B8B"
+                          class="follow-btn"
+                          @click="followUser"
+                          :disabled="followProcessing"
+                          :loading="followProcessing"
+                        >
+                          팔로우
+                        </v-btn>
+                        <v-btn
+                          v-else
+                          size="small"
+                          variant="outlined"
+                          color="#6c757d"
+                          class="unfollow-btn"
+                          @click="unfollowUser"
+                          :disabled="followProcessing"
+                          :loading="followProcessing"
+                        >
+                          언팔로우
+                        </v-btn>
+                      </div>
                       <!-- 포스트 옵션 메뉴 -->
                       <v-menu offset-y>
                         <template v-slot:activator="{ props }">
@@ -153,7 +180,7 @@
 
         <!-- 캡션 -->
         <div class="caption" v-if="postData?.content">
-          <span class="caption-username">{{ postData?.petName }}</span>
+          <span class="caption-username">{{ postData?.userName || postData?.petName }}</span>
           <span class="caption-text">{{ removeHashtags(postData?.content) }}</span>
         </div>
 
@@ -167,6 +194,58 @@
           >
             #{{ tag }}
           </span>
+        </div>
+
+        <!-- 댓글 미리보기 -->
+        <div v-if="postData?.previewComments && postData.previewComments.length > 0" class="comments-preview">
+          <div class="comments-preview-header">
+            <span class="comments-preview-title">댓글 {{ commentsCount }}개</span>
+            <span 
+              v-if="commentsCount > 5" 
+              class="view-all-comments"
+              @click="toggleCommentsModal"
+            >
+              모두 보기
+            </span>
+          </div>
+          <div class="comments-preview-list">
+            <div 
+              v-for="comment in postData.previewComments.slice(0, 5)" 
+              :key="comment.id" 
+              class="comment-preview-item"
+            >
+              <div class="comment-user-info">
+                <v-avatar 
+                  size="24" 
+                  class="comment-avatar"
+                  @click="goToUserDiary(comment.replyUserId || comment.userId)"
+                >
+                  <v-img 
+                    :src="comment.profileImage || comment.userImage || '/default-avatar.png'" 
+                    alt="User Avatar"
+                  />
+                </v-avatar>
+                <span 
+                  class="comment-author clickable"
+                  @click="goToUserDiary(comment.replyUserId || comment.userId)"
+                >
+                  {{ comment.replyUserName || comment.userName || comment.user?.userName || comment.author?.userName || comment.petName || '익명' }}
+                </span>
+              </div>
+              <span class="comment-content">
+                <template v-for="(part, index) in formatCommentText(comment.content, comment.mentionUserId)" :key="index">
+                  <span 
+                    v-if="part.isTag" 
+                    class="tag-mention clickable"
+                    @click="goToUserDiary(part.userId)"
+                  >
+                    {{ part.text }}
+                  </span>
+                  <span v-else>{{ part.text }}</span>
+                </template>
+              </span>
+            </div>
+          </div>
         </div>
 
       </div>
@@ -247,7 +326,7 @@
 <script>
             import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { postAPI } from '@/services/api'
+import { postAPI, userAPI } from '@/services/api'
 import LikesModal from '@/components/LikesModal.vue'
 import CommentsModal from '@/components/CommentsModal.vue'
 import { handleApiError } from '@/utils/errorHandler'
@@ -282,9 +361,11 @@ export default {
                 const isLoadingLikes = ref(false)
                 const isLoadingComments = ref(false)
                 const isLikeProcessing = ref(false) // 좋아요 처리 중 상태
+                const followProcessing = ref(false) // 팔로우 처리 중 상태
                 
                 // 현재 사용자 정보
                 const currentUser = computed(() => authStore.user)
+                const currentUserId = computed(() => authStore.user?.userId || authStore.user?.id)
                 
                 // 로그인 여부 확인
                 const isLoggedIn = computed(() => {
@@ -558,6 +639,51 @@ export default {
       }
     }
     
+    // 댓글 미리보기 가져오기
+    const fetchCommentsPreview = async () => {
+      try {
+        const postId = $route.params.id
+        console.log('댓글 미리보기 조회 시작 - postId:', postId)
+        
+        const response = await postAPI.getComments(postId, { page: 0, size: 10 })
+        console.log('댓글 미리보기 응답:', response)
+        
+        if (response.data && response.data.data) {
+          let commentsData = []
+          
+          if (response.data.data.content) {
+            commentsData = response.data.data.content
+          } else if (Array.isArray(response.data.data)) {
+            commentsData = response.data.data
+          } else {
+            commentsData = response.data.data
+          }
+          
+          // 댓글과 답글을 모두 포함하여 미리보기 생성
+          let allComments = []
+          if (Array.isArray(commentsData)) {
+            commentsData.forEach(comment => {
+              // 댓글 추가
+              allComments.push(comment)
+              // 답글도 추가 (replies 배열이 있다면)
+              if (comment.replies && Array.isArray(comment.replies)) {
+                allComments.push(...comment.replies)
+              }
+            })
+          }
+          
+          // 최대 5개까지만 미리보기로 설정
+          postData.value.previewComments = allComments.slice(0, 5)
+          console.log('댓글 미리보기 설정 완료:', postData.value.previewComments)
+        } else {
+          postData.value.previewComments = []
+        }
+      } catch (error) {
+        console.error('댓글 미리보기 조회 실패:', error)
+        postData.value.previewComments = []
+      }
+    }
+    
     // 댓글 추가
     const handleAddComment = async (content) => {
       try {
@@ -573,6 +699,9 @@ export default {
         
         // 댓글 목록 새로고침
         await fetchComments()
+        
+        // 댓글 미리보기 업데이트
+        await fetchCommentsPreview()
       } catch (error) {
         console.error('댓글 추가 실패:', error)
         handleApiError(error, $router, '댓글 작성에 실패했습니다.')
@@ -595,6 +724,9 @@ export default {
         
         // 댓글 목록 새로고침
         await fetchComments()
+        
+        // 댓글 미리보기 업데이트
+        await fetchCommentsPreview()
       } catch (error) {
         console.error('답글 추가 실패:', error)
         handleApiError(error, $router, '답글 작성에 실패했습니다.')
@@ -713,6 +845,84 @@ export default {
                         liked: rawPostData.liked,
                         finalStatus: isLiked.value
                       })
+                      
+                      // 팔로우 상태 조회 (내 게시글이 아닌 경우에만)
+                      if (rawPostData.userId !== currentUserId.value) {
+                        try {
+                          const followStatusResponse = await userAPI.checkFollowStatus(rawPostData.userId)
+                          const isFollowing = followStatusResponse.data?.data?.isFollowing || false
+                          postData.value.isFollowing = isFollowing
+                          console.log('팔로우 상태 조회 완료:', isFollowing)
+                        } catch (error) {
+                          console.error('팔로우 상태 조회 실패:', error)
+                          postData.value.isFollowing = false
+                        }
+                      }
+                      
+                      // 댓글 미리보기 조회
+                      try {
+                        const commentsResponse = await postAPI.getComments(postId, { page: 0, size: 10 })
+                        console.log('댓글 미리보기 API 응답:', commentsResponse.data)
+                        
+                        if (commentsResponse.data && commentsResponse.data.data) {
+                          let commentsData = []
+                          
+                          if (Array.isArray(commentsResponse.data.data)) {
+                            commentsData = commentsResponse.data.data
+                          } else if (commentsResponse.data.data.content) {
+                            commentsData = commentsResponse.data.data.content
+                          } else {
+                            commentsData = commentsResponse.data.data
+                          }
+                          
+                          console.log('추출된 댓글 데이터:', commentsData)
+                          
+                          // 댓글과 답글을 모두 포함하여 미리보기 생성
+                          let allComments = []
+                          if (Array.isArray(commentsData)) {
+                            commentsData.forEach(comment => {
+                              console.log(`댓글 ${comment.id} 상세 정보:`, {
+                                id: comment.id,
+                                content: comment.content,
+                                petName: comment.petName,
+                                userName: comment.userName,
+                                userId: comment.userId,
+                                userImage: comment.userImage,
+                                user: comment.user,
+                                author: comment.author
+                              })
+                              
+                              // 댓글 추가
+                              allComments.push(comment)
+                              // 답글도 추가 (replies 배열이 있다면)
+                              if (comment.replies && Array.isArray(comment.replies)) {
+                                comment.replies.forEach(reply => {
+                                  console.log(`답글 ${reply.id} 상세 정보:`, {
+                                    id: reply.id,
+                                    content: reply.content,
+                                    petName: reply.petName,
+                                    userName: reply.userName,
+                                    replyUserName: reply.replyUserName,
+                                    replyUserId: reply.replyUserId,
+                                    mentionUserName: reply.mentionUserName,
+                                    profileImage: reply.profileImage,
+                                    user: reply.user,
+                                    author: reply.author
+                                  })
+                                })
+                                allComments.push(...comment.replies)
+                              }
+                            })
+                          }
+                          
+                          // 최대 5개까지만 미리보기로 설정
+                          postData.value.previewComments = allComments.slice(0, 5)
+                          console.log('댓글 미리보기 설정 완료:', postData.value.previewComments)
+                        }
+                      } catch (error) {
+                        console.error('댓글 미리보기 조회 실패:', error)
+                        postData.value.previewComments = []
+                      }
                     }
                   } catch (error) {
                     console.error('포스트 데이터 조회 실패:', error)
@@ -749,6 +959,54 @@ export default {
                   }
                 }
 
+                // 팔로우하기
+                const followUser = async () => {
+                  if (followProcessing.value || !postData.value?.userId) return
+                  
+                  followProcessing.value = true
+                  try {
+                    const response = await userAPI.follow(postData.value.userId)
+                    console.log('팔로우 API 응답:', response)
+                    
+                    // 팔로우 상태 다시 조회
+                    const followStatusResponse = await userAPI.checkFollowStatus(postData.value.userId)
+                    const isFollowing = followStatusResponse.data?.data?.isFollowing || false
+                    
+                    // 포스트 상태 업데이트
+                    postData.value.isFollowing = isFollowing
+                    console.log('팔로우 상태 업데이트:', postData.value.isFollowing)
+                  } catch (error) {
+                    console.error('팔로우 실패:', error)
+                    alert('팔로우에 실패했습니다.')
+                  } finally {
+                    followProcessing.value = false
+                  }
+                }
+
+                // 언팔로우하기
+                const unfollowUser = async () => {
+                  if (followProcessing.value || !postData.value?.userId) return
+                  
+                  followProcessing.value = true
+                  try {
+                    const response = await userAPI.unfollow(postData.value.userId)
+                    console.log('언팔로우 API 응답:', response)
+                    
+                    // 팔로우 상태 다시 조회
+                    const followStatusResponse = await userAPI.checkFollowStatus(postData.value.userId)
+                    const isFollowing = followStatusResponse.data?.data?.isFollowing || false
+                    
+                    // 포스트 상태 업데이트
+                    postData.value.isFollowing = isFollowing
+                    console.log('언팔로우 상태 업데이트:', postData.value.isFollowing)
+                  } catch (error) {
+                    console.error('언팔로우 실패:', error)
+                    alert('언팔로우에 실패했습니다.')
+                  } finally {
+                    followProcessing.value = false
+                  }
+                }
+
                 const reportPost = () => {
                   // 신고 로직 구현
                   console.log('게시물 신고')
@@ -774,6 +1032,46 @@ export default {
                   return text.replace(/#\S+/g, '').replace(/\s+/g, ' ').trim()
                 }
                 
+                // 댓글 텍스트 포맷팅 (태그 추출)
+                const formatCommentText = (text, mentionUserId = null) => {
+                  if (!text) return []
+                  
+                  const parts = []
+                  // @username 패턴을 더 정확하게 매칭 (한글, 영문, 숫자, 언더스코어 포함)
+                  const tagRegex = /@([a-zA-Z0-9가-힣_]+)/g
+                  let lastIndex = 0
+                  let match
+                  
+                  while ((match = tagRegex.exec(text)) !== null) {
+                    // 태그 이전 텍스트
+                    if (match.index > lastIndex) {
+                      parts.push({
+                        text: text.slice(lastIndex, match.index),
+                        isTag: false
+                      })
+                    }
+                    
+                    // 태그 부분
+                    parts.push({
+                      text: match[0], // @username
+                      isTag: true,
+                      userId: mentionUserId || match[1] // mentionUserId가 있으면 사용, 없으면 username 사용
+                    })
+                    
+                    lastIndex = match.index + match[0].length
+                  }
+                  
+                  // 마지막 텍스트
+                  if (lastIndex < text.length) {
+                    parts.push({
+                      text: text.slice(lastIndex),
+                      isTag: false
+                    })
+                  }
+                  
+                  return parts
+                }
+
                 // 해시태그 검색 메서드
                 const searchByHashtag = (tag) => {
                   console.log('해시태그 검색:', tag, typeof tag)
@@ -828,6 +1126,7 @@ export default {
                     handleLikesModalToggle,
                     toggleCommentsModal,
                     fetchComments,
+                    fetchCommentsPreview,
                     handleAddComment,
                     handleAddReply,
                     handleEditComment,
@@ -837,12 +1136,17 @@ export default {
                     editPost,
                     deletePost,
                     reportPost,
+                    followUser,
+                    unfollowUser,
+                    followProcessing,
+                    currentUserId,
                     previousImage,
                     nextImage,
                     removeHashtags,
                     searchByHashtag,
                     goToUserDiary,
-                    isLoggedIn
+                    isLoggedIn,
+                    formatCommentText
                   }
   }
 }
@@ -858,6 +1162,11 @@ export default {
 
 .diary-detail-page.comments-open {
   padding-right: 432px; /* 400px(댓글창) + 32px(기존 패딩) */
+}
+
+.diary-detail-page.comments-open .diary-container {
+  max-width: 600px; /* 댓글창 공간만큼 너비 줄임 */
+  margin: 0 auto;
 }
 
 .diary-container {
@@ -934,6 +1243,126 @@ export default {
   background: transparent !important;
   transform: scale(1.05);
   color: #FF8B8B;
+}
+
+.follow-section {
+  margin-right: 4px;
+  margin-left: auto; /* 오른쪽 정렬 */
+}
+
+.follow-btn {
+  font-size: 0.8rem;
+  font-weight: 500;
+  border-radius: 20px;
+  text-transform: none;
+  color: white !important;
+  background-color: #FF8B8B !important;
+}
+
+.follow-btn :deep(.v-btn__content) {
+  color: white !important;
+}
+
+.unfollow-btn {
+  font-size: 0.8rem;
+  font-weight: 500;
+  border-radius: 20px;
+  text-transform: none;
+}
+
+/* 댓글 미리보기 스타일 */
+.comments-preview {
+  padding: 12px 20px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.comments-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.comments-preview-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1E293B;
+}
+
+.view-all-comments {
+  font-size: 0.8rem;
+  color: #6c757d;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.view-all-comments:hover {
+  color: #FF8B8B;
+}
+
+.comments-preview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.comment-preview-item {
+  display: flex;
+  gap: 6px;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  align-items: flex-start;
+}
+
+.comment-author {
+  font-weight: 600;
+  color: #1E293B;
+  white-space: nowrap;
+}
+
+.comment-content {
+  color: #495057;
+  word-break: break-word;
+  margin-top: 2px;
+}
+
+.comment-user-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.comment-avatar {
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.comment-avatar:hover {
+  opacity: 0.8;
+}
+
+.comment-author.clickable {
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.comment-author.clickable:hover {
+  color: #FF8B8B;
+}
+
+.tag-mention {
+  font-weight: 700;
+  color: #FF8B8B;
+}
+
+.tag-mention.clickable {
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.tag-mention.clickable:hover {
+  color: #e67e7e;
+  text-decoration: underline;
 }
 
 .post-image-container {

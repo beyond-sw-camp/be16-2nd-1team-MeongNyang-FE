@@ -1,0 +1,6 @@
+export { default as BrandLogo } from './BrandLogo.vue'
+export { default as NavigationMenu } from './NavigationMenu.vue'
+export { default as UserProfile } from './UserProfile.vue'
+export { default as MobileHeader } from './MobileHeader.vue'
+export { default as MobileDrawer } from './MobileDrawer.vue'
+export { default as DesktopSidebar } from './DesktopSidebar.vue'

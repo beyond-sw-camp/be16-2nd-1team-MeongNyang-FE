@@ -198,12 +198,67 @@ export default {
           router.push(redirect)
         }
       } catch (e) {
-        const s = e?.response?.status
-        if (s === 400) errorMsg.value = '이메일 또는 비밀번호가 올바르지 않습니다.'
-        else if (s === 401) errorMsg.value = '인증에 실패했습니다.'
-        else if (s === 423) errorMsg.value = '계정이 잠겨있습니다. 계정 잠금 해제를 이용해주세요.'
-        else if (s === 429) errorMsg.value = '로그인 시도가 너무 많습니다. 잠시 후 다시 시도해주세요.'
-        else errorMsg.value = '로그인에 실패했습니다.'
+        const status = e?.response?.status
+        // 다양한 위치에서 메시지 추출 시도
+        const possibleMessages = [
+          e?.response?.data?.message,     // 일반적인 위치
+          e?.response?.data?.status?.message, // CommonRes 구조
+          e?.response?.data?.error,       // 에러 필드
+          e?.response?.data?.data,        // data 필드가 메시지인 경우
+          e?.message,                     // axios 에러 메시지
+          e?.response?.statusText         // HTTP 상태 텍스트
+        ]
+        
+        const msg = possibleMessages.find(m => m && typeof m === 'string' && m.trim()) || ''
+        
+        console.error('🚨 로그인 에러 상세 분석:')
+        console.error('- Status:', status)
+        console.error('- Message 원본:', `"${msg}"`)
+        console.error('- Full Response:', e?.response?.data)
+        console.error('- Message 체크:', {
+          '사용하지 않는 계정': msg.includes('사용하지 않는 계정'),
+          '잠긴 계정': msg.includes('잠긴 계정'),
+          '계정이 잠겼습니다': msg.includes('계정이 잠겼습니다'),
+          '로그인 시도 실패': msg.includes('로그인 시도 실패'),
+          '비밀번호가 다릅니다': msg.includes('비밀번호가 다릅니다'),
+          '이메일 혹은 비밀번호가 다릅니다': msg.includes('이메일 혹은 비밀번호가 다릅니다'),
+          originalMessage: msg
+        })
+        
+        // 400: IllegalArgumentException - 사용하지 않는 계정, 잠긴 계정, 비밀번호 불일치
+        if (status === 400) {
+          if (msg.includes('사용하지 않는 계정')) {
+            errorMsg.value = '😔 삭제된 계정입니다. 새로 가입해주세요!'
+          } else if (msg.includes('잠긴 계정') || msg.includes('계정이 잠겼습니다') || msg.includes('로그인 시도횟수를 초과')) {
+            errorMsg.value = '🔒 계정이 잠겼습니다. "계정 잠금 해제"를 이용해주세요.'
+          } else if (msg.includes('로그인 시도 실패') || 
+                     msg.includes('비밀번호가 다릅니다') || 
+                     msg.includes('이메일 혹은 비밀번호가 다릅니다')) {
+            errorMsg.value = '❌ 이메일 또는 비밀번호가 올바르지 않습니다.'
+          } else {
+            errorMsg.value = '❌ 이메일 또는 비밀번호가 올바르지 않습니다.'
+          }
+        }
+        // 401: 인증 실패
+        else if (status === 401) {
+          errorMsg.value = '🔐 인증에 실패했습니다. 다시 확인해주세요.'
+        }
+        // 423: 계정 잠김 (레거시 호환)
+        else if (status === 423) {
+          errorMsg.value = '🔒 계정이 잠겨있습니다. 계정 잠금 해제를 이용해주세요.'
+        }
+        // 429: 너무 많은 시도
+        else if (status === 429) {
+          errorMsg.value = '⏰ 로그인 시도가 너무 많습니다. 잠시 후 다시 시도해주세요.'
+        }
+        // 500: 서버 오류
+        else if (status === 500) {
+          errorMsg.value = '🛠️ 서버에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해주세요.'
+        }
+        // 기타 오류
+        else {
+          errorMsg.value = msg ? `💭 ${msg}` : '💭 로그인에 문제가 생겼어요. 다시 시도해주세요!'
+        }
       } finally {
         localLoading.value = false
       }

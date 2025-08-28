@@ -31,44 +31,53 @@
             비밀번호 변경
           </v-card-title>
           
-          <v-form ref="form" v-model="isValid" @submit.prevent="handleSubmit">
+          <v-form ref="formRef" @submit.prevent="handleSubmit">
             <v-row>
               <!-- 기존 비밀번호 -->
               <v-col cols="12">
-                <FormField
+                <v-text-field
                   v-model="form.oldPassword"
-                  label="기존 비밀번호"
+                  label="기존 비밀번호 *"
                   type="password"
                   placeholder="현재 비밀번호를 입력하세요"
                   :rules="oldPasswordRules"
                   required
                   prepend-icon="mdi-lock"
+                  variant="outlined"
+                  density="comfortable"
+                  hide-details="auto"
                 />
               </v-col>
 
               <!-- 새 비밀번호 -->
               <v-col cols="12">
-                <FormField
+                <v-text-field
                   v-model="form.newPassword"
-                  label="새 비밀번호"
+                  label="새 비밀번호 *"
                   type="password"
                   placeholder="새 비밀번호를 입력하세요"
                   :rules="newPasswordRules"
                   required
                   prepend-icon="mdi-lock-plus"
+                  variant="outlined"
+                  density="comfortable"
+                  hide-details="auto"
                 />
               </v-col>
 
               <!-- 새 비밀번호 확인 -->
               <v-col cols="12">
-                <FormField
+                <v-text-field
                   v-model="form.confirmPassword"
-                  label="새 비밀번호 확인"
+                  label="새 비밀번호 확인 *"
                   type="password"
                   placeholder="새 비밀번호를 다시 입력하세요"
                   :rules="confirmPasswordRules"
                   required
                   prepend-icon="mdi-lock-check"
+                  variant="outlined"
+                  density="comfortable"
+                  hide-details="auto"
                 />
               </v-col>
             </v-row>
@@ -138,10 +147,17 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { userAPI } from '@/services/api'
-import FormField from '@/components/ui/molecules/FormField.vue'
+import { inject } from 'vue'
 
 const router = useRouter()
 const userProfile = ref(null) // To store user's socialType
+
+// 인증 상태 확인을 위한 함수
+const checkAuthStatus = () => {
+  // localStorage에서 토큰 확인
+  const token = localStorage.getItem('accessToken')
+  return !!token
+}
 
 // 폼 관련
 const form = reactive({
@@ -151,7 +167,6 @@ const form = reactive({
 })
 
 const formRef = ref(null)
-const isValid = ref(false)
 const loading = ref(false)
 const showSuccess = ref(false)
 const showError = ref(false)
@@ -207,7 +222,14 @@ const loadUserProfile = async () => {
   } catch (error) {
     console.error('사용자 정보 로드 실패:', error)
     if (error.response?.status === 401) {
-      router.push('/auth/login')
+      // 로그인 모달 띄우기
+      const showLoginModal = inject('showLoginModal')
+      if (showLoginModal) {
+        showLoginModal()
+      } else {
+        // fallback: 홈으로 이동하여 모달 표시
+        router.push({ path: '/', query: { showLogin: 'true' } })
+      }
     }
   }
 }
@@ -238,7 +260,14 @@ const handleSubmit = async () => {
       errorMessage.value = '기존 비밀번호가 올바르지 않습니다.'
     } else if (status === 401) {
       errorMessage.value = '인증이 필요합니다. 다시 로그인해주세요.'
-      router.push('/auth/login')
+      // 로그인 모달 띄우기
+      const showLoginModal = inject('showLoginModal')
+      if (showLoginModal) {
+        showLoginModal()
+      } else {
+        // fallback: 홈으로 이동하여 모달 표시
+        router.push({ path: '/', query: { showLogin: 'true' } })
+      }
       return
     } else {
       errorMessage.value = '비밀번호 변경에 실패했습니다. 다시 시도해주세요.'
@@ -251,6 +280,18 @@ const handleSubmit = async () => {
 }
 
 onMounted(() => {
+  if (!checkAuthStatus()) {
+    // 로그인 모달 띄우기
+    const showLoginModal = inject('showLoginModal')
+    if (showLoginModal) {
+      showLoginModal()
+    } else {
+      // fallback: 홈으로 이동하여 모달 표시
+      router.push({ path: '/', query: { showLogin: 'true' } })
+    }
+    return
+  }
+  
   loadUserProfile()
 })
 </script>
