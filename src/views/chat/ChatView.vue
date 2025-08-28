@@ -200,14 +200,14 @@ export default {
 /* 반응형 디자인 */
 @media (max-width: 768px) {
   .chat-view-wrapper {
-    height: 100vh;
+    height: calc(100vh - 64px);
     margin: 0;
     border-radius: 0;
     box-shadow: none;
   }
   
   .fill-height {
-    height: 100vh;
+    height: calc(100vh - 64px);
   }
   
   .chat-list-column,
