@@ -241,7 +241,7 @@
                   </div>
                   
                   <div class="map-controls">
-                    <button
+                    <button type="button"
                       @click="moveToCurrentLocation"
                       class="map-btn primary-btn"
                     >
@@ -760,7 +760,7 @@ export default {
             lat: lat,
             lng: lng
           }
-          validateForm()
+          // validateForm() 호출 제거 - 이 줄을 삭제하거나 주석 처리
         }
       })
     }
