@@ -1,5 +1,5 @@
 <template>
-  <div class="diary-detail-page" :class="{ 'comments-open': showCommentsModal, 'likes-open': showLikesModal }">
+  <div class="diary-detail-page" :class="{ 'comments-open': showCommentsModal }">
                 <div class="diary-container">
               <!-- 로딩 상태 -->
               <div v-if="isLoading" class="loading-container">
@@ -200,8 +200,8 @@
         <div v-if="postData?.previewComments && postData.previewComments.length > 0" class="comments-preview">
           <div class="comments-preview-header">
             <span class="comments-preview-title">댓글 {{ commentsCount }}개</span>
-                        <span
-              v-if="commentsCount > 5"
+            <span 
+              v-if="commentsCount > 5" 
               class="view-all-comments"
               @click="toggleCommentsModal"
             >
@@ -214,26 +214,25 @@
               :key="comment.id" 
               class="comment-preview-item"
             >
-                            <div class="comment-user-info">
+              <div class="comment-user-info">
                 <v-avatar 
                   size="24" 
                   class="comment-avatar"
                   @click="goToUserDiary(comment.replyUserId || comment.userId)"
                 >
                   <v-img 
-                    :src="comment.profileImage || comment.userImage || '/default-avatar.png'"
+                    :src="comment.profileImage || comment.userImage || '/default-avatar.png'" 
                     alt="User Avatar"
                   />
                 </v-avatar>
                 <span 
                   class="comment-author clickable"
                   @click="goToUserDiary(comment.replyUserId || comment.userId)"
-                  :title="comment.replyUserName || comment.userName || comment.user?.userName || comment.author?.userName || comment.petName || '익명'"
                 >
                   {{ comment.replyUserName || comment.userName || comment.user?.userName || comment.author?.userName || comment.petName || '익명' }}
                 </span>
               </div>
-              <div class="comment-content">
+              <span class="comment-content">
                 <template v-for="(part, index) in formatCommentText(comment.content, comment.mentionUserId)" :key="index">
                   <span 
                     v-if="part.isTag" 
@@ -242,9 +241,9 @@
                   >
                     {{ part.text }}
                   </span>
-                  <span v-else class="comment-text">{{ part.text }}</span>
+                  <span v-else>{{ part.text }}</span>
                 </template>
-              </div>
+              </span>
             </div>
           </div>
         </div>
@@ -256,7 +255,6 @@
                         <LikesModal 
                           v-model="showLikesModal"
                           :likes-list="likesList"
-                          :sidebar-mode="true"
                           @update:modelValue="handleLikesModalToggle"
                         />
 
@@ -265,7 +263,6 @@
                   v-model="showCommentsModal"
                   :comments-list="commentsList"
                   :post-id="$route.params.id"
-                  :sidebar-mode="true"
 
                   @add-comment="handleAddComment"
                   @add-reply="handleAddReply"
@@ -1172,15 +1169,6 @@ export default {
   margin: 0 auto;
 }
 
-.diary-detail-page.likes-open {
-  padding-right: 432px; /* 400px(좋아요창) + 32px(기존 패딩) */
-}
-
-.diary-detail-page.likes-open .diary-container {
-  max-width: 600px; /* 좋아요창 공간만큼 너비 줄임 */
-  margin: 0 auto;
-}
-
 .diary-container {
   max-width: 800px;
   margin: 0 auto;
@@ -1192,9 +1180,6 @@ export default {
   border-radius: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   overflow: hidden;
-  word-wrap: break-word;
-  word-break: break-word;
-  overflow-wrap: break-word;
 }
 
 .post-header {
@@ -1289,8 +1274,6 @@ export default {
 .comments-preview {
   padding: 12px 20px;
   border-top: 1px solid #f0f0f0;
-  max-width: 100%;
-  overflow: hidden;
 }
 
 .comments-preview-header {
@@ -1321,9 +1304,6 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  max-width: 100%;
-  overflow: hidden;
-  align-items: flex-start; /* 좌측 정렬 */
 }
 
 .comment-preview-item {
@@ -1332,46 +1312,24 @@ export default {
   font-size: 0.85rem;
   line-height: 1.4;
   align-items: flex-start;
-  justify-content: flex-start; /* 좌측 정렬 */
-  min-width: 0; /* flex 아이템이 축소될 수 있도록 */
 }
 
 .comment-author {
   font-weight: 600;
   color: #1E293B;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 80px; /* 사용자명 최대 너비 제한 */
 }
 
 .comment-content {
   color: #495057;
   word-break: break-word;
-  overflow-wrap: break-word;
-  word-wrap: break-word;
   margin-top: 2px;
-  flex: 1;
-  min-width: 0; /* flex 아이템이 축소될 수 있도록 */
-  max-width: 100%; /* 최대 너비 제한 */
-  text-align: left; /* 좌측 정렬 */
-}
-
-.comment-text {
-  word-break: break-word;
-  overflow-wrap: break-word;
-  word-wrap: break-word;
-  white-space: pre-wrap; /* 줄바꿈 유지 */
-  text-align: left; /* 좌측 정렬 */
 }
 
 .comment-user-info {
   display: flex;
   align-items: center;
   gap: 6px;
-  flex-shrink: 0; /* 사용자 정보는 축소되지 않도록 */
-  min-width: 0; /* flex 아이템이 축소될 수 있도록 */
-  justify-content: flex-start; /* 좌측 정렬 */
 }
 
 .comment-avatar {
@@ -1395,8 +1353,6 @@ export default {
 .tag-mention {
   font-weight: 700;
   color: #FF8B8B;
-  word-break: keep-all; /* 태그는 단어 단위로만 줄바꿈 */
-  white-space: nowrap; /* 태그는 줄바꿈 방지 */
 }
 
 .tag-mention.clickable {
@@ -1415,28 +1371,11 @@ export default {
   border-radius: 8px;
   margin: 16px;
   overflow: hidden;
-  height: 500px;
-}
-
-.multi-image-slider {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-
-.image-slider {
-  position: relative;
-  width: 100%;
-  height: 100%;
 }
 
 .post-image {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-  background-color: #f8f9fa;
-  border-radius: 8px;
+  height: 500px;
 }
 
 /* 다중 이미지 슬라이더 스타일 */
@@ -1460,7 +1399,6 @@ export default {
   justify-content: space-between;
   padding: 0 16px;
   pointer-events: none;
-  z-index: 10;
 }
 
 .nav-btn {
@@ -1487,7 +1425,6 @@ export default {
   transform: translateX(-50%);
   display: flex;
   gap: 8px;
-  z-index: 10;
 }
 
 .indicator {
@@ -1566,30 +1503,18 @@ export default {
   padding: 8px 20px;
   display: flex;
   gap: 8px;
-  align-items: flex-start;
-  text-align: left;
-  flex-wrap: wrap;
 }
 
 .caption-username {
   font-weight: 600;
   font-size: 0.9rem;
   color: #1a1a1a;
-  flex-shrink: 0;
-  text-align: left;
 }
 
 .caption-text {
   font-size: 0.9rem;
   color: #333;
   line-height: 1.4;
-  word-wrap: break-word;
-  word-break: break-word;
-  overflow-wrap: break-word;
-  white-space: pre-wrap;
-  text-align: left;
-  flex: 1;
-  min-width: 0;
 }
 
 .hashtags {
@@ -1597,9 +1522,6 @@ export default {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  word-wrap: break-word;
-  word-break: break-word;
-  overflow-wrap: break-word;
 }
 
 .hashtag {
@@ -1804,20 +1726,6 @@ export default {
   .hashtags {
     padding-left: 16px;
     padding-right: 16px;
-  }
-  
-  .caption-text {
-    font-size: 0.85rem;
-    line-height: 1.5;
-  }
-  
-  .hashtags {
-    gap: 6px;
-  }
-  
-  .hashtag {
-    font-size: 0.8rem;
-    padding: 3px 6px;
   }
 }
 </style>

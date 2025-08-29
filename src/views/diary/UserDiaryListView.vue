@@ -4,7 +4,6 @@
     <SearchComponent
       v-model="searchKeyword"
       :search-type="searchType"
-      :disable-user-search="true"
       @update:search-type="searchType = $event"
       @search="handleSearch"
       @clear="handleClearSearch"
@@ -186,7 +185,7 @@ export default {
     const isFollowing = ref(false)
     const followLoading = ref(false)
     const isFollowModalVisible = ref(false)
-    const followModalTab = ref('followers') // 기본값 설정
+    const followModalTab = ref('followers')
     
     // 반려동물 데이터
     const userPets = ref([])
@@ -410,8 +409,8 @@ export default {
         
         let response
         if (searchKeyword.value.trim()) {
-          // 검색이 있는 경우 - 내 일기 검색 API 사용
-          response = await postAPI.searchMyPosts(searchType.value, searchKeyword.value, { page, size: 9 })
+          // 검색이 있는 경우 - 현재는 일반 목록 조회로 처리
+          response = await postAPI.getUserPosts(userId.value, { page, size: 9 })
         } else {
           // 일반 목록 조회
           response = await postAPI.getUserPosts(userId.value, { page, size: 9 })
@@ -475,31 +474,31 @@ export default {
     
     // 검색 처리
     const handleSearch = (searchData) => {
-      // USER 검색은 제외
-      if (searchData.type === 'USER') {
-        alert('내 일기 목록에서는 사용자 검색을 지원하지 않습니다.')
-        return
-      }
-      
       searchType.value = searchData.type
       searchKeyword.value = searchData.keyword
-      
-      // 검색 실행
-      fetchDiaryList(0, false)
+      // 검색 시 새로운 검색 페이지로 이동
+      $router.push({
+        path: '/search',
+        query: {
+          type: searchData.type,
+          keyword: searchData.keyword
+        }
+      })
     }
     
     // 검색 초기화
     const handleClearSearch = () => {
       searchKeyword.value = ''
-      searchType.value = 'CONTENT' // 기본값으로 설정
-      fetchDiaryList(0, false) // 목록 다시 로드
     }
 
     // 팔로우/팔로워 모달 처리
-    const openFollowModal = async (type) => {
+    const openFollowModal = (type) => {
       console.log('🔍 openFollowModal 호출됨')
       console.log('🔍 type:', type)
       console.log('🔍 userId.value:', userId.value)
+      console.log('🔍 userId 타입:', typeof userId.value)
+      console.log('🔍 $route.params:', $route.params)
+      console.log('🔍 $route.fullPath:', $route.fullPath)
       
       // 직접 라우트 파라미터에서 userId 가져오기
       const routeUserId = $route.params.userId
@@ -508,27 +507,28 @@ export default {
       // userId가 유효하지 않으면 모달을 열지 않음
       if (!routeUserId) {
         console.error('❌ routeUserId가 유효하지 않아 모달을 열 수 없습니다.')
+        console.error('❌ 현재 라우트 정보:', {
+          params: $route.params,
+          fullPath: $route.fullPath,
+          path: $route.path
+        })
         alert('사용자 정보를 불러올 수 없습니다.')
         return
       }
-      
-      // 모달 열기 전에 팔로우/팔로워 숫자 갱신
-      console.log('🔄 모달 열기 전 팔로우/팔로워 숫자 갱신')
-      await Promise.all([
-        fetchFollowersCount(),
-        fetchFollowingsCount()
-      ])
       
       // 모달에 전달할 userId를 routeUserId로 설정
       const modalUserId = routeUserId
       console.log('🔍 모달에 전달할 userId:', modalUserId)
       
-      // 탭 설정을 먼저 하고 모달 열기
-      console.log('🔍 설정할 탭:', type)
-      followModalTab.value = type
-      
-      // 모달 열기
       isFollowModalVisible.value = true
+      // 모달이 열린 후 탭 설정을 위해 nextTick 사용
+      nextTick(() => {
+        // FollowModal 컴포넌트의 activeTab을 설정
+        if (type === 'followers' || type === 'followings') {
+          // 모달 컴포넌트에 탭 정보 전달
+          followModalTab.value = type
+        }
+      })
     }
 
     const closeFollowModal = () => {
@@ -876,8 +876,6 @@ export default {
 .diary-image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: center;
   transition: all 0.3s ease;
 }
 
