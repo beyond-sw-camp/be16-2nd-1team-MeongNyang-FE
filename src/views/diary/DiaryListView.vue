@@ -161,7 +161,7 @@ export default {
     const showMainPetModal = ref(false)
     const selectedPetName = ref(null)
     const isFollowModalVisible = ref(false)
-    const followModalTab = ref('followers')
+    const followModalTab = ref('followers') // 기본값 설정
     
     // 현재 로그인한 사용자 ID
     const currentUserId = computed(() => {
@@ -464,16 +464,23 @@ export default {
     }
     
     // 팔로우/팔로워 모달 처리
-    const openFollowModal = (type) => {
+    const openFollowModal = async (type) => {
+      console.log('🔍 DiaryListView openFollowModal 호출됨')
+      console.log('🔍 type:', type)
+      
+      // 모달 열기 전에 팔로우/팔로워 숫자 갱신
+      console.log('🔄 모달 열기 전 팔로우/팔로워 숫자 갱신')
+      await Promise.all([
+        fetchFollowersCount(),
+        fetchFollowingsCount()
+      ])
+      
+      // 탭 설정을 먼저 하고 모달 열기
+      console.log('🔍 설정할 탭:', type)
+      followModalTab.value = type
+      
+      // 모달 열기
       isFollowModalVisible.value = true
-      // 모달이 열린 후 탭 설정을 위해 nextTick 사용
-      nextTick(() => {
-        // FollowModal 컴포넌트의 activeTab을 설정
-        if (type === 'followers' || type === 'followings') {
-          // 모달 컴포넌트에 탭 정보 전달
-          followModalTab.value = type
-        }
-      })
     }
 
     const closeFollowModal = () => {

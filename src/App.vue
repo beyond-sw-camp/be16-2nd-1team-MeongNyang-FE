@@ -301,8 +301,8 @@
           </v-card-actions>
         </v-card>
       </v-dialog>
-      
-      <!-- 전역 UI 컴포넌트들 -->
+    
+    <!-- 전역 UI 컴포넌트들 -->
     <GlobalSnackbar
       v-model="uiStore.snackbar.show"
       :title="uiStore.snackbar.title"
@@ -354,7 +354,7 @@ export default {
   },
   setup() {
     const uiStore = useUIStore()
-
+    
     const authStore = useAuthStore()
     
     // 플로팅 모달 상태 관리

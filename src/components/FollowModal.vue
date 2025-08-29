@@ -7,14 +7,14 @@
           <div 
             class="tab" 
             :class="{ active: activeTab === 'followers' }"
-            @click="activeTab = 'followers'"
+            @click="switchToFollowers"
           >
             팔로워 {{ followersCount }}
           </div>
           <div 
             class="tab" 
             :class="{ active: activeTab === 'followings' }"
-            @click="activeTab = 'followings'"
+            @click="switchToFollowings"
           >
             팔로잉 {{ followingsCount }}
           </div>
@@ -139,7 +139,7 @@ const emit = defineEmits(['close', 'follow-updated', 'unfollow-updated'])
 const authStore = useAuthStore()
 
 // Reactive data
-const activeTab = ref(props.initialTab)
+const activeTab = ref(props.initialTab || 'followers')
 const searchQuery = ref('')
 
 // 실제 데이터
@@ -187,6 +187,9 @@ const filteredUsers = computed(() => {
 
 // Methods
 const closeModal = () => {
+  console.log('🚪 모달 닫기')
+  // 모달 닫을 때 activeTab 초기화
+  activeTab.value = props.initialTab || 'followers'
   emit('close')
 }
 
@@ -227,6 +230,9 @@ const handleFollow = async (id) => {
     // 부모 컴포넌트에 팔로우 업데이트 이벤트 발생
     emit('follow-updated')
     
+    // 팔로우/팔로워 숫자 갱신을 위해 부모 컴포넌트에 알림
+    console.log('🔄 팔로우 후 숫자 갱신 요청')
+    
   } catch (error) {
     console.error('❌ 팔로우 실패:', error)
     // 에러 메시지 표시
@@ -260,6 +266,9 @@ const handleUnfollow = async (id) => {
     
     // 부모 컴포넌트에 언팔로우 업데이트 이벤트 발생
     emit('unfollow-updated')
+    
+    // 팔로우/팔로워 숫자 갱신을 위해 부모 컴포넌트에 알림
+    console.log('🔄 언팔로우 후 숫자 갱신 요청')
     
   } catch (error) {
     console.error('❌ 언팔로우 실패:', error)
@@ -336,37 +345,62 @@ const fetchFollowings = async () => {
   }
 }
 
-// Watch for tab changes to load data
-watch(activeTab, (newTab) => {
-  console.log('🔄 탭 변경:', newTab)
-  if (props.isVisible) {
-    if (newTab === 'followers') {
-      console.log('📋 팔로워 탭으로 변경 - 데이터 로드 시작')
-      fetchFollowers()
-    } else if (newTab === 'followings') {
-      console.log('📋 팔로잉 탭으로 변경 - 데이터 로드 시작')
-      fetchFollowings()
-    }
-  }
-})
+// 탭 전환 함수들
+const switchToFollowers = async () => {
+  console.log('🔄 팔로워 탭으로 전환')
+  activeTab.value = 'followers'
+  await fetchFollowers()
+  
+  // 부모 컴포넌트에 숫자 갱신 요청
+  emit('follow-updated')
+}
+
+const switchToFollowings = async () => {
+  console.log('🔄 팔로잉 탭으로 전환')
+  activeTab.value = 'followings'
+  await fetchFollowings()
+  
+  // 부모 컴포넌트에 숫자 갱신 요청
+  emit('follow-updated')
+}
+
+// Watch for tab changes to load data (기존 watch는 제거하고 함수로 대체)
 
 // Watch for modal visibility to load initial data
-watch(() => props.isVisible, (isVisible) => {
+watch(() => props.isVisible, async (isVisible) => {
   console.log('🚪 모달 상태 변경:', isVisible)
   if (isVisible) {
     console.log('🎯 모달 열림 - 초기 탭:', props.initialTab)
-    // 초기 탭 설정
-    activeTab.value = props.initialTab
+    // 초기 탭 설정 (강제로 initialTab으로 설정)
+    activeTab.value = props.initialTab || 'followers'
+    console.log('🎯 설정된 activeTab:', activeTab.value)
+    
     // 초기 데이터 로드
     if (activeTab.value === 'followers') {
       console.log('📋 초기 팔로워 데이터 로드')
-      fetchFollowers()
+      await fetchFollowers()
     } else if (activeTab.value === 'followings') {
       console.log('📋 초기 팔로잉 데이터 로드')
-      fetchFollowings()
+      await fetchFollowings()
     }
   } else {
     console.log('🚪 모달 닫힘')
+  }
+})
+
+// Watch for initialTab changes
+watch(() => props.initialTab, (newTab) => {
+  console.log('🔄 initialTab 변경:', newTab)
+  if (props.isVisible && newTab) {
+    console.log('🎯 initialTab 변경으로 탭 전환:', newTab)
+    activeTab.value = newTab
+    
+    // 탭 변경 시 해당 데이터 로드
+    if (newTab === 'followers') {
+      fetchFollowers()
+    } else if (newTab === 'followings') {
+      fetchFollowings()
+    }
   }
 })
 </script>

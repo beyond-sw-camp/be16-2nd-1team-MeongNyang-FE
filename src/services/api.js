@@ -217,6 +217,10 @@ export const userAPI = {
   // 내 팔로워 목록 조회(채팅만 사용)
   getMyFollowers: (pageable) => apiClient.get('/users/follows/followers', { params: pageable }),
 
+  // 사용자 검색
+  searchUsers: (query, pageable = { page: 0, size: 10 }) => 
+    apiClient.get('/users/search', { params: { query, ...pageable } }),
+
   // 내 팔로잉 목록 조회(채팅만 사용)
   getMyFollowings: (pageable) => apiClient.get('/users/follows/followings', { params: pageable }),
 
@@ -318,6 +322,13 @@ export const postAPI = {
   // 검색
   search: (searchType, keyword, pageable) =>
     apiClient.get('/posts/search', { params: { searchType, keyword, ...pageable } }),
+
+  // 내 일기 검색
+  searchMyPosts: (searchType, keyword, pageable) =>
+    apiClient.get('/posts/search/me', { params: { searchType, keyword, ...pageable } }),
+
+  // 인기 해시태그 랭킹
+  getRankHashtags: () => apiClient.get('/posts/rank-hashtag'),
 
   // 신고
   report: (postId, reason) => apiClient.post(`/posts/${postId}/reports`, { reason })

@@ -12,7 +12,7 @@
           @click="handleSubmit"
           :disabled="!canSubmit"
         >
-          작성
+          {{ mediaList.length === 0 ? '이미지 필요' : '작성' }}
         </v-btn>
       </div>
     </div>
@@ -34,6 +34,7 @@
                 :src="currentMedia.url" 
                 class="main-media"
                 cover
+                :aspect-ratio="currentMedia.aspectRatio || 16/9"
               ></v-img>
               
               <!-- 비디오 미리보기 -->
@@ -110,6 +111,7 @@
         rows="8"
         hide-details
         @input="handleContentInput"
+        style="white-space: normal !important; word-wrap: break-word !important; overflow-wrap: break-word !important; word-break: break-all !important; overflow-x: hidden !important; max-width: 100% !important; box-sizing: border-box !important;"
       ></v-textarea>
     </div>
 
@@ -118,7 +120,7 @@
       ref="fileInput"
       type="file"
       multiple
-      accept="image/*,video/*"
+      accept="image/jpeg,image/jpg,image/png,image/svg+xml,image/webp,image/gif,image/bmp,image/tiff"
       @change="handleFileSelect"
       style="display: none"
     >
@@ -131,6 +133,7 @@ import { validatePetAndRedirect } from '@/utils/petValidation'
 import { useRouter } from 'vue-router'
 import { postAPI } from '@/services/api'
 import { handleApiError } from '@/utils/errorHandler'
+import { resizeMultipleImages, isImageFile } from '@/utils/imageResizer'
 
 export default {
   name: 'DiaryCreateView',
@@ -169,7 +172,7 @@ export default {
     }
     
     // 파일 선택 처리
-    const handleFileSelect = (event) => {
+    const handleFileSelect = async (event) => {
       const files = Array.from(event.target.files)
       
       if (mediaList.value.length + files.length > 10) {
@@ -177,20 +180,55 @@ export default {
         return
       }
       
-      files.forEach(file => {
-        if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
+      // 이미지 파일 필터링
+      const imageFiles = files.filter(file => isImageFile(file))
+      const nonImageFiles = files.filter(file => !isImageFile(file))
+      
+      // 지원하지 않는 파일 형식 알림
+      if (nonImageFiles.length > 0) {
+        alert(`지원하지 않는 파일 형식입니다: ${nonImageFiles.map(f => f.name).join(', ')}\n이미지 파일(.jpg, .jpeg, .png, .svg, .webp, .gif, .bmp, .tiff)만 업로드 가능합니다.`)
+      }
+      
+      if (imageFiles.length === 0) {
+        event.target.value = ''
+        return
+      }
+      
+      try {
+        // 이미지 리사이즈 (1200x800, 품질 0.8)
+        const resizedFiles = await resizeMultipleImages(imageFiles, 1200, 800, 0.8)
+        
+        // 리사이즈된 이미지들을 미디어 리스트에 추가
+        for (let i = 0; i < resizedFiles.length; i++) {
+          const resizedFile = resizedFiles[i]
           const reader = new FileReader()
+          
           reader.onload = (e) => {
-            const mediaType = file.type.startsWith('image/') ? 'image' : 'video'
-            mediaList.value.push({
-              url: e.target.result,
-              type: mediaType,
-              file: file
-            })
+            // 이미지 비율 계산
+            const img = new Image()
+            img.onload = () => {
+              const aspectRatio = img.width / img.height
+              mediaList.value.push({
+                url: e.target.result,
+                type: 'image',
+                file: resizedFile, // 리사이즈된 파일 사용
+                aspectRatio: aspectRatio,
+                originalSize: imageFiles[i].size, // 원본 크기 저장
+                resizedSize: resizedFile.size // 리사이즈된 크기 저장
+              })
+              
+              console.log(`이미지 리사이즈 완료: ${resizedFile.name}`)
+              console.log(`원본 크기: ${(imageFiles[i].size / 1024 / 1024).toFixed(2)}MB`)
+              console.log(`리사이즈 크기: ${(resizedFile.size / 1024 / 1024).toFixed(2)}MB`)
+            }
+            img.src = e.target.result
           }
-          reader.readAsDataURL(file)
+          reader.readAsDataURL(resizedFile)
         }
-      })
+      } catch (error) {
+        console.error('이미지 리사이즈 실패:', error)
+        alert('이미지 처리 중 오류가 발생했습니다.')
+      }
       
       // 파일 입력 초기화
       event.target.value = ''
@@ -259,18 +297,79 @@ export default {
       // v-model이 자동으로 처리하므로 별도 로직 불필요
     }
     
-    // 키보드 네비게이션
+    // 드래그 앤 드롭 처리
+    const handleDragOver = (event) => {
+      event.preventDefault()
+      event.dataTransfer.dropEffect = 'copy'
+    }
+    
+    const handleDrop = async (event) => {
+      event.preventDefault()
+      const files = Array.from(event.dataTransfer.files)
+      
+      if (mediaList.value.length + files.length > 10) {
+        alert('최대 10개까지만 업로드할 수 있습니다.')
+        return
+      }
+      
+      // 이미지 파일 필터링
+      const imageFiles = files.filter(file => isImageFile(file))
+      const nonImageFiles = files.filter(file => !isImageFile(file))
+      
+      // 지원하지 않는 파일 형식 알림
+      if (nonImageFiles.length > 0) {
+        alert(`지원하지 않는 파일 형식입니다: ${nonImageFiles.map(f => f.name).join(', ')}\n이미지 파일(.jpg, .jpeg, .png, .svg, .webp, .gif, .bmp, .tiff)만 업로드 가능합니다.`)
+      }
+      
+      if (imageFiles.length === 0) return
+      
+      try {
+        // 이미지 리사이즈 (1200x800, 품질 0.8)
+        const resizedFiles = await resizeMultipleImages(imageFiles, 1200, 800, 0.8)
+        
+        // 리사이즈된 이미지들을 미디어 리스트에 추가
+        for (let i = 0; i < resizedFiles.length; i++) {
+          const resizedFile = resizedFiles[i]
+          const reader = new FileReader()
+          
+          reader.onload = (e) => {
+            // 이미지 비율 계산
+            const img = new Image()
+            img.onload = () => {
+              const aspectRatio = img.width / img.height
+              mediaList.value.push({
+                url: e.target.result,
+                type: 'image',
+                file: resizedFile, // 리사이즈된 파일 사용
+                aspectRatio: aspectRatio,
+                originalSize: imageFiles[i].size, // 원본 크기 저장
+                resizedSize: resizedFile.size // 리사이즈된 크기 저장
+              })
+              
+              console.log(`드래그 앤 드롭 이미지 리사이즈 완료: ${resizedFile.name}`)
+              console.log(`원본 크기: ${(imageFiles[i].size / 1024 / 1024).toFixed(2)}MB`)
+              console.log(`리사이즈 크기: ${(resizedFile.size / 1024 / 1024).toFixed(2)}MB`)
+            }
+            img.src = e.target.result
+          }
+          reader.readAsDataURL(resizedFile)
+        }
+      } catch (error) {
+        console.error('드래그 앤 드롭 이미지 리사이즈 실패:', error)
+        alert('이미지 처리 중 오류가 발생했습니다.')
+      }
+    }
+    
+    // 키보드 네비게이션 (비활성화)
     const handleKeydown = (event) => {
+      // 일기 등록/수정 시 좌우키 이미지 이동 비활성화
       if (mediaList.value.length <= 1) return
       
       switch (event.key) {
         case 'ArrowLeft':
-          event.preventDefault()
-          previousMedia()
-          break
         case 'ArrowRight':
+          // 좌우키 이벤트 무시 (이미지 이동 비활성화)
           event.preventDefault()
-          nextMedia()
           break
       }
     }
@@ -364,35 +463,7 @@ export default {
       }
     }
     
-    // 드래그 앤 드롭 이벤트
-    const handleDragOver = (e) => {
-      e.preventDefault()
-    }
-    
-    const handleDrop = (e) => {
-      e.preventDefault()
-      const files = Array.from(e.dataTransfer.files)
-      
-      if (mediaList.value.length + files.length > 10) {
-        alert('최대 10개까지만 업로드할 수 있습니다.')
-        return
-      }
-      
-      files.forEach(file => {
-        if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
-          const reader = new FileReader()
-          reader.onload = (e) => {
-            const mediaType = file.type.startsWith('image/') ? 'image' : 'video'
-            mediaList.value.push({
-              url: e.target.result,
-              type: mediaType,
-              file: file
-            })
-          }
-          reader.readAsDataURL(file)
-        }
-      })
-    }
+
     
     onMounted(async () => {
       // 펫 등록 여부 확인
@@ -430,6 +501,8 @@ export default {
         startDrag,
         onDrag,
         endDrag,
+        handleDragOver,
+        handleDrop,
         handleContentInput,
         handleSubmit
       }
@@ -552,6 +625,23 @@ export default {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* 이미지 컨테이너 개선 */
+.media-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f8f9fa;
+  border-radius: 8px;
 }
 
 .delete-btn {
@@ -631,6 +721,28 @@ export default {
 
 .content-input :deep(.v-field__input) {
   min-height: 200px;
+  white-space: normal !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  word-break: break-all !important;
+  hyphens: auto !important;
+  overflow-x: hidden !important;
+}
+
+.content-input :deep(.v-field__input textarea) {
+  white-space: normal !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  word-break: break-all !important;
+  hyphens: auto !important;
+  overflow-x: hidden !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.content-input :deep(.v-field) {
+  overflow-x: hidden !important;
+  max-width: 100% !important;
 }
 
 /* 반응형 */

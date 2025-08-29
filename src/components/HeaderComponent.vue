@@ -122,6 +122,12 @@ export default {
         showCondition: isLoggedIn.value
       },
       {
+        path: '/diarys/create',
+        title: '일기 작성',
+        icon: 'mdi-plus-circle',
+        showCondition: isLoggedIn.value
+      },
+      {
         path: '/admin',
         title: '관리자',
         icon: 'mdi-shield-account',

@@ -45,18 +45,6 @@
             >
               팔로우
             </v-btn>
-            <v-btn
-              v-else
-              size="small"
-              variant="outlined"
-              color="#6c757d"
-              class="unfollow-btn"
-              @click="unfollowUser(post.userId)"
-              :disabled="isFollowProcessing(post.userId)"
-              :loading="isFollowProcessing(post.userId)"
-            >
-              언팔로우
-            </v-btn>
           </div>
           <!-- 더보기 메뉴 -->
           <v-menu offset-y>
@@ -91,6 +79,8 @@
 
         <!-- 메인 이미지 -->
         <div class="post-image-container">
+
+          
           <!-- 단일 이미지인 경우 -->
           <div v-if="!post.mediaList || post.mediaList.length <= 1" class="single-image">
             <v-img 
@@ -104,7 +94,7 @@
           <div v-else class="multi-image-slider">
             <div class="image-slider">
               <v-img 
-                :src="post.mediaList[post.currentImageIndex || 0]" 
+                :src="post.mediaList[currentImageIndex[post.id] || 0]" 
                 class="post-image"
                 cover
               ></v-img>
@@ -114,8 +104,8 @@
                 <v-btn 
                   icon 
                   class="nav-btn prev-btn"
-                  @click="previousImage(post.id)"
-                  :disabled="(post.currentImageIndex || 0) === 0"
+                  @click="prevImage(post.id)"
+                  :disabled="(currentImageIndex[post.id] || 0) === 0"
                 >
                   <v-icon>mdi-chevron-left</v-icon>
                 </v-btn>
@@ -123,7 +113,7 @@
                   icon 
                   class="nav-btn next-btn"
                   @click="nextImage(post.id)"
-                  :disabled="(post.currentImageIndex || 0) === post.mediaList.length - 1"
+                  :disabled="(currentImageIndex[post.id] || 0) === post.mediaList.length - 1"
                 >
                   <v-icon>mdi-chevron-right</v-icon>
                 </v-btn>
@@ -135,7 +125,7 @@
                   v-for="(image, index) in post.mediaList" 
                   :key="index"
                   class="indicator"
-                  :class="{ active: index === (post.currentImageIndex || 0) }"
+                  :class="{ active: (currentImageIndex[post.id] || 0) === index }"
                   @click="setImageIndex(post.id, index)"
                 ></div>
               </div>
@@ -144,40 +134,38 @@
         </div>
 
         <!-- 좋아요/댓글 바 -->
-        <div class="engagement-bar">
-          <div class="engagement-left">
+        <div class="action-bar">
+          <div class="action-buttons">
                             <v-btn
                   icon
-                  size="x-small"
+              size="small" 
                   class="like-btn"
                   @click="toggleLike(post.id)"
-                  :disabled="isLikeProcessing(post.id)"
+              :disabled="likeProcessingPosts.has(post.id)"
+              :loading="likeProcessingPosts.has(post.id)"
                 >
                   <v-icon
-                    v-if="!isLikeProcessing(post.id)"
-                    :color="post.liked ? 'red' : '#1E293B'"
+                :color="post.liked ? '#FF8B8B' : '#1E293B'" 
                     size="20"
                   >
-                    mdi-heart
+                {{ post.liked ? 'mdi-heart' : 'mdi-heart-outline' }}
                   </v-icon>
-                  <v-progress-circular
-                    v-else
-                    indeterminate
-                    size="16"
-                    width="2"
-                    color="#FF8B8B"
-                  ></v-progress-circular>
                 </v-btn>
             <span class="like-count">{{ post.likeCount || 0 }}</span>
+            
             <v-btn 
               icon 
-              size="x-small" 
+              size="small" 
               class="comment-btn" 
-              @click="goToPostWithComments(post.id)"
+              @click="openCommentsModal(post.id)"
             >
               <v-icon color="#1E293B" size="20">mdi-comment-outline</v-icon>
             </v-btn>
             <span class="comment-count">{{ post.commentsCount || 0 }}</span>
+          </div>
+          
+          <div class="post-actions">
+
           </div>
         </div>
 
@@ -185,20 +173,24 @@
             <div class="likes-info">
               <span 
                 class="likes-text clickable" 
-                @click="handleLikesTextClick(post.id)"
+            @click="openLikesModal(post.id)"
               >
-                {{ getLikeCountText(post) }}
+            {{ getLikesText(post.likeCount) }}
               </span>
             </div>
 
         <!-- 캡션 -->
-        <div class="caption" v-if="post.content">
-          <span class="caption-username">{{ post.userName || post.petName }}</span>
+        <div class="post-caption">
+          <span class="caption-username">{{ post.userName || post.petName || '익명' }}</span>
           <span class="caption-text">{{ removeHashtags(post.content) }}</span>
         </div>
 
         <!-- 해시태그 -->
         <div class="hashtags" v-if="post.hashTagList && post.hashTagList.length > 0">
+          <!-- 디버깅용 로그 -->
+          <div style="display: none;">
+            {{ console.log('포스트', post.id, '해시태그 리스트:', post.hashTagList, '길이:', post.hashTagList?.length) }}
+          </div>
           <span 
             v-for="tag in post.hashTagList" 
             :key="tag" 
@@ -216,36 +208,38 @@
             <span 
               v-if="post.commentsCount > 5" 
               class="view-all-comments"
-              @click="goToPostWithComments(post.id)"
+              @click="openCommentsModal(post.id)"
             >
               모두 보기
             </span>
           </div>
+          
           <div class="comments-preview-list">
             <div 
-              v-for="comment in post.previewComments.slice(0, 5)" 
-              :key="comment.id" 
+              v-for="comment in post.previewComments.slice(0, 5)"
+              :key="comment.id"
               class="comment-preview-item"
             >
               <div class="comment-user-info">
                 <v-avatar 
-                  size="24" 
+                  size="20" 
                   class="comment-avatar"
                   @click="goToUserDiary(comment.replyUserId || comment.userId)"
                 >
                   <v-img 
-                    :src="comment.profileImage || comment.userImage || '/default-avatar.png'" 
-                    alt="User Avatar"
-                  />
+                    :src="comment.profileImage || comment.userImage || '/default-avatar.png'"
+                    cover
+                  ></v-img>
                 </v-avatar>
                 <span 
                   class="comment-author clickable"
                   @click="goToUserDiary(comment.replyUserId || comment.userId)"
+                  :title="comment.replyUserName || comment.userName || comment.user?.userName || comment.author?.userName || comment.petName || '익명'"
                 >
                   {{ comment.replyUserName || comment.userName || comment.user?.userName || comment.author?.userName || comment.petName || '익명' }}
                 </span>
               </div>
-              <span class="comment-content">
+              <div class="comment-content">
                 <template v-for="(part, index) in formatCommentText(comment.content, comment.mentionUserId)" :key="index">
                   <span 
                     v-if="part.isTag" 
@@ -254,37 +248,48 @@
                   >
                     {{ part.text }}
                   </span>
-                  <span v-else>{{ part.text }}</span>
+                  <span v-else class="comment-text">{{ part.text }}</span>
                 </template>
-              </span>
+              </div>
             </div>
           </div>
         </div>
-
       </div>
     </div>
 
     <!-- 빈 상태 -->
-    <div v-else-if="!loading" class="empty-state">
-      <v-icon size="64" color="grey">mdi-book-open-variant</v-icon>
-      <h3>아직 작성된 일기가 없습니다</h3>
-      <p>첫 번째 일기를 작성해보세요!</p>
+    <div v-else class="empty-state">
+      <v-icon size="64" color="#CBD5E1">mdi-post-outline</v-icon>
+      <p class="empty-text">아직 공유된 일기가 없습니다.</p>
     </div>
-
-    <!-- 더 로딩 스피너 -->
-    <div v-if="loading && posts.length > 0" class="more-loading">
-      <v-progress-circular indeterminate color="#FF8B8B" size="32"></v-progress-circular>
-      <span>더 많은 일기를 불러오는 중...</span>
-    </div>
-
-    <!-- 무한 스크롤 트리거 -->
-    <div ref="scrollTrigger" class="scroll-trigger"></div>
 
     <!-- 좋아요 모달 -->
     <LikesModal 
+      v-if="showLikesModal"
       v-model="showLikesModal"
       :likes-list="likesList"
-      @update:modelValue="handleLikesModalToggle"
+      :sidebar-mode="false"
+      @update:modelValue="closeLikesModal"
+    />
+
+    <!-- 댓글 모달 -->
+    <CommentsModal
+      v-if="showCommentsModal"
+      v-model="showCommentsModal"
+      :comments-list="commentsList"
+      :post-id="selectedPostId"
+      :sidebar-mode="false"
+      @close="closeCommentsModal"
+      @comment-added="handleCommentAdded"
+      @comment-updated="handleCommentUpdated"
+      @comment-deleted="handleCommentDeleted"
+      @add-comment="handleAddComment"
+      @add-reply="handleAddReply"
+      @edit-comment="handleEditComment"
+      @delete-comment="handleDeleteComment"
+      @edit-reply="handleEditReply"
+      @delete-reply="handleDeleteReply"
+      @refresh-comments="fetchComments"
     />
   </div>
 </template>
@@ -294,13 +299,16 @@ import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { postAPI, userAPI } from '@/services/api'
-import LikesModal from '@/components/LikesModal.vue'
+import CommentsModal from '@/components/CommentsModal.vue' // 댓글 모달 컴포넌트 추가
+import LikesModal from '@/components/LikesModal.vue' // 좋아요 모달 컴포넌트 추가
 import { checkPetExist } from '@/utils/petValidation'
+import { handleApiError } from '@/utils/errorHandler'
 
 export default {
   name: 'AllPostsView',
   components: {
-    LikesModal
+    CommentsModal, // 댓글 모달 컴포넌트 등록
+    LikesModal // 좋아요 모달 컴포넌트 등록
   },
   setup() {
     const router = useRouter()
@@ -312,13 +320,22 @@ export default {
     const currentPage = ref(0)
     const scrollTrigger = ref(null)
     
-    // 좋아요 모달 관련 상태
-    const showLikesModal = ref(false)
-    const likesList = ref([])
-    const isLoadingLikes = ref(false)
-    const currentPostId = ref(null)
     const likeProcessingPosts = ref(new Set()) // 좋아요 처리 중인 포스트 ID들
     const followProcessingUsers = ref(new Set()) // 팔로우 처리 중인 사용자 ID들
+
+    // 이미지 인덱스 관리
+    const currentImageIndex = ref({}) // 각 포스트별 현재 이미지 인덱스
+
+    // 댓글 모달 관련 상태
+    const showCommentsModal = ref(false)
+    const selectedPostId = ref(null)
+    const commentsList = ref([])
+    
+    // 좋아요 모달 관련 상태
+    const showLikesModal = ref(false)
+    const selectedLikesPostId = ref(null)
+    const likesList = ref([])
+    const isLoadingLikes = ref(false)
 
     // 현재 사용자 ID
     const currentUserId = computed(() => {
@@ -331,8 +348,6 @@ export default {
     const isLikeProcessing = (postId) => {
       return likeProcessingPosts.value?.has(postId) || false
     }
-
-
 
     // 모든 포스트의 팔로우 상태 가져오기
     const fetchAllFollowStatus = async () => {
@@ -757,6 +772,344 @@ export default {
       }
     }
 
+    // 댓글 모달 열기
+    const openCommentsModal = async (postId) => {
+      console.log('=== 댓글 모달 열기 시도 ===')
+      console.log('전달받은 postId:', postId)
+      console.log('postId 타입:', typeof postId)
+      console.log('postId 값 검증:', postId === null ? 'null' : postId === undefined ? 'undefined' : postId)
+      console.log('현재 showCommentsModal 상태:', showCommentsModal.value)
+      console.log('현재 selectedPostId 상태:', selectedPostId.value)
+      
+      // postId 유효성 검사
+      if (!postId) {
+        console.error('postId가 없어서 모달을 열 수 없습니다.')
+        return
+      }
+      
+      // 숫자 변환 시도
+      const numericPostId = Number(postId)
+      console.log('숫자 변환 결과:', numericPostId)
+      console.log('변환 후 유효성:', !isNaN(numericPostId))
+      
+      if (isNaN(numericPostId)) {
+        console.error('postId가 유효한 숫자가 아닙니다.')
+        return
+      }
+      
+      console.log('=== 상태 변경 시작 ===')
+      selectedPostId.value = numericPostId
+      console.log('selectedPostId 설정 완료:', selectedPostId.value)
+      
+      showCommentsModal.value = true
+      console.log('showCommentsModal 설정 완료:', showCommentsModal.value)
+      
+      // 모달이 열린 후 댓글 목록 로드
+      await fetchComments()
+      
+      // 모달 열릴 때 해당 게시글의 댓글 목록을 가져와 전달
+      const post = posts.value.find(p => p.id === numericPostId)
+      if (post) {
+        console.log('해당 게시글 찾음:', post)
+        console.log('게시글 ID:', post.id)
+        console.log('게시글 제목/내용:', post.content?.substring(0, 50) + '...')
+      } else {
+        console.warn('해당 게시글을 찾을 수 없음:', numericPostId)
+        console.log('현재 posts 배열:', posts.value.map(p => ({ id: p.id, content: p.content?.substring(0, 30) })))
+      }
+      
+      console.log('=== 댓글 모달 열기 완료 ===')
+      console.log('최종 selectedPostId:', selectedPostId.value)
+      console.log('최종 showCommentsModal:', showCommentsModal.value)
+    }
+
+    // 댓글 모달 닫기
+    const closeCommentsModal = () => {
+      showCommentsModal.value = false
+      selectedPostId.value = null
+      commentsList.value = [] // 모달 닫을 때 댓글 목록 초기화
+    }
+
+    // 좋아요 모달 열기
+    const openLikesModal = async (postId) => {
+      console.log('=== 좋아요 모달 열기 시도 ===')
+      console.log('전달받은 postId:', postId)
+      
+      if (!postId) {
+        console.error('postId가 없어서 좋아요 모달을 열 수 없습니다.')
+        return
+      }
+      
+      const numericPostId = Number(postId)
+      if (isNaN(numericPostId)) {
+        console.error('postId가 유효한 숫자가 아닙니다.')
+        return
+      }
+      
+      selectedLikesPostId.value = numericPostId
+      showLikesModal.value = true
+      
+      // 좋아요 목록 가져오기
+      await fetchLikes(numericPostId)
+    }
+
+    // 좋아요 모달 닫기
+    const closeLikesModal = () => {
+      showLikesModal.value = false
+      selectedLikesPostId.value = null
+      likesList.value = []
+    }
+
+    // 좋아요 목록 가져오기
+    const fetchLikes = async (postId) => {
+      try {
+        isLoadingLikes.value = true
+        console.log('좋아요 목록 가져오기 시작:', postId)
+        
+        const response = await postAPI.getLikes(postId, { page: 0, size: 50 })
+        console.log('좋아요 API 응답:', response)
+        
+        if (response.data && response.data.isSuccess) {
+          let likesData = []
+          
+          if (response.data.data) {
+            if (Array.isArray(response.data.data)) {
+              likesData = response.data.data
+            } else if (response.data.data.content) {
+              likesData = response.data.data.content
+            } else {
+              likesData = response.data.data
+            }
+          }
+          
+          likesList.value = likesData || []
+          console.log('좋아요 목록 설정 완료:', likesList.value.length)
+        } else {
+          console.log('좋아요 API 응답이 성공이 아님:', response.data)
+          likesList.value = []
+        }
+      } catch (error) {
+        console.error('좋아요 목록 가져오기 실패:', error)
+        likesList.value = []
+      } finally {
+        isLoadingLikes.value = false
+      }
+    }
+
+    // 댓글 추가 시 호출될 함수
+    const handleCommentAdded = (newComment) => {
+      console.log('댓글 추가 완료:', newComment)
+      // 댓글 목록 새로고침
+      fetchComments()
+      // 댓글 카운트 업데이트
+      updateCommentCount(selectedPostId.value, 1)
+    }
+
+    // 댓글 수정 시 호출될 함수
+    const handleCommentUpdated = (updatedComment) => {
+      console.log('댓글 수정 완료:', updatedComment)
+      // 댓글 목록 새로고침
+      fetchComments()
+    }
+
+    // 댓글 삭제 시 호출될 함수
+    const handleCommentDeleted = (commentId) => {
+      console.log('댓글 삭제 완료:', commentId)
+      // 댓글 목록 새로고침
+      fetchComments()
+      // 댓글 카운트 업데이트
+      updateCommentCount(selectedPostId.value, -1)
+    }
+
+    // 댓글 카운트 업데이트 함수
+    const updateCommentCount = (postId, change) => {
+      console.log('댓글 카운트 업데이트:', postId, change)
+      const post = posts.value.find(p => p.id === postId)
+      if (post) {
+        post.commentsCount = Math.max(0, (post.commentsCount || 0) + change)
+        console.log('업데이트된 댓글 카운트:', post.commentsCount)
+      }
+    }
+
+    // 댓글 추가
+    const handleAddComment = async (content) => {
+      try {
+        // 펫 등록 여부 확인
+        const hasPet = await checkPetExist()
+        if (!hasPet) return
+        
+        console.log('=== 댓글 추가 시작 ===')
+        console.log('댓글 내용:', content)
+        console.log('선택된 포스트 ID:', selectedPostId.value)
+        
+        await postAPI.createComment(selectedPostId.value, content)
+        console.log('댓글 추가 성공')
+        
+        // 댓글 카운트 업데이트
+        updateCommentCount(selectedPostId.value, 1)
+        
+        // 댓글 목록 새로고침
+        await fetchComments()
+        
+        // 댓글 미리보기 업데이트
+        await fetchAllCommentsPreview()
+      } catch (error) {
+        console.error('댓글 추가 실패:', error)
+        handleApiError(error, router, '댓글 작성에 실패했습니다.')
+        throw error
+      }
+    }
+
+    // 답글 추가
+    const handleAddReply = async (replyData) => {
+      try {
+        // 펫 등록 여부 확인
+        const hasPet = await checkPetExist()
+        if (!hasPet) return
+        
+        console.log('=== 답글 추가 시작 ===')
+        console.log('답글 데이터:', replyData)
+        
+        await postAPI.createReply(replyData.commentId, replyData.content, replyData.mentionUserId)
+        console.log('답글 추가 성공')
+        
+        // 댓글 카운트 업데이트 (답글도 댓글 카운트에 포함)
+        updateCommentCount(selectedPostId.value, 1)
+        
+        // 댓글 목록 새로고침
+        await fetchComments()
+        
+        // 댓글 미리보기 업데이트
+        await fetchAllCommentsPreview()
+      } catch (error) {
+        console.error('답글 추가 실패:', error)
+        handleApiError(error, router, '답글 작성에 실패했습니다.')
+        throw error
+      }
+    }
+
+    // 댓글 수정
+    const handleEditComment = async (commentData) => {
+      try {
+        console.log('=== 댓글 수정 시작 ===')
+        console.log('댓글 수정 데이터:', commentData)
+        
+        await postAPI.updateComment(commentData.commentId, commentData.content)
+        console.log('댓글 수정 성공')
+        
+        // 댓글 목록 새로고침
+        await fetchComments()
+      } catch (error) {
+        console.error('댓글 수정 실패:', error)
+        handleApiError(error, router, '댓글 수정에 실패했습니다.')
+        throw error
+      }
+    }
+
+    // 댓글 삭제
+    const handleDeleteComment = async (commentData) => {
+      try {
+        console.log('=== 댓글 삭제 시작 ===')
+        console.log('댓글 삭제 데이터:', commentData)
+        
+        await postAPI.deleteComment(commentData.commentId)
+        console.log('댓글 삭제 성공')
+        
+        // 댓글 카운트 업데이트
+        updateCommentCount(selectedPostId.value, -1)
+        
+        // 댓글 목록 새로고침
+        await fetchComments()
+      } catch (error) {
+        console.error('댓글 삭제 실패:', error)
+        handleApiError(error, router, '댓글 삭제에 실패했습니다.')
+        throw error
+      }
+    }
+
+    // 답글 수정
+    const handleEditReply = async (replyData) => {
+      try {
+        console.log('=== 답글 수정 시작 ===')
+        console.log('답글 수정 데이터:', replyData)
+        
+        await postAPI.updateComment(replyData.replyId, replyData.content)
+        console.log('답글 수정 성공')
+        
+        // 댓글 목록 새로고침
+        await fetchComments()
+      } catch (error) {
+        console.error('답글 수정 실패:', error)
+        handleApiError(error, router, '답글 수정에 실패했습니다.')
+        throw error
+      }
+    }
+
+    // 답글 삭제
+    const handleDeleteReply = async (replyData) => {
+      try {
+        console.log('=== 답글 삭제 시작 ===')
+        console.log('답글 삭제 데이터:', replyData)
+        
+        await postAPI.deleteComment(replyData.replyId)
+        console.log('답글 삭제 성공')
+        
+        // 댓글 카운트 업데이트 (답글도 댓글 카운트에 포함)
+        updateCommentCount(selectedPostId.value, -1)
+        
+        // 댓글 목록 새로고침
+        await fetchComments()
+      } catch (error) {
+        console.error('답글 삭제 실패:', error)
+        throw error
+      }
+    }
+
+    // 댓글 목록 새로고침
+    const fetchComments = async () => {
+      try {
+        console.log('=== 댓글 목록 새로고침 시작 ===')
+        console.log('선택된 포스트 ID:', selectedPostId.value)
+        
+        if (!selectedPostId.value) {
+          console.warn('선택된 포스트 ID가 없어 댓글 목록 새로고침 건너뜀')
+          return
+        }
+        
+        // 댓글 목록 API 호출
+        const response = await postAPI.getComments(selectedPostId.value, { page: 0, size: 50 })
+        console.log('댓글 목록 API 응답:', response)
+        
+        if (response.data && response.data.data) {
+          console.log('댓글 목록 응답 전체:', response.data)
+          
+          // 다양한 응답 구조 처리
+          let commentsData = []
+          
+          if (response.data.data.content) {
+            // Page 구조: response.data.data.content
+            commentsData = response.data.data.content
+          } else if (Array.isArray(response.data.data)) {
+            // 직접 배열 구조
+            commentsData = response.data.data
+          } else {
+            commentsData = response.data.data
+          }
+          
+          console.log('추출된 댓글 데이터:', commentsData)
+          commentsList.value = Array.isArray(commentsData) ? commentsData : []
+          console.log('commentsList 업데이트됨:', commentsList.value.length)
+        } else {
+          console.log('댓글 목록 데이터가 없음')
+          commentsList.value = []
+        }
+        
+        // 댓글 미리보기 업데이트
+        await fetchAllCommentsPreview()
+      } catch (error) {
+        console.error('댓글 목록 새로고침 실패:', error)
+      }
+    }
 
 
     // 해시태그 제거
@@ -767,75 +1120,10 @@ export default {
     }
 
     // 좋아요 텍스트 생성
-    const getLikesText = (post) => {
-      const count = post.likeCount || 0
+    const getLikesText = (count) => {
       if (count === 0) return '좋아요를 눌러보세요'
       if (count === 1) return '1명이 좋아합니다'
       return `${count}명이 좋아합니다`
-    }
-
-    // 좋아요 수 텍스트 생성 (숫자만)
-    const getLikeCountText = (post) => {
-      const count = post.likeCount || 0
-      return count > 0 ? `좋아요 ${count}개` : '좋아요 0개'
-    }
-
-    // 좋아요 목록 가져오기
-    const fetchLikes = async (postId) => {
-      try {
-        isLoadingLikes.value = true
-        console.log('좋아요 목록 조회 시작 - postId:', postId)
-        
-        const response = await postAPI.getLikes(postId, { page: 0, size: 20 })
-        console.log('좋아요 목록 응답:', response)
-        
-        if (response.data) {
-          console.log('좋아요 목록 응답 전체:', response.data)
-          
-          // 다양한 응답 구조 처리
-          let likesData = []
-          
-          if (response.data.data) {
-            // CommonRes 구조: response.data.data
-            if (Array.isArray(response.data.data)) {
-              likesData = response.data.data
-            } else if (response.data.data.content) {
-              // Page 구조: response.data.data.content
-              likesData = response.data.data.content
-            } else {
-              likesData = response.data.data
-            }
-          } else if (Array.isArray(response.data)) {
-            // 직접 배열 구조
-            likesData = response.data
-          }
-          
-          console.log('추출된 좋아요 데이터:', likesData)
-          likesList.value = Array.isArray(likesData) ? likesData : []
-          console.log('설정된 좋아요 목록:', likesList.value)
-        } else {
-          console.log('좋아요 목록 데이터가 없음')
-          likesList.value = []
-        }
-      } catch (error) {
-        console.error('좋아요 목록 조회 실패:', error)
-        console.error('에러 상세:', error.response?.data || error.message)
-        likesList.value = []
-      } finally {
-        isLoadingLikes.value = false
-      }
-    }
-
-    // 좋아요 텍스트 클릭 처리
-    const handleLikesTextClick = async (postId) => {
-      currentPostId.value = postId
-      await fetchLikes(postId)
-      showLikesModal.value = true
-    }
-
-    // 좋아요 모달 토글
-    const handleLikesModalToggle = (value) => {
-      showLikesModal.value = value
     }
 
     // 댓글 텍스트 포맷팅 (태그 추출)
@@ -933,28 +1221,28 @@ export default {
       }
     }
 
-    // 언팔로우하기
-    const unfollowUser = async (userId) => {
-      if (isFollowProcessing(userId)) return
-      
-      console.log(`언팔로우 시작 - userId: ${userId}`)
-      followProcessingUsers.value.add(userId)
-      try {
-        const response = await userAPI.unfollow(userId)
-        console.log('언팔로우 API 응답:', response)
-        
-        // 모든 포스트의 팔로우 상태 다시 조회
-        await fetchAllFollowStatus()
-        console.log('언팔로우 후 모든 포스트 팔로우 상태 재조회 완료')
-        
-      } catch (error) {
-        console.error('언팔로우 실패:', error)
-        alert('언팔로우에 실패했습니다.')
-      } finally {
-        followProcessingUsers.value.delete(userId)
-        console.log(`언팔로우 처리 완료 - userId: ${userId}`)
-      }
-    }
+    // 언팔로우 기능은 AllDiaryView에서 제공하지 않음
+    // const unfollowUser = async (userId) => {
+    //   if (isFollowProcessing(userId)) return
+    //   
+    //   console.log(`언팔로우 시작 - userId: ${userId}`)
+    //   followProcessingUsers.value.add(userId)
+    //   try {
+    //     const response = await userAPI.unfollow(userId)
+    //     console.log('언팔로우 API 응답:', response)
+    //     
+    //     // 모든 포스트의 팔로우 상태 다시 조회
+    //     await fetchAllFollowStatus()
+    //     console.log('언팔로우 후 모든 포스트 팔로우 상태 재조회 완료')
+    //     
+    //   } catch (error) {
+    //     console.error('언팔로우 실패:', error)
+    //     alert('언팔로우에 실패했습니다.')
+    //   } finally {
+    //     followProcessingUsers.value.delete(userId)
+    //     console.log(`언팔로우 처리 완료 - userId: ${userId}`)
+    //   }
+    // }
 
     // 신고하기
     const reportPost = (postId) => {
@@ -966,26 +1254,26 @@ export default {
     }
 
     // 이미지 네비게이션 함수들
-    const previousImage = (postId) => {
-      const post = posts.value.find(p => p.id === postId)
-      if (post && (post.currentImageIndex || 0) > 0) {
-        post.currentImageIndex = (post.currentImageIndex || 0) - 1
+    const prevImage = (postId) => {
+      const currentIndex = currentImageIndex.value[postId] || 0
+      if (currentIndex > 0) {
+        currentImageIndex.value[postId] = currentIndex - 1
       }
     }
 
     const nextImage = (postId) => {
       const post = posts.value.find(p => p.id === postId)
-      if (post && post.mediaList && (post.currentImageIndex || 0) < post.mediaList.length - 1) {
-        post.currentImageIndex = (post.currentImageIndex || 0) + 1
+      const currentIndex = currentImageIndex.value[postId] || 0
+      if (post && post.mediaList && currentIndex < post.mediaList.length - 1) {
+        currentImageIndex.value[postId] = currentIndex + 1
       }
     }
 
     const setImageIndex = (postId, index) => {
-      const post = posts.value.find(p => p.id === postId)
-      if (post) {
-        post.currentImageIndex = index
-      }
+      currentImageIndex.value[postId] = index
     }
+
+
 
     // 날짜 필드 추출
     const getDateField = (post) => {
@@ -1036,10 +1324,8 @@ export default {
       hasMore,
       scrollTrigger,
       currentUserId,
-      showLikesModal,
-      likesList,
-      isLoadingLikes,
-      currentPostId,
+      currentImageIndex,
+      likeProcessingPosts,
       goToPost,
       goToPostWithComments,
       goToUserDiary,
@@ -1050,21 +1336,42 @@ export default {
       deletePost,
       reportPost,
       followUser,
-      unfollowUser,
       isFollowProcessing,
-      previousImage,
+      prevImage,
       nextImage,
       setImageIndex,
-      getLikesText,
-      getLikeCountText,
-      handleLikesTextClick,
-      handleLikesModalToggle,
       getDateField,
       formatDate,
       isLikeProcessing,
       fetchAllFollowStatus,
       fetchAllCommentsPreview,
-      formatCommentText
+      formatCommentText,
+      showCommentsModal,
+      selectedPostId,
+      commentsList,
+      openCommentsModal,
+      closeCommentsModal,
+      handleCommentAdded,
+      handleCommentUpdated,
+      handleCommentDeleted,
+      handleAddComment,
+      handleAddReply,
+      handleEditComment,
+      handleDeleteComment,
+      handleEditReply,
+      handleDeleteReply,
+      fetchComments,
+      updateCommentCount,
+      showLikesModal,
+      selectedLikesPostId,
+      likesList,
+      isLoadingLikes,
+      openLikesModal,
+      closeLikesModal,
+      fetchLikes,
+      getLikesText,
+
+      // selectedPostComments // 댓글 모달에 전달할 댓글 목록 반환 // 이 변수는 제거되었으므로 직접 사용
     }
   }
 }
@@ -1075,7 +1382,6 @@ export default {
   max-width: 800px;
   margin: 0 auto;
   padding: 20px;
-  background: #f8f9fa;
 }
 
 .loading-container {
@@ -1100,7 +1406,7 @@ export default {
 
 .post-section {
   border-bottom: 1px solid #E5E7EB;
-  padding: 16px 0;
+  padding: 0;
   background: white;
   border-radius: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
@@ -1118,7 +1424,8 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px 12px 16px;
+  padding: 16px 16px 12px 16px;
+  gap: 12px;
 }
 
 .options-btn {
@@ -1154,6 +1461,8 @@ export default {
   color: #dc3545;
 }
 
+
+
 /* 다중 이미지 슬라이더 스타일 */
 .multi-image-slider {
   position: relative;
@@ -1175,6 +1484,7 @@ export default {
   justify-content: space-between;
   padding: 0 16px;
   pointer-events: none;
+  z-index: 10;
 }
 
 .nav-btn {
@@ -1201,6 +1511,7 @@ export default {
   transform: translateX(-50%);
   display: flex;
   gap: 8px;
+  z-index: 10;
 }
 
 .indicator {
@@ -1224,6 +1535,7 @@ export default {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0;
 }
 
 .profile-avatar {
@@ -1232,8 +1544,8 @@ export default {
 }
 
 .follow-section {
-  margin-right: 4px;
-  margin-left: 450px;
+  margin-left: auto;
+  margin-right: 8px;
 }
 
 .follow-btn {
@@ -1260,6 +1572,8 @@ export default {
 .comments-preview {
   padding: 12px 16px;
   border-top: 1px solid #f0f0f0;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .comments-preview-header {
@@ -1290,6 +1604,9 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  max-width: 100%;
+  overflow: hidden;
+  align-items: flex-start; /* 좌측 정렬 */
 }
 
 .comment-preview-item {
@@ -1298,24 +1615,46 @@ export default {
   font-size: 0.85rem;
   line-height: 1.4;
   align-items: flex-start;
+  justify-content: flex-start; /* 좌측 정렬 */
+  min-width: 0; /* flex 아이템이 축소될 수 있도록 */
 }
 
 .comment-author {
   font-weight: 600;
   color: #1E293B;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 80px; /* 사용자명 최대 너비 제한 */
 }
 
 .comment-content {
   color: #495057;
   word-break: break-word;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
   margin-top: 2px;
+  flex: 1;
+  min-width: 0; /* flex 아이템이 축소될 수 있도록 */
+  max-width: 100%; /* 최대 너비 제한 */
+  text-align: left; /* 좌측 정렬 */
+}
+
+.comment-text {
+  word-break: break-word;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  white-space: pre-wrap; /* 줄바꿈 유지 */
+  text-align: left; /* 좌측 정렬 */
 }
 
 .comment-user-info {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-shrink: 0; /* 사용자 정보는 축소되지 않도록 */
+  min-width: 0; /* flex 아이템이 축소될 수 있도록 */
+  justify-content: flex-start; /* 좌측 정렬 */
 }
 
 .comment-avatar {
@@ -1339,6 +1678,8 @@ export default {
 .tag-mention {
   font-weight: 700;
   color: #FF8B8B;
+  word-break: keep-all; /* 태그는 단어 단위로만 줄바꿈 */
+  white-space: nowrap; /* 태그는 줄바꿈 방지 */
 }
 
 .tag-mention.clickable {
@@ -1357,6 +1698,8 @@ export default {
   gap: 2px;
   align-items: flex-start;
   text-align: left;
+  min-width: 0;
+  flex: 1;
 }
 
 .username {
@@ -1365,11 +1708,19 @@ export default {
   color: #1E293B;
   cursor: pointer;
   text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
 }
 
 .date {
   font-size: 0.8rem;
   color: #6B7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
 }
 
 .clickable:hover {
@@ -1378,36 +1729,47 @@ export default {
 
 /* 이미지 컨테이너 */
 .post-image-container {
-  margin-bottom: 12px;
+  margin: 0 16px 12px 16px;
+  height: 500px;
+  overflow: hidden;
+  border-radius: 8px;
 }
 
 .single-image {
   width: 100%;
+  height: 100%;
 }
 
 .post-image {
   width: 100%;
-  max-height: 600px;
+  height: 100%;
   object-fit: cover;
+  object-position: center;
+  background-color: #f8f9fa;
+  border-radius: 8px;
 }
 
 .multi-image-slider {
   position: relative;
+  width: 100%;
+  height: 100%;
 }
 
 .image-slider {
   position: relative;
+  width: 100%;
+  height: 100%;
 }
 
 /* 좋아요/댓글 바 */
-.engagement-bar {
+.action-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 16px 8px 16px;
 }
 
-.engagement-left {
+.action-buttons {
   display: flex;
   align-items: center;
   gap: 16px;
@@ -1440,6 +1802,31 @@ export default {
   color: #1E293B;
 }
 
+.post-actions {
+  margin-left: auto;
+}
+
+.share-btn {
+  background: transparent !important;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  box-shadow: none !important;
+}
+
+.share-btn:hover {
+  background: transparent !important;
+  transform: scale(1.05);
+  color: #1E293B;
+}
+
+.share-btn:focus {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
 /* 좋아요 정보 */
 .likes-info {
   padding: 0 16px 8px 16px;
@@ -1452,6 +1839,16 @@ export default {
   color: #1E293B;
   text-align: left;
   margin: 0;
+  cursor: default;
+}
+
+.likes-text.clickable {
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.likes-text.clickable:hover {
+  color: #FF8B8B;
 }
 
 .clickable {
@@ -1465,7 +1862,7 @@ export default {
 }
 
 /* 캡션 */
-.caption {
+.post-caption {
   padding: 0 16px 8px 16px;
   line-height: 1.4;
   text-align: left;
@@ -1529,6 +1926,12 @@ export default {
   margin: 0;
 }
 
+.empty-text {
+  color: #6B7280;
+  font-size: 1rem;
+  margin-top: 8px;
+}
+
 .more-loading {
   display: flex;
   align-items: center;
@@ -1542,6 +1945,30 @@ export default {
   height: 20px;
 }
 
+/* 댓글 모달 관련 스타일 */
+.comments-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.comments-modal {
+  background: white;
+  border-radius: 16px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
 /* 반응형 */
 @media (max-width: 768px) {
   .all-posts-container {
@@ -1549,14 +1976,24 @@ export default {
   }
   
   .post-section {
-    padding: 12px 0;
+    padding: 0;
   }
   
   .post-header {
-    padding: 0 12px 8px 12px;
+    padding: 12px 12px 8px 12px;
+    gap: 8px;
   }
   
-  .engagement-bar {
+  .username, .date {
+    max-width: 150px;
+  }
+  
+  .post-image-container {
+    height: 400px;
+    margin: 0 12px 12px 12px;
+  }
+  
+  .action-bar {
     padding: 0 12px 8px 12px;
   }
   
@@ -1564,12 +2001,31 @@ export default {
     padding: 0 12px 8px 12px;
   }
   
-  .caption {
+  .post-caption {
     padding: 0 12px 8px 12px;
   }
   
   .hashtags {
-    padding: 0 12px 8px 12px;
+    padding: 0 12px 16px 12px;
+  }
+  
+  .comments-preview {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .post-header {
+    gap: 6px;
+  }
+  
+  .username, .date {
+    max-width: 120px;
+  }
+  
+  .post-image-container {
+    height: 300px;
+    margin: 0 8px 12px 8px;
   }
 }
 </style>
