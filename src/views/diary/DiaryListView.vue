@@ -105,7 +105,7 @@
               v-model="selectedPet"
               :items="userPets"
               item-title="name"
-              item-value="name"
+              item-value="id"
               label="대표동물 선택"
               variant="outlined"
               class="pet-select"
@@ -436,14 +436,16 @@ export default {
         }
         
         // 선택된 펫 찾기
-        const selectedPetData = userPets.value.find(pet => pet.name === selectedPet.value)
+        console.log('선택된 펫 이름:', selectedPet.value)
+        console.log('선택된 펫 이름:', userPets)
+        const selectedPetData = userPets.value.find(pet => pet.id == selectedPet.value)
         if (!selectedPetData) {
           alert('선택된 동물을 찾을 수 없습니다')
           return
         }
         
         // 백엔드 API 호출
-        await petAPI.setMainPet()
+        await userAPI.setMainPet(selectedPetData.id)
         
         // 성공 메시지
         alert('대표동물이 변경되었습니다!')

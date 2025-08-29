@@ -461,8 +461,6 @@ export const petAPI = {
   // 다른 사용자의 반려동물 목록 조회
   getOtherUserPets: (userId) => apiClient.get('/pets', { params: { userId } }),
   
-  // 대표 반려동물 설정 (다른 엔드포인트)
-  setMainPetAlt: () => apiClient.put(`/users/pets/main`),
 
   // 반려동물 수정
   update: async (petId, petData, petImg) => {
