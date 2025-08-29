@@ -1,7 +1,6 @@
 <template>
-  <Transition name="likes-slide">
-    <div v-if="show" :class="sidebarMode ? 'likes-sidebar' : 'likes-overlay'">
-      <div :class="sidebarMode ? 'likes-sidebar-modal' : 'likes-modal'">
+  <v-dialog v-model="show" max-width="400">
+    <v-card class="likes-modal">
       <v-card-title class="modal-title">
         좋아요
       </v-card-title>
@@ -47,9 +46,8 @@
           닫기
         </v-btn>
       </v-card-actions>
-      </div>
-    </div>
-  </Transition>
+    </v-card>
+  </v-dialog>
 </template>
 
 <script>
@@ -63,10 +61,6 @@ export default {
     likesList: {
       type: Array,
       default: () => []
-    },
-    sidebarMode: {
-      type: Boolean,
-      default: false
     }
   },
   emits: ['update:modelValue'],
@@ -96,90 +90,34 @@ export default {
 </script>
 
 <style scoped>
-/* 사이드바 모드 스타일 */
-.likes-sidebar {
-  position: fixed !important;
-  top: 0 !important;
-  right: 0 !important;
-  left: auto !important;
-  bottom: auto !important;
-  width: 400px !important;
-  height: 100vh !important;
-  background: white !important;
-  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1) !important;
-  z-index: 1000 !important;
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: stretch !important;
-  justify-content: flex-start !important;
-  border-left: 1px solid rgba(0, 0, 0, 0.1) !important;
-}
-
-.likes-sidebar-modal {
-  width: 100% !important;
-  height: 100% !important;
-  display: flex !important;
-  flex-direction: column !important;
-  background: white !important;
-  overflow: hidden !important;
-  border-radius: 0 !important;
-  max-width: none !important;
-  box-shadow: none !important;
-}
-
-/* 중앙 모달 모드 스타일 */
-.likes-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100%;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
 .likes-modal {
   border-radius: 24px;
   background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 8px 32px rgba(15, 23, 42, 0.12);
-  max-width: 400px;
-  width: 90%;
-  max-height: 80vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
 }
 
 .modal-title {
   font-size: 1.2rem;
   font-weight: 700;
   text-align: center;
-  padding: 20px 24px;
+  padding: 24px 24px 0 24px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   background: linear-gradient(135deg, #1E293B 0%, #475569 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  flex-shrink: 0;
 }
 
 .modal-content {
   padding: 0;
-  flex: 1;
+  max-height: 400px;
   overflow-y: auto;
-  min-height: 0;
 }
 
 .likes-list {
-  padding: 0;
+  padding: 16px 0;
 }
 
 .like-item {
@@ -189,7 +127,6 @@ export default {
   padding: 12px 24px;
   transition: all 0.3s ease;
   cursor: pointer;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
 }
 
 .like-item:hover {
@@ -197,34 +134,22 @@ export default {
   transform: translateX(4px);
 }
 
-.like-item:last-child {
-  border-bottom: none;
-}
-
 .like-avatar {
   flex-shrink: 0;
   border: 2px solid #FF8B8B;
   box-shadow: 0 2px 8px rgba(255, 139, 139, 0.2);
-  width: 32px !important;
-  height: 32px !important;
 }
 
 .like-info {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  flex: 1;
-  min-width: 0;
-  align-items: flex-start;
-  text-align: left;
 }
 
 .like-username {
   font-weight: 600;
   font-size: 0.9rem;
   color: #1E293B;
-  line-height: 1.2;
-  text-align: left;
 }
 
 .clickable {
@@ -240,8 +165,6 @@ export default {
 .like-date {
   font-size: 0.75rem;
   color: #64748B;
-  line-height: 1.2;
-  text-align: left;
 }
 
 /* 빈 상태 스타일 */
@@ -250,9 +173,8 @@ export default {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px 24px;
+  padding: 40px 24px;
   text-align: center;
-  min-height: 200px;
 }
 
 .empty-text {
@@ -269,10 +191,9 @@ export default {
 }
 
 .modal-actions {
-  padding: 16px 24px;
+  padding: 20px 24px;
   justify-content: center;
   border-top: 1px solid rgba(0, 0, 0, 0.08);
-  flex-shrink: 0;
 }
 
 .close-modal-btn {
@@ -286,27 +207,5 @@ export default {
   color: #FF6B6B !important;
   background: transparent !important;
   transform: translateY(-1px);
-}
-
-/* 좋아요 사이드바 애니메이션 */
-.likes-slide-enter-active,
-.likes-slide-leave-active {
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.likes-slide-enter-from {
-  transform: translateX(100%);
-  opacity: 0;
-}
-
-.likes-slide-leave-to {
-  transform: translateX(100%);
-  opacity: 0;
-}
-
-.likes-slide-enter-to,
-.likes-slide-leave-from {
-  transform: translateX(0);
-  opacity: 1;
 }
 </style>

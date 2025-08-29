@@ -44,7 +44,7 @@ onMounted(async () => {
       
       // 로그인 성공 후 화면 새로고침하여 로그인된 상태로 표시
       console.log('✅ OAuth 로그인 성공! 화면 새로고침 중...')
-      window.location.href = '/'
+      window.location.href = '/dashboard'
       return
     }
 

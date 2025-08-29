@@ -168,16 +168,6 @@ export default {
                   showSearchResults.value = true
                   currentPage.value = 0
                   hasMore.value = true
-                  
-                  // URL 쿼리 파라미터 업데이트
-                  $router.push({
-                    path: '/search',
-                    query: {
-                      searchType: searchData.searchType,
-                      keyword: searchData.keyword
-                    }
-                  })
-                  
                   performSearch(searchType.value, searchKeyword.value)
                 }
     
@@ -188,12 +178,6 @@ export default {
                   searchResults.value = []
                   currentPage.value = 0
                   hasMore.value = true
-                  
-                  // URL 쿼리 파라미터 제거
-                  $router.push({
-                    path: '/search',
-                    query: {}
-                  })
                 }
     
                     // 검색 결과 클릭 처리
@@ -239,14 +223,5 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 100%;
-}
-
-/* 검색 컴포넌트를 가운데 정렬 */
-.search-page > :first-child {
-  display: flex;
-  justify-content: center;
-  width: 100%;
-  margin-bottom: 32px;
 }
 </style>
