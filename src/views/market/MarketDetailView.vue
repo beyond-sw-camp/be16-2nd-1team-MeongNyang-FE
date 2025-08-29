@@ -225,25 +225,25 @@ import { useChatStore } from '@/stores/chat'
 export default {
   name: 'MarketDetailView',
   setup() {
-         const route = useRoute()
-          const router = useRouter()
-         const chatStore = useChatStore()
+    const route = useRoute()
+    const router = useRouter()
+    const chatStore = useChatStore()
+
+    // 반응형 데이터
+    const post = ref(null)
+    const loading = ref(true)
+    const error = ref(null)
+    const currentImageIndex = ref(0)
+    const mapContainer = ref(null)
+    const locationAddress = ref('위치 정보를 불러오는 중...')
     
-         // 반응형 데이터
-     const post = ref(null)
-     const loading = ref(true)
-     const error = ref(null)
-     const currentImageIndex = ref(0)
-     const mapContainer = ref(null)
-       const locationAddress = ref('위치 정보를 불러오는 중...')
-       
-       // 이미지 모달 관련 상태
-       const showImageModal = ref(false)
-       const modalImage = ref('')
-      
-             // 현재 사용자 정보 (JWT 토큰에서 추출)
-       const currentUserId = ref(null)
-       const currentUserEmail = ref(null)
+    // 이미지 모달 관련 상태
+    const showImageModal = ref(false)
+    const modalImage = ref('')
+  
+    // 현재 사용자 정보 (JWT 토큰에서 추출)
+    const currentUserId = ref(null)
+    const currentUserEmail = ref(null)
     
     // 카테고리 라벨
     const categoryLabels = {
@@ -253,7 +253,7 @@ export default {
       'OTHER': '기타'
     }
     
-         // 현재 이미지
+     // 현재 이미지
      const currentImage = computed(() => {
       if (!post.value || !post.value.productImageList || post.value.productImageList.length === 0) {
         return null
@@ -261,7 +261,7 @@ export default {
       return post.value.productImageList[currentImageIndex.value]
      })
     
-         // 거래글 상세 조회
+     // 거래글 상세 조회
      const fetchPostDetail = async () => {
        loading.value = true
        error.value = null
@@ -338,35 +338,32 @@ export default {
        }
      }
      
+     const loadKakaoMapScript = () => {
+      return new Promise((resolve, reject) => {
+        // 이미 로드된 경우
+        if (typeof window.kakao !== 'undefined' && window.kakao.maps) {
+          resolve()
+          return
+        }
+
+        // 환경 변수에서 API 키 가져오기
+        const apiKey = process.env.VUE_APP_KAKAO_MAP_API_KEY
+        
+        // 스크립트 동적 생성
+        const script = document.createElement('script')
+        script.type = 'text/javascript'
+        script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&libraries=services`
+        
+        script.onload = () => resolve()
+        script.onerror = () => reject(new Error('카카오맵 스크립트 로드 실패'))
+        
+        document.head.appendChild(script)
+      })
+    }
+
      // 카카오맵 API 로딩 대기
      const waitForKakaoMap = () => {
-       return new Promise((resolve, reject) => {
-         // 이미 로드된 경우
-         if (typeof window.kakao !== 'undefined' && window.kakao.maps) {
-           resolve()
-           return
-         }
-         
-         // 로딩 대기 (최대 10초)
-         let attempts = 0
-         const maxAttempts = 100 // 100ms * 100 = 10초
-         
-         const checkKakaoMap = () => {
-           attempts++
-           
-           if (typeof window.kakao !== 'undefined' && window.kakao.maps) {
-             console.log('카카오맵 API 로딩 완료')
-             resolve()
-           } else if (attempts >= maxAttempts) {
-             console.error('카카오맵 API 로딩 시간 초과')
-             reject(new Error('카카오맵 API 로딩 시간 초과'))
-           } else {
-             setTimeout(checkKakaoMap, 100)
-           }
-         }
-         
-         checkKakaoMap()
-       })
+       return loadKakaoMapScript()
      }
      
      // 카카오맵 초기화
