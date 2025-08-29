@@ -112,37 +112,36 @@
           </div>
           <div class="seller-profile">
             <div class="profile-image-container">
-                                            <img 
-                 v-if="getProfileImage(post.sellerProfileUrl)"
-                 :src="getProfileImage(post.sellerProfileUrl)" 
-                 :alt="post.sellerNickname || '판매자'"
-                 class="profile-image"
-                 @error="handleImageError"
-               />
-               <!-- 기본 프로필 아이콘 (이미지가 없거나 로드 실패 시 표시) -->
-               <v-icon 
-                 v-else
-                 icon="mdi-account-circle" 
-                 size="40" 
-                 class="default-profile-icon"
-               />
-               <!-- <div class="online-indicator"></div> -->
+              <img 
+                v-if="getProfileImage(post.sellerProfileUrl)"
+                :src="getProfileImage(post.sellerProfileUrl)" 
+                :alt="post.sellerNickname || '판매자'"
+                class="profile-image"
+                @error="handleImageError"
+              />
+              <v-icon 
+                v-else
+                icon="mdi-account-circle" 
+                size="40" 
+                class="default-profile-icon"
+              />
             </div>
-                         <div class="seller-details">
-               <div class="seller-name">{{ post.sellerNickname || '판매자' }}</div>
-             </div>
+
+            <!-- 이름 + 버튼을 가로로 배치 -->
+            <div class="seller-details">
+              <div class="seller-row">
+                <div class="seller-name">{{ post.sellerNickname || '판매자' }}</div>
+                <button 
+                  class="chat-btn-inline"
+                  @click="startChat"
+                  :disabled="!canStartChat"
+                >
+                  <v-icon icon="mdi-chat" size="16" />
+                  {{ getChatButtonText() }}
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-        <!-- 채팅하기 버튼 -->
-        <div class="action-section">
-          <button 
-            class="chat-btn primary"
-            @click="startChat"
-            :disabled="!canStartChat"
-          >
-            <v-icon icon="mdi-chat" size="20" />
-            {{ getChatButtonText() }}
-          </button>
         </div>
       </div>
 
@@ -1396,25 +1395,14 @@ export default {
   cursor: pointer;
 }
 
-.chat-btn.primary {
-  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
-  color: white;
-  flex: 2;
-}
-
-.chat-btn.primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(232, 125, 125, 0.4);
-}
-
-.chat-btn.secondary {
+.chat-btn {
   background: white;
   color: #6c757d;
   border: 2px solid #e9ecef;
   flex: 1;
 }
 
-.chat-btn.secondary:hover {
+.chat-btn:hover {
   background: #f8f9fa;
   border-color: #E87D7D;
   color: #E87D7D;
@@ -1510,17 +1498,6 @@ export default {
   position: relative;
 }
 
-.chat-btn.primary {
-  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
-  color: white;
-  box-shadow: 0 4px 15px rgba(232, 125, 125, 0.3);
-}
-
-.chat-btn.primary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(232, 125, 125, 0.4);
-}
-
 .chat-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
@@ -1552,11 +1529,6 @@ export default {
   .action-section {
     flex-direction: column;
   }
-  
-     .chat-btn.primary,
-   .chat-btn.secondary {
-     flex: 1;
-   }
  }
  
    /* 이미지 모달 스타일 */
@@ -1621,9 +1593,62 @@ export default {
    object-fit: contain;
    display: block;
  }
- 
 
- 
+ .chat-btn-inline {
+    background: linear-gradient(135deg, #E87D7D, #FF6B6B);
+    color: white;
+    border: none;
+    border-radius: 24px;
+    padding: 6px 12px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .chat-btn-inline:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(232, 125, 125, 0.3);
+  }
+
+  .seller-row {
+  display: flex;
+  align-items: center;           /* 세로 가운데 정렬 */
+  justify-content: space-between;/* 이름은 왼쪽, 버튼은 오른쪽 */
+  gap: 12px;
+  width: 100%;                   /* 전체 가로폭 채우기 */
+  }
+  
+  .seller-name {
+    font-weight: 600;
+    font-size: 1rem;
+    color: #2c3e50;
+  }
+
+  .chat-btn-inline {
+    background: linear-gradient(135deg, #E87D7D, #FF6B6B);
+    color: white;
+    border: none;
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .chat-btn-inline:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(232, 125, 125, 0.3);
+  }
+
+
  /* 모바일 반응형 */
  @media (max-width: 768px) {
    .image-modal-content {
@@ -1644,6 +1669,12 @@ export default {
      height: 35px;
    }
    
-   
+   .seller-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* 이름 왼쪽, 버튼 오른쪽 */
+  gap: 10px;
+  }
+
  }
 </style>
