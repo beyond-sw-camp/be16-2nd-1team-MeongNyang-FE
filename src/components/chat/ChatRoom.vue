@@ -1615,8 +1615,8 @@ export default {
 <style scoped>
 /* 채팅방 컨테이너 높이 제한 */
 .chat-room-container {
-  height: 100vh;
-  max-height: 100vh;
+  height: 100%;
+  max-height: 100%;
   overflow: hidden;
   background: var(--mm-surface);
   border-radius: 0;

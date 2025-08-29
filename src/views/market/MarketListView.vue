@@ -67,10 +67,20 @@
               • {{ getCategoryLabel(selectedCategory) }}
             </span>
           </div>
+          <div class="header-buttons">
+            <button class="my-trade-btn" @click="navigateToMyTrade">
+              <v-icon icon="mdi-format-list-bulleted" size="18" />
+              거래내역
+            </button>
+            <button class="wishlist-btn" @click="navigateToWishlist">
+              <v-icon icon="mdi-heart" size="18" />
+              찜목록
+            </button>
           <button class="create-post-btn" @click="navigateToCreate">
             <v-icon icon="mdi-plus" size="18" />
-            거래글 작성
+              판매하기
           </button>
+          </div>
         </div>
 
         <!-- 로딩 상태 -->
@@ -120,16 +130,16 @@
             </div>
             
             <!-- 찜하기 버튼 -->
-            <button 
-              class="like-btn"
-              @click.stop="toggleLike(post.id)"
-              :class="{ liked: post.isLiked }"
-            >
-              <v-icon 
-                :icon="post.isLiked ? 'mdi-heart' : 'mdi-heart-outline'" 
-                size="20"
-              />
-            </button>
+              <button 
+                class="like-btn"
+                @click.stop="toggleLike(post.id)"
+                :class="{ liked: post.isLiked }"
+              >
+                <v-icon 
+                  :icon="post.isLiked ? 'mdi-heart' : 'mdi-heart-outline'" 
+                  size="20"
+                />
+              </button>
             
             <!-- 거리 정보 표시 -->
             <div v-if="selectedSort === 'distance' && post.distance !== null" class="distance-info">
@@ -137,6 +147,7 @@
             </div>
           </div>
         </div>
+        
 
         <!-- 빈 상태 -->
         <div v-else class="empty-container">
@@ -210,7 +221,7 @@ export default {
         { title: '가격 높은순', value: 'price-high' },
         { title: '📍 거리순', value: 'distance' }
       ],
-      likedPosts: new Set(), // 찜한 게시글 ID들을 저장할 Set
+
       
       // 위치 관련 상태
       userLocation: null, // 사용자 현재 위치 { lat, lng }
@@ -325,6 +336,19 @@ export default {
           sort: 'id,desc' // 기본 정렬
         }
 
+        // 카테고리 필터링 파라미터 추가
+        if (this.selectedCategory && this.selectedCategory !== 'all') {
+          // Spring Boot에서 일반적으로 사용하는 파라미터 이름
+          pageable.category = this.selectedCategory
+          console.log('카테고리 필터링 적용:', this.selectedCategory)
+        }
+
+        // 검색어 파라미터 추가
+        if (this.searchQuery && this.searchQuery.trim()) {
+          pageable.search = this.searchQuery.trim()
+          console.log('검색어 필터링 적용:', this.searchQuery.trim())
+        }
+
         // 정렬 옵션에 따른 정렬 설정
         if (this.selectedSort === 'price-low') {
           pageable.sort = 'price,asc'
@@ -341,6 +365,26 @@ export default {
         
         if (response.data && response.data.isSuccess) {
           let fetchedPosts = response.data.data?.content || []
+          
+          // 백엔드에서 필터링이 지원되지 않는 경우 클라이언트 사이드에서 필터링
+          
+          // 카테고리 필터링
+          if (this.selectedCategory && this.selectedCategory !== 'all') {
+            const originalLength = fetchedPosts.length
+            fetchedPosts = fetchedPosts.filter(post => post.category === this.selectedCategory)
+            console.log(`카테고리 필터링: ${originalLength}개 → ${fetchedPosts.length}개 (${this.selectedCategory})`)
+          }
+          
+          // 검색어 필터링
+          if (this.searchQuery && this.searchQuery.trim()) {
+            const originalLength = fetchedPosts.length
+            const searchTerm = this.searchQuery.toLowerCase().trim()
+            fetchedPosts = fetchedPosts.filter(post => 
+              post.title.toLowerCase().includes(searchTerm) ||
+              (post.description && post.description.toLowerCase().includes(searchTerm))
+            )
+            console.log(`검색어 필터링: ${originalLength}개 → ${fetchedPosts.length}개 ("${searchTerm}")`)
+          }
           
           // 인기순 정렬은 클라이언트 사이드에서 처리
           if (this.selectedSort === 'popular') {
@@ -423,8 +467,9 @@ export default {
               post.isLiked = post.liked
               console.log(`게시글 ${post.id} liked 필드를 isLiked로 매핑:`, post.liked, '→', post.isLiked)
             } else {
-              // 백엔드에서 liked 필드가 없는 경우 로컬스토리지 정보 사용
-              post.isLiked = this.isPostLiked(post.id)
+              // 백엔드에서 liked 필드가 없는 경우 기본값 false
+              post.isLiked = false
+              console.log(`게시글 ${post.id} liked 필드 없음, 기본값 false 설정`)
             }
             
             if (!post.createdAt) {
@@ -453,21 +498,18 @@ export default {
         if (post.isLiked) {
           // 찜 취소
           console.log('찜 취소 시도...')
-          await marketAPI.unlike(postId)
+          await marketAPI.unlikeMarket(postId)
           console.log('찜 취소 성공')
           post.likeCount = Math.max(0, (post.likeCount || 0) - 1)
-          this.removeLikedPost(postId)
         } else {
           // 찜하기
           console.log('찜하기 시도...')
-          await marketAPI.like(postId)
+          await marketAPI.likeMarket(postId)
           console.log('찜하기 성공')
           post.likeCount = (post.likeCount || 0) + 1
-          this.addLikedPost(postId)
         }
         
-        
-        // 상태 토글
+        // 상태 토글 (DB 기반)
         post.isLiked = !post.isLiked
         console.log('찜 상태 업데이트 완료:', post.isLiked)
         
@@ -582,6 +624,7 @@ export default {
           defaultImage.style.display = 'flex'
         }
       }
+      
     },
 
     changePage(page) {
@@ -594,137 +637,21 @@ export default {
       this.$router.push('/market/new')
     },
 
+    navigateToMyTrade() {
+      this.$router.push('/market/my-trade')
+    },
+
+    navigateToWishlist() {
+      this.$router.push('/market/wishlist')
+    },
+
     navigateToPost(postId) {
       this.$router.push(`/market/${postId}`)
     },
 
-    // 백엔드와 찜하기 상태 동기화 (수정)
-    async syncLikeStatus() {
-      try {
-        // 백엔드에서 현재 로그인한 사용자의 찜한 게시글 목록을 가져와서 동기화
-        const response = await marketAPI.getUserLikedPosts()
-        if (response.data && response.data.isSuccess) {
-          const likedPostIds = response.data.data || []
-          this.likedPosts = new Set(likedPostIds)
-          console.log('백엔드에서 가져온 찜한 게시글:', [...this.likedPosts])
-          
-          // localStorage 업데이트 (사용자별로 구분)
-          this.saveLikedPosts()
-          
-          // posts가 로드된 후에만 isLiked 상태 업데이트
-          if (this.posts.length > 0) {
-            this.posts.forEach(post => {
-              // 백엔드의 liked 필드가 있으면 그것을 사용, 없으면 localStorage 정보 사용
-              if (post.liked !== undefined) {
-                post.isLiked = post.liked
-              } else {
-                post.isLiked = this.isPostLiked(post.id)
-              }
-            })
-          }
-        } else {
-          console.log('백엔드에서 찜한 게시글을 가져올 수 없음, localStorage 사용')
-          this.loadLikedPosts()
-        }
-      } catch (error) {
-        console.error('찜하기 상태 동기화 오류:', error)
-        // 에러 발생 시 localStorage에서 기존 정보 로드
-        this.loadLikedPosts()
-      }
-    },
 
-    // localStorage의 찜한 게시글 정보 초기화 (수정)
-    clearLikedPosts() {
-      this.likedPosts.clear()
-      // 사용자별로 구분된 localStorage 키 사용
-      const currentUserId = this.getCurrentUserId()
-      if (currentUserId) {
-        localStorage.removeItem(`likedPosts_${currentUserId}`)
-      }
-      // 모든 포스트의 isLiked 상태를 false로 초기화
-      if (this.posts.length > 0) {
-        this.posts.forEach(post => {
-          post.isLiked = false
-        })
-      }
-    },
 
-    // 로컬스토리지에서 찜한 게시글 정보 가져오기 (수정)
-    loadLikedPosts() {
-      try {
-        const currentUserId = this.getCurrentUserId()
-        if (!currentUserId) {
-          this.likedPosts = new Set()
-          return
-        }
-        
-        const likedPostsData = localStorage.getItem(`likedPosts_${currentUserId}`)
-        if (likedPostsData) {
-          this.likedPosts = new Set(JSON.parse(likedPostsData))
-          console.log(`사용자 ${currentUserId}의 찜한 게시글:`, [...this.likedPosts])
-        }
-      } catch (error) {
-        console.error('찜한 게시글 정보 로드 오류:', error)
-        this.likedPosts = new Set()
-      }
-    },
 
-    // 로컬스토리지에 찜한 게시글 정보 저장 (수정)
-    saveLikedPosts() {
-      try {
-        const currentUserId = this.getCurrentUserId()
-        if (!currentUserId) return
-        
-        localStorage.setItem(`likedPosts_${currentUserId}`, JSON.stringify([...this.likedPosts]))
-        console.log(`사용자 ${currentUserId}의 찜한 게시글 저장됨:`, [...this.likedPosts])
-      } catch (error) {
-        console.error('찜한 게시글 정보 저장 오류:', error)
-      }
-    },
-
-    // 현재 로그인한 사용자 ID 가져오기
-    getCurrentUserId() {
-      // auth store에서 현재 사용자 정보 가져오기
-      try {
-        const authStore = this.$store?.auth || this.$pinia?.auth
-        if (authStore && authStore.user) {
-          return authStore.user.id || authStore.user.userId
-        }
-        
-        // JWT 토큰에서 사용자 ID 추출 시도
-        const token = localStorage.getItem('accessToken')
-        if (token) {
-          const payload = JSON.parse(atob(token.split('.')[1]))
-          return payload.sub || payload.userId || payload.id
-        }
-        
-        return null
-      } catch (error) {
-        console.error('사용자 ID 가져오기 오류:', error)
-        return null
-      }
-    },
-
-    // 게시글을 찜한 게시글 목록에 추가 (수정)
-    addLikedPost(postId) {
-      this.likedPosts.add(postId)
-      this.saveLikedPosts()
-      console.log(`게시글 ${postId} 찜하기 추가됨`)
-    },
-
-    // 게시글을 찜한 게시글 목록에서 제거 (수정)
-    removeLikedPost(postId) {
-      this.likedPosts.delete(postId)
-      this.saveLikedPosts()
-      console.log(`게시글 ${postId} 찜하기 제거됨`)
-    },
-
-    // 특정 게시글이 찜해져 있는지 확인 (수정)
-    isPostLiked(postId) {
-      const isLiked = this.likedPosts.has(postId)
-      console.log(`게시글 ${postId} 찜 상태:`, isLiked)
-      return isLiked
-    },
 
 
   },
@@ -732,9 +659,6 @@ export default {
   mounted() {
     // 초기 데이터 로드 (백엔드에서 liked 필드 포함)
     this.fetchMarketPosts()
-    
-    // 백엔드와 찜하기 상태 동기화 (데이터 로드 후)
-    this.syncLikeStatus()
 
     // 드롭다운 외부 클릭 시 닫기
     document.addEventListener('click', (e) => {
@@ -970,6 +894,13 @@ export default {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
+}
+
+.header-buttons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .total-count {
@@ -985,7 +916,52 @@ export default {
 
 /* 거래글 작성 버튼 */
 .create-post-btn {
-  background: linear-gradient(135deg, #E87D7D 0%, #d65a5a 100%);
+  background: linear-gradient(135deg, #ff8a8a 0%, #ff6b6b 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(255, 138, 138, 0.2);
+}
+
+.create-post-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 138, 138, 0.3);
+}
+
+/* 내 거래내역 버튼 */
+.my-trade-btn {
+  background: linear-gradient(135deg, #ff8a8a 0%, #ff6b6b 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(255, 138, 138, 0.2);
+}
+
+.my-trade-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 138, 138, 0.3);
+}
+
+/* 찜목록 버튼 */
+.wishlist-btn {
+  background: linear-gradient(135deg, #ff8a8a 0%, #ff6b6b 100%);
   color: white;
   border: none;
   padding: 12px 24px;
@@ -997,12 +973,12 @@ export default {
   display: flex;
   align-items: center;
   gap: 8px;
-  box-shadow: 0 4px 12px rgba(232, 125, 125, 0.2);
+  box-shadow: 0 4px 12px rgba(255, 138, 138, 0.2);
 }
 
-.create-post-btn:hover {
+.wishlist-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(232, 125, 125, 0.3);
+  box-shadow: 0 6px 16px rgba(255, 138, 138, 0.3);
 }
 
 /* 거래글 그리드 (3x3) */
@@ -1355,7 +1331,23 @@ export default {
     align-items: flex-start;
   }
 
+  .header-buttons {
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+  }
+
   .create-post-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .my-trade-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .wishlist-btn {
     width: 100%;
     justify-content: center;
   }

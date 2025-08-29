@@ -3,7 +3,7 @@
     v-model="isOpen"
     location="left"
     temporary
-    absolute
+    fixed
     width="400"
     :class="['notification-drawer', { 'is-open': isOpen }]"
   >
@@ -103,7 +103,7 @@
 </template>
 
 <script>
-import { computed, watch } from 'vue'
+import { computed, watch, onBeforeUnmount } from 'vue'
 import { useAlarmStore } from '@/stores/alarm'
 import { useSnackbar } from '@/composables/useSnackbar'
 import NotificationItem from './NotificationItem.vue'
@@ -135,11 +135,18 @@ export default {
       set: (value) => emit('update:modelValue', value)
     })
 
-    // 드로워가 열릴 때 알림 데이터 로드
+    // 드로워가 열릴 때 알림 데이터 로드 및 배경 스크롤 제어
     watch(isOpen, (newValue) => {
       if (newValue) {
+        document.body.style.overflow = 'hidden'
         loadAlarms()
+      } else {
+        document.body.style.overflow = ''
       }
+    })
+
+    onBeforeUnmount(() => {
+      document.body.style.overflow = ''
     })
 
     const loadAlarms = async () => {
@@ -246,7 +253,7 @@ export default {
 
 <style scoped>
 .notification-drawer:not(.is-open) {
-  display: none !important;
+  visibility: hidden;
 }
 
 .notification-drawer {

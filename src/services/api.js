@@ -171,13 +171,12 @@ export const userAPI = {
     apiClient.post('/users/logout', null, { headers: { [RT_HEADER_RAW]: refreshToken } }),
 
   // 대표 동물 설정
-
   setMainPet: async (petId) => {
     try {
       console.log('🔄 petAPI.setMainPet 시작:', petId)
       console.log('🔍 API 호출 URL:', `/pets/main`)
       
-      const response = await apiClient.put(`/pets/main`)
+      const response = await apiClient.put(`/users/main-pet/${petId}`)
       console.log('✅ petAPI.setMainPet 성공:', response)
       return response
     } catch (error) {
@@ -189,7 +188,6 @@ export const userAPI = {
     }
   },
 
-  
   // 마이페이지 정보 조회
   getMyPage: () => apiClient.get('/users/my-page'),
 
@@ -265,7 +263,7 @@ export const userAPI = {
 export const postAPI = {
   // 전체 일기 목록 조회
   getAllPosts: (pageable = { page: 0, size: 9 }) => apiClient.get('/posts', { params: pageable }),
-  
+
   // 내 일기 목록 조회 (대시보드용)
   getMyPosts: (pageable = { page: 0, size: 1 }) => apiClient.get('/posts/me', { params: pageable }),
   // 내 게시물 개수 조회 (프로필용)
@@ -289,15 +287,16 @@ export const postAPI = {
 
   // 다른 사용자의 일기 목록 조회
   getUserPosts: (userId, pageable) => apiClient.get(`/posts/${userId}`, { params: pageable }),
-  
+
   // 일기 상세 조회
   getDetail: (postId) => apiClient.get(`/posts/detail/${postId}`),
-  
+
   // 좋아요
-  like: (postId) => apiClient.post(`/posts/${postId}/like`),
+  likePost: (postId) => apiClient.post(`/posts/${postId}/like`),
 
   // 좋아요 취소
-  unlike: (postId) => apiClient.delete(`/posts/${postId}/like`),
+
+  unlikePost: (postId) => apiClient.delete(`/posts/${postId}/like`),
 
   // 좋아요 목록 조회
   getLikes: (postId, pageable) => apiClient.get(`/posts/${postId}/like`, { params: pageable }),
@@ -357,16 +356,16 @@ export const marketAPI = {
   // 거래글 수정
   update: (postId, postData, imageFiles) => {
     const formData = new FormData()
-  
+
     formData.append(
       'post',
       new Blob([JSON.stringify(postData)], { type: 'application/json' })
     )
-  
+
     if (imageFiles && imageFiles.length > 0) {
       imageFiles.forEach(file => formData.append('imageFiles', file))
     }
-  
+
     return apiClient.patch(`/markets/${postId}`, formData)
   },
 
@@ -383,13 +382,13 @@ export const marketAPI = {
   getPurchases: (pageable) => apiClient.get('/markets/purchases', { params: pageable }),
 
   // 판매목록 조회
-  getSales: (pageable = { page: 0, size: 1 }) => apiClient.get('/markets/sales', { params: pageable }),
+  getSales: (pageable) => apiClient.get('/markets/sales', { params: pageable }),
 
   // 찜하기
-  like: (postId) => apiClient.post(`/markets/${postId}/like`),
+  likeMarket: (postId) => apiClient.post(`/markets/${postId}/like`),
 
   // 찜 취소
-  unlike: (postId) => apiClient.delete(`/markets/${postId}/like`),
+  unlikeMarket: (postId) => apiClient.delete(`/markets/${postId}/like`),
 
   // 찜 목록 조회
   getLikes: (pageable) => apiClient.get('/markets/like', { params: pageable }),
@@ -473,8 +472,6 @@ export const petAPI = {
   // 다른 사용자의 반려동물 목록 조회
   getOtherUserPets: (userId) => apiClient.get('/pets', { params: { userId } }),
   
-  // 대표 반려동물 설정 (다른 엔드포인트)
-  setMainPetAlt: () => apiClient.put(`/users/pets/main`),
 
   // 반려동물 수정
   update: async (petId, petData, petImg) => {
