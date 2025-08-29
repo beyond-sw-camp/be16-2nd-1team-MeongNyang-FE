@@ -335,6 +335,8 @@ export default {
     };
 
     const openFollowModal = type => {
+      fetchFollowersCount();
+      fetchFollowingsCount();
       isFollowModalVisible.value = true;
       nextTick(() => {
         if (type === 'followers' || type === 'followings') {
