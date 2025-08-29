@@ -7,85 +7,30 @@
       </h2>
     </div>
     
-    <!-- 검색 결과 목록 -->
-    <div class="search-results-list">
-      <div 
-        v-for="(result, index) in results" 
-        :key="result.id || index"
-        class="search-result-item"
-        @click="handleResultClick(result)"
-      >
-        <!-- 프로필 섹션 -->
-        <div class="profile-section">
-          <v-avatar 
-            size="56" 
-            class="profile-avatar clickable"
-            @click.stop="goToUserDiary(result.userId)"
-          >
-            <v-img 
-              :src="result.petProfile" 
-              :alt="result.petName"
-              cover
-            ></v-img>
-          </v-avatar>
+    <!-- 검색 결과 그리드 -->
+    <div class="search-results-grid">
+      <div class="grid-container">
+        <!-- 실제 검색 결과 아이템들 -->
+        <div 
+          v-for="(result, index) in results" 
+          :key="result.id || index"
+          class="diary-item"
+          :class="{ 'featured': index === 0 }"
+          @click="handleResultClick(result)"
+        >
+          <v-img 
+            :src="result.thumbnail || result.petProfile || 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=400&h=400&fit=crop&crop=center'" 
+            class="diary-image"
+            cover
+          ></v-img>
+          
+
         </div>
         
-        <!-- 메인 콘텐츠 -->
-        <div class="main-content">
-          <!-- 헤더 정보 -->
-          <div class="content-header">
-            <div class="user-info">
-              <div class="username">{{ result.petName }}</div>
-              <div class="date">{{ formatDate(result.createdAt) }}</div>
-            </div>
-            <div class="action-buttons">
-              <v-btn
-                icon="mdi-heart-outline"
-                size="small"
-                variant="text"
-                color="#64748B"
-                class="action-btn"
-              ></v-btn>
-              <v-btn
-                icon="mdi-share-variant-outline"
-                size="small"
-                variant="text"
-                color="#64748B"
-                class="action-btn"
-              ></v-btn>
-            </div>
-          </div>
-          
-          <!-- 포스트 내용 -->
-          <div class="post-content">
-            <div class="post-title">{{ result.title }}</div>
-            <div class="post-text">{{ result.content }}</div>
-          </div>
-          
-          <!-- 태그 섹션 -->
-          <div class="tags-section">
-            <v-chip
-              v-for="tag in extractHashtags(result.content)"
-              :key="tag"
-              size="small"
-              variant="outlined"
-              color="#FF8B8B"
-              class="tag-chip"
-            >
-              {{ tag }}
-            </v-chip>
-          </div>
+        <!-- 로딩 인디케이터 -->
+        <div v-if="isLoading" class="loading-indicator">
+          <v-progress-circular indeterminate color="#FF8B8B" size="32"></v-progress-circular>
         </div>
-      </div>
-      
-      <!-- 로딩 상태 -->
-      <div v-if="isLoading" class="loading-section">
-        <v-progress-circular
-          indeterminate
-          color="#FF8B8B"
-          size="40"
-        ></v-progress-circular>
-        <p class="loading-text">검색 중...</p>
       </div>
     </div>
     
@@ -224,7 +169,10 @@ export default {
   },
   methods: {
     handleResultClick(result) {
-      this.$emit('result-click', result)
+      // 다이어리 상세 페이지로 이동
+      if (result.id) {
+        this.$router.push(`/diary/${result.id}`)
+      }
     },
     formatDate(dateString) {
       if (!dateString) return ''
@@ -287,160 +235,75 @@ export default {
   box-shadow: 0 2px 8px rgba(255, 139, 139, 0.2);
 }
 
-.search-results-list {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+.search-results-grid {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow: 0 8px 32px rgba(15, 23, 42, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   width: 100%;
-  max-width: 900px;
-  align-items: center;
+  max-width: 1400px;
 }
 
-.search-result-item {
-  display: flex;
-  gap: 20px;
-  padding: 24px;
-  background: white;
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+}
+
+.diary-item {
+  aspect-ratio: 1;
   border-radius: 20px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-  border: 1px solid #F1F5F9;
-  cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  width: 100%;
-  position: relative;
   overflow: hidden;
-}
-
-.search-result-item::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #FF8B8B, #FF6B6B);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.search-result-item:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.12);
-  border-color: #E2E8F0;
-}
-
-.search-result-item:hover::before {
-  opacity: 1;
-}
-
-.profile-section {
-  flex-shrink: 0;
-}
-
-.profile-avatar {
-  border: 3px solid #FF8B8B;
-  box-shadow: 0 6px 20px rgba(255, 139, 139, 0.2);
+  position: relative;
   transition: all 0.3s ease;
-}
-
-.clickable {
   cursor: pointer;
+  min-height: 300px;
+}
+
+.diary-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+}
+
+.diary-item.featured {
+  grid-column: span 1;
+  grid-row: span 1;
+}
+
+.diary-image {
+  width: 100%;
+  height: 100%;
   transition: all 0.3s ease;
 }
 
-.clickable:hover {
-  opacity: 0.8;
+.diary-item:hover .diary-image {
   transform: scale(1.05);
-  box-shadow: 0 8px 24px rgba(255, 139, 139, 0.3);
 }
 
-.main-content {
-  flex: 1;
-  min-width: 0;
+.diary-overlay {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
   display: flex;
-  flex-direction: column;
-  gap: 16px;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(255, 255, 255, 0.2);
 }
 
-.content-header {
+.loading-indicator {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-}
-
-.user-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.username {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #1E293B;
-  margin-bottom: 4px;
-  line-height: 1.3;
-}
-
-.date {
-  font-size: 0.85rem;
-  color: #64748B;
-  line-height: 1.3;
-  font-weight: 500;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.action-btn {
-  transition: all 0.2s ease;
-}
-
-.action-btn:hover {
-  color: #FF8B8B !important;
-  transform: scale(1.1);
-}
-
-.post-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.post-title {
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: #1E293B;
-  margin-bottom: 12px;
-  line-height: 1.4;
-}
-
-.post-text {
-  font-size: 1rem;
-  color: #475569;
-  line-height: 1.6;
-  word-break: break-word;
-  font-weight: 500;
-}
-
-.tags-section {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.tag-chip {
-  font-size: 0.8rem;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-.tag-chip:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(255, 139, 139, 0.2);
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  grid-column: 1 / -1;
 }
 
 .no-results {
@@ -481,23 +344,6 @@ export default {
   font-weight: 500;
 }
 
-.loading-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 20px;
-  width: 100%;
-  max-width: 900px;
-}
-
-.loading-text {
-  margin-top: 20px;
-  font-size: 1rem;
-  color: #64748B;
-  font-weight: 500;
-}
-
 /* 반응형 */
 @media (max-width: 1200px) {
   .search-results-component {
@@ -505,19 +351,15 @@ export default {
   }
   
   .search-results-header {
-    max-width: 800px;
+    max-width: 1200px;
   }
   
-  .search-results-list {
-    max-width: 800px;
+  .search-results-grid {
+    max-width: 1200px;
   }
   
   .no-results {
-    max-width: 800px;
-  }
-  
-  .loading-section {
-    max-width: 800px;
+    max-width: 1200px;
   }
 }
 
@@ -540,33 +382,18 @@ export default {
     padding: 3px 10px;
   }
   
-  .search-result-item {
-    padding: 20px;
-    gap: 16px;
-    border-radius: 16px;
+  .search-results-grid {
+    padding: 24px;
+    max-width: 100%;
   }
   
-  .profile-avatar {
-    width: 48px !important;
-    height: 48px !important;
-    border-width: 2px;
+  .grid-container {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
   }
   
-  .username {
-    font-size: 1rem;
-  }
-  
-  .date {
-    font-size: 0.8rem;
-  }
-  
-  .post-title {
-    font-size: 1.1rem;
-    margin-bottom: 10px;
-  }
-  
-  .post-text {
-    font-size: 0.95rem;
+  .diary-item {
+    min-height: 250px;
   }
   
   .no-results {
@@ -606,33 +433,17 @@ export default {
     padding: 2px 8px;
   }
   
-  .search-result-item {
+  .search-results-grid {
     padding: 16px;
-    gap: 12px;
-    border-radius: 14px;
   }
   
-  .profile-avatar {
-    width: 40px !important;
-    height: 40px !important;
-    border-width: 2px;
+  .grid-container {
+    grid-template-columns: 1fr;
+    gap: 16px;
   }
   
-  .username {
-    font-size: 0.95rem;
-  }
-  
-  .date {
-    font-size: 0.75rem;
-  }
-  
-  .post-title {
-    font-size: 1rem;
-    margin-bottom: 8px;
-  }
-  
-  .post-text {
-    font-size: 0.9rem;
+  .diary-item {
+    min-height: 200px;
   }
   
   .no-results {

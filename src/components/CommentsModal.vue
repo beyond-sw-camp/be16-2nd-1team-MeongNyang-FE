@@ -1,12 +1,12 @@
 <template>
   <Transition name="comments-slide">
-    <div v-if="show" class="comments-sidebar">
-      <div class="comments-modal">
+    <div v-if="show" :class="sidebarMode ? 'comments-sidebar' : 'comments-overlay'">
+      <div :class="sidebarMode ? 'comments-sidebar-modal' : 'comments-modal'">
         <!-- 헤더 -->
         <div class="modal-header">
           <div class="header-content">
             <span class="header-title">댓글</span>
-            <v-btn icon size="small" @click="closeModal" class="close-btn">
+            <v-btn icon size="small" @click="closeModal" class="close-btn"> 
               <v-icon>mdi-close</v-icon>
             </v-btn>
           </div>
@@ -14,11 +14,18 @@
         
         <!-- 댓글 목록 -->
         <div class="modal-content">
-          <div class="comments-list">
+          <!-- 로딩 상태 -->
+          <div v-if="isLoadingComments" class="loading-comments">
+            <v-progress-circular indeterminate color="#FF8B8B" size="32"></v-progress-circular>
+            <p>댓글을 불러오는 중...</p>
+          </div>
+          
+          <!-- 댓글 목록 -->
+          <div v-else class="comments-list">
             <!-- 댓글 목록이 있을 때 -->
-            <template v-if="commentsList.length > 0">
+            <template v-if="displayCommentsList.length > 0">
               <div 
-                v-for="comment in commentsList" 
+                v-for="comment in displayCommentsList" 
                 :key="comment.commentId || comment.id" 
                 class="comment-item"
               >
@@ -125,11 +132,13 @@
             class="comment-field"
             :class="{ 
               'reply-mode': replyingTo,
-              'edit-mode': editingItem 
+              'edit-mode': editingItem,
+              'has-tags': hasTags
             }"
             :disabled="isSubmitting"
             @keyup.enter="addComment"
-            @input="console.log('댓글 입력:', newComment)"
+            @keydown="handleKeydown"
+            @input="onInputChange"
           >
             <template v-slot:append>
               <v-btn 
@@ -185,9 +194,11 @@
 <script>
 import { checkPetExist } from '@/utils/petValidation'
 import { useAuthStore } from '@/stores/auth'
+import { postAPI } from '@/services/api'
 
 export default {
   name: 'CommentsModal',
+  emits: ['close', 'comment-added', 'comment-updated', 'comment-deleted'],
   props: {
     modelValue: {
       type: Boolean,
@@ -199,10 +210,14 @@ export default {
     },
     postId: {
       type: [String, Number],
-      required: true
+      required: false,
+      default: null
+    },
+    sidebarMode: {
+      type: Boolean,
+      default: false
     }
   },
-  emits: ['update:modelValue', 'add-comment', 'add-reply', 'edit-comment', 'delete-comment', 'edit-reply', 'delete-reply', 'refresh-comments'],
   setup() {
     const authStore = useAuthStore()
     
@@ -221,10 +236,37 @@ export default {
       contextMenuX: 0,
       contextMenuY: 0,
       contextMenuType: '', // 'comment' 또는 'reply'
-      contextMenuData: null
+      contextMenuData: null,
+      localCommentsList: [], // 로컬 댓글 목록 (props와 구분)
+      isLoadingComments: false,
+      
+
+    }
+  },
+  watch: {
+    // 부모에서 전달받은 commentsList 변경 감지
+    commentsList: {
+      handler(newCommentsList, oldCommentsList) {
+        console.log('=== commentsList 변경 감지 ===')
+        console.log('이전 commentsList 길이:', oldCommentsList?.length || 0)
+        console.log('새로운 commentsList 길이:', newCommentsList?.length || 0)
+        console.log('새로운 commentsList:', newCommentsList)
+        
+        // 부모에서 commentsList를 전달받으면 localCommentsList도 업데이트
+        if (newCommentsList && newCommentsList.length > 0) {
+          this.localCommentsList = [...newCommentsList]
+          console.log('localCommentsList 업데이트됨:', this.localCommentsList.length)
+        }
+      },
+      deep: true
     }
   },
   mounted() {
+    console.log('=== CommentsModal mounted ===')
+    console.log('초기 postId:', this.postId)
+    console.log('초기 modelValue:', this.modelValue)
+    console.log('초기 show 상태:', this.show)
+    
     // ESC 키로 컨텍스트 메뉴 닫기
     document.addEventListener('keydown', this.handleKeydown)
   },
@@ -240,9 +282,123 @@ export default {
       set(value) {
         this.$emit('update:modelValue', value)
       }
-    }
+    },
+    // 댓글 목록 통합 (props 우선, 없으면 로컬)
+    displayCommentsList() {
+      return this.$props.commentsList && this.$props.commentsList.length > 0 
+        ? this.$props.commentsList 
+        : this.localCommentsList
+    },
+    // 태그가 있는지 확인
+    hasTags() {
+      if (!this.newComment) return false
+      const tagRegex = /@([a-zA-Z0-9가-힣_]+)/g
+      return tagRegex.test(this.newComment)
+    },
+    
+
   },
   methods: {
+    // 댓글 목록 가져오기
+    async fetchComments() {
+      console.log('=== fetchComments 시작 ===')
+      console.log('postId:', this.postId)
+      console.log('postId 타입:', typeof this.postId)
+      console.log('show 상태:', this.show)
+      console.log('modelValue 상태:', this.modelValue)
+      
+      if (!this.postId) {
+        console.error('postId가 없어서 댓글을 가져올 수 없습니다.')
+        return
+      }
+      
+      try {
+        this.isLoadingComments = true
+        console.log('댓글 목록 가져오기 시작:', this.postId)
+        console.log('API 호출 전 - postAPI.getComments 호출 예정')
+        
+        // API 호출 전 로그
+        console.log('=== API 호출 시작 ===')
+        const response = await postAPI.getComments(this.postId, { page: 0, size: 50 })
+        console.log('=== API 호출 완료 ===')
+        
+        console.log('전체 응답 객체:', response)
+        console.log('응답 상태:', response.status)
+        console.log('응답 헤더:', response.headers)
+        console.log('응답 데이터:', response.data)
+        
+        // 응답 데이터 구조 분석
+        if (response.data) {
+          console.log('response.data 구조:')
+          console.log('- isSuccess:', response.data.isSuccess)
+          console.log('- data 필드 존재:', !!response.data.data)
+          console.log('- data 타입:', typeof response.data.data)
+          console.log('- data가 배열인가:', Array.isArray(response.data.data))
+          
+          if (response.data.data) {
+            if (Array.isArray(response.data.data)) {
+              console.log('- data는 배열, 길이:', response.data.data.length)
+              console.log('- 배열 첫 번째 요소:', response.data.data[0])
+            } else if (response.data.data.content) {
+              console.log('- data.content 존재, 길이:', response.data.data.content.length)
+              console.log('- content 첫 번째 요소:', response.data.data.content[0])
+            } else {
+              console.log('- data는 객체:', response.data.data)
+            }
+          }
+        }
+        
+        if (response.data && response.data.isSuccess) {
+          let commentsData = []
+          
+          if (response.data.data) {
+            if (Array.isArray(response.data.data)) {
+              commentsData = response.data.data
+              console.log('배열 형태로 댓글 데이터 추출:', commentsData.length)
+            } else if (response.data.data.content) {
+              commentsData = response.data.data.content
+              console.log('Page 형태로 댓글 데이터 추출:', commentsData.length)
+            } else {
+              commentsData = response.data.data
+              console.log('객체 형태로 댓글 데이터 추출')
+            }
+          }
+          
+          console.log('최종 추출된 댓글 데이터:', commentsData)
+          console.log('댓글 개수:', commentsData.length)
+          
+          this.localCommentsList = commentsData || []
+          console.log('localCommentsList 설정 완료:', this.localCommentsList.length)
+          console.log('첫 번째 댓글:', this.localCommentsList[0])
+        } else {
+          console.log('댓글 API 응답이 성공이 아님:', response.data)
+          console.log('응답 구조:', JSON.stringify(response.data, null, 2))
+          this.localCommentsList = []
+        }
+      } catch (error) {
+        console.error('=== 댓글 목록 가져오기 실패 ===')
+        console.error('에러 객체:', error)
+        console.error('에러 메시지:', error.message)
+        console.error('에러 스택:', error.stack)
+        
+        if (error.response) {
+          console.error('에러 응답 상태:', error.response.status)
+          console.error('에러 응답 데이터:', error.response.data)
+          console.error('에러 응답 헤더:', error.response.headers)
+        } else if (error.request) {
+          console.error('요청은 보냈지만 응답을 받지 못함:', error.request)
+        } else {
+          console.error('요청 설정 중 에러:', error.message)
+        }
+        
+        this.localCommentsList = []
+      } finally {
+        this.isLoadingComments = false
+        console.log('=== fetchComments 완료 ===')
+        console.log('최종 localCommentsList 길이:', this.localCommentsList.length)
+        console.log('displayCommentsList 길이:', this.displayCommentsList.length)
+      }
+    },
     closeModal() {
       this.show = false
       this.newComment = ''
@@ -286,24 +442,40 @@ export default {
             
             if (this.editingType === 'comment') {
               console.log('댓글 수정:', this.editingItem)
+              
+              // 원본 태그 보호
+              const originalContent = this.editingItem.content || this.editingItem.text || ''
+              const originalTags = this.extractTags(originalContent)
+              const finalContent = originalTags ? `${originalTags} ${this.newComment}`.trim() : this.newComment
+              
               this.$emit('edit-comment', {
                 commentId: this.editingItem.commentId || this.editingItem.id,
-                content: this.newComment
+                content: finalContent
               })
             } else if (this.editingType === 'reply') {
               console.log('답글 수정:', this.editingItem)
               // 답글의 경우 replyId 필드를 우선적으로 사용
               const replyId = this.editingItem.replyId || this.editingItem.id
               console.log('사용할 replyId:', replyId)
+              
+              // 원본 태그 보호
+              const originalContent = this.editingItem.content || this.editingItem.text || ''
+              const originalTags = this.extractTags(originalContent)
+              const finalContent = originalTags ? `${originalTags} ${this.newComment}`.trim() : this.newComment
+              
               this.$emit('edit-reply', {
                 replyId: replyId,
-                content: this.newComment
+                content: finalContent
               })
             }
             this.newComment = ''
             this.editingItem = null
             this.editingType = null
             console.log('=== 수정 모드 처리 완료 ===')
+            
+            // 부모 컴포넌트에 댓글 목록 새로고침 요청
+            this.$emit('refresh-comments')
+            
             return
           }
           
@@ -388,6 +560,10 @@ export default {
             console.log('=== 답글 모드 처리 완료, 함수 종료 ===')
             this.newComment = ''
             this.replyingTo = null // 답글 모드 초기화
+            
+            // 부모 컴포넌트에 댓글 목록 새로고침 요청
+            this.$emit('refresh-comments')
+            
             return // 답글 모드일 때는 여기서 종료
           } else {
             // 일반 댓글 모드일 때
@@ -396,6 +572,9 @@ export default {
             this.$emit('add-comment', this.newComment)
             this.newComment = ''
             console.log('=== 일반 댓글 모드 처리 완료 ===')
+            
+            // 부모 컴포넌트에 댓글 목록 새로고침 요청
+            this.$emit('refresh-comments')
           }
         } catch (error) {
           console.error('댓글 작성 실패:', error)
@@ -437,7 +616,7 @@ export default {
       if (!replyUserId && reply.replyUserName) {
         console.log('replyUserName으로 사용자 ID 찾기 시도:', reply.replyUserName)
         // 현재 댓글 목록에서 해당 사용자 이름을 가진 사용자 찾기
-        const allComments = this.commentsList || []
+        const allComments = this.displayCommentsList || []
         for (const comment of allComments) {
           if (comment.userName === reply.replyUserName || comment.petName === reply.replyUserName) {
             replyUserId = comment.userId
@@ -493,6 +672,27 @@ export default {
       })
     },
     
+    // 태그 제거 함수
+    removeTags(content) {
+      if (!content) return ''
+      // @로 시작하는 태그 부분을 제거
+      return content.replace(/@[a-zA-Z0-9가-힣_]+/g, '').trim()
+    },
+    
+    // 태그 추출 함수
+    extractTags(content) {
+      if (!content) return ''
+      const tagMatches = content.match(/@[a-zA-Z0-9가-힣_]+/g) || []
+      return tagMatches.join(' ')
+    },
+    
+    // 태그 이후 텍스트만 추출
+    getTextAfterTags(content) {
+      if (!content) return ''
+      // 태그 부분을 제거하고 앞뒤 공백 제거
+      return content.replace(/@[a-zA-Z0-9가-힣_]+/g, '').trim()
+    },
+    
     // 댓글 수정
     async editComment(comment) {
       // 펫 등록 여부 확인
@@ -502,10 +702,16 @@ export default {
         return
       }
       
+      // 태그 부분을 제거한 내용으로 수정
+      const contentWithoutTags = this.removeTags(comment.content)
+      
       this.$emit('edit-comment', {
         commentId: comment.commentId || comment.id,
-        content: comment.content
+        content: contentWithoutTags
       })
+      
+      // 부모 컴포넌트에 댓글 목록 새로고침 요청
+      this.$emit('refresh-comments')
     },
     
     // 댓글 삭제
@@ -520,6 +726,9 @@ export default {
       this.$emit('delete-comment', {
         commentId: comment.commentId || comment.id
       })
+      
+      // 부모 컴포넌트에 댓글 목록 새로고침 요청
+      this.$emit('refresh-comments')
     },
     
     // 답글 수정
@@ -540,10 +749,16 @@ export default {
       const replyId = reply.replyId || reply.id
       console.log('사용할 replyId:', replyId)
       
+      // 태그 부분을 제거한 내용으로 수정
+      const contentWithoutTags = this.removeTags(reply.content)
+      
       this.$emit('edit-reply', {
         replyId: replyId,
-        content: reply.content
+        content: contentWithoutTags
       })
+      
+      // 부모 컴포넌트에 댓글 목록 새로고침 요청
+      this.$emit('refresh-comments')
     },
     
     // 답글 삭제
@@ -567,6 +782,9 @@ export default {
       this.$emit('delete-reply', {
         replyId: replyId
       })
+      
+      // 부모 컴포넌트에 댓글 목록 새로고침 요청
+      this.$emit('refresh-comments')
     },
     
     // 컨텍스트 메뉴 표시
@@ -629,7 +847,15 @@ export default {
         console.log('댓글 수정 모드로 전환')
         this.editingItem = this.contextMenuData
         this.editingType = 'comment'
-        this.newComment = this.contextMenuData.content
+        
+        // 태그 이후 텍스트만 입력 영역에 설정
+        const content = this.contextMenuData.content || this.contextMenuData.text || ''
+        const tags = this.extractTags(content)
+        const textAfterTags = this.getTextAfterTags(content)
+        
+        // 태그가 있으면 태그 이후 텍스트만 설정, 없으면 전체 텍스트 설정
+        this.newComment = tags ? textAfterTags : content
+        
         this.replyingTo = null // 답글 모드 초기화
       } else if (this.contextMenuType === 'reply') {
         console.log('답글 수정 모드로 전환')
@@ -665,10 +891,17 @@ export default {
           this.contextMenuData.reply
         ]
         
-        this.newComment = possibleContentFields.find(field => field && typeof field === 'string') || ''
-        console.log('최종 선택된 답글 내용:', this.newComment)
-        console.log('newComment 길이:', this.newComment.length)
+        const content = possibleContentFields.find(field => field && typeof field === 'string') || ''
+        console.log('최종 선택된 답글 내용:', content)
+        console.log('newComment 길이:', content.length)
         console.log('=== 답글 수정 디버깅 완료 ===')
+        
+        // 태그 이후 텍스트만 입력 영역에 설정
+        const tags = this.extractTags(content)
+        const textAfterTags = this.getTextAfterTags(content)
+        
+        // 태그가 있으면 태그 이후 텍스트만 설정, 없으면 전체 텍스트 설정
+        this.newComment = tags ? textAfterTags : content
         
         this.replyingTo = null // 답글 모드 초기화
       }
@@ -715,7 +948,18 @@ export default {
       if (event.key === 'Escape' && this.showContextMenuFlag) {
         this.hideContextMenu()
       }
+      
+      // 수정 모드에서 태그 보호
+      if (this.editingItem && (event.key === 'Backspace' || event.key === 'Delete')) {
+        this.protectTags(event)
+      }
+      
+
     },
+    
+
+    
+
     
     formatDate(dateString) {
       if (!dateString) return ''
@@ -785,8 +1029,13 @@ export default {
     
     getInputPlaceholder() {
       if (this.replyingTo) {
-        return `${this.replyingTo.userName || this.replyingTo.username}님에게 답글 작성 중...`
+        return `${this.replyingTo.userName || this.replyingTo.username}님에게 답글을 작성합니다...`
       } else if (this.editingItem) {
+        // 수정 모드일 때 태그가 있으면 태그 이후부터 입력하도록 안내
+        const tags = this.extractTags(this.editingItem.content || this.editingItem.text)
+        if (tags) {
+          return `${tags}에게 답글을 작성합니다`
+        }
         return '댓글을 수정하세요...'
       }
       return '댓글을 입력하세요...'
@@ -805,31 +1054,167 @@ export default {
     isMyReply(reply) {
       const currentUserId = this.authStore.user?.userId || this.authStore.user?.id
       return currentUserId === reply.replyUserId || currentUserId === reply.userId
-    }
+    },
+    
+    // 태그 보호 함수
+    protectTags(event) {
+      const input = event.target
+      const cursorPosition = input.selectionStart
+      const selectionEnd = input.selectionEnd
+      const text = this.newComment
+      
+      // @로 시작하는 태그 패턴 찾기
+      const tagRegex = /@([a-zA-Z0-9가-힣_]+)/g
+      let match
+      let tags = []
+      
+      while ((match = tagRegex.exec(text)) !== null) {
+        tags.push({
+          start: match.index,
+          end: match.index + match[0].length,
+          text: match[0]
+        })
+      }
+      
+      // 선택된 텍스트가 태그와 겹치는지 확인
+      const selectionOverlapsTag = tags.some(tag => {
+        return (cursorPosition < tag.end && selectionEnd > tag.start)
+      })
+      
+      // 현재 커서 위치가 태그 내부에 있는지 확인
+      const currentTag = tags.find(tag => 
+        cursorPosition > tag.start && cursorPosition <= tag.end
+      )
+      
+      if (selectionOverlapsTag || currentTag) {
+        // 태그와 겹치는 삭제 시도 시 이벤트 취소
+        event.preventDefault()
+        
+        if (selectionOverlapsTag) {
+          // 선택된 텍스트가 태그와 겹치는 경우, 태그 외부로 커서 이동
+          const firstTag = tags.find(tag => cursorPosition < tag.end && selectionEnd > tag.start)
+          if (firstTag) {
+            if (event.key === 'Backspace') {
+              // Backspace: 첫 번째 태그 시작 부분으로 커서 이동
+              input.setSelectionRange(firstTag.start, firstTag.start)
+            } else if (event.key === 'Delete') {
+              // Delete: 마지막 태그 끝 부분으로 커서 이동
+              const lastTag = tags.reverse().find(tag => cursorPosition < tag.end && selectionEnd > tag.start)
+              if (lastTag) {
+                input.setSelectionRange(lastTag.end, lastTag.end)
+              }
+            }
+          }
+        } else if (currentTag) {
+          // 커서가 태그 내부에 있는 경우
+          if (event.key === 'Backspace') {
+            // Backspace: 태그 시작 부분으로 커서 이동
+            input.setSelectionRange(currentTag.start, currentTag.start)
+          } else if (event.key === 'Delete') {
+            // Delete: 태그 끝 부분으로 커서 이동
+            input.setSelectionRange(currentTag.end, currentTag.end)
+          }
+        }
+        
+        // 사용자에게 알림
+        this.showTagProtectionMessage()
+      }
+    },
+    
+    // 태그 보호 메시지 표시
+    showTagProtectionMessage() {
+      // 간단한 토스트 메시지 또는 알림
+      console.log('태그는 삭제할 수 없습니다. 태그 전체를 선택하고 삭제하거나, 태그 외부에서 삭제하세요.')
+      
+      // 시각적 메시지 표시
+      this.showVisualMessage('태그는 삭제할 수 없습니다!', 'warning')
+      
+      // 브라우저 알림 표시 (사용자가 허용한 경우)
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('태그 보호', {
+          body: '태그는 삭제할 수 없습니다. 태그 외부에서 삭제하세요.',
+          icon: '/favicon.ico'
+        })
+      }
+    },
+    
+    // 시각적 메시지 표시
+    showVisualMessage(message, type = 'info') {
+      // 기존 메시지 제거
+      const existingMessage = document.querySelector('.tag-protection-message')
+      if (existingMessage) {
+        existingMessage.remove()
+      }
+      
+      // 새 메시지 생성
+      const messageElement = document.createElement('div')
+      messageElement.className = 'tag-protection-message'
+      messageElement.textContent = message
+      
+      // 타입에 따른 스타일 적용
+      if (type === 'warning') {
+        messageElement.style.background = '#FF8B8B'
+      } else if (type === 'error') {
+        messageElement.style.background = '#EF4444'
+      } else {
+        messageElement.style.background = '#3B82F6'
+      }
+      
+      document.body.appendChild(messageElement)
+      
+      // 3초 후 자동 제거
+      setTimeout(() => {
+        if (messageElement.parentNode) {
+          messageElement.remove()
+        }
+      }, 3000)
+    },
+    
+    // 입력 변경 처리
+    onInputChange() {
+      console.log('댓글 입력:', this.newComment)
+      
+      // 태그가 있는 경우 시각적 피드백
+      if (this.hasTags) {
+        console.log('태그가 감지되었습니다:', this.newComment.match(/@([a-zA-Z0-9가-힣_]+)/g))
+      }
+    },
+    
+
   }
 }
 </script>
 
 <style scoped>
+/* 댓글 사이드바 (기본 스타일 - 중앙 모달용) */
 .comments-sidebar {
   position: fixed;
   top: 0;
+  left: 0;
   right: 0;
-  width: 400px;
+  bottom: 0;
+  width: 100%;
   height: 100vh;
-  z-index: 1000;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
 }
 
+
+
 .comments-modal {
-  height: 100vh;
+  background: white;
+  border-radius: 20px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   display: flex;
   flex-direction: column;
-  background: rgba(255, 255, 255, 0.98);
-  backdrop-filter: blur(20px);
-  border-left: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: -8px 0 32px rgba(15, 23, 42, 0.12);
 }
 
 .modal-header {
@@ -925,40 +1310,13 @@ export default {
   cursor: context-menu;
 }
 
-.comment-content.my-comment::after {
-  content: '우클릭으로 수정/삭제';
-  position: absolute;
-  right: 0;
-  top: -20px;
-  font-size: 0.7rem;
-  color: #94A3B8;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  pointer-events: none;
-}
-
-.comment-content.my-comment:hover::after {
-  opacity: 1;
-}
+/* 우클릭 메시지 제거 */
 
 .reply-content.my-comment {
   position: relative;
 }
 
-.reply-content.my-comment::after {
-  content: '우클릭으로 수정/삭제';
-  position: absolute;
-  right: 0;
-  top: -20px;
-  font-size: 0.7rem;
-  color: #94A3B8;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.reply-content.my-comment:hover::after {
-  opacity: 1;
-}
+/* 우클릭 메시지 제거 */
 
 .comment-username {
   font-weight: 600;
@@ -1035,6 +1393,8 @@ export default {
   bottom: 0;
 }
 
+
+
 .comment-field {
   font-size: 0.85rem;
 }
@@ -1070,6 +1430,54 @@ export default {
 .send-btn:disabled {
   color: #CBD5E1 !important;
   background: transparent !important;
+}
+
+/* 사이드바 모드 스타일 */
+.comments-sidebar {
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  left: auto !important;
+  bottom: auto !important;
+  width: 400px !important;
+  height: 100vh !important;
+  background: white !important;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1) !important;
+  z-index: 1000 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  border-left: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+.comments-sidebar-modal {
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  background: white !important;
+  overflow: hidden !important;
+  border-radius: 0 !important;
+  max-width: none !important;
+  box-shadow: none !important;
+}
+
+/* 중앙 모달 모드 스타일 */
+.comments-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
 }
 
 /* 댓글 사이드바 애니메이션 */
@@ -1369,5 +1777,68 @@ export default {
   font-size: 0.9rem;
   color: #64748B;
   font-weight: 500;
+}
+
+/* 로딩 상태 */
+.loading-comments {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  gap: 16px;
+}
+
+.loading-comments p {
+  color: #6B7280;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* 댓글 목록 */
+.comments-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+/* 태그 보호 관련 스타일 */
+.comment-field.has-tags {
+  border-color: #FF8B8B !important;
+  box-shadow: 0 0 0 1px rgba(255, 139, 139, 0.2) !important;
+}
+
+.comment-field.has-tags .v-field__input {
+  color: #1E293B;
+}
+
+.comment-field.has-tags .v-field__outline {
+  border-color: #FF8B8B !important;
+}
+
+/* 태그 보호 메시지 */
+.tag-protection-message {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #FF8B8B;
+  color: white;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  z-index: 9999;
+  box-shadow: 0 4px 12px rgba(255, 139, 139, 0.3);
+  animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 </style>
