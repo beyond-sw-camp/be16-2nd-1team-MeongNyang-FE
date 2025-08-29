@@ -16,7 +16,7 @@
         <div class="profile-image-container" @click="showMainPetModal = true">
           <v-avatar size="120" class="profile-avatar">
             <v-img 
-              :src="mainPet?.url || 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=120&h=120&fit=crop&crop=center'" 
+              :src="profileImageUrl" 
               :alt="mainPet?.name || '프로필 이미지'"
             ></v-img>
           </v-avatar>
@@ -99,7 +99,7 @@
         <v-card-text class="modal-content">
           <div class="current-pet-section">
             <v-avatar size="60" class="current-pet-avatar">
-              <v-img :src="mainPet?.url || 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=60&h=60&fit=crop&crop=center'"></v-img>
+              <v-img :src="profileImageUrl"></v-img>
             </v-avatar>
             <v-select
               v-model="selectedPet"
@@ -141,428 +141,276 @@
 </template>
 
 <script>
-            import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
-import { validatePetAndRedirect } from '@/utils/petValidation'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
-import { postAPI, userAPI, petAPI } from '@/services/api'
-import SearchComponent from '@/components/SearchComponent.vue'
-import FollowModal from '@/components/FollowModal.vue'
+import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue';
+import { validatePetAndRedirect } from '@/utils/petValidation';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
+import { usePetStore } from '@/stores/pet';
+import { postAPI, userAPI } from '@/services/api';
+import SearchComponent from '@/components/SearchComponent.vue';
+import FollowModal from '@/components/FollowModal.vue';
 
 export default {
   name: 'DiaryListView',
   components: {
     SearchComponent,
-    FollowModal
+    FollowModal,
   },
   setup() {
-    const $router = useRouter()
-    const authStore = useAuthStore()
-    const showMainPetModal = ref(false)
-    const selectedPetName = ref(null)
-    const isFollowModalVisible = ref(false)
-    const followModalTab = ref('followers')
-    
-    // 현재 로그인한 사용자 ID
-    const currentUserId = computed(() => {
-      const user = authStore.user
-      if (!user) return null
-      
-      // 가능한 ID 필드들을 확인
-      const possibleIds = [
-        user.id,
-        user.userId,
-        user.memberId,
-        user.user_id,
-        user.member_id,
-        user.member?.id,
-        user.member?.userId,
-        user.member?.memberId
-      ]
-      
-      return possibleIds.find(id => id != null && id !== undefined)
-    })
-    
-    // 통계 데이터
-    const postsCount = ref(0)
-    const followersCount = ref(0)
-    const followingsCount = ref(0)
-    
-    // 반려동물 데이터
-    const userPets = ref([])
-    const userName = ref('')
-    
-    // 사용자 이름 (반응형으로 표시)
-    const displayUserName = computed(() => {
-      console.log('displayUserName computed 실행:', userName.value)
-      return userName.value || mainPet.value?.name || '사용자'
-    })
-    
-    // 다이어리 데이터
-    const diaryList = ref([])
-    
-    // 대표 반려동물 (여러 방법으로 찾기)
+    const $router = useRouter();
+    const authStore = useAuthStore();
+    const petStore = usePetStore();
+    const userInfo = computed(() => authStore.myPageInfo);
+
+    const showMainPetModal = ref(false);
+    const selectedPetId = ref(null);
+    const isFollowModalVisible = ref(false);
+    const followModalTab = ref('followers');
+
+    const postsCount = ref(0);
+    const followersCount = ref(0);
+    const followingsCount = ref(0);
+    const diaryList = ref([]);
+
+    const currentUserId = computed(() => userInfo.value?.id);
+
+    const userPets = computed(() => petStore.pets);
+
     const mainPet = computed(() => {
-      console.log('=== mainPet computed 실행 ===')
-      console.log('현재 userPets:', userPets.value)
-      
-      const foundPet = userPets.value.find(pet => pet.firstPet) || 
-                      userPets.value.find(pet => pet.petOrder === 1) ||
-                      userPets.value.find(pet => pet.isMain) ||
-                      userPets.value.find(pet => pet.mainPet) ||
-                      userPets.value[0] // 첫 번째 반려동물을 대표로 사용
-      
-      console.log('찾은 대표 반려동물:', foundPet)
-      console.log('대표 반려동물 이름:', foundPet?.name)
-      return foundPet || null
-    })
-    
-    // 모달에서 선택된 펫 (기본값은 현재 대표 펫)
-    const selectedPet = computed({
-      get: () => selectedPetName.value || mainPet.value?.name || null,
-      set: (value) => {
-        selectedPetName.value = value
+      if (!userInfo.value?.mainPetId || userPets.value.length === 0) {
+        return userPets.value.length > 0 ? userPets.value[0] : null;
       }
-    })
-    
-    // 대표 반려동물 소개글
+      const representativePet = userPets.value.find(
+        pet => pet.id === userInfo.value.mainPetId,
+      );
+      return representativePet || (userPets.value.length > 0 ? userPets.value[0] : null);
+    });
+
+    const profileImageUrl = computed(() => {
+      if (userInfo.value?.mainPetImage) {
+        return userInfo.value.mainPetImage;
+      }
+      if (mainPet.value?.url) {
+        return mainPet.value.url;
+      }
+      return 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=120&h=120&fit=crop&crop=center';
+    });
+
+    const displayUserName = computed(() => {
+      return userInfo.value?.nickname || '사용자';
+    });
+
+    const selectedPet = computed({
+      get: () => selectedPetId.value || mainPet.value?.id || null,
+      set: value => {
+        selectedPetId.value = value;
+      },
+    });
+
     const petBio = computed(() => {
-      return mainPet.value?.introduce || '반려동물과 함께하는 특별한 순간들을 기록해보세요!'
-    })
-    
-    // 게시물 개수 가져오기
+      return (
+        mainPet.value?.introduce ||
+        '반려동물과 함께하는 특별한 순간들을 기록해보세요!'
+      );
+    });
+
     const fetchPostsCount = async () => {
       try {
-        // 내 일기 목록을 가져와서 개수 계산
-        const response = await postAPI.getMyPosts({ page: 0, size: 1000 }) // 충분히 큰 size로 모든 일기 가져오기
-        console.log('내 일기 목록 API 응답:', response.data)
+        const response = await postAPI.getMyPosts({ page: 0, size: 1000 });
         if (response.data && response.data.data) {
-          const posts = response.data.data.content || []
-          postsCount.value = posts.length
-          console.log('계산된 게시물 개수:', postsCount.value)
+          postsCount.value = response.data.data.content?.length || 0;
         }
       } catch (error) {
-        console.error('게시물 개수 조회 실패:', error)
-        postsCount.value = 0
+        console.error('게시물 개수 조회 실패:', error);
+        postsCount.value = 0;
       }
-    }
-    
-    // 팔로워 개수 가져오기
+    };
+
     const fetchFollowersCount = async () => {
       try {
-        console.log('🔍 팔로워 개수 조회 시작')
-        const response = await userAPI.getFollowersCount()
-        console.log('📥 팔로워 개수 API 응답:', response)
-        console.log('📥 팔로워 개수 응답 데이터:', response.data)
-        
+        const response = await userAPI.getFollowersCount();
         if (response.data && response.data.data) {
-          followersCount.value = response.data.data.totalElements || 0
-          console.log('✅ 설정된 팔로워 개수:', followersCount.value)
-        } else {
-          console.log('⚠️ 팔로워 개수 데이터가 없음')
-          followersCount.value = 0
+          followersCount.value = response.data.data.totalElements || 0;
         }
       } catch (error) {
-        console.error('❌ 팔로워 개수 조회 실패:', error)
-        console.error('❌ 에러 응답:', error.response?.data)
-        followersCount.value = 0
+        console.error('팔로워 개수 조회 실패:', error);
+        followersCount.value = 0;
       }
-    }
-    
-    // 팔로잉 개수 가져오기
+    };
+
     const fetchFollowingsCount = async () => {
       try {
-        console.log('🔍 팔로잉 개수 조회 시작')
-        const response = await userAPI.getFollowingsCount()
-        console.log('📥 팔로잉 개수 API 응답:', response)
-        console.log('📥 팔로잉 개수 응답 데이터:', response.data)
-        
+        const response = await userAPI.getFollowingsCount();
         if (response.data && response.data.data) {
-          followingsCount.value = response.data.data.totalElements || 0
-          console.log('✅ 설정된 팔로잉 개수:', followingsCount.value)
-        } else {
-          console.log('⚠️ 팔로잉 개수 데이터가 없음')
-          followingsCount.value = 0
+          followingsCount.value = response.data.data.totalElements || 0;
         }
       } catch (error) {
-        console.error('❌ 팔로잉 개수 조회 실패:', error)
-        console.error('❌ 에러 응답:', error.response?.data)
-        followingsCount.value = 0
+        console.error('팔로잉 개수 조회 실패:', error);
+        followingsCount.value = 0;
       }
-    }
-    
-    // 반려동물 목록 가져오기
-    const fetchUserPets = async () => {
-      console.log('=== fetchUserPets 시작 ===')
+    };
+
+    const searchType = ref('CONTENT');
+    const searchKeyword = ref('');
+    const currentPage = ref(0);
+    const hasMore = ref(true);
+    const isLoading = ref(false);
+
+    const fetchDiaryList = async (page = 0, append = false) => {
       try {
-        console.log('petAPI.getUserPets() 호출 시작...')
-        const response = await petAPI.getUserPets()
-        console.log('petAPI.getUserPets() 응답:', response)
-        console.log('응답 데이터:', response.data)
-        
-        if (response.data && response.data.data) {
-          console.log('반려동물 데이터:', response.data.data)
-          userPets.value = response.data.data.pets || []
-          userName.value = response.data.data.userName || ''
-          console.log('설정된 userPets:', userPets.value)
-          console.log('설정된 userName:', userName.value)
-          
-          // 반려동물 객체의 모든 필드 확인
-          if (userPets.value.length > 0) {
-            console.log('첫 번째 반려동물의 모든 필드:', Object.keys(userPets.value[0]))
-            console.log('첫 번째 반려동물 상세 데이터:', userPets.value[0])
-          }
-          
-          // 대표 반려동물 확인 (여러 방법 시도)
-          const mainPetData = userPets.value.find(pet => pet.firstPet) || 
-                             userPets.value.find(pet => pet.petOrder === 1) ||
-                             userPets.value.find(pet => pet.isMain) ||
-                             userPets.value.find(pet => pet.mainPet) ||
-                             userPets.value[0] // 첫 번째 반려동물을 대표로 사용
-          console.log('대표 반려동물:', mainPetData)
-          console.log('대표 반려동물 이름:', mainPetData?.name)
+        isLoading.value = true;
+        let response;
+        if (searchKeyword.value.trim()) {
+          response = await postAPI.search(
+            searchType.value,
+            searchKeyword.value.trim(),
+            { page, size: 9 },
+          );
         } else {
-          console.log('응답 데이터 구조가 예상과 다름')
-          userPets.value = []
+          response = await postAPI.getMyPosts({ page, size: 9 });
+        }
+        if (response.data && response.data.data) {
+          const newContent = response.data.data.content || [];
+          if (append) {
+            diaryList.value = [...diaryList.value, ...newContent];
+          } else {
+            diaryList.value = newContent;
+          }
+          hasMore.value = !response.data.data.last;
+          currentPage.value = page;
         }
       } catch (error) {
-        console.error('반려동물 목록 조회 실패:', error)
-        console.log('에러 응답:', error.response)
-        console.log('에러 상태:', error.response?.status)
-        console.log('에러 데이터:', error.response?.data)
-        userPets.value = []
+        console.error('다이어리 목록 조회 실패:', error);
+        if (!append) diaryList.value = [];
+      } finally {
+        isLoading.value = false;
       }
-      console.log('=== fetchUserPets 완료 ===')
-    }
-    
-    
-                
-                // 검색 상태
-                const searchType = ref('CONTENT')
-                const searchKeyword = ref('')
-                
-                // 페이지네이션 상태
-                const currentPage = ref(0)
-                const hasMore = ref(true)
-                const isLoading = ref(false)
-                
-                // 다이어리 목록 가져오기
-                const fetchDiaryList = async (page = 0, append = false) => {
-                  try {
-                    isLoading.value = true
-                    
-                    let response
-                    if (searchKeyword.value.trim()) {
-                      // 검색이 있는 경우
-                      response = await postAPI.search(searchType.value, searchKeyword.value.trim(), { page, size: 9 })
-                    } else {
-                      // 내 일기 목록 조회
-                      response = await postAPI.getMyPosts({ page, size: 9 })
-                    }
-                    
-                    if (response.data && response.data.data) {
-                      const newContent = response.data.data.content || []
-                      if (append) {
-                        diaryList.value = [...diaryList.value, ...newContent]
-                      } else {
-                        diaryList.value = newContent
-                      }
-                      
-                      // 더 불러올 데이터가 있는지 확인
-                      hasMore.value = !response.data.data.last
-                      currentPage.value = page
-                    }
-                  } catch (error) {
-                    console.error('다이어리 목록 조회 실패:', error)
-                    if (!append) {
-                      diaryList.value = []
-                    }
-                  } finally {
-                    isLoading.value = false
-                  }
-                }
-                
+    };
 
-                
-                // 무한 스크롤 처리
-                const handleScroll = () => {
-                  const scrollTop = window.pageYOffset || document.documentElement.scrollTop
-                  const windowHeight = window.innerHeight
-                  const documentHeight = document.documentElement.scrollHeight
-                  
-                  // 스크롤이 하단에 가까워지면 다음 페이지 로드
-                  if (scrollTop + windowHeight >= documentHeight - 100 && !isLoading.value && hasMore.value) {
-                    fetchDiaryList(currentPage.value + 1, true)
-                  }
-                }
-    
-                    // 다이어리 상세 보기
-                const viewDiary = (diaryId) => {
-                  if (diaryId) {
-                    $router.push(`/diary/${diaryId}`)
-                  }
-                }
-                
-                // 검색 처리
-                const handleSearch = (searchData) => {
-                  searchType.value = searchData.searchType
-                  searchKeyword.value = searchData.keyword
-                  // 검색 시 새로운 검색 페이지로 이동
-                  $router.push({
-                    path: '/search',
-                    query: {
-                      searchType: searchData.searchType,
-                      keyword: searchData.keyword
-                    }
-                  })
-                }
-                
-                // 검색 초기화
-                const handleClearSearch = () => {
-                  searchKeyword.value = ''
-                }
-                
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+      if (
+        scrollTop + clientHeight >= scrollHeight - 100 &&
+        !isLoading.value &&
+        hasMore.value
+      ) {
+        fetchDiaryList(currentPage.value + 1, true);
+      }
+    };
 
-    
+    const viewDiary = diaryId => {
+      if (diaryId) $router.push(`/diary/${diaryId}`);
+    };
 
-    
+    const handleSearch = searchData => {
+      $router.push({
+        path: '/search',
+        query: {
+          searchType: searchData.searchType,
+          keyword: searchData.keyword,
+        },
+      });
+    };
 
-    
+    const handleClearSearch = () => {
+      searchKeyword.value = '';
+    };
+
     const changeMainPet = async () => {
       try {
         if (!selectedPet.value) {
-          alert('동물을 선택해주세요')
-          return
+          alert('동물을 선택해주세요');
+          return;
         }
-        
-        // 선택된 펫 찾기
-        console.log('선택된 펫 이름:', selectedPet.value)
-        console.log('선택된 펫 이름:', userPets)
-        const selectedPetData = userPets.value.find(pet => pet.id == selectedPet.value)
-        if (!selectedPetData) {
-          alert('선택된 동물을 찾을 수 없습니다')
-          return
-        }
-        
-        // 백엔드 API 호출
-        await userAPI.setMainPet(selectedPetData.id)
-        
-        // 성공 메시지
-        alert('대표동물이 변경되었습니다!')
-        
-        // 모달 닫기
-        showMainPetModal.value = false
-        
-        // 선택값 초기화
-        selectedPetName.value = null
-        
-        // 데이터 새로고침
-        await fetchUserPets()
-        
+        await userAPI.setMainPet(selectedPet.value);
+        alert('대표동물이 변경되었습니다!');
+        showMainPetModal.value = false;
+        selectedPetId.value = null;
+        await authStore.fetchMyPageInfo();
+        await petStore.fetchPets();
       } catch (error) {
-        console.error('대표동물 변경 실패:', error)
-        alert('대표동물 변경에 실패했습니다.')
+        console.error('대표동물 변경 실패:', error);
+        alert('대표동물 변경에 실패했습니다.');
       }
-    }
-    
-    // 팔로우/팔로워 모달 처리
-    const openFollowModal = (type) => {
-      isFollowModalVisible.value = true
-      // 모달이 열린 후 탭 설정을 위해 nextTick 사용
+    };
+
+    const openFollowModal = type => {
+      isFollowModalVisible.value = true;
       nextTick(() => {
-        // FollowModal 컴포넌트의 activeTab을 설정
         if (type === 'followers' || type === 'followings') {
-          // 모달 컴포넌트에 탭 정보 전달
-          followModalTab.value = type
+          followModalTab.value = type;
         }
-      })
-    }
+      });
+    };
 
     const closeFollowModal = () => {
-      isFollowModalVisible.value = false
-    }
-    
-    // 팔로우 업데이트 처리
+      isFollowModalVisible.value = false;
+    };
+
     const handleFollowUpdated = async () => {
-      console.log('🔄 팔로우 업데이트 - 숫자 재조회')
-      await Promise.all([
-        fetchFollowersCount(),
-        fetchFollowingsCount()
-      ])
-    }
-    
-    // 언팔로우 업데이트 처리
+      await Promise.all([fetchFollowersCount(), fetchFollowingsCount()]);
+    };
+
     const handleUnfollowUpdated = async () => {
-      console.log('🔄 언팔로우 업데이트 - 숫자 재조회')
-      await Promise.all([
-        fetchFollowersCount(),
-        fetchFollowingsCount()
-      ])
-    }
-    
-    // 컴포넌트 마운트 시 데이터 가져오기
-                onMounted(async () => {
-                  console.log('=== DiaryListView onMounted 시작 ===')
-                  
-                  // 펫 등록 여부 확인
-                  console.log('펫 등록 여부 확인 시작...')
-                  const hasPet = await validatePetAndRedirect($router)
-                  console.log('펫 등록 여부 확인 결과:', hasPet)
-                  if (!hasPet) {
-                    console.log('펫이 없음 - 컴포넌트 마운트 중단')
-                    return
-                  }
-                  
-                  // 초기화를 nextTick으로 지연
-                  console.log('nextTick으로 초기화 지연...')
-                  nextTick(() => {
-                    console.log('nextTick 실행 - API 호출 시작')
-                    fetchPostsCount()
-                    fetchFollowersCount()
-                    fetchFollowingsCount()
-                    fetchUserPets()
-                    fetchDiaryList()
-                    
-                    // 스크롤 이벤트 리스너 추가
-                    window.addEventListener('scroll', handleScroll)
-                    console.log('스크롤 이벤트 리스너 추가 완료')
-                  })
-                  console.log('=== DiaryListView onMounted 완료 ===')
-                })
-    
-    // 컴포넌트 언마운트 시 이벤트 리스너 제거
+      await Promise.all([fetchFollowersCount(), fetchFollowingsCount()]);
+    };
+
+    onMounted(async () => {
+      const hasPet = await validatePetAndRedirect($router);
+      if (!hasPet) return;
+
+      nextTick(async () => {
+        try {
+          if (!authStore.myPageInfo) {
+            await authStore.fetchMyPageInfo();
+          }
+          if (petStore.pets.length === 0) {
+            await petStore.fetchPets();
+          }
+          fetchPostsCount();
+          fetchFollowersCount();
+          fetchFollowingsCount();
+          fetchDiaryList();
+          window.addEventListener('scroll', handleScroll);
+        } catch (error) {
+          console.error('Error during onMounted data fetching:', error);
+        }
+      });
+    });
+
     onUnmounted(() => {
-      window.removeEventListener('scroll', handleScroll)
-    })
-    
-                                      return {
-                    showMainPetModal,
-                    selectedPet,
-                    userPets,
-                    mainPet,
-                    petBio,
-                    displayUserName,
-                    currentUserId,
-                    postsCount,
-                    followersCount,
-                    followingsCount,
-                    diaryList,
-                    isLoading,
-                    searchType,
-                    searchKeyword,
-                    isFollowModalVisible,
-                    followModalTab,
-                    viewDiary,
-                    changeMainPet,
-                    openFollowModal,
-                    closeFollowModal,
-                    handleFollowUpdated,
-                    handleUnfollowUpdated,
-                    handleSearch,
-                    handleClearSearch
-                  }
-  }
-}
+      window.removeEventListener('scroll', handleScroll);
+    });
+
+    return {
+      showMainPetModal,
+      selectedPet,
+      userPets,
+      mainPet,
+      petBio,
+      displayUserName,
+      currentUserId,
+      postsCount,
+      followersCount,
+      followingsCount,
+      diaryList,
+      isLoading,
+      searchType,
+      searchKeyword,
+      isFollowModalVisible,
+      followModalTab,
+      viewDiary,
+      changeMainPet,
+      openFollowModal,
+      closeFollowModal,
+      handleFollowUpdated,
+      handleUnfollowUpdated,
+      handleSearch,
+      handleClearSearch,
+      profileImageUrl,
+    };
+  },
+};
 </script>
 
 <style scoped>
