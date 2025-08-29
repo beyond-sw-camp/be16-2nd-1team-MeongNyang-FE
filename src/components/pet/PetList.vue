@@ -138,30 +138,37 @@
                     </div>
 
                   <!-- 소개글 -->
-                  <div v-if="representativePet.introduce" class="introduction-large">
+                  <div class="introduction-large">
                     <h4 class="introduction-title">소개글</h4>
-                    <p class="introduction-text">{{ representativePet.introduce }}</p>
+                    <p v-if="representativePet.introduce" class="introduction-text">{{ representativePet.introduce }}</p>
+                    <p v-else class="introduction-text no-introduction">소개글이 등록되지 않았습니다.</p>
                   </div>
                   
                   <!-- 액션 버튼들 -->
                   <div class="action-buttons-large">
-                      <v-btn
-                      icon="mdi-pencil"
-                      variant="text"
-                      size="large"
-                      color="grey-darken-1"
-                      @click="$emit('view-details', representativePet)"
-                      density="comfortable"
-                    />
                     <v-btn
-                      icon="mdi-delete"
-                      variant="text"
+                      color="#E87D7D"
+                      variant="flat"
+                      prepend-icon="mdi-eye"
+                      @click="viewPet(representativePet)"
                       size="large"
-                      color="error"
+                      rounded="xl"
+                      class="view-details-btn"
+                    >
+                      상세보기
+                    </v-btn>
+                    <v-btn
+                      color="#E87D7D"
+                      variant="flat"
+                      prepend-icon="mdi-delete"
                       @click="$emit('delete', representativePet)"
-                      density="comfortable"
-                    />
-                        </div>
+                      size="large"
+                      rounded="xl"
+                      class="delete-btn"
+                    >
+                      삭제
+                    </v-btn>
+                  </div>
                 </div>
               </div>
             </div>
@@ -542,7 +549,7 @@ export default {
   min-height: 120px;
   display: flex;
   align-items: center;
-  max-width: 1200px;
+  max-width: 1120px;
 }
 
 .container {
@@ -752,10 +759,43 @@ export default {
   margin: 0;
 }
 
+.introduction-text.no-introduction {
+  color: #9ca3af;
+  font-style: italic;
+}
+
 .action-buttons-large {
   display: flex;
   gap: 12px;
   margin-top: auto;
+  align-items: center;
+}
+
+.view-details-btn {
+  background: #E87D7D !important;
+  color: white !important;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(232, 125, 125, 0.3);
+  transition: all 0.3s ease;
+}
+
+.view-details-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(232, 125, 125, 0.4);
+}
+
+.delete-btn {
+  background: linear-gradient(135deg, #E87D7D, #FF6B6B) !important;
+  color: white !important;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(232, 125, 125, 0.3);
+  transition: all 0.3s ease;
+}
+
+.delete-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(232, 125, 125, 0.4);
+  background: linear-gradient(135deg, #FF6B6B, #E87D7D) !important;
 }
 
 /* 대표동물이 없을 때 */

@@ -24,47 +24,20 @@
         
         <!-- 대표 반려동물 배지 -->
         <div v-if="isRepresentative" class="representative-badge">
-          <v-icon color="white" size="14">mdi-crown</v-icon>
+          <v-icon color="white" size="16">mdi-crown</v-icon>
           <span>대표</span>
         </div>
+        
+        <!-- 이미지 오버레이 그라데이션 -->
+        <div class="image-overlay"></div>
       </div>
     </div>
 
     <!-- 반려동물 정보 영역 -->
     <v-card-text class="pet-info">
-      <!-- 펫 이름과 액션 버튼들 -->
+      <!-- 펫 이름 -->
       <div class="pet-header">
         <h3 class="pet-name">{{ pet.name }}</h3>
-        <div class="pet-actions">
-          <v-btn
-            v-if="!isRepresentative"
-            icon="mdi-star-outline"
-            variant="text"
-            size="small"
-            color="amber"
-            @click="$emit('set-representative', pet)"
-            density="comfortable"
-          />
-
-          <v-btn
-            icon="mdi-pencil"
-            variant="text"
-            size="small"
-            color="grey-darken-1"
-            :disabled="!pet.id"
-            @click="$emit('view-details', pet)"
-            density="comfortable"
-          />
-          <v-btn
-            icon="mdi-delete"
-            variant="text"
-            size="small"
-            color="error"
-            :disabled="!pet.id"
-            @click="$emit('delete', pet)"
-            density="comfortable"
-          />
-        </div>
       </div>
 
       <!-- 반려동물 기본 정보 태그들 -->
@@ -74,6 +47,7 @@
           variant="tonal" 
           :color="getSpeciesIconColor(pet.petOrder)"
           :prepend-icon="getSpeciesIcon(pet.petOrder)"
+          class="info-chip"
         >
           {{ pet.species || '알 수 없음' }}
         </v-chip>
@@ -83,6 +57,7 @@
           variant="tonal" 
           :color="getGenderColor(pet.gender)"
           :prepend-icon="getGenderIcon(pet.gender)"
+          class="info-chip"
         >
           {{ getGenderLabel(pet.gender) }}
         </v-chip>
@@ -92,6 +67,7 @@
           variant="tonal" 
           color="orange"
           prepend-icon="mdi-cake-variant"
+          class="info-chip"
         >
           {{ pet.age }}살
         </v-chip>
@@ -100,28 +76,47 @@
       <!-- 추가 정보 -->
       <div class="pet-details">
         <div class="detail-row">
-          <v-icon size="16" color="grey">mdi-weight</v-icon>
-          <span>{{ pet.weight }}kg</span>
+          <div class="detail-icon">
+            <v-icon size="18" color="grey-darken-1">mdi-weight</v-icon>
+          </div>
+          <span class="detail-text">{{ pet.weight || '알 수 없음' }}kg</span>
         </div>
         <div class="detail-row">
-          <v-icon size="16" color="grey">mdi-calendar-outline</v-icon>
-          <span>{{ formatBirthday(pet.birthday) }}</span>
+          <div class="detail-icon">
+            <v-icon size="18" color="grey-darken-1">mdi-calendar-outline</v-icon>
+          </div>
+          <span class="detail-text">{{ formatBirthday(pet.birthday) }}</span>
         </div>
       </div>
     </v-card-text>
 
-    <!-- 카드 하단 액션 영역 (상세보기 버튼) -->
+    <!-- 카드 하단 액션 영역 -->
     <v-card-actions class="card-actions">
-      <v-btn 
-        variant="text" 
-        color="primary" 
-        @click="$emit('view-details', pet)"
-        block
-        rounded="lg"
-      >
-        상세보기
-        <v-icon end>mdi-arrow-right</v-icon>
-      </v-btn>
+      <div class="action-buttons">
+        <v-btn 
+          variant="flat" 
+          color="#E87D7D" 
+          @click="$emit('view-details', pet)"
+          rounded="xl"
+          class="action-btn view-details-btn"
+          prepend-icon="mdi-eye"
+        >
+          상세보기
+        </v-btn>
+        
+
+        
+        <v-btn 
+          variant="flat" 
+          color="#E87D7D" 
+          @click="$emit('delete', pet)"
+          rounded="xl"
+          class="action-btn delete-btn"
+          prepend-icon="mdi-delete"
+        >
+          삭제
+        </v-btn>
+      </div>
     </v-card-actions>
   </v-card>
 </template>
@@ -259,22 +254,44 @@ export default {
   height: 100%;
   display: flex;
   flex-direction: column;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.pet-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #E87D7D, #FF6B6B, #E87D7D);
+  background-size: 200% 100%;
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 .pet-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
 }
 
 .pet-card.is-representative {
-  border: 2px solid #f59e0b;
-  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.2);
+  border: none;
+  background: linear-gradient(135deg, #ffffff 0%, #fef3c7 100%);
+  box-shadow: 0 8px 32px rgba(245, 158, 11, 0.25);
 }
 
 .pet-card.is-representative:hover {
-  box-shadow: 0 8px 30px rgba(245, 158, 11, 0.25);
+  box-shadow: 0 24px 48px rgba(245, 158, 11, 0.35);
+  transform: translateY(-8px) scale(1.02);
 }
 
 /* 이미지 섹션 */
@@ -287,18 +304,18 @@ export default {
 .image-container {
   position: relative;
   width: 100%;
-  height: 200px;
+  height: 220px;
   overflow: hidden;
 }
 
 .pet-image {
   width: 100%;
   height: 100%;
-  transition: transform 0.3s ease;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .pet-card:hover .pet-image {
-  transform: scale(1.02);
+  transform: scale(1.08);
 }
 
 .image-placeholder {
@@ -307,26 +324,56 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
   color: #64748b;
+  position: relative;
+}
+
+.image-placeholder::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.3) 50%, transparent 70%);
+  animation: shimmer-placeholder 2s infinite;
+}
+
+@keyframes shimmer-placeholder {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* 이미지 오버레이 그라데이션 */
+.image-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.3));
+  pointer-events: none;
 }
 
 /* 대표 반려동물 배지 */
 .representative-badge {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 16px;
+  right: 16px;
   background: linear-gradient(135deg, #f59e0b, #d97706);
   color: white;
-  border-radius: 20px;
-  padding: 4px 10px;
-  font-size: 0.75rem;
-  font-weight: 600;
+  border-radius: 25px;
+  padding: 8px 16px;
+  font-size: 0.8rem;
+  font-weight: 700;
   display: flex;
   align-items: center;
-  gap: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  gap: 6px;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.4);
   z-index: 2;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 /* 정보 섹션 */
@@ -334,133 +381,236 @@ export default {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 20px !important;
+  gap: 20px;
+  padding: 24px !important;
+  background: transparent;
 }
 
 .pet-header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
 }
 
 .pet-name {
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-size: 1.4rem;
+  font-weight: 700;
   color: #1f2937;
   margin: 0;
-  line-height: 1.3;
-  flex: 1;
-}
-
-.pet-actions {
-  display: flex;
-  gap: 4px;
-  flex-shrink: 0;
-  opacity: 0.7;
-  transition: opacity 0.2s ease;
-}
-
-.pet-card:hover .pet-actions {
-  opacity: 1;
+  line-height: 1.2;
+  text-align: center;
+  background: linear-gradient(135deg, #1f2937, #374151);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 /* 태그들 */
 .pet-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
+}
+
+.info-chip {
+  font-weight: 600;
+  border-radius: 20px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.info-chip:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 }
 
 /* 상세 정보 */
 .pet-details {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
   margin-top: auto;
 }
 
 .detail-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.875rem;
-  color: #6b7280;
-  font-weight: 500;
+  gap: 12px;
+  padding: 8px 12px;
+  background: rgba(248, 250, 252, 0.8);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.detail-row:hover {
+  background: rgba(241, 245, 249, 1);
+  transform: translateX(4px);
+}
+
+.detail-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.detail-row:hover .detail-icon {
+  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
+  transform: scale(1.1);
+}
+
+.detail-row:hover .detail-icon .v-icon {
+  color: white !important;
+}
+
+.detail-text {
+  font-size: 0.9rem;
+  color: #4b5563;
+  font-weight: 600;
 }
 
 /* 카드 액션 */
 .card-actions {
-  padding: 12px 20px 20px !important;
+  padding: 16px 24px 24px !important;
   margin-top: auto;
+  background: transparent;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.action-btn {
+  flex: 1;
+  font-weight: 700;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  height: 44px;
+  text-transform: none;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.view-details-btn {
+  background: linear-gradient(135deg, #E87D7D, #FF6B6B) !important;
+  color: white !important;
+}
+
+.view-details-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(232, 125, 125, 0.4);
+  background: linear-gradient(135deg, #FF6B6B, #E87D7D) !important;
+}
+
+
+
+.delete-btn {
+  background: linear-gradient(135deg, #E87D7D, #FF6B6B) !important;
+  color: white !important;
+}
+
+.delete-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(232, 125, 125, 0.4);
+  background: linear-gradient(135deg, #FF6B6B, #E87D7D) !important;
 }
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {
   .pet-info {
-    padding: 16px !important;
-    gap: 12px;
+    padding: 20px !important;
+    gap: 16px;
   }
   
   .pet-name {
-    font-size: 1.125rem;
+    font-size: 1.25rem;
   }
   
   .pet-tags {
-    gap: 6px;
+    gap: 8px;
   }
   
   .detail-row {
-    font-size: 0.8rem;
+    padding: 6px 10px;
+    gap: 10px;
+  }
+  
+  .detail-text {
+    font-size: 0.85rem;
   }
   
   .card-actions {
-    padding: 8px 16px 16px !important;
+    padding: 12px 20px 20px !important;
+  }
+  
+  .image-container {
+    height: 200px;
   }
 }
 
 @media (max-width: 480px) {
-  .image-placeholder {
-    height: 160px;
+  .image-container {
+    height: 180px;
   }
   
   .pet-info {
-    padding: 12px !important;
-    gap: 10px;
+    padding: 16px !important;
+    gap: 14px;
   }
   
   .pet-header {
     flex-direction: column;
     align-items: stretch;
-    gap: 8px;
+    gap: 12px;
   }
   
   .pet-name {
-    font-size: 1rem;
+    font-size: 1.2rem;
     text-align: center;
   }
   
   .pet-actions {
     justify-content: center;
     opacity: 1;
+    transform: none;
   }
   
   .pet-tags {
     justify-content: center;
-    gap: 4px;
+    gap: 6px;
   }
   
   .detail-row {
     justify-content: center;
-    font-size: 0.75rem;
+    padding: 8px 12px;
+  }
+  
+  .detail-text {
+    font-size: 0.8rem;
   }
   
   .representative-badge {
-    top: 8px;
-    right: 8px;
-    padding: 3px 8px;
-    font-size: 0.7rem;
+    top: 12px;
+    right: 12px;
+    padding: 6px 12px;
+    font-size: 0.75rem;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .action-btn {
+    height: 40px;
+    font-size: 0.85rem;
   }
 }
 </style>
