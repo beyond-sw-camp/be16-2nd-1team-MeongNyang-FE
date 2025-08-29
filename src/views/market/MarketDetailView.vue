@@ -35,12 +35,13 @@
       <!-- 이미지 섹션 -->
       <div class="image-section">
         <div class="image-container">
-          <img 
-            v-if="currentImage"
-            :src="currentImage" 
-            :alt="post.title"
-            class="main-image"
-          />
+                     <img 
+             v-if="currentImage"
+             :src="currentImage" 
+             :alt="post.title"
+             class="main-image"
+             @click="openImageModal(currentImage)"
+           />
           <!-- 이미지가 없는 경우 기본 이미지 표시 -->
           <div v-else class="default-main-image">
             <v-icon icon="mdi-image-off" size="80" color="#E87D7D" />
@@ -97,7 +98,7 @@
              :class="{ active: index === currentImageIndex }"
              @click="setCurrentImage(index)"
            >
-             <img v-if="image" :src="image" :alt="`${post.title} ${index + 1}`" />
+                           <img v-if="image" :src="image" :alt="`${post.title} ${index + 1}`" />
              <!-- 썸네일 이미지가 없는 경우 기본 이미지 표시 -->
              <div v-else class="default-thumbnail">
                <v-icon icon="mdi-image-off" size="24" color="#E87D7D" />
@@ -196,10 +197,24 @@
            </div>
         </div>
 
-      </div>
-    </div>
-  </div>
-</template>
+             </div>
+     </div>
+     
+     <!-- 이미지 모달창 -->
+     <div v-if="showImageModal" class="image-modal-overlay" @click="closeImageModal">
+       <div class="image-modal-content" @click.stop>
+         <button class="modal-close-btn" @click="closeImageModal">
+           <v-icon icon="mdi-close" size="24" />
+         </button>
+                   <img 
+            :src="modalImage" 
+            :alt="post?.title || '이미지'"
+            class="modal-image"
+          />
+       </div>
+     </div>
+   </div>
+ </template>
 
 <script>
 import { ref, onMounted, computed, nextTick } from 'vue'
@@ -215,13 +230,17 @@ export default {
           const router = useRouter()
          const chatStore = useChatStore()
     
-    // 반응형 데이터
-    const post = ref(null)
-    const loading = ref(true)
-    const error = ref(null)
-    const currentImageIndex = ref(0)
-    const mapContainer = ref(null)
-      const locationAddress = ref('위치 정보를 불러오는 중...')
+         // 반응형 데이터
+     const post = ref(null)
+     const loading = ref(true)
+     const error = ref(null)
+     const currentImageIndex = ref(0)
+     const mapContainer = ref(null)
+       const locationAddress = ref('위치 정보를 불러오는 중...')
+       
+       // 이미지 모달 관련 상태
+       const showImageModal = ref(false)
+       const modalImage = ref('')
       
              // 현재 사용자 정보 (JWT 토큰에서 추출)
        const currentUserId = ref(null)
@@ -498,9 +517,24 @@ export default {
        }
      }
     
-    const setCurrentImage = (index) => {
-      currentImageIndex.value = index
-    }
+         const setCurrentImage = (index) => {
+       currentImageIndex.value = index
+     }
+     
+     // 이미지 모달 관련 함수들
+     const openImageModal = (imageUrl) => {
+       modalImage.value = imageUrl
+       showImageModal.value = true
+       // 모달이 열릴 때 body 스크롤 방지
+       document.body.style.overflow = 'hidden'
+     }
+     
+     const closeImageModal = () => {
+       showImageModal.value = false
+       modalImage.value = ''
+       // 모달이 닫힐 때 body 스크롤 복원
+       document.body.style.overflow = 'auto'
+     }
      
      // 수정 페이지로 이동
      const goToEditPage = () => {
@@ -688,35 +722,40 @@ export default {
       }
     }
     
-         return {
-       post,
-       loading,
-       error,
-       currentImageIndex,
-       currentImage,
-       mapContainer,
-           locationAddress,
-           currentUserId,
-           currentUserEmail,
-       fetchPostDetail,
-       toggleLike,
-       previousImage,
-       nextImage,
-       setCurrentImage,
-       getCategoryLabel,
-       getStatusLabel,
-       formatPrice,
-       formatDate,
-           getLocationDisplay,
-       initKakaoMap,
-       getProfileImage,
-           handleImageError,
-           goToEditPage,
-           chatLoading,
-           canStartChat,
-           getChatButtonText,
-           startChat
-     }
+                   return {
+        post,
+        loading,
+        error,
+        currentImageIndex,
+        currentImage,
+        mapContainer,
+            locationAddress,
+            currentUserId,
+            currentUserEmail,
+        fetchPostDetail,
+        toggleLike,
+        previousImage,
+        nextImage,
+        setCurrentImage,
+        getCategoryLabel,
+        getStatusLabel,
+        formatPrice,
+        formatDate,
+            getLocationDisplay,
+        initKakaoMap,
+        getProfileImage,
+            handleImageError,
+            goToEditPage,
+            chatLoading,
+            canStartChat,
+            getChatButtonText,
+            startChat,
+            // 이미지 모달 관련
+            showImageModal,
+            modalImage,
+            openImageModal,
+            closeImageModal
+      }
   }
 }
 </script>
@@ -779,12 +818,18 @@ export default {
   margin-bottom: 20px;
 }
 
-.main-image {
-  width: 100%;
-  height: 400px;
-  object-fit: cover;
-  display: block;
-}
+ .main-image {
+   width: 100%;
+   height: 400px;
+   object-fit: cover;
+   display: block;
+   cursor: pointer;
+   transition: transform 0.3s ease;
+ }
+ 
+ .main-image:hover {
+   transform: scale(1.02);
+ }
 
 .status-badge {
   position: absolute;
@@ -912,11 +957,17 @@ export default {
   border-color: #E87D7D;
 }
 
-.thumbnail img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
+ .thumbnail img {
+   width: 100%;
+   height: 100%;
+   object-fit: cover;
+   cursor: pointer;
+   transition: transform 0.3s ease;
+ }
+ 
+ .thumbnail img:hover {
+   transform: scale(1.05);
+ }
 
 .info-section {
   background: white;
@@ -1502,9 +1553,98 @@ export default {
     flex-direction: column;
   }
   
-  .chat-btn.primary,
-  .chat-btn.secondary {
-    flex: 1;
+     .chat-btn.primary,
+   .chat-btn.secondary {
+     flex: 1;
+   }
+ }
+ 
+   /* 이미지 모달 스타일 */
+  .image-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    backdrop-filter: blur(3px);
   }
-}
+ 
+ .image-modal-content {
+   position: relative;
+   max-width: 90vw;
+   max-height: 90vh;
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+   border-radius: 20px;
+   overflow: hidden;
+   box-shadow: 0 25px 80px rgba(44, 62, 80, 0.3);
+   border: 1px solid rgba(255, 255, 255, 0.2);
+ }
+ 
+ .modal-close-btn {
+   position: absolute;
+   top: 15px;
+   right: 15px;
+   background: rgba(255, 255, 255, 0.95);
+   border: 1px solid rgba(232, 125, 125, 0.2);
+   border-radius: 50%;
+   width: 40px;
+   height: 40px;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   cursor: pointer;
+   transition: all 0.3s ease;
+   z-index: 10000;
+   backdrop-filter: blur(10px);
+   box-shadow: 0 4px 15px rgba(44, 62, 80, 0.15);
+   color: #E87D7D;
+ }
+ 
+ .modal-close-btn:hover {
+   background: #E87D7D;
+   color: white;
+   transform: scale(1.1);
+   box-shadow: 0 6px 20px rgba(232, 125, 125, 0.3);
+   border-color: #E87D7D;
+ }
+ 
+ .modal-image {
+   max-width: 100%;
+   max-height: 80vh;
+   object-fit: contain;
+   display: block;
+ }
+ 
+
+ 
+ /* 모바일 반응형 */
+ @media (max-width: 768px) {
+   .image-modal-content {
+     max-width: 95vw;
+     max-height: 95vh;
+     margin: 10px;
+     border-radius: 15px;
+   }
+   
+   .modal-image {
+     max-height: 70vh;
+   }
+   
+   .modal-close-btn {
+     top: 10px;
+     right: 10px;
+     width: 35px;
+     height: 35px;
+   }
+   
+   
+ }
 </style>
