@@ -1585,7 +1585,6 @@ export default {
    border-radius: 20px;
    overflow: hidden;
    box-shadow: 0 25px 80px rgba(44, 62, 80, 0.3);
-   border: 1px solid rgba(255, 255, 255, 0.2);
  }
  
  .modal-close-btn {
