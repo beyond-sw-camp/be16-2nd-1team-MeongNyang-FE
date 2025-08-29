@@ -18,23 +18,23 @@
         <!-- 좌측: 프로필 사진 -->
         <div class="profile-image-section">
           <v-avatar size="200" class="profile-avatar" @click="startEditImage">
-            <v-img
-              v-if="pet.url"
-              :src="pet.url"
-              :alt="pet.name"
-              cover
-              class="pet-image"
-            />
-            <div v-else class="avatar-placeholder">
+                <v-img
+                  v-if="pet.url"
+                  :src="pet.url"
+                  :alt="pet.name"
+                  cover
+                  class="pet-image"
+                />
+                <div v-else class="avatar-placeholder">
               <v-icon :size="100" color="#E87D7D" :icon="getSpeciesIcon(pet.petOrder)" />
-            </div>
-          </v-avatar>
-          
-          <!-- 대표 반려동물 배지 -->
-          <div v-if="isRepresentative" class="representative-badge">
+                </div>
+              </v-avatar>
+              
+              <!-- 대표 반려동물 배지 -->
+              <div v-if="isRepresentative" class="representative-badge">
             <v-icon color="amber" size="24">mdi-star</v-icon>
-            <span>대표</span>
-          </div>
+                <span>대표</span>
+              </div>
           
           <!-- 이미지 업로드 입력 (숨김) -->
           <input
@@ -44,8 +44,8 @@
             style="display: none"
             @change="handleImageChange"
           />
-        </div>
-        
+          </div>
+          
         <!-- 우측: 기본 정보 -->
         <div class="basic-info-section">
           <div class="info-grid">
@@ -53,7 +53,7 @@
               <div class="info-label">
                 이름
                 <v-icon v-if="!editingFields.name" size="16" color="#E87D7D">mdi-pencil</v-icon>
-              </div>
+            </div>
               <div v-if="!editingFields.name" class="info-value">{{ pet.name }}</div>
               <div v-else class="edit-field">
                 <v-text-field
@@ -84,10 +84,10 @@
                   >
                     취소
                   </v-btn>
-                </div>
-              </div>
-            </div>
-            
+          </div>
+        </div>
+      </div>
+
             <div class="info-item" @click="!editingFields.species && startEditField('species')">
               <div class="info-label">
                 종류
@@ -108,7 +108,7 @@
                   @update:model-value="onSpeciesChange"
                 />
                 <div class="edit-actions">
-                                     <v-btn
+          <v-btn
                      size="x-small"
                      color="success"
                      variant="flat"
@@ -116,16 +116,16 @@
                      class="save-btn"
                    >
                      저장
-                   </v-btn>
-                   <v-btn
+          </v-btn>
+          <v-btn
                      size="small"
                      color="error"
-                     variant="outlined"
+            variant="outlined"
                      @click.stop="cancelEditField('species')"
                      class="cancel-btn"
                    >
                      취소
-                   </v-btn>
+          </v-btn>
                 </div>
               </div>
             </div>
@@ -142,7 +142,7 @@
                   :items="genderOptions"
                   item-title="title"
                   item-value="value"
-                  variant="outlined"
+            variant="outlined"
                   density="compact"
                   hide-details
                   class="inline-edit-input"
@@ -160,27 +160,27 @@
                    </v-btn>
                    <v-btn
                      size="x-small"
-                     color="error"
+            color="error"
                      variant="outlined"
                      @click.stop="cancelEditField('gender')"
                      class="cancel-btn"
                    >
                      취소
-                   </v-btn>
+          </v-btn>
                 </div>
-              </div>
-            </div>
-            
+        </div>
+      </div>
+
             <div class="info-item" @click="!editingFields.age && !pet.birthday && startEditField('age')">
               <div class="info-label">
                 나이
                 <v-icon v-if="!editingFields.age && !pet.birthday" size="16" color="#E87D7D">mdi-pencil</v-icon>
                 <v-icon v-else-if="pet.birthday" size="16" color="#9CA3AF" title="생일이 있으면 나이가 자동으로 계산됩니다">mdi-calculator</v-icon>
-              </div>
+            </div>
               <div v-if="!editingFields.age" class="info-value">
                 {{ pet.age }}살
                 <span v-if="pet.birthday" class="age-hint">(생일 기준 자동 계산)</span>
-              </div>
+            </div>
               <div v-else class="edit-field">
                 <v-text-field
                   v-model.number="editData.age"
@@ -211,10 +211,10 @@
                   >
                     취소
                   </v-btn>
-                </div>
-              </div>
+          </div>
             </div>
-            
+          </div>
+          
             <div class="info-item" @click="!editingFields.weight && startEditField('weight')">
               <div class="info-label">
                 체중
@@ -252,15 +252,15 @@
                   >
                     취소
                   </v-btn>
-                </div>
-              </div>
             </div>
-            
+            </div>
+          </div>
+          
             <div class="info-item" @click="!editingFields.birthday && startEditField('birthday')">
               <div class="info-label">
                 생일
                 <v-icon v-if="!editingFields.birthday" size="16" color="#E87D7D">mdi-pencil</v-icon>
-              </div>
+            </div>
               <div v-if="!editingFields.birthday" class="info-value">{{ formatBirthday(pet.birthday) }}</div>
               <div v-else class="edit-field">
                 <div class="birthday-input-container">
@@ -275,8 +275,8 @@
                     prepend-inner-icon="mdi-calendar"
                     @click.stop="showBirthdayPicker = true"
                   />
-                </div>
-                
+          </div>
+          
                 <!-- 생일 선택기 모달 -->
                 <v-dialog v-model="showBirthdayPicker" max-width="400">
                   <v-card>
@@ -320,13 +320,13 @@
                   >
                     취소
                   </v-btn>
-                </div>
-              </div>
+            </div>
             </div>
           </div>
-        </div>
-      </div>
-
+            </div>
+            </div>
+          </div>
+          
       <!-- 소개글 섹션 -->
       <div class="introduction-section" @click="!editingFields.introduce && startEditField('introduce')">
         <h3 class="section-title">
@@ -348,7 +348,7 @@
             @keyup.enter="saveField('introduce')"
           />
           <div class="edit-actions">
-                         <v-btn
+        <v-btn
                size="x-small"
                color="success"
                variant="flat"
@@ -360,45 +360,45 @@
              <v-btn
                size="x-small"
                color="error"
-               variant="outlined"
+          variant="outlined"
                @click.stop="cancelEditField('introduce')"
                class="cancel-btn"
              >
                취소
-             </v-btn>
-          </div>
-        </div>
+        </v-btn>
       </div>
+    </div>
+    </div>
 
       <!-- 액션 버튼 섹션 -->
       <div class="action-section">
         <div class="action-buttons">
-          <v-btn
+            <v-btn
             v-if="!isRepresentative"
             variant="elevated"
             color="#E87D7D"
-            rounded="xl"
+              rounded="xl"
             size="large"
             prepend-icon="mdi-star"
             @click="setAsRepresentative"
             class="action-btn primary-action"
-          >
+            >
             대표로 설정
-          </v-btn>
+            </v-btn>
 
-          <v-btn
+            <v-btn
             variant="outlined"
             color="error"
-            rounded="xl"
+              rounded="xl"
             size="large"
             prepend-icon="mdi-delete"
             @click="showDeleteConfirm = true"
             class="action-btn"
-          >
+            >
             삭제
-          </v-btn>
+            </v-btn>
+          </div>
         </div>
-      </div>
     </div>
 
 
@@ -952,7 +952,7 @@ const startEditImage = () => {
       imageInput.value.value = ''
     }
     console.log('🖼️ 이미지 변경 취소됨')
-  }
+}
 
 // 대표 반려동물 설정
 const setAsRepresentative = async () => {
@@ -1036,7 +1036,7 @@ const formatBirthday = (birthday) => {
   
   // Date 객체로 변환하여 형식화
   try {
-    const date = new Date(birthday)
+  const date = new Date(birthday)
     if (isNaN(date.getTime())) return '알 수 없음'
     return `${date.getFullYear()}. ${String(date.getMonth() + 1).padStart(2, '0')}. ${String(date.getDate()).padStart(2, '0')}.`
   } catch (error) {
@@ -1938,7 +1938,7 @@ onMounted(async () => {
 
 .save-btn {
   min-width: 60px;
-  font-size: 0.8rem;
+    font-size: 0.8rem;
   font-weight: 500;
   padding: 8px 16px;
   border-radius: 25px;
@@ -1957,7 +1957,7 @@ onMounted(async () => {
 
 .cancel-btn {
   min-width: 60px;
-  font-size: 0.8rem;
+    font-size: 0.8rem;
   font-weight: 500;
   padding: 8px 16px;
   border-radius: 25px;

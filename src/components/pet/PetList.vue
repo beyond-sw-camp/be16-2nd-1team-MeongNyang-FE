@@ -1,65 +1,62 @@
 <template>
   <div class="pet-list">
-    <!-- 모던한 헤더 -->
-    <div class="header-section">
-      <div class="container">
-        <div class="header-content">
-          <div>
+    <div class="pet-container">
+      <!-- 헤더 (배경 위에 직접) -->
+      <div class="page-header">
             <h1 class="page-title">반려동물</h1>
             <p class="page-subtitle">우리 가족을 관리하고 추억을 기록하세요</p>
-          </div>
-          <v-btn
-            color="#E87D7D"
-            variant="flat"
-            prepend-icon="mdi-plus"
-            @click="showAddForm = true"
-            size="large"
-            rounded="xl"
-            class="add-button"
-          >
-            반려동물 추가
-          </v-btn>
-        </div>
-      </div>
     </div>
 
-    <!-- 깔끔한 통계 -->
-    <div class="stats-section">
-      <div class="container">
+      <!-- 통계 패널 (반려동물 추가 버튼 포함) -->
+      <div class="stats-panel">
         <div class="stats-overview">
-          <div class="stat-item">
-            <div class="stat-icon">
-              <v-icon>mdi-dog</v-icon>
+            <div class="stats-left">
+              <div class="stat-item">
+                <div class="stat-icon">
+                  <v-icon>mdi-dog</v-icon>
+                </div>
+                <div class="stat-info">
+                  <div class="stat-number">{{ getDogCount() }}</div>
+                  <div class="stat-label">강아지</div>
+                </div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-icon">
+                  <v-icon>mdi-cat</v-icon>
+                </div>
+                <div class="stat-info">
+                  <div class="stat-number">{{ getCatCount() }}</div>
+                  <div class="stat-label">고양이</div>
+                </div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-icon">
+                  <v-icon>mdi-paw</v-icon>
+                </div>
+                <div class="stat-info">
+                  <div class="stat-number">{{ pets.length }}</div>
+                  <div class="stat-label">전체</div>
+                </div>
+              </div>
             </div>
-            <div class="stat-info">
-              <div class="stat-number">{{ getDogCount() }}</div>
-              <div class="stat-label">강아지</div>
-            </div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-icon">
-              <v-icon>mdi-cat</v-icon>
-            </div>
-            <div class="stat-info">
-              <div class="stat-number">{{ getCatCount() }}</div>
-              <div class="stat-label">고양이</div>
-            </div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-icon">
-              <v-icon>mdi-paw</v-icon>
-            </div>
-            <div class="stat-info">
-              <div class="stat-number">{{ pets.length }}</div>
-              <div class="stat-label">전체</div>
-            </div>
+            <div class="add-button-container">
+              <v-btn
+                color="#E87D7D"
+                variant="flat"
+                prepend-icon="mdi-plus"
+                @click="showAddForm = true"
+                size="large"
+                rounded="xl"
+                class="add-button"
+              >
+                              반려동물 추가
+            </v-btn>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- 새로운 레이아웃: 좌측 대표동물 + 우측 다른 동물들 -->
-    <div class="pets-section">
+    <!-- 콘텐츠 -->
+        <div class="pets-section">
       <div class="container">
         <div v-if="pets.length > 0" class="pets-layout">
           <!-- 좌측: 대표동물 (전체 정보) -->
@@ -70,9 +67,9 @@
                 <div class="representative-badge">
                   <v-icon color="amber" size="20">mdi-star</v-icon>
                   <span>대표</span>
-                </div>
-              </div>
-              
+            </div>
+                  </div>
+                  
               <!-- 대표동물 전체 정보 -->
               <div class="representative-content">
                 <div class="pet-image-large">
@@ -87,7 +84,7 @@
                     <template v-slot:error>
                       <div class="large-image-placeholder">
                         <v-icon :size="80" :color="getSpeciesIconColor(representativePet.petOrder)" :icon="getSpeciesIcon(representativePet.petOrder)" />
-                      </div>
+                        </div>
                     </template>
                   </v-img>
                   <div v-else class="large-image-placeholder">
@@ -126,7 +123,7 @@
                     >
                       {{ representativePet.age }}살
                     </v-chip>
-                  </div>
+                        </div>
                   
                   <!-- 추가 정보 -->
                   <div class="additional-info-large">
@@ -138,8 +135,8 @@
                       <v-icon size="20" color="grey-darken-1">mdi-calendar</v-icon>
                       <span>{{ formatBirthday(representativePet.birthday) }}</span>
                     </div>
-                  </div>
-                  
+                    </div>
+
                   <!-- 소개글 -->
                   <div v-if="representativePet.introduce" class="introduction-large">
                     <h4 class="introduction-title">소개글</h4>
@@ -148,7 +145,7 @@
                   
                   <!-- 액션 버튼들 -->
                   <div class="action-buttons-large">
-                    <v-btn
+                      <v-btn
                       icon="mdi-pencil"
                       variant="text"
                       size="large"
@@ -164,7 +161,7 @@
                       @click="$emit('delete', representativePet)"
                       density="comfortable"
                     />
-                  </div>
+                        </div>
                 </div>
               </div>
             </div>
@@ -173,13 +170,13 @@
             <div v-else class="no-representative">
               <div class="no-representative-icon">
                 <v-icon size="80" color="grey-lighten-1">mdi-star-outline</v-icon>
-              </div>
+                            </div>
               <h3 class="no-representative-title">대표 반려동물을 설정해보세요</h3>
               <p class="no-representative-description">
                 가장 소중한 가족 구성원을 대표로 설정하면 좌측에 전체 정보가 표시됩니다
               </p>
-            </div>
-          </div>
+                          </div>
+                        </div>
           
           <!-- 우측: 다른 동물들 (간단한 PetCard) -->
           <div class="other-pets-section">
@@ -197,28 +194,28 @@
                   @view-details="viewPet"
                   @delete="confirmDelete"
                 />
-              </div>
-            </div>
+                    </div>
+                  </div>
             
             <!-- 다른 동물이 없을 때 -->
             <div v-if="otherPets.length === 0" class="no-other-pets">
               <div class="no-other-pets-icon">
                 <v-icon size="60" color="grey-lighten-1">mdi-paw-outline</v-icon>
-              </div>
+                </div>
               <p class="no-other-pets-text">등록된 다른 반려동물이 없습니다</p>
+              </div>
             </div>
           </div>
-        </div>
-        
+          
         <!-- 빈 상태 -->
         <div v-else-if="!loading" class="empty-state">
-          <div class="empty-icon">
-            <v-icon size="80" color="grey-lighten-1">mdi-paw-outline</v-icon>
-          </div>
-          <h3 class="empty-title">반려동물을 등록해보세요</h3>
-          <p class="empty-description">
-            소중한 가족 구성원을 등록하고 추억을 기록해보세요
-          </p>
+            <div class="empty-icon">
+              <v-icon size="80" color="grey-lighten-1">mdi-paw-outline</v-icon>
+            </div>
+            <h3 class="empty-title">반려동물을 등록해보세요</h3>
+            <p class="empty-description">
+              소중한 가족 구성원을 등록하고 추억을 기록해보세요
+            </p>
           <v-btn
             color="#E87D7D"
             variant="flat"
@@ -234,27 +231,27 @@
     </div>
 
     <!-- 나머지 모달들은 기존과 동일 -->
-    <!-- 펫 추가/수정 폼 모달 -->
-    <v-dialog
-      v-model="showAddForm"
-      max-width="800"
-      class="pet-form-dialog"
-      @click:outside="closeForm"
-    >
-      <v-card class="pet-form-card" rounded="xl">
-        <v-card-title class="form-header">
-          <div class="form-title">
-            <span class="text-h4">새 반려동물 등록</span>
-          </div>
-        </v-card-title>
-        <v-card-text class="form-content">
-          <PetForm
-            @close="closeForm"
-            @success="handleFormSuccess"
-          />
-        </v-card-text>
-      </v-card>
-    </v-dialog>
+            <!-- 펫 추가/수정 폼 모달 -->
+        <v-dialog
+          v-model="showAddForm"
+          max-width="800"
+          class="pet-form-dialog"
+          @click:outside="closeForm"
+        >
+          <v-card class="pet-form-card" rounded="xl">
+            <v-card-title class="form-header">
+              <div class="form-title">
+              <span class="text-h4">새 반려동물 등록</span>
+              </div>
+            </v-card-title>
+            <v-card-text class="form-content">
+              <PetForm
+                @close="closeForm"
+                @success="handleFormSuccess"
+              />
+            </v-card-text>
+          </v-card>
+        </v-dialog>
 
     <!-- 삭제 확인 모달 -->
     <ModalDialog
@@ -280,14 +277,14 @@
         <div class="delete-actions">
           <v-btn
             variant="outlined"
-            color="grey-darken-1"
+              color="grey-darken-1"
             @click="showDeleteConfirm = false"
           >
             취소
           </v-btn>
           <v-btn
             color="error"
-            variant="flat"
+              variant="flat"
             @click="deletePet"
             :loading="deleting"
           >
@@ -296,6 +293,7 @@
         </div>
       </template>
     </ModalDialog>
+            </div>
   </div>
 </template>
 
@@ -340,8 +338,8 @@ export default {
     })
     
     // 강아지/고양이 수 계산
-    const getDogCount = () => pets.value.filter(pet => pet.petOrder === 'DOG').length
-    const getCatCount = () => pets.value.filter(pet => pet.petOrder === 'CAT').length
+    const getDogCount = () => pets.value.filter(pet => pet.petOrder === '강아지').length
+    const getCatCount = () => pets.value.filter(pet => pet.petOrder === '고양이').length
     
     // 생일 포맷팅
     const formatBirthday = (birthday) => {
@@ -429,9 +427,9 @@ export default {
       try {
         deleting.value = true
         await petStore.deletePet(petToDelete.value.id)
-        showSnackbar('반려동물이 삭제되었습니다.', 'success')
-        showDeleteConfirm.value = false
-        petToDelete.value = null
+          showSnackbar('반려동물이 삭제되었습니다.', 'success')
+          showDeleteConfirm.value = false
+          petToDelete.value = null
       } catch (error) {
         showSnackbar('반려동물 삭제에 실패했습니다.', 'error')
       } finally {
@@ -505,7 +503,46 @@ export default {
 <style scoped>
 .pet-list {
   min-height: 100vh;
-  background-color: #f8f9fa;
+  background: var(--v-theme-surface-light);
+}
+
+.pet-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 20px;
+}
+
+/* 페이지 헤더 (배경 위에 직접) */
+.page-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.page-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0 0 12px 0;
+}
+
+.page-subtitle {
+  font-size: 1.125rem;
+  color: #7f8c8d;
+  margin: 0;
+  font-weight: 400;
+}
+
+/* 통계 패널 */
+.stats-panel {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  padding: 30px;
+  margin: 0 auto 32px auto;
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  max-width: 1200px;
 }
 
 .container {
@@ -514,56 +551,17 @@ export default {
   padding: 0 20px;
 }
 
-/* 헤더 섹션 */
-.header-section {
-  background: white;
-  padding: 40px 0;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.header-content {
+.stats-overview {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  width: 100%;
 }
 
-.page-title {
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: #1f2937;
-  margin: 0 0 8px 0;
-}
-
-.page-subtitle {
-  font-size: 1.1rem;
-  color: #6b7280;
-  margin: 0;
-}
-
-.add-button {
-  background: #E87D7D !important;
-  color: white !important;
-  font-weight: 600;
-  box-shadow: 0 4px 12px rgba(232, 125, 125, 0.3);
-  transition: all 0.3s ease;
-}
-
-.add-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(232, 125, 125, 0.4);
-}
-
-/* 통계 섹션 */
-.stats-section {
-  background: white;
-  padding: 30px 0;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.stats-overview {
+.stats-left {
   display: flex;
   gap: 40px;
-  justify-content: center;
+  align-items: center;
 }
 
 .stat-item {
@@ -604,9 +602,30 @@ export default {
   margin-top: 4px;
 }
 
+/* 반려동물 추가 버튼 */
+.add-button-container {
+  display: flex;
+  align-items: center;
+}
+
+.add-button {
+  background: #E87D7D !important;
+  color: white !important;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(232, 125, 125, 0.3);
+  transition: all 0.3s ease;
+}
+
+.add-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(232, 125, 125, 0.4);
+}
+
+
+
 /* 반려동물 레이아웃 */
 .pets-section {
-  padding: 40px 0;
+  padding: 0;
 }
 
 .pets-layout {
@@ -621,7 +640,7 @@ export default {
   border-radius: 20px;
   padding: 30px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  border: 3px solid #E87D7D;
+  border: 1px solid #e9ecef;
   width: 100%;
 }
 
@@ -682,8 +701,8 @@ export default {
 .pet-details-large {
   flex: 1;
   display: flex;
-  flex-direction: column;
-  gap: 16px;
+    flex-direction: column;
+    gap: 16px;
 }
 
 .pet-name-large {
