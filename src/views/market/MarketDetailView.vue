@@ -134,9 +134,13 @@
         </div>
         <!-- 채팅하기 버튼 -->
         <div class="action-section">
-          <button class="chat-btn primary">
+          <button 
+            class="chat-btn primary"
+            @click="startChat"
+            :disabled="!canStartChat"
+          >
             <v-icon icon="mdi-chat" size="20" />
-            채팅하기
+            {{ getChatButtonText() }}
           </button>
         </div>
       </div>
@@ -202,12 +206,14 @@ import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { marketAPI } from '@/services/api'
 import { getToken } from '@/utils/auth'
+import { useChatStore } from '@/stores/chat'
 
 export default {
   name: 'MarketDetailView',
   setup() {
          const route = useRoute()
           const router = useRouter()
+         const chatStore = useChatStore()
     
     // 반응형 데이터
     const post = ref(null)
@@ -622,6 +628,66 @@ export default {
        fetchPostDetail()
      })
     
+         // 채팅 관련 상태
+    const chatLoading = ref(false)
+    
+    // 채팅 시작 가능 여부 확인
+    const canStartChat = computed(() => {
+      // 로그인한 사용자이고, 본인이 작성한 글이 아닌 경우에만 채팅 가능
+      return currentUserEmail.value && 
+             post.value && 
+             post.value.sellerEmail !== currentUserEmail.value
+    })
+    
+    // 채팅 버튼 텍스트 반환
+    const getChatButtonText = () => {
+      if (!currentUserEmail.value) {
+        return '로그인 후 채팅'
+      }
+      if (post.value && post.value.sellerEmail === currentUserEmail.value) {
+        return '본인 글입니다'
+      }
+      return '채팅하기'
+    }
+    
+    // 채팅 시작 함수
+    const startChat = async () => {
+      if (!canStartChat.value) {
+        if (!currentUserEmail.value) {
+          // 로그인 페이지로 이동
+          router.push('/login')
+          return
+        }
+        return
+      }
+      
+      try {
+        chatLoading.value = true
+        
+        // 채팅방 생성 또는 기존 채팅방으로 이동
+        const roomName = `[${post.value.title}] 거래문의`
+        const participantEmails = [post.value.sellerEmail]
+        
+        console.log('채팅 시작 데이터:', {
+          roomName,
+          participantEmails,
+          postId: post.value.id
+        })
+        
+        // 채팅방 생성
+        const roomId = await chatStore.createChatRoom(roomName, participantEmails)
+        
+        // 생성된 채팅방으로 이동
+        router.push(`/chat/${roomId}`)
+        
+      } catch (error) {
+        console.error('채팅 시작 오류:', error)
+        alert('채팅을 시작할 수 없습니다. 다시 시도해주세요.')
+      } finally {
+        chatLoading.value = false
+      }
+    }
+    
          return {
        post,
        loading,
@@ -645,7 +711,11 @@ export default {
        initKakaoMap,
        getProfileImage,
            handleImageError,
-           goToEditPage
+           goToEditPage,
+           chatLoading,
+           canStartChat,
+           getChatButtonText,
+           startChat
      }
   }
 }
@@ -1370,6 +1440,48 @@ export default {
   border-radius: 8px;
   color: #6c757d;
   min-height: 60px;
+}
+
+/* 채팅 버튼 스타일 */
+.chat-btn {
+  width: 100%;
+  padding: 16px 24px;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.chat-btn.primary {
+  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
+  color: white;
+  box-shadow: 0 4px 15px rgba(232, 125, 125, 0.3);
+}
+
+.chat-btn.primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(232, 125, 125, 0.4);
+}
+
+.chat-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #e9ecef;
+  color: #6c757d;
+  transform: none;
+  box-shadow: none;
+}
+
+.chat-btn:disabled:hover {
+  transform: none;
+  box-shadow: none;
 }
 
 /* 반응형 */
