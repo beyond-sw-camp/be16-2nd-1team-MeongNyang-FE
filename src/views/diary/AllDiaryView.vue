@@ -880,7 +880,7 @@ export default {
   max-width: 800px;
   margin: 0 auto;
   padding: 20px;
-  background: #f8f9fa;
+  background: #FFFAF0;
 }
 
 .loading-container {
