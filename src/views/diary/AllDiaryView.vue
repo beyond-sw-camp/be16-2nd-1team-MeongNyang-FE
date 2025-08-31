@@ -1,5 +1,5 @@
 <template>
-  <div class="all-posts-container">
+  <div class="all-posts-container" :class="{ 'modal-open': showCommentsModal }">
     <!-- 로딩 스피너 -->
     <div v-if="loading && posts.length === 0" class="loading-container">
       <v-progress-circular indeterminate color="#FF8B8B" size="64"></v-progress-circular>
@@ -36,7 +36,7 @@
           :is-liked="post.liked"
           :is-like-processing="isLikeProcessing(post.id)"
           @toggle-like="toggleLike(post.id)"
-          @toggle-comments-modal="goToPostWithComments(post.id)"
+          @toggle-comments-modal="openCommentsModal(post.id)"
           @handle-likes-text-click="handleLikesTextClick(post.id)"
         />
 
@@ -53,7 +53,7 @@
         <PostCommentsPreview
           :comments-count="post.commentsCount"
           :preview-comments="post.previewComments"
-          @toggle-comments-modal="goToPostWithComments(post.id)"
+          @toggle-comments-modal="openCommentsModal(post.id)"
           @go-to-user-diary="goToUserDiary"
         />
       </div>
@@ -81,6 +81,20 @@
       :likes-list="likesList"
       @update:modelValue="handleLikesModalToggle"
     />
+
+    <!-- 댓글 모달 -->
+    <CommentsModal
+      v-model="showCommentsModal"
+      :comments-list="commentsList"
+      :post-id="currentPostId"
+      @add-comment="handleAddComment"
+      @add-reply="handleAddReply"
+      @edit-comment="handleEditComment"
+      @delete-comment="handleDeleteComment"
+      @edit-reply="handleEditReply"
+      @delete-reply="handleDeleteReply"
+      @refresh-comments="handleRefreshComments"
+    />
   </div>
 </template>
 
@@ -90,6 +104,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { postAPI, userAPI } from '@/services/api'
 import LikesModal from '@/components/LikesModal.vue'
+import CommentsModal from '@/components/CommentsModal.vue'
 import { checkPetExist } from '@/utils/petValidation'
 
 // Import new components
@@ -103,6 +118,7 @@ export default {
   name: 'AllPostsView',
   components: {
     LikesModal,
+    CommentsModal,
     PostDetailHeader,
     PostMediaDisplay,
     PostEngagementBar,
@@ -126,6 +142,11 @@ export default {
     const currentPostId = ref(null)
     const likeProcessingPosts = ref(new Set()) // 좋아요 처리 중인 포스트 ID들
     const followProcessingUsers = ref(new Set()) // 팔로우 처리 중인 사용자 ID들
+
+    // 댓글 모달 관련 상태
+    const showCommentsModal = ref(false)
+    const commentsList = ref([])
+    const isLoadingComments = ref(false)
 
     // 현재 사용자 ID
     const currentUserId = computed(() => {
@@ -428,9 +449,146 @@ export default {
       router.push(`/diary/${postId}`)
     }
 
-    // 댓글창과 함께 일기 상세 페이지로 이동
+    // 댓글 모달 열기
+    const openCommentsModal = async (postId) => {
+      console.log('=== 댓글 모달 열기 ===')
+      console.log('postId:', postId)
+      
+      currentPostId.value = postId
+      showCommentsModal.value = true
+      await fetchComments(postId)
+      
+      console.log('댓글 모달 열기 완료')
+      console.log('currentPostId:', currentPostId.value)
+      console.log('showCommentsModal:', showCommentsModal.value)
+      console.log('commentsList:', commentsList.value)
+    }
+
+    // 댓글창과 함께 일기 상세 페이지로 이동 (기존 함수 유지)
     const goToPostWithComments = (postId) => {
       router.push(`/diary/${postId}?showComments=true`)
+    }
+
+    // 댓글 목록 가져오기
+    const fetchComments = async (postId) => {
+      if (isLoadingComments.value) return
+      
+      isLoadingComments.value = true
+      try {
+        console.log('=== 댓글 목록 조회 시작 ===')
+        console.log('postId:', postId)
+        
+        const response = await postAPI.getComments(postId, { page: 0, size: 50 })
+        console.log('댓글 API 응답:', response)
+        console.log('댓글 API 응답 데이터:', response.data)
+        
+        if (response.data && response.data.data) {
+          // Page<Comment> 구조에서 content 배열을 가져옴
+          const pageData = response.data.data
+          if (pageData.content && Array.isArray(pageData.content)) {
+            commentsList.value = pageData.content
+            console.log('설정된 댓글 목록:', commentsList.value)
+          } else {
+            console.log('댓글 content 배열이 없습니다')
+            commentsList.value = []
+          }
+        } else {
+          console.log('댓글 데이터가 없습니다')
+          commentsList.value = []
+        }
+      } catch (error) {
+        console.error('댓글 목록 조회 실패:', error)
+        commentsList.value = []
+      } finally {
+        isLoadingComments.value = false
+      }
+    }
+
+    // 댓글 추가
+    const handleAddComment = async (content) => {
+      try {
+        const response = await postAPI.createComment(currentPostId.value, content)
+        if (response.data && response.data.data) {
+          await fetchComments(currentPostId.value)
+          // 포스트의 댓글 수 업데이트
+          const post = posts.value.find(p => p.id === currentPostId.value)
+          if (post) {
+            post.commentsCount = (post.commentsCount || 0) + 1
+          }
+        }
+      } catch (error) {
+        console.error('댓글 추가 실패:', error)
+      }
+    }
+
+    // 답글 추가
+    const handleAddReply = async (data) => {
+      try {
+        const response = await postAPI.createReply(data.commentId, data.content, data.mentionUserId)
+        if (response.data && response.data.data) {
+          await fetchComments(currentPostId.value)
+        }
+      } catch (error) {
+        console.error('답글 추가 실패:', error)
+      }
+    }
+
+    // 댓글 수정
+    const handleEditComment = async (data) => {
+      try {
+        const response = await postAPI.updateComment(data.commentId, data.content)
+        if (response.data && response.data.data) {
+          await fetchComments(currentPostId.value)
+        }
+      } catch (error) {
+        console.error('댓글 수정 실패:', error)
+      }
+    }
+
+    // 댓글 삭제
+    const handleDeleteComment = async (data) => {
+      try {
+        const response = await postAPI.deleteComment(data.commentId)
+        if (response.data && response.data.data) {
+          await fetchComments(currentPostId.value)
+          // 포스트의 댓글 수 업데이트
+          const post = posts.value.find(p => p.id === currentPostId.value)
+          if (post) {
+            post.commentsCount = Math.max(0, (post.commentsCount || 0) - 1)
+          }
+        }
+      } catch (error) {
+        console.error('댓글 삭제 실패:', error)
+      }
+    }
+
+    // 답글 수정 (API가 없으므로 댓글 수정 API 사용)
+    const handleEditReply = async (data) => {
+      try {
+        const response = await postAPI.updateComment(data.replyId, data.content)
+        if (response.data && response.data.data) {
+          await fetchComments(currentPostId.value)
+        }
+      } catch (error) {
+        console.error('답글 수정 실패:', error)
+      }
+    }
+
+    // 답글 삭제 (API가 없으므로 댓글 삭제 API 사용)
+    const handleDeleteReply = async (data) => {
+      try {
+        const response = await postAPI.deleteComment(data.replyId)
+        if (response.data && response.data.data) {
+          await fetchComments(currentPostId.value)
+        }
+      } catch (error) {
+        console.error('답글 삭제 실패:', error)
+      }
+    }
+
+    // 댓글 새로고침
+    const handleRefreshComments = async () => {
+      await fetchComments(currentPostId.value)
     }
 
     // 사용자 일기로 이동
@@ -845,8 +1003,12 @@ export default {
       likesList,
       isLoadingLikes,
       currentPostId,
+      showCommentsModal,
+      commentsList,
+      isLoadingComments,
       goToPost,
       goToPostWithComments,
+      openCommentsModal,
       goToUserDiary,
       toggleLike,
       removeHashtags,
@@ -864,6 +1026,13 @@ export default {
       getLikeCountText,
       handleLikesTextClick,
       handleLikesModalToggle,
+      handleAddComment,
+      handleAddReply,
+      handleEditComment,
+      handleDeleteComment,
+      handleEditReply,
+      handleDeleteReply,
+      handleRefreshComments,
       getDateField,
       formatDate,
       isLikeProcessing,
@@ -877,10 +1046,13 @@ export default {
 
 <style scoped>
 .all-posts-container {
-  max-width: 800px;
-  margin: 0 auto;
   padding: 20px;
   background: #FFFAF0;
+  transition: padding 0.3s ease;
+}
+
+.all-posts-container.modal-open {
+  padding-right: 400px; /* 댓글 모달의 대략적인 너비만큼 오른쪽 패딩 추가 */
 }
 
 .loading-container {
@@ -904,13 +1076,14 @@ export default {
 }
 
 .post-section {
+  width: 700px;
+  margin: 0 auto;
   border-bottom: 1px solid #E5E7EB;
   padding: 16px 0;
   background: white;
   border-radius: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   overflow: hidden;
-  margin-bottom: 16px;
   border: 1px solid #f0f0f0;
 }
 
