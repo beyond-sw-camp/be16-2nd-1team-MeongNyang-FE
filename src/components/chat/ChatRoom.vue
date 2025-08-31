@@ -876,8 +876,28 @@ export default {
           showScrollToBottomButton.value = false
         }, 100)
       } catch (err) {
-        error.value = '메시지 전송에 실패했습니다. 잠시 후 다시 시도해주세요.'
         console.error('메시지 전송 실패:', err)
+        // 파일 업로드 실패인지 확인
+        if (err.message && err.message.includes('파일 업로드')) {
+          if (showMessage) {
+            showMessage({
+              type: 'error',
+              text: err.message || '파일 업로드에 실패했습니다. 파일 크기와 형식을 확인해주세요.'
+            })
+          } else {
+            alert(err.message || '파일 업로드에 실패했습니다. 파일 크기와 형식을 확인해주세요.')
+          }
+        } else {
+          // 일반적인 메시지 전송 실패
+          if (showMessage) {
+            showMessage({
+              type: 'error',
+              text: '메시지 전송에 실패했습니다. 잠시 후 다시 시도해주세요.'
+            })
+          } else {
+            alert('메시지 전송에 실패했습니다. 잠시 후 다시 시도해주세요.')
+          }
+        }
       } finally {
         isSending.value = false
       }
@@ -960,7 +980,7 @@ export default {
       }
       
       // 하단이 아니고 스크롤이 위로 올라갔을 때만 버튼 표시 (더 민감하게)
-      const shouldShowButton = !atBottom && scrollTop > 20
+      const shouldShowButton = !atBottom
       showScrollToBottomButton.value = shouldShowButton
     }
     
@@ -1012,17 +1032,20 @@ export default {
         }
       }
       
-      // 크기 초과 파일이 있으면 경고 메시지 표시
-      if (invalidFiles.length > 0) {
-        if (showMessage) {
-          showMessage({
-            type: 'error',
-            text: `다음 파일들은 50MB를 초과하여 제외되었습니다: ${invalidFiles.join(', ')}`
-          })
-        } else {
-          alert(`다음 파일들은 50MB를 초과하여 제외되었습니다: ${invalidFiles.join(', ')}`)
+              // 크기 초과 파일이 있으면 경고 메시지 표시
+        if (invalidFiles.length > 0) {
+          const fileList = invalidFiles.join(', ')
+          const errorMessage = `파일 크기 초과로 제외됨: ${fileList}\n\n50MB 이하의 파일만 첨부 가능합니다.`
+          
+          if (showMessage) {
+            showMessage({
+              type: 'error',
+              text: errorMessage
+            })
+          } else {
+            alert(errorMessage)
+          }
         }
-      }
       
       // 파일 입력 필드 초기화
       if (fileInput.value) fileInput.value.value = null
@@ -1147,17 +1170,20 @@ export default {
           }
         }
         
-        // 크기 초과 파일이 있으면 경고 메시지 표시
-        if (invalidFiles.length > 0) {
-          if (showMessage) {
-            showMessage({
-              type: 'error',
-              text: `다음 파일들은 50MB를 초과하여 제외되었습니다: ${invalidFiles.join(', ')}`
-            })
-          } else {
-            alert(`다음 파일들은 50MB를 초과하여 제외되었습니다: ${invalidFiles.join(', ')}`)
-          }
+              // 크기 초과 파일이 있으면 경고 메시지 표시
+      if (invalidFiles.length > 0) {
+        const fileList = invalidFiles.join(', ')
+        const errorMessage = `파일 크기 초과로 제외됨: ${fileList}\n\n50MB 이하의 파일만 첨부 가능합니다.`
+        
+        if (showMessage) {
+          showMessage({
+            type: 'error',
+            text: errorMessage
+          })
+        } else {
+          alert(errorMessage)
         }
+      }
       }
     }
     
@@ -1178,7 +1204,8 @@ export default {
       })
       
       if (invalidFiles.length > 0) {
-        throw new Error(`다음 파일들은 50MB를 초과하여 업로드할 수 없습니다: ${invalidFiles.join(', ')}`)
+        const fileList = invalidFiles.join(', ')
+        throw new Error(`파일 크기 초과: ${fileList}\n\n50MB 이하의 파일만 업로드 가능합니다.`)
       }
       
       const formData = new FormData()
@@ -1196,7 +1223,10 @@ export default {
         return res.data.data
       } catch (error) {
         console.error('파일 업로드 실패:', error)
-        throw new Error('파일 업로드에 실패했습니다.')
+        
+        let errorMessage = '파일 업로드에 실패했습니다. 파일 개수와 크기, 형식을 확인해주세요.'
+        
+        throw new Error(errorMessage)
       }
     }
     
