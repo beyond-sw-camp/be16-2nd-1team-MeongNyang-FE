@@ -105,6 +105,7 @@
 
 <script setup>
 import { ref, computed, watch, defineProps, defineEmits } from 'vue'
+import { useRouter } from 'vue-router'
 import { userAPI } from '@/services/api'
 
 // Props
@@ -130,6 +131,8 @@ const props = defineProps({
     default: 'followers'
   }
 })
+
+const router = useRouter()
 
 // Emits
 const emit = defineEmits(['close', 'follow-updated', 'unfollow-updated'])
@@ -178,7 +181,7 @@ const goToUserDiary = (userId) => {
     // 모달을 닫고 해당 사용자의 다이어리로 이동
     closeModal()
     // 라우터를 사용하여 페이지 이동
-    window.location.href = `/diarys/${userId}`
+    router.push(`/diarys/${userId}`)
   }
 }
 

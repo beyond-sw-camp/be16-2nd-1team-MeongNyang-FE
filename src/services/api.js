@@ -11,6 +11,12 @@ import {
   RT_HEADER_LOWER       // 'x-refresh-token' (응답 헤더 읽을 때)
 } from '@/utils/auth'
 
+let router = null;
+
+export function setApiRouter(routerInstance) {
+  router = routerInstance;
+}
+
 // 환경변수 (네 프로젝트 규칙)
 const API_BASE_URL = process.env.VUE_APP_API_BASE_URL || 'http://localhost:8080'
 
@@ -108,7 +114,9 @@ apiClient.interceptors.response.use(
       } catch (e) {
         flushQueue(e, null)
         clearAllTokens()
-        if (window.location.pathname !== '/users/login') window.location.href = '/users/login'
+        
+        router.push({ path: '/', query: { showLogin: 'true' } })
+        
         return Promise.reject(e)
       } finally {
         isRefreshing = false
