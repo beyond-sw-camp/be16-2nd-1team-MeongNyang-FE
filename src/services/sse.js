@@ -1,3 +1,5 @@
+import { useAuthStore } from '@/stores/auth';
+
 class SseService {
   constructor() {
     this.eventSource = null;
@@ -8,6 +10,13 @@ class SseService {
 
   // SSE 연결 (JWT 토큰 포함)
   async connect() {
+    const authStore = useAuthStore();
+
+    if (!authStore.isLoggedIn) {
+      console.log('사용자가 로그인되어 있지 않아 SSE 연결을 시도하지 않습니다.');
+      return;
+    }
+
     if (this.isConnected) {
       console.log('SSE already connected');
       return;
