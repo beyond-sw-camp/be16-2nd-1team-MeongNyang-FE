@@ -14,182 +14,31 @@
         class="post-section"
       >
         <!-- 포스트 헤더 -->
-        <div class="post-header">
-          <div class="profile-info">
-            <v-avatar 
-              size="40" 
-              class="profile-avatar clickable"
-              @click="goToUserDiary(post.userId)"
-            >
-              <v-img 
-                :src="post.petImage || 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=80&h=80&fit=crop&crop=center&q=90'" 
-                cover
-              ></v-img>
-            </v-avatar>
-            <div class="user-info">
-                              <span class="username clickable" @click="goToUserDiary(post.userId)">{{ post.userName || post.petName || '익명' }}</span>
-              <span class="date">{{ getDateField(post) ? formatDate(getDateField(post)) : '날짜 없음' }}</span>
-            </div>
-          </div>
-          <!-- 팔로우/언팔로우 버튼 (내 게시글이 아닌 경우에만) -->
-          <div v-if="post.userId !== currentUserId" class="follow-section">
-            <v-btn
-              v-if="!post.isFollowing"
-              size="small"
-              variant="filled"
-              color="#FF8B8B"
-              class="follow-btn"
-              @click="followUser(post.userId)"
-              :disabled="isFollowProcessing(post.userId)"
-              :loading="isFollowProcessing(post.userId)"
-            >
-              팔로우
-            </v-btn>
-            <v-btn
-              v-else
-              size="small"
-              variant="outlined"
-              color="#6c757d"
-              class="unfollow-btn"
-              @click="unfollowUser(post.userId)"
-              :disabled="isFollowProcessing(post.userId)"
-              :loading="isFollowProcessing(post.userId)"
-            >
-              언팔로우
-            </v-btn>
-          </div>
-          <!-- 더보기 메뉴 -->
-          <v-menu offset-y>
-            <template v-slot:activator="{ props }">
-              <v-btn icon size="x-small" class="options-btn" v-bind="props">
-                <v-icon color="#1E293B" size="18">mdi-dots-vertical</v-icon>
-              </v-btn>
-            </template>
-            <v-list class="options-menu">
-              <!-- 내 게시글이면 수정/삭제 옵션만 표시 -->
-              <template v-if="post.userId === currentUserId">
-                <v-list-item @click="editPost(post.id)" class="menu-item">
-                  <v-list-item-title class="menu-text">수정</v-list-item-title>
-                </v-list-item>
-                <v-list-item @click="deletePost(post.id)" class="menu-item">
-                  <v-list-item-title class="menu-text delete-text">삭제</v-list-item-title>
-                </v-list-item>
-              </template>
-              <!-- 다른 사용자 게시글이면 신고 옵션만 표시 -->
-              <template v-else>
-                <v-list-item @click="reportPost(post.id)" class="menu-item">
-                  <v-list-item-title class="menu-text report-text">신고</v-list-item-title>
-                </v-list-item>
-              </template>
-            </v-list>
-            <!-- 디버깅용 로그 -->
-            <div style="display: none;">
-              {{ console.log('post.userId:', post.userId, 'currentUserId:', currentUserId, 'isMyPost:', post.userId === currentUserId, 'isFollowing:', post.isFollowing) }}
-            </div>
-          </v-menu>
-        </div>
+        <PostDetailHeader
+          :post-data="post"
+          :current-user-id="currentUserId"
+          :follow-processing="isFollowProcessing(post.userId)"
+          @go-to-user-diary="goToUserDiary"
+          @follow-user="followUser(post.userId)"
+          @unfollow-user="unfollowUser(post.userId)"
+          @edit-post="editPost(post.id)"
+          @show-delete-confirm="deletePost(post.id)"
+          @report-post="reportPost(post.id)"
+        />
 
         <!-- 메인 이미지 -->
-        <div class="post-image-container">
-          <!-- 단일 이미지인 경우 -->
-          <div v-if="!post.mediaList || post.mediaList.length <= 1" class="single-image">
-            <v-img 
-              :src="post.mediaList?.[0] || 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=600&h=600&fit=crop&crop=center'" 
-              class="post-image"
-              cover
-            ></v-img>
-          </div>
-          
-          <!-- 다중 이미지인 경우 -->
-          <div v-else class="multi-image-slider">
-            <div class="image-slider">
-              <v-img 
-                :src="post.mediaList[post.currentImageIndex || 0]" 
-                class="post-image"
-                cover
-              ></v-img>
-              
-              <!-- 이미지 네비게이션 버튼 -->
-              <div class="image-navigation">
-                <v-btn 
-                  icon 
-                  class="nav-btn prev-btn"
-                  @click="previousImage(post.id)"
-                  :disabled="(post.currentImageIndex || 0) === 0"
-                >
-                  <v-icon>mdi-chevron-left</v-icon>
-                </v-btn>
-                <v-btn 
-                  icon 
-                  class="nav-btn next-btn"
-                  @click="nextImage(post.id)"
-                  :disabled="(post.currentImageIndex || 0) === post.mediaList.length - 1"
-                >
-                  <v-icon>mdi-chevron-right</v-icon>
-                </v-btn>
-              </div>
-              
-              <!-- 이미지 인디케이터 -->
-              <div class="image-indicators">
-                <div 
-                  v-for="(image, index) in post.mediaList" 
-                  :key="index"
-                  class="indicator"
-                  :class="{ active: index === (post.currentImageIndex || 0) }"
-                  @click="setImageIndex(post.id, index)"
-                ></div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <PostMediaDisplay :media-list="post.mediaList" />
 
         <!-- 좋아요/댓글 바 -->
-        <div class="engagement-bar">
-          <div class="engagement-left">
-                            <v-btn
-                  icon
-                  size="x-small"
-                  class="like-btn"
-                  @click="toggleLike(post.id)"
-                  :disabled="isLikeProcessing(post.id)"
-                >
-                  <v-icon
-                    v-if="!isLikeProcessing(post.id)"
-                    :color="post.liked ? 'red' : '#1E293B'"
-                    size="20"
-                  >
-                    mdi-heart
-                  </v-icon>
-                  <v-progress-circular
-                    v-else
-                    indeterminate
-                    size="16"
-                    width="2"
-                    color="#FF8B8B"
-                  ></v-progress-circular>
-                </v-btn>
-            <span class="like-count">{{ post.likeCount || 0 }}</span>
-            <v-btn 
-              icon 
-              size="x-small" 
-              class="comment-btn" 
-              @click="goToPostWithComments(post.id)"
-            >
-              <v-icon color="#1E293B" size="20">mdi-comment-outline</v-icon>
-            </v-btn>
-            <span class="comment-count">{{ post.commentsCount || 0 }}</span>
-          </div>
-        </div>
-
-                    <!-- 좋아요 정보 -->
-            <div class="likes-info">
-              <span 
-                class="likes-text clickable" 
-                @click="handleLikesTextClick(post.id)"
-              >
-                {{ getLikeCountText(post) }}
-              </span>
-            </div>
+        <PostEngagementBar
+          :like-count="post.likeCount"
+          :comments-count="post.commentsCount"
+          :is-liked="post.liked"
+          :is-like-processing="isLikeProcessing(post.id)"
+          @toggle-like="toggleLike(post.id)"
+          @toggle-comments-modal="goToPostWithComments(post.id)"
+          @handle-likes-text-click="handleLikesTextClick(post.id)"
+        />
 
         <!-- 캡션 -->
         <div class="caption" v-if="post.content">
@@ -198,69 +47,15 @@
         </div>
 
         <!-- 해시태그 -->
-        <div class="hashtags" v-if="post.hashTagList && post.hashTagList.length > 0">
-          <span 
-            v-for="tag in post.hashTagList" 
-            :key="tag" 
-            class="hashtag"
-            @click="searchByHashtag(tag)"
-          >
-            #{{ tag }}
-          </span>
-        </div>
+        <PostHashtags :hash-tag-list="post.hashTagList" @search-by-hashtag="searchByHashtag" />
 
         <!-- 댓글 미리보기 -->
-        <div v-if="post.previewComments && post.previewComments.length > 0" class="comments-preview">
-          <div class="comments-preview-header">
-            <span class="comments-preview-title">댓글 {{ post.commentsCount || 0 }}개</span>
-            <span 
-              v-if="post.commentsCount > 5" 
-              class="view-all-comments"
-              @click="goToPostWithComments(post.id)"
-            >
-              모두 보기
-            </span>
-          </div>
-          <div class="comments-preview-list">
-            <div 
-              v-for="comment in post.previewComments.slice(0, 5)" 
-              :key="comment.id" 
-              class="comment-preview-item"
-            >
-              <div class="comment-user-info">
-                <v-avatar 
-                  size="24" 
-                  class="comment-avatar"
-                  @click="goToUserDiary(comment.replyUserId || comment.userId)"
-                >
-                  <v-img 
-                    :src="comment.profileImage || comment.userImage || '/default-avatar.png'" 
-                    alt="User Avatar"
-                  />
-                </v-avatar>
-                <span 
-                  class="comment-author clickable"
-                  @click="goToUserDiary(comment.replyUserId || comment.userId)"
-                >
-                  {{ comment.replyUserName || comment.userName || comment.user?.userName || comment.author?.userName || comment.petName || '익명' }}
-                </span>
-              </div>
-              <span class="comment-content">
-                <template v-for="(part, index) in formatCommentText(comment.content, comment.mentionUserId)" :key="index">
-                  <span 
-                    v-if="part.isTag" 
-                    class="tag-mention clickable"
-                    @click="goToUserDiary(part.userId)"
-                  >
-                    {{ part.text }}
-                  </span>
-                  <span v-else>{{ part.text }}</span>
-                </template>
-              </span>
-            </div>
-          </div>
-        </div>
-
+        <PostCommentsPreview
+          :comments-count="post.commentsCount"
+          :preview-comments="post.previewComments"
+          @toggle-comments-modal="goToPostWithComments(post.id)"
+          @go-to-user-diary="goToUserDiary"
+        />
       </div>
     </div>
 
@@ -297,10 +92,22 @@ import { postAPI, userAPI } from '@/services/api'
 import LikesModal from '@/components/LikesModal.vue'
 import { checkPetExist } from '@/utils/petValidation'
 
+// Import new components
+import PostDetailHeader from '@/components/diary/PostDetailHeader.vue'
+import PostMediaDisplay from '@/components/diary/PostMediaDisplay.vue'
+import PostEngagementBar from '@/components/diary/PostEngagementBar.vue'
+import PostHashtags from '@/components/diary/PostHashtags.vue'
+import PostCommentsPreview from '@/components/diary/PostCommentsPreview.vue'
+
 export default {
   name: 'AllPostsView',
   components: {
-    LikesModal
+    LikesModal,
+    PostDetailHeader,
+    PostMediaDisplay,
+    PostEngagementBar,
+    PostHashtags,
+    PostCommentsPreview,
   },
   setup() {
     const router = useRouter()
@@ -331,8 +138,6 @@ export default {
     const isLikeProcessing = (postId) => {
       return likeProcessingPosts.value?.has(postId) || false
     }
-
-
 
     // 모든 포스트의 팔로우 상태 가져오기
     const fetchAllFollowStatus = async () => {
@@ -846,7 +651,7 @@ export default {
       // @username 패턴을 더 정확하게 매칭 (한글, 영문, 숫자, 언더스코어 포함)
       const tagRegex = /@([a-zA-Z0-9가-힣_]+)/g
       let lastIndex = 0
-      let match
+      let match = null
       
       while ((match = tagRegex.exec(text)) !== null) {
         // 태그 이전 텍스트
