@@ -21,8 +21,8 @@
     <!-- 1단계: 이미지 업로드 -->
     <div v-if="currentStep === 1" class="step-content">
       <div class="step-header">
-        <h2>프로필 사진 선택하기</h2>
-        <p>마음에 드는 반려동물 사진이 있나요? 지금 업로드하세요.</p>
+        <h2>{{ isEditMode ? '프로필 사진 수정' : '프로필 사진 선택하기' }}</h2>
+        <p>{{ isEditMode ? '기존 사진을 유지하거나 새로운 사진으로 변경하세요.' : '마음에 드는 반려동물 사진이 있나요? 지금 업로드하세요.' }}</p>
       </div>
       
       <div class="image-upload-section">
@@ -94,8 +94,8 @@
     <!-- 2단계: 기본 정보 -->
     <div v-if="currentStep === 2" class="step-content">
       <div class="step-header">
-        <h2>기본 정보 입력</h2>
-        <p>반려동물의 기본 정보를 입력해주세요.</p>
+        <h2>{{ isEditMode ? '기본 정보 수정' : '기본 정보 입력' }}</h2>
+        <p>{{ isEditMode ? '반려동물의 기본 정보를 수정해주세요.' : '반려동물의 기본 정보를 입력해주세요.' }}</p>
       </div>
       
       <v-form ref="form" v-model="isValid">
@@ -241,6 +241,19 @@
           이전
         </v-btn>
         
+        <!-- 수정 모드일 때만 사진 변경 버튼 표시 -->
+        <v-btn
+          v-if="isEditMode"
+          variant="outlined"
+          @click="goToImageStep"
+          class="image-edit-btn"
+          rounded="lg"
+          size="large"
+          prepend-icon="mdi-image-edit"
+        >
+          사진 변경
+        </v-btn>
+        
         <v-btn
           :disabled="!isValid"
           @click="nextStep"
@@ -256,8 +269,8 @@
     <!-- 3단계: 소개글 -->
     <div v-if="currentStep === 3" class="step-content">
       <div class="step-header">
-        <h2>소개글 작성</h2>
-        <p>반려동물을 소개해주세요.</p>
+        <h2>{{ isEditMode ? '소개글 수정' : '소개글 작성' }}</h2>
+        <p>{{ isEditMode ? '반려동물 소개글을 수정해주세요.' : '반려동물을 소개해주세요.' }}</p>
       </div>
       
       <div class="form-fields-section">
@@ -302,7 +315,7 @@
           rounded="lg"
           size="large"
         >
-          {{ isEdit ? '수정' : '등록' }}
+          {{ isEditMode ? '수정' : '등록' }}
         </v-btn>
       </div>
   </div>
@@ -354,6 +367,35 @@ export default {
   emits: ['close', 'success'],
   
   setup(props, { emit }) {
+    try {
+      console.log('🔄 PetForm setup 시작')
+      console.log('props:', props)
+      console.log('isEdit:', props?.isEdit)
+      console.log('pet:', props?.pet)
+      
+      // props 안전하게 처리 (기본값 설정)
+      const isEditMode = computed(() => {
+        try {
+          const value = props?.isEdit
+          console.log('🔍 isEdit prop 값:', value, typeof value)
+          return Boolean(value)
+        } catch (error) {
+          console.error('❌ isEdit prop 처리 오류:', error)
+          return false
+        }
+      })
+      
+      const petDataFromProps = computed(() => {
+        try {
+          const value = props?.pet
+          console.log('🔍 pet prop 값:', value, typeof value)
+          return value || null
+        } catch (error) {
+          console.error('❌ pet prop 처리 오류:', error)
+          return null
+        }
+      })
+    
     const petStore = usePetStore()
     const form = ref(null)
     const fileInput = ref(null)
@@ -368,7 +410,7 @@ export default {
     const submitting = ref(false)
     const showBirthdayPicker = ref(false)
     
-    // 펫 데이터
+    // 펫 데이터 (로컬 상태)
     const petData = reactive({
       name: '',
       speciesId: null,
@@ -391,6 +433,12 @@ export default {
       if (currentStep.value > 1) {
         currentStep.value--
       }
+    }
+    
+    // 이미지 단계로 이동 (수정 모드용)
+    const goToImageStep = () => {
+      currentStep.value = 1
+      console.log('🔄 이미지 단계로 이동 (사진 변경)')
     }
     
     // 폼 유효성 검사
@@ -663,11 +711,19 @@ export default {
         }
         console.log('FormData 배열:', formDataArray)
         
-        if (props.isEdit) {
+        if (isEditMode.value) {
           // 수정 모드
           console.log('🔄 수정 모드 - updatePet 호출')
-          await petStore.updatePet(props.pet.id, petData, imageFile.value)
-          emit('success', '반려동물이 수정되었습니다.')
+          
+          // 수정 모드일 때 이미지가 변경되지 않았으면 기존 이미지 URL 유지
+          if (!imageFile.value && !imageRemoved.value && previewImage.value) {
+            console.log('📸 기존 이미지 유지:', previewImage.value)
+            // 기존 이미지 URL을 petData에 추가
+            petData.url = previewImage.value
+          }
+          
+          await petStore.updatePet(petDataFromProps.value.id, petData, imageFile.value)
+          emit('success', petData)
         } else {
           // 등록 모드
           console.log('🆕 등록 모드 - registerPet 호출')
@@ -704,28 +760,79 @@ export default {
     }
     
     // 수정 모드일 때 기존 데이터 로드
-    watch(() => props.pet, (newPet) => {
-      if (newPet && props.isEdit) {
+    watch(() => petDataFromProps.value, (newPet) => {
+      console.log('🔄 PetForm watch pet 변경 감지:', newPet)
+      console.log('isEdit 상태:', isEditMode.value)
+      console.log('speciesOptions 로드됨:', speciesOptions.value.length)
+      
+      if (newPet && isEditMode.value) {
+        console.log('🔄 수정 모드: 기존 데이터 로드 시작', newPet)
+        
+        // 펫 데이터 복사
         petData.name = newPet.name || ''
-        petData.speciesId = newPet.speciesId || null
-        petData.speciesName = newPet.speciesName || ''
+        
+        // speciesId와 speciesName 매핑 개선
+        if (newPet.speciesId) {
+          petData.speciesId = newPet.speciesId
+          petData.speciesName = newPet.speciesName || newPet.species || ''
+          console.log('✅ speciesId 직접 사용:', petData.speciesId)
+        } else if (newPet.species) {
+          // species가 있는 경우 speciesId 찾기
+          console.log('🔍 species로 speciesId 찾기:', newPet.species)
+          const speciesOption = speciesOptions.value.find(s => s.species === newPet.species)
+          if (speciesOption) {
+            petData.speciesId = speciesOption.speciesId
+            petData.speciesName = speciesOption.species
+            console.log('✅ species로 speciesId 찾음:', petData.speciesId)
+          } else {
+            console.log('❌ species에 해당하는 speciesId를 찾을 수 없음')
+          }
+        }
+        
         petData.gender = newPet.gender || ''
         petData.age = newPet.age || null
         petData.weight = newPet.weight || null
         petData.birthday = newPet.birthday || null
         petData.introduce = newPet.introduce || ''
         
-        // 기존 이미지가 있으면 표시
-        if (newPet.imageUrl) {
+        console.log('📝 복사된 petData:', petData)
+        
+        // 기존 이미지가 있으면 표시 (url 또는 imageUrl 필드 확인)
+        if (newPet.url && newPet.url.trim() !== '') {
+          previewImage.value = newPet.url
+          imageRemoved.value = false
+          console.log('📸 기존 이미지 로드 (url):', newPet.url)
+        } else if (newPet.imageUrl && newPet.imageUrl.trim() !== '') {
           previewImage.value = newPet.imageUrl
           imageRemoved.value = false
+          console.log('📸 기존 이미지 로드 (imageUrl):', newPet.imageUrl)
         }
+        
+        // 수정 모드일 때는 2단계(기본 정보)부터 시작
+        currentStep.value = 2
+        console.log('✅ 수정 모드: 데이터 로드 완료, 2단계로 이동')
+        console.log('현재 단계:', currentStep.value)
+      } else {
+        console.log('⚠️ 수정 모드가 아니거나 pet 데이터가 없음')
+        console.log('newPet 존재:', !!newPet)
+        console.log('isEdit 값:', props.isEdit)
       }
     }, { immediate: true })
     
     // 컴포넌트 마운트 시 종류 데이터 로드
     onMounted(async () => {
+      console.log('🔄 PetForm 마운트 시작')
       await petStore.fetchSpecies()
+      console.log('✅ 종류 데이터 로드 완료')
+      
+      // 수정 모드이고 pet 데이터가 있으면 다시 데이터 로드
+      if (isEditMode.value && petDataFromProps.value) {
+        console.log('🔄 마운트 후 수정 모드 데이터 재로드')
+        // 약간의 지연 후 데이터 로드
+        setTimeout(() => {
+          console.log('⏰ 지연 후 데이터 로드 실행')
+        }, 100)
+      }
     })
     
     return {
@@ -733,6 +840,7 @@ export default {
       currentStep,
       nextStep,
       previousStep,
+      goToImageStep,
       
       // 폼 관련
       form,
@@ -748,6 +856,7 @@ export default {
       loading,
       speciesOptions,
       genderOptions,
+      isEditMode,
       
       // UI 상태
       showBirthdayPicker,
@@ -765,6 +874,18 @@ export default {
       getSpeciesIcon,
       getSpeciesIconColor,
       handleSubmit
+    }
+    } catch (error) {
+      console.error('❌ PetForm setup 오류:', error)
+      // 기본값 반환
+      return {
+        currentStep: ref(1),
+        isEditMode: computed(() => false),
+        petData: reactive({}),
+        loading: computed(() => false),
+        isValid: computed(() => false),
+        submitting: ref(false)
+      }
     }
   }
 }
@@ -1075,6 +1196,21 @@ export default {
 .next-btn:disabled {
   background: #f3e8ff !important;
   color: #a855f7 !important;
+}
+
+.image-edit-btn {
+  border-color: #E87D7D;
+  color: #E87D7D;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border-radius: 16px;
+  padding: 16px 32px;
+  font-size: 16px;
+}
+
+.image-edit-btn:hover {
+  background-color: #E87D7D;
+  color: white;
 }
 
 .submit-btn {

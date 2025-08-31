@@ -51,6 +51,8 @@
               >
                               반려동물 추가
             </v-btn>
+            
+
           </div>
         </div>
       </div>
@@ -253,6 +255,7 @@
             </v-card-title>
             <v-card-text class="form-content">
               <PetForm
+                :is-edit="false"
                 @close="closeForm"
                 @success="handleFormSuccess"
               />
@@ -298,15 +301,163 @@
             삭제
           </v-btn>
         </div>
-      </template>
-    </ModalDialog>
+              </template>
+      </ModalDialog>
+
+      <!-- 반려동물 상세 모달 -->
+      <v-dialog
+        v-model="showDetailModal"
+        max-width="1200"
+        class="pet-detail-dialog"
+        @click:outside="closeDetailModal"
+        persistent
+      >
+        <v-card class="pet-detail-card" rounded="xl">
+          <v-card-title class="detail-header">
+            <div class="detail-title">
+              <span class="text-h4">{{ selectedPet?.name }}</span>
+              <v-chip
+                size="small"
+                variant="tonal"
+                :color="getSpeciesIconColor(selectedPet?.petOrder)"
+                :prepend-icon="getSpeciesIcon(selectedPet?.petOrder)"
+                class="species-chip"
+              >
+                {{ selectedPet?.species || '알 수 없음' }}
+              </v-chip>
+            </div>
+            <v-btn
+              icon="mdi-close"
+              variant="text"
+              @click="closeDetailModal"
+              color="white"
+              class="close-btn"
+            />
+          </v-card-title>
+          <v-card-text class="detail-content">
+            <div class="pet-image-detail">
+              <v-img
+                v-if="selectedPet?.url && selectedPet.url.trim() !== ''"
+                :src="selectedPet.url"
+                :alt="selectedPet.name"
+                class="detail-pet-image"
+                aspect-ratio="1"
+                cover
+              >
+                <template v-slot:error>
+                  <div class="detail-image-placeholder">
+                    <v-icon :size="80" :color="getSpeciesIconColor(selectedPet?.petOrder)" :icon="getSpeciesIcon(selectedPet?.petOrder)" />
+                  </div>
+                </template>
+              </v-img>
+              <div v-else class="detail-image-placeholder">
+                <v-icon :size="80" :color="getSpeciesIconColor(selectedPet?.petOrder)" :icon="getSpeciesIcon(selectedPet?.petOrder)" />
+              </div>
+            </div>
+
+            <div class="pet-details-detail">
+              <div class="detail-section">
+                <h4 class="section-title">기본 정보</h4>
+                <div class="info-grid">
+                  <div class="info-item">
+                    <v-icon size="20" color="grey-darken-1">mdi-gender-male-female</v-icon>
+                    <span class="info-label">성별</span>
+                    <span class="info-value">{{ getGenderLabel(selectedPet?.gender) }}</span>
+                  </div>
+                  <div class="info-item">
+                    <v-icon size="20" color="grey-darken-1">mdi-cake-variant</v-icon>
+                    <span class="info-label">나이</span>
+                    <span class="info-value">{{ selectedPet?.age }}살</span>
+                  </div>
+                  <div class="info-item">
+                    <v-icon size="20" color="grey-darken-1">mdi-weight</v-icon>
+                    <span class="info-label">체중</span>
+                    <span class="info-value">{{ selectedPet?.weight || '알 수 없음' }}kg</span>
+                  </div>
+                  <div class="info-item">
+                    <v-icon size="20" color="grey-darken-1">mdi-calendar</v-icon>
+                    <span class="info-label">생일</span>
+                    <span class="info-value">{{ formatBirthday(selectedPet?.birthday) }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="introduction-detail">
+                <h4 class="introduction-title">소개글</h4>
+                <div class="introduction-content">
+                  <p v-if="selectedPet?.introduce && selectedPet.introduce.trim() !== ''" class="introduction-text">
+                    {{ selectedPet.introduce }}
+                  </p>
+                  <p v-else class="introduction-text no-introduction">
+                    소개글이 등록되지 않았습니다.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </v-card-text>
+          <v-card-actions class="detail-actions">
+            <v-btn
+              color="#E87D7D"
+              variant="flat"
+              prepend-icon="mdi-pencil"
+              @click="openEditForm"
+              size="large"
+              rounded="xl"
+              class="edit-btn"
+            >
+              수정
+            </v-btn>
+            <v-btn
+              color="error"
+              variant="flat"
+              prepend-icon="mdi-delete"
+              @click="confirmDeleteFromModal"
+              size="large"
+              rounded="xl"
+              class="delete-btn"
+            >
+              삭제
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
+      <!-- 반려동물 수정 폼 모달 -->
+      <v-dialog
+        v-model="showEditForm"
+        max-width="1200"
+        class="edit-form-dialog"
+        @click:outside="closeEditForm"
+        persistent
+      >
+        <v-card class="edit-form-card" rounded="xl">
+          <v-card-title class="edit-form-header">
+            <div class="edit-form-title">
+              <span class="text-h4">{{ selectedPet?.name }} 수정</span>
+            </div>
+            <v-btn
+              icon="mdi-close"
+              variant="text"
+              @click="closeEditForm"
+              color="white"
+            />
+          </v-card-title>
+          <v-card-text class="edit-form-content">
+            <PetForm
+              :pet="selectedPet"
+              :is-edit="true"
+              @close="closeEditForm"
+              @success="handlePetUpdate"
+            />
+          </v-card-text>
+        </v-card>
+      </v-dialog>
             </div>
   </div>
 </template>
 
 <script>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { usePetStore } from '@/stores/pet'
 import { useSnackbar } from '@/composables/useSnackbar'
 import PetCard from './PetCard.vue'
@@ -322,7 +473,6 @@ export default {
   },
   emits: ['set-representative', 'view-details', 'delete'],
   setup() {
-    const router = useRouter()
     const petStore = usePetStore()
     const { showSnackbar } = useSnackbar()
     
@@ -330,6 +480,10 @@ export default {
     const showDeleteConfirm = ref(false)
     const petToDelete = ref(null)
     const deleting = ref(false)
+    const showDetailModal = ref(false)
+    const selectedPet = ref(null)
+    const showEditForm = ref(false)
+
     
     // 반려동물 데이터
     const pets = computed(() => petStore.pets)
@@ -418,7 +572,101 @@ export default {
     
     // 반려동물 상세보기
     const viewPet = (pet) => {
-      router.push(`/pets/${pet.id}`)
+      console.log('🔍 viewPet 함수 호출됨:', pet)
+      selectedPet.value = pet
+      showDetailModal.value = true
+      console.log('🔍 모달 상태:', { selectedPet: selectedPet.value, showDetailModal: showDetailModal.value })
+    }
+    
+    // 모달 닫기
+    const closeDetailModal = () => {
+      showDetailModal.value = false
+      selectedPet.value = null
+    }
+    
+    // 펫 업데이트 처리
+    const handlePetUpdate = async (updatedPet) => {
+      try {
+        console.log('🔄 펫 수정 시작:', updatedPet)
+        
+        // 펫 정보 업데이트
+        await petStore.updatePet(updatedPet)
+        
+        // 성공 메시지
+        console.log('✅ 펫 수정 완료')
+        
+        // 수정 폼 모달 닫기
+        showEditForm.value = false
+        
+        // 상세보기 모달도 닫기
+        closeDetailModal()
+        
+        // 펫 목록 새로고침
+        await petStore.fetchPets()
+        
+        // selectedPet 업데이트 (상세보기 모달에서 수정된 정보 반영)
+        if (selectedPet.value && selectedPet.value.id === updatedPet.id) {
+          selectedPet.value = { ...selectedPet.value, ...updatedPet }
+        }
+        
+        // 성공 알림 표시
+        showSnackbar('반려동물 정보가 성공적으로 수정되었습니다.', 'success')
+        
+      } catch (error) {
+        console.error('❌ 펫 수정 실패:', error)
+        showSnackbar('펫 정보 수정에 실패했습니다.', 'error')
+      }
+    }
+    
+    // 펫 삭제 처리
+    const handlePetDelete = async (petId) => {
+      try {
+        await petStore.deletePet(petId)
+        showSnackbar('반려동물이 삭제되었습니다.', 'success')
+        closeDetailModal()
+      } catch (error) {
+        showSnackbar('반려동물 삭제에 실패했습니다.', 'error')
+      }
+    }
+    
+    // 수정 폼 열기
+    const openEditForm = () => {
+      console.log('🔄 수정 폼 열기 시작')
+      console.log('selectedPet:', selectedPet.value)
+      console.log('showEditForm 현재값:', showEditForm.value)
+      
+      if (!selectedPet.value) {
+        console.error('❌ selectedPet이 없습니다!')
+        showSnackbar('펫 정보를 찾을 수 없습니다.', 'error')
+        return
+      }
+      
+      showEditForm.value = true
+      
+      console.log('✅ showEditForm 설정됨:', showEditForm.value)
+      console.log('수정 폼 모달 열림 완료')
+      
+      // 모달이 열렸는지 확인
+      setTimeout(() => {
+        console.log('⏰ 모달 상태 재확인:', {
+          showEditForm: showEditForm.value,
+          showDetailModal: showDetailModal.value
+        })
+      }, 100)
+    }
+    
+    // 수정 폼 닫기
+    const closeEditForm = () => {
+      showEditForm.value = false
+    }
+    
+    // 모달에서 삭제 확인
+    const confirmDeleteFromModal = () => {
+      if (selectedPet.value) {
+        petToDelete.value = selectedPet.value
+        showDeleteConfirm.value = true
+        closeDetailModal() // 상세보기 모달 닫기
+      }
     }
     
     // 삭제 확인
@@ -484,6 +732,9 @@ export default {
       showDeleteConfirm,
       petToDelete,
       deleting,
+      showDetailModal,
+      selectedPet,
+      showEditForm,
       pets,
       loading,
       representativePet,
@@ -498,6 +749,12 @@ export default {
       getGenderLabel,
       setAsRepresentative,
       viewPet,
+      closeDetailModal,
+      openEditForm,
+      handlePetUpdate,
+      handlePetDelete,
+      closeEditForm,
+      confirmDeleteFromModal,
       confirmDelete,
       deletePet,
       closeForm,
@@ -989,6 +1246,157 @@ export default {
   display: flex;
   gap: 12px;
   justify-content: center;
+}
+
+/* 반려동물 상세 모달 */
+.pet-detail-dialog {
+  z-index: 1000;
+}
+
+.pet-detail-dialog .v-dialog {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.pet-detail-card {
+  border-radius: 20px;
+}
+
+.detail-header {
+  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
+  color: white;
+  border-radius: 20px 20px 0 0;
+  padding: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.detail-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.species-chip {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: white !important;
+}
+
+.close-btn {
+  color: white !important;
+}
+
+.detail-content {
+  padding: 24px;
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+}
+
+.pet-image-detail {
+  flex-shrink: 0;
+}
+
+.detail-pet-image {
+  width: 400px;
+  height: 400px;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.detail-image-placeholder {
+  width: 400px;
+  height: 400px;
+  border-radius: 20px;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed #d1d5db;
+}
+
+.pet-details-detail {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detail-info-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #6b7280;
+  font-size: 1rem;
+}
+
+.introduction-detail {
+  background: #f9fafb;
+  padding: 20px;
+  border-radius: 12px;
+  border-left: 4px solid #E87D7D;
+  margin-top: 20px;
+}
+
+.introduction-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 12px;
+}
+
+.introduction-text {
+  color: #6b7280;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.no-introduction {
+  font-style: italic;
+  color: #9ca3af;
+}
+
+.detail-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  padding: 24px;
+}
+
+/* 수정 폼 모달 */
+.edit-form-dialog {
+  z-index: 1000;
+}
+
+.edit-form-dialog .v-dialog {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.edit-form-card {
+  border-radius: 20px;
+}
+
+.edit-form-header {
+  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
+  color: white;
+  border-radius: 20px 20px 0 0;
+  padding: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.edit-form-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.edit-form-content {
+  padding: 24px;
 }
 </style>
 
