@@ -571,7 +571,7 @@ const speciesOptions = computed(() => {
 const genderOptions = [
   { value: 'MALE', title: '수컷' },
   { value: 'FEMALE', title: '암컷' },
-  { value: 'NEUTRALITY', title: '중성' }
+  { value: 'NEUTERED', title: '중성' }
 ]
 
 // computed properties

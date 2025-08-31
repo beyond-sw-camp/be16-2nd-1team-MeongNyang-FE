@@ -160,7 +160,7 @@
             <v-text-field
               v-model="petData.age"
               type="number"
-              placeholder="나이를 입력하세요"
+              placeholder="자동 계산됨"
               variant="outlined"
               rounded="lg"
               class="form-input"
@@ -168,6 +168,8 @@
               density="comfortable"
               min="0"
               max="30"
+              readonly
+              :disabled="true"
               required
               :rules="[v => !!v || '나이를 입력해주세요']"
             />
@@ -207,7 +209,7 @@
                     hide-details="auto"
                     density="comfortable"
                     prepend-inner-icon="mdi-calendar"
-                @click="showBirthdayPicker = true"
+                @click="openBirthdayPicker"
               />
               
               <!-- 생일 삭제 버튼 -->
@@ -320,27 +322,175 @@
       </div>
   </div>
 
-    <!-- 생일 선택기 모달 -->
-    <v-dialog v-model="showBirthdayPicker" max-width="400">
-      <v-card>
-        <v-card-title class="text-h6">생일 선택</v-card-title>
-        <v-card-text>
-          <v-date-picker
-            v-model="petData.birthday"
-            :max="maxDate"
-            :min="minDate"
-            @update:model-value="onBirthdayChange"
-          />
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn
-            variant="text"
-            @click="showBirthdayPicker = false"
-          >
-            확인
-          </v-btn>
-        </v-card-actions>
+    <!-- 생일 선택기 모달 - 사진 형식대로 -->
+    <v-dialog 
+      v-model="showBirthdayPicker" 
+      max-width="400"
+      @click:outside="showBirthdayPicker = false"
+      content-class="date-picker-dialog"
+    >
+      <v-card class="date-picker-card">
+                  <!-- 첫 화면: 일반 달력 -->
+          <div v-if="!showYearPicker && !showMonthPicker" class="date-picker-main">
+                                  <div class="date-picker-header">
+              <v-btn
+                icon="mdi-chevron-left"
+                variant="text"
+                @click="previousMonth"
+                class="nav-btn"
+              />
+              <span class="current-month-year" @click="showYearPicker = true">{{ currentDate.getFullYear() }}년 {{ currentDate.getMonth() + 1 }}월</span>
+              <v-btn
+                icon="mdi-chevron-right"
+                variant="text"
+                @click="nextMonth"
+                class="nav-btn"
+              />
+            </div>
+            
+            <!-- 요일 헤더 -->
+            <div class="weekdays-header">
+              <div class="weekday">일</div>
+              <div class="weekday">월</div>
+              <div class="weekday">화</div>
+              <div class="weekday">수</div>
+              <div class="weekday">목</div>
+              <div class="weekday">금</div>
+              <div class="weekday">토</div>
+            </div>
+            
+            <!-- 날짜 그리드 -->
+            <div class="calendar-grid">
+              <div
+                v-for="date in calendarDates"
+                :key="date.key"
+                :class="['calendar-day', {
+                  'other-month': !date.isCurrentMonth,
+                  'selected': date.isSelected,
+                  'today': date.isToday,
+                  'disabled': date.isDisabled
+                }]"
+                @click="!date.isDisabled && selectDate(date)"
+              >
+                {{ date.day }}
+              </div>
+            </div>
+          
+                      <div class="date-picker-actions">
+              <v-btn
+                variant="outlined"
+                @click="cancelDateSelection"
+                class="cancel-btn"
+              >
+                취소
+              </v-btn>
+              <v-btn
+                color="#007bff"
+                @click="confirmDateSelection"
+                class="confirm-btn"
+              >
+                확인
+              </v-btn>
+            </div>
+        </div>
+        
+        <!-- 연도 선택 화면 -->
+        <div v-if="showYearPicker" class="year-picker">
+          <div class="year-picker-header">
+            <v-btn
+              icon="mdi-chevron-left"
+              variant="text"
+              @click="previousYearRange"
+              class="nav-btn"
+            />
+                          <span class="year-range" @click="showYearPicker = false; showMonthPicker = true">{{ yearRangeStart }} - {{ yearRangeEnd }}</span>
+            <v-btn
+              icon="mdi-chevron-right"
+              variant="text"
+              @click="nextYearRange"
+              class="nav-btn"
+            />
+          </div>
+          
+          <div class="year-grid">
+            <div
+              v-for="year in yearRange"
+              :key="year"
+                              :class="['year-cell', {
+                  'selected': year === currentDate.getFullYear()
+                }]"
+              @click="selectYear(year)"
+            >
+              {{ year }}
+            </div>
+          </div>
+          
+          <div class="date-picker-actions">
+            <v-btn
+              variant="outlined"
+              @click="backToMain"
+              class="cancel-btn"
+            >
+              뒤로
+            </v-btn>
+            <v-btn
+              color="#007bff"
+              @click="confirmYearSelection"
+              class="confirm-btn"
+            >
+              확인
+            </v-btn>
+          </div>
+        </div>
+        
+        <!-- 월 선택 화면 -->
+        <div v-if="showMonthPicker" class="month-picker">
+                      <div class="month-picker-header">
+              <v-btn
+                icon="mdi-chevron-left"
+                variant="text"
+                @click="previousYear"
+                class="nav-btn"
+              />
+              <span class="current-year">{{ currentDate.getFullYear() }}년</span>
+              <v-btn
+                icon="mdi-chevron-right"
+                variant="text"
+                @click="nextYear"
+                class="nav-btn"
+              />
+            </div>
+          
+          <div class="month-grid">
+            <div
+              v-for="month in 12"
+              :key="month"
+              :class="['month-cell', {
+                'selected': month === selectedMonth
+              }]"
+              @click="selectMonth(month)"
+            >
+              {{ month }}월
+            </div>
+          </div>
+          
+          <div class="date-picker-actions">
+            <v-btn
+              variant="outlined"
+              @click="backToMain"
+              class="cancel-btn"
+            >
+              뒤로
+            </v-btn>
+            <v-btn
+              color="#007bff"
+              @click="confirmMonthSelection"
+              class="confirm-btn"
+            >
+              확인
+            </v-btn>
+          </div>
+        </div>
       </v-card>
     </v-dialog>
   </v-card>
@@ -409,6 +559,15 @@ export default {
     const imageRemoved = ref(false)
     const submitting = ref(false)
     const showBirthdayPicker = ref(false)
+    
+    // 달력 관련 변수들
+    const currentDate = ref(new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"})))
+    const selectedDate = ref(null)
+    const showYearPicker = ref(false)
+    const showMonthPicker = ref(false)
+    const selectedMonth = ref(null)
+    const yearRangeStart = ref(2017)
+    const yearRangeEnd = ref(2028)
     
     // 펫 데이터 (로컬 상태)
     const petData = reactive({
@@ -494,7 +653,7 @@ export default {
     const genderOptions = [
       { value: 'MALE', title: '수컷' },
       { value: 'FEMALE', title: '암컷' },
-      { value: 'NEUTRALITY', title: '중성' }
+      { value: 'NEUTERED', title: '중성' }
     ]
     
     // 날짜 제한
@@ -546,13 +705,22 @@ export default {
       if (!birthday) return null
       const today = new Date()
       const birthDate = new Date(birthday)
+      
+      // 미래 날짜 체크
+      if (birthDate > today) {
+        console.warn('⚠️ 미래 날짜가 입력되었습니다:', birthday)
+        return 0
+      }
+      
       let age = today.getFullYear() - birthDate.getFullYear()
       const monthDiff = today.getMonth() - birthDate.getMonth()
       
       if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
         age--
       }
-      return age
+      
+      // 음수 나이 방지
+      return Math.max(0, age)
     }
     
     // 생일 변경 시 나이 자동 계산
@@ -835,6 +1003,152 @@ export default {
       }
     })
     
+    // 달력 관련 함수들
+    const yearRange = computed(() => {
+      const years = []
+      for (let i = yearRangeStart.value; i <= yearRangeEnd.value; i++) {
+        years.push(i)
+      }
+      return years
+    })
+    
+    const previousYear = () => {
+      const newDate = new Date(currentDate.value)
+      newDate.setFullYear(newDate.getFullYear() - 1)
+      currentDate.value = newDate
+    }
+    
+    const nextYear = () => {
+      const newDate = new Date(currentDate.value)
+      newDate.setFullYear(newDate.getFullYear() + 1)
+      currentDate.value = newDate
+    }
+    
+    const previousMonth = () => {
+      const newDate = new Date(currentDate.value)
+      newDate.setMonth(newDate.getMonth() - 1)
+      currentDate.value = newDate
+    }
+    
+    const nextMonth = () => {
+      const newDate = new Date(currentDate.value)
+      newDate.setMonth(newDate.getMonth() + 1)
+      currentDate.value = newDate
+    }
+    
+    const calendarDates = computed(() => {
+      const year = currentDate.value.getFullYear()
+      const month = currentDate.value.getMonth()
+      const firstDay = new Date(year, month, 1)
+      const lastDay = new Date(year, month + 1, 0)
+      const startDate = new Date(firstDay)
+      startDate.setDate(startDate.getDate() - firstDay.getDay())
+      
+      const dates = []
+      const today = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
+      today.setHours(0, 0, 0, 0) // 시간을 00:00:00으로 설정
+      
+      // 6주(42일) 또는 마지막 날짜까지 표시
+      const totalDays = Math.max(42, startDate.getDate() + lastDay.getDate() + (6 - Math.ceil((startDate.getDate() + lastDay.getDate()) / 7)) * 7)
+      
+      for (let i = 0; i < totalDays; i++) {
+        const date = new Date(startDate.getTime() + (i * 24 * 60 * 60 * 1000))
+        date.setHours(0, 0, 0, 0) // 시간을 00:00:00으로 설정
+        
+        dates.push({
+          key: i,
+          day: date.getDate(),
+          date: date,
+          isCurrentMonth: date.getMonth() === month,
+          isSelected: selectedDate.value && date.toDateString() === selectedDate.value.toDateString(),
+          isToday: date.toDateString() === today.toDateString(),
+          isDisabled: date > today // 오늘 이후 날짜는 비활성화
+        })
+      }
+      
+      return dates
+    })
+    
+    const selectDate = (date) => {
+      selectedDate.value = date.date
+    }
+    
+    const previousYearRange = () => {
+      yearRangeStart.value -= 12
+      yearRangeEnd.value -= 12
+    }
+    
+    const nextYearRange = () => {
+      yearRangeStart.value += 12
+      yearRangeEnd.value += 12
+    }
+    
+    const selectMonth = (month) => {
+      selectedMonth.value = month
+      showMonthPicker.value = true
+    }
+    
+    const selectYear = (year) => {
+      currentDate.value = new Date(year, currentDate.value.getMonth(), 1)
+      showYearPicker.value = false
+    }
+    
+    const backToMain = () => {
+      showYearPicker.value = false
+      showMonthPicker.value = false
+      selectedMonth.value = null
+    }
+    
+    const confirmYearSelection = () => {
+      showYearPicker.value = false
+    }
+    
+    const confirmMonthSelection = () => {
+      if (selectedMonth.value) {
+        currentDate.value = new Date(currentDate.value.getFullYear(), selectedMonth.value - 1, 1)
+        showMonthPicker.value = false
+        selectedMonth.value = null
+      }
+    }
+    
+    const cancelDateSelection = () => {
+      showBirthdayPicker.value = false
+      showYearPicker.value = false
+      showMonthPicker.value = false
+      selectedDate.value = null
+      selectedMonth.value = null
+    }
+    
+    const openBirthdayPicker = () => {
+      // DB에 저장된 날짜가 있으면 해당 날짜로 달력 이동
+      if (petData.birthday) {
+        const savedDate = new Date(petData.birthday)
+        currentDate.value = new Date(savedDate.getFullYear(), savedDate.getMonth(), 1)
+        selectedDate.value = savedDate
+        console.log('📅 달력 열기 - DB 날짜로 이동:', savedDate)
+      }
+      showBirthdayPicker.value = true
+    }
+    
+    const confirmDateSelection = () => {
+      if (selectedDate.value) {
+        petData.birthday = selectedDate.value.toISOString().substr(0, 10)
+        
+        // 생일 변경 시 나이 자동 계산
+        if (petData.birthday) {
+          const age = calculateAge(petData.birthday)
+          petData.age = age
+          console.log('📅 생일 변경으로 나이 자동 계산:', { birthday: petData.birthday, age })
+        }
+        
+        showBirthdayPicker.value = false
+        showYearPicker.value = false
+        showMonthPicker.value = false
+        selectedDate.value = null
+        selectedMonth.value = null
+      }
+    }
+    
     return {
       // 단계 관리
       currentStep,
@@ -863,6 +1177,14 @@ export default {
       maxDate,
       minDate,
       formattedBirthday,
+      // 달력 관련 변수들
+      currentDate,
+      selectedDate,
+      showYearPicker,
+      showMonthPicker,
+      selectedMonth,
+      yearRangeStart,
+      yearRangeEnd,
       
       // 메서드들
       handleImageClick,
@@ -873,7 +1195,25 @@ export default {
       clearBirthday,
       getSpeciesIcon,
       getSpeciesIconColor,
-      handleSubmit
+      handleSubmit,
+      // 달력 관련 함수들
+      yearRange,
+      previousYear,
+      nextYear,
+      previousMonth,
+      nextMonth,
+      calendarDates,
+      selectDate,
+      previousYearRange,
+      nextYearRange,
+      selectMonth,
+      selectYear,
+      backToMain,
+      confirmYearSelection,
+      confirmMonthSelection,
+      cancelDateSelection,
+      openBirthdayPicker,
+      confirmDateSelection
     }
     } catch (error) {
       console.error('❌ PetForm setup 오류:', error)
@@ -1208,10 +1548,302 @@ export default {
   font-size: 16px;
 }
 
-.image-edit-btn:hover {
-  background-color: #E87D7D;
-  color: white;
-}
+  .image-edit-btn:hover {
+    background-color: #E87D7D;
+    color: white;
+  }
+
+  /* 사진과 동일한 달력 스타일 */
+  .date-picker-dialog {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .date-picker-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    border: 1px solid #e0e0e0;
+  }
+
+  /* 첫 화면 스타일 */
+  .date-picker-main {
+    padding: 20px;
+  }
+
+  .date-picker-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding: 0;
+  }
+
+  .nav-btn {
+    color: #666 !important;
+    border-radius: 50% !important;
+    transition: all 0.2s ease;
+    background: transparent !important;
+    min-width: 32px;
+    height: 32px;
+    padding: 0 !important;
+    margin: 0 8px;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  .nav-btn:hover {
+    background: #ffe6e6 !important;
+    color: #d32f2f !important;
+    transform: none !important;
+  }
+
+  .current-year {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #333;
+  }
+
+  .month-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .month-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 48px;
+    font-weight: 500;
+    color: #333;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+    background: white;
+  }
+
+  .month-cell:hover {
+    background: #ffe6e6 !important;
+    border-color: #f44336;
+    transform: scale(1.05);
+    color: #d32f2f;
+  }
+
+  .month-cell.selected {
+    background: #ffe6e6 !important;
+    color: #d32f2f !important;
+    box-shadow: 0 2px 8px rgba(211, 47, 47, 0.2);
+    transform: scale(1.05);
+    border-color: #f44336;
+  }
+
+  /* 연도 선택 화면 */
+  .year-picker {
+    padding: 20px;
+  }
+
+  .year-picker-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding: 0;
+  }
+
+  .year-range {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #333;
+  }
+
+  .year-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .year-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 48px;
+    font-weight: 500;
+    color: #333;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+    background: white;
+  }
+
+  .year-cell:hover {
+    background: #ffe6e6 !important;
+    border-color: #f44336;
+    transform: scale(1.05);
+    color: #d32f2f;
+  }
+
+  .year-cell.selected {
+    background: #ffe6e6 !important;
+    color: #d32f2f !important;
+    box-shadow: 0 2px 8px rgba(211, 47, 47, 0.2);
+    transform: scale(1.05);
+    border-color: #f44336;
+  }
+
+  /* 월 선택 화면 */
+  .month-picker {
+    padding: 20px;
+  }
+
+  .month-picker-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding: 0;
+  }
+
+  /* 일반 달력 스타일 */
+  .date-picker-main {
+    padding: 20px;
+  }
+
+  .date-picker-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding: 0;
+  }
+
+  .current-month-year {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #333;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+  }
+
+  .current-month-year:hover {
+    background: #ffe6e6 !important;
+    color: #d32f2f;
+    border-color: #f44336;
+  }
+
+  .weekdays-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+
+  .weekday {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #666;
+    text-align: center;
+  }
+
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+
+  .calendar-day {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 36px;
+    font-weight: 500;
+    color: #333;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+    background: white;
+  }
+
+  .calendar-day:hover {
+    background: #ffe6e6 !important;
+    border-color: #f44336;
+    color: #d32f2f;
+  }
+
+  .calendar-day.other-month {
+    color: #ccc;
+  }
+
+  .calendar-day.selected {
+    background: #ffe6e6 !important;
+    color: #d32f2f !important;
+    box-shadow: 0 2px 8px rgba(211, 47, 47, 0.2);
+    border-color: #f44336;
+    font-weight: 600;
+  }
+
+  .calendar-day.today {
+    background: #e3f2fd;
+    border-color: #2196f3;
+    color: #1976d2;
+    font-weight: 600;
+  }
+
+  .calendar-day.disabled {
+    color: #ccc !important;
+    cursor: not-allowed !important;
+    background: #f8f9fa !important;
+    border-color: #e9ecef !important;
+  }
+
+  .calendar-day.disabled:hover {
+    background: #f8f9fa !important;
+    border-color: #e9ecef !important;
+    transform: none !important;
+  }
+
+  /* 공통 액션 버튼 */
+  .date-picker-actions {
+    padding: 16px 20px;
+    background: white !important;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .cancel-btn {
+    border-color: #495057;
+    color: #495057 !important;
+    background: white !important;
+    border-radius: 20px !important;
+    font-weight: 600;
+    padding: 10px 20px;
+    min-width: 80px;
+    border: 1px solid #495057;
+  }
+
+  .confirm-btn {
+    color: white;
+    background: #f44336 !important;
+    border-radius: 20px !important;
+    font-weight: 500;
+    padding: 10px 20px;
+    min-width: 80px;
+    border: none;
+  }
 
 .submit-btn {
   background: #3b82f6 !important;
