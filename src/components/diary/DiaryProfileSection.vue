@@ -2,7 +2,7 @@
   <div class="profile-section">
     <div class="profile-container">
       <!-- 프로필 이미지 -->
-      <div class="profile-image-container" @click="showMainPetModal = true">
+      <div class="profile-image-container" @click="isMyProfile && (showMainPetModal = true)">
         <v-avatar size="120" class="profile-avatar">
           <v-img 
             :src="profileImageUrl" 
@@ -40,6 +40,20 @@
           <span class="stat-item">{{ postsCount }} 게시물</span>
           <span class="stat-item clickable" @click="$emit('open-follow-modal', 'followers')">{{ followersCount }} 팔로워</span>
           <span class="stat-item clickable" @click="$emit('open-follow-modal', 'followings')">{{ followingsCount }} 팔로잉</span>
+          <span 
+              v-if="!isMyProfile && !isFollowing"
+              class="stat-item follow-stat clickable"
+              @click="$emit('follow')"
+            >
+              팔로우
+            </span>
+            <span 
+              v-if="!isMyProfile && isFollowing"
+              class="stat-item unfollow-stat clickable"
+              @click="$emit('unfollow')"
+            >
+              언팔로우
+            </span>
         </div>
         
         <!-- 소개 -->
@@ -47,7 +61,7 @@
       </div>
       
       <!-- 추가 버튼 -->
-      <v-btn icon class="add-button" size="large" @click="$router.push('/diarys/create')">
+      <v-btn v-if="isMyProfile" icon class="add-button" size="large" @click="$router.push('/diarys/create')">
         <v-icon size="32">mdi-plus</v-icon>
       </v-btn>
     </div>
@@ -107,9 +121,17 @@ const props = defineProps({
   profileImageUrl: String,
   displayUserName: String,
   petBio: String,
+  isMyProfile: {
+    type: Boolean,
+    default: true,
+  },
+  isFollowing: {
+    type: Boolean,
+    default: false,
+  },
 });
 
-const emit = defineEmits(['open-follow-modal', 'change-main-pet']);
+const emit = defineEmits(['open-follow-modal', 'change-main-pet', 'follow', 'unfollow']);
 
 const authStore = useAuthStore();
 const petStore = usePetStore();
@@ -273,6 +295,34 @@ const changeMainPet = async () => {
   background: rgba(255, 139, 139, 0.2);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(255, 139, 139, 0.3);
+}
+
+.follow-stat {
+  background: linear-gradient(135deg, #FF8B8B 0%, #FFC1C1 100%);
+  color: white;
+  border: 1px solid #FF8B8B;
+  transition: all 0.3s ease;
+}
+
+.follow-stat:hover {
+  background: linear-gradient(135deg, #FF6B6B 0%, #FF8B8B 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 139, 139, 0.3);
+}
+
+.unfollow-stat {
+  background: rgba(100, 116, 139, 0.1);
+  color: #64748B;
+  border: 1px solid #64748B;
+  transition: all 0.3s ease;
+}
+
+.unfollow-stat:hover {
+  background: rgba(100, 116, 139, 0.2);
+  color: #475569;
+  border-color: #475569;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(100, 116, 139, 0.2);
 }
 
 .bio {
