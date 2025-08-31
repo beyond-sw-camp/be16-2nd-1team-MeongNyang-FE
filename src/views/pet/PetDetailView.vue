@@ -1102,7 +1102,7 @@ onMounted(async () => {
 
 .loading-text {
   font-size: 1.2rem;
-  color: #6c757d;
+  color: #6b7280;
 }
 
 .pet-detail-content {
@@ -1152,16 +1152,16 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f8f9fa;
+  background: #f3f4f6;
   border-radius: 50%;
-  border: 1px solid #e9ecef;
+  border: 2px dashed #d1d5db;
 }
 
 .representative-badge {
   position: absolute;
   top: 15px;
   right: 15px;
-  background: #fbbf24;
+  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
   color: white;
   padding: 10px 16px;
   border-radius: 25px;
@@ -1172,12 +1172,12 @@ onMounted(async () => {
   gap: 6px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   z-index: 10;
-  border: 1px solid #e9ecef;
+  border: none;
 }
 
 .pet-info-header {
   text-align: center;
-  color: #2c3e50;
+  color: #1f2937;
   padding: 0 20px;
 }
 
@@ -1185,7 +1185,7 @@ onMounted(async () => {
   font-size: 2.5rem;
   font-weight: 700;
   margin-bottom: 10px;
-  color: #2c3e50;
+  color: #1f2937;
 }
 
 .pet-species {
@@ -1195,13 +1195,13 @@ onMounted(async () => {
   gap: 8px;
   font-size: 1.2rem;
   font-weight: 600;
-  color: #6c757d;
+  color: #6b7280;
 }
 
 .pet-description {
   font-size: 1rem;
   margin-top: 15px;
-  color: #6c757d;
+  color: #6b7280;
 }
 
 .action-section {
@@ -1236,6 +1236,7 @@ onMounted(async () => {
 .primary-action:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(var(--v-theme-primary), 0.4);
+
 }
 
 .info-section {
@@ -1343,7 +1344,7 @@ onMounted(async () => {
 }
 
 .edit-card {
-  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  background: white;
   border: 1px solid var(--v-border-color);
   transition: all 0.3s ease;
 }
@@ -1441,7 +1442,7 @@ onMounted(async () => {
 .info-item {
   background: white;
   padding: 28px;
-  border-radius: 16px;
+  border-radius: 20px;
   border: 1px solid #e9ecef;
   transition: all 0.3s ease;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
@@ -1461,7 +1462,7 @@ onMounted(async () => {
   gap: 10px;
   margin-bottom: 16px;
   font-weight: 700;
-  color: #2c3e50;
+  color: #1f2937;
   font-size: 0.95rem;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -1483,7 +1484,7 @@ onMounted(async () => {
 .info-value {
   font-size: 1.1rem;
   font-weight: 600;
-  color: #2c3e50;
+  color: #1f2937;
   transition: all 0.3s ease;
 }
 
@@ -1512,7 +1513,7 @@ onMounted(async () => {
 .section-title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #2c3e50;
+  color: #1f2937;
   margin-bottom: 20px;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -1525,7 +1526,7 @@ onMounted(async () => {
 .introduction-content {
   font-size: 16px;
   line-height: 1.6;
-  color: #6c757d;
+  color: #4b5563;
   min-height: 60px;
 }
 
@@ -1550,8 +1551,8 @@ onMounted(async () => {
   min-width: 130px;
   border-radius: 16px;
   border: 2px solid #e9ecef;
-  background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
-  color: #6c757d;
+  background: white;
+  color: #6b7280;
   position: relative;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -1573,7 +1574,7 @@ onMounted(async () => {
   color: #E87D7D;
   transform: translateY(-3px) scale(1.02);
   box-shadow: 0 8px 20px rgba(232, 125, 125, 0.2);
-  background: linear-gradient(145deg, #fef7f7 0%, #fdf2f2 100%);
+  background: #f9fafb;
 }
 
 .action-btn:hover::before {
@@ -1581,10 +1582,10 @@ onMounted(async () => {
 }
 
 .primary-action {
-  background: linear-gradient(135deg, #E87D7D 0%, #ec4899 100%) !important;
+  background: #E87D7D !important;
   color: white !important;
   border-color: #E87D7D !important;
-  box-shadow: 0 6px 20px rgba(232, 125, 125, 0.3) !important;
+  box-shadow: 0 4px 12px rgba(232, 125, 125, 0.3) !important;
   position: relative;
   overflow: hidden;
 }
@@ -1601,8 +1602,8 @@ onMounted(async () => {
 }
 
 .primary-action:hover {
-  background: linear-gradient(135deg, #d66b6b 0%, #db2777 100%) !important;
-  border-color: #d66b6b !important;
+  background: #FF6B6B !important;
+  border-color: #FF6B6B !important;
   transform: translateY(-3px) scale(1.02);
   box-shadow: 0 10px 25px rgba(232, 125, 125, 0.4) !important;
 }
@@ -1904,7 +1905,7 @@ onMounted(async () => {
 }
 
 .info-item:hover {
-  background-color: rgba(236, 72, 153, 0.05);
+  background-color: rgba(232, 125, 125, 0.05);
 }
 
 .info-label {
@@ -1912,7 +1913,7 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
   font-size: 0.9rem;
-  color: #64748b;
+  color: #6b7280;
   margin-bottom: 4px;
 }
 
@@ -1942,17 +1943,17 @@ onMounted(async () => {
   font-weight: 500;
   padding: 8px 16px;
   border-radius: 25px;
-  background: #10B981;
+  background: #E87D7D;
   color: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(232, 125, 125, 0.3);
+  transition: all 0.3s ease;
   border: none;
 }
 
 .save-btn:hover {
-  background: #059669;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  background: #FF6B6B;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(232, 125, 125, 0.4);
 }
 
 .cancel-btn {
@@ -1961,23 +1962,23 @@ onMounted(async () => {
   font-weight: 500;
   padding: 8px 16px;
   border-radius: 25px;
-  border: 2px solid #EF4444;
-  color: #EF4444;
+  border: 2px solid #E87D7D;
+  color: #E87D7D;
   background: white;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(232, 125, 125, 0.3);
 }
 
 .cancel-btn:hover {
-  background: #EF4444;
+  background: #E87D7D;
   color: white;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(232, 125, 125, 0.4);
 }
 
 .age-hint {
   font-size: 0.8rem;
-  color: #9CA3AF;
+  color: #9ca3af;
   margin-left: 8px;
   font-style: italic;
 }
@@ -1995,7 +1996,7 @@ onMounted(async () => {
 }
 
 .introduction-section:hover {
-  background-color: rgba(236, 72, 153, 0.05);
+  background-color: rgba(232, 125, 125, 0.05);
 }
 
 .section-title {
@@ -2004,8 +2005,9 @@ onMounted(async () => {
   font-size: 1.2rem;
   font-weight: 600;
   margin-bottom: 12px;
-  color: #374151;
+  color: #1f2937;
 }
 
 </style>
+
 
