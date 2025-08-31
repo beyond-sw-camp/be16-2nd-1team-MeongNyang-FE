@@ -537,6 +537,11 @@ export default {
     
     // 키보드 네비게이션
     const handleKeydown = (event) => {
+      // 텍스트 입력 필드에 포커스가 있다면 기본 동작 허용
+      if (event.target.tagName === 'TEXTAREA' || event.target.tagName === 'INPUT') {
+        return
+      }
+
       if (mediaList.value.length <= 1) return
       
       switch (event.key) {
