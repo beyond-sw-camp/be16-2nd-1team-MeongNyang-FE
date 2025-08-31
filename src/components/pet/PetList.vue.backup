@@ -307,8 +307,7 @@
       <!-- 반려동물 상세 모달 -->
       <v-dialog
         v-model="showDetailModal"
-        max-width="1400"
-        class="pet-detail-dialog"
+        max-width="800"
         @click:outside="closeDetailModal"
         persistent
       >
@@ -328,7 +327,6 @@
           <v-card-text class="detail-content">
             <div class="detail-layout">
               <div class="pet-image-detail">
-                <div class="image-container">
                 <v-img
                   v-if="selectedPet?.url && selectedPet.url.trim() !== ''"
                   :src="selectedPet.url"
@@ -346,226 +344,78 @@
                 <div v-else class="detail-image-placeholder">
                   <v-icon :size="80" :color="getSpeciesIconColor(selectedPet?.petOrder)" :icon="getSpeciesIcon(selectedPet?.petOrder)" />
                 </div>
-                
-                <!-- 이미지 변경 오버레이 (수정 모드일 때만) -->
-                <div v-if="isEditing" class="image-overlay" @click="handleImageChange">
-                  <div class="camera-icon-container">
-                    <v-icon class="camera-icon" size="32" color="white">mdi-camera</v-icon>
-                    <span class="camera-text">사진 변경</span>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- 숨겨진 파일 입력 -->
-              <input
-                ref="fileInput"
-                type="file"
-                accept="image/*"
-                @change="onImageFileChange"
-                style="display: none"
-              />
               </div>
 
-            <div class="pet-details-detail">
-              <div class="detail-section">
+              <div class="pet-details-detail">
+                <div class="detail-section">
                 <h4 class="section-title">기본 정보</h4>
                 <div class="info-grid">
                   <div class="info-item species-item">
                     <v-icon size="24" :color="getSpeciesIconColor(selectedPet?.petOrder)">{{ getSpeciesIcon(selectedPet?.petOrder) }}</v-icon>
                     <span class="info-label">종류</span>
-                    <div v-if="isEditing" class="edit-field">
-                      <v-autocomplete
-                        v-model="editingPet.speciesId"
-                        :items="speciesOptions"
-                        item-title="species"
-                        item-value="speciesId"
-                        variant="outlined"
-                        density="compact"
-                        hide-details
-                        class="edit-input"
-                      />
-                    </div>
-                    <span v-else class="info-value">{{ selectedPet?.species || '알 수 없음' }}</span>
+                    <span class="info-value species-value">{{ selectedPet?.species || '알 수 없음' }}</span>
                     <span class="species-detail">{{ selectedPet?.petOrder || '기타' }}</span>
                   </div>
                   <div class="info-item">
                     <v-icon size="20" color="grey-darken-1">mdi-gender-male-female</v-icon>
                     <span class="info-label">성별</span>
-                    <div v-if="isEditing" class="edit-field">
-                      <v-select
-                        v-model="editingPet.gender"
-                        :items="genderOptions"
-                        item-title="title"
-                        item-value="value"
-                        variant="outlined"
-                        density="compact"
-                        hide-details
-                        class="edit-input"
-                      />
-                    </div>
-                    <span v-else class="info-value">{{ getGenderLabel(selectedPet?.gender) }}</span>
+                    <span class="info-value">{{ getGenderLabel(selectedPet?.gender) }}</span>
                   </div>
                   <div class="info-item">
                     <v-icon size="20" color="grey-darken-1">mdi-cake-variant</v-icon>
                     <span class="info-label">나이</span>
-                    <div v-if="isEditing" class="edit-field">
-                      <v-text-field
-                        v-model="editingPet.age"
-                        type="number"
-                        variant="outlined"
-                        density="compact"
-                        hide-details
-                        class="edit-input"
-                        min="0"
-                        max="30"
-                      />
-                    </div>
-                    <span v-else class="info-value">{{ selectedPet?.age }}살</span>
+                    <span class="info-value">{{ selectedPet?.age }}살</span>
                   </div>
                   <div class="info-item">
                     <v-icon size="20" color="grey-darken-1">mdi-weight</v-icon>
                     <span class="info-label">체중</span>
-                    <div v-if="isEditing" class="edit-field">
-                      <v-text-field
-                        v-model="editingPet.weight"
-                        type="number"
-                        variant="outlined"
-                        density="compact"
-                        hide-details
-                        class="edit-input"
-                        min="0.1"
-                        max="100"
-                        step="0.1"
-                      />
-                    </div>
-                    <span v-else class="info-value">{{ selectedPet?.weight || '알 수 없음' }}kg</span>
+                    <span class="info-value">{{ selectedPet?.weight || '알 수 없음' }}kg</span>
                   </div>
                   <div class="info-item">
                     <v-icon size="20" color="grey-darken-1">mdi-calendar</v-icon>
                     <span class="info-label">생일</span>
-                    <div v-if="isEditing" class="edit-field">
-                      <v-text-field
-                        :model-value="formatBirthday(editingPet.birthday)"
-                        readonly
-                        variant="outlined"
-                        density="compact"
-                        hide-details
-                        class="edit-input"
-                        @click="showDatePicker = true"
-                        prepend-inner-icon="mdi-calendar"
-                      />
-                    </div>
-                    <span v-else class="info-value">{{ formatBirthday(selectedPet?.birthday) }}</span>
+                    <span class="info-value">{{ formatBirthday(selectedPet?.birthday) }}</span>
                   </div>
                 </div>
               </div>
-            </div>
-            </div>
-            
-            <!-- 소개글 섹션 (아래쪽에 배치) -->
-            <div class="introduction-detail">
-              <h4 class="introduction-title">소개글</h4>
-              <div class="introduction-content">
-                <div v-if="isEditing" class="edit-field">
-                  <v-textarea
-                    v-model="editingPet.introduce"
-                    variant="outlined"
-                    density="compact"
-                    hide-details
-                    class="edit-textarea"
-                    placeholder="반려동물에 대한 소개를 입력해주세요"
-                    rows="4"
-                  />
+
+              <div class="introduction-detail">
+                <h4 class="introduction-title">소개글</h4>
+                <div class="introduction-content">
+                  <p v-if="selectedPet?.introduce && selectedPet.introduce.trim() !== '' && selectedPet.introduce !== '마ㅣㄴㅇㅇ으찬으ㅏㅊ'" class="introduction-text">
+                    {{ selectedPet.introduce }}
+                  </p>
+                  <p v-else class="introduction-text no-introduction">
+                    소개글이 등록되지 않았습니다.
+                  </p>
                 </div>
-                <p v-else-if="selectedPet?.introduce && selectedPet.introduce.trim() !== ''" class="introduction-text">
-                  {{ selectedPet.introduce }}
-                </p>
-                <p v-else class="introduction-text no-introduction">
-                  소개글이 등록되지 않았습니다.
-                </p>
               </div>
             </div>
           </v-card-text>
           <v-card-actions class="detail-actions">
-            <!-- 수정 모드가 아닐 때 -->
-            <template v-if="!isEditing">
-              <v-btn
-                color="#E87D7D"
-                variant="flat"
-                prepend-icon="mdi-pencil"
-                @click="toggleEditMode"
-                size="large"
-                rounded="xl"
-                class="edit-btn"
-              >
-                수정
-              </v-btn>
-              <v-btn
-                color="error"
-                variant="flat"
-                prepend-icon="mdi-delete"
-                @click="confirmDeleteFromModal"
-                size="large"
-                rounded="xl"
-                class="delete-btn"
-              >
-                삭제
-              </v-btn>
-            </template>
-            
-            <!-- 수정 모드일 때 -->
-            <template v-else>
-              <v-btn
-                color="grey"
-                variant="flat"
-                prepend-icon="mdi-close"
-                @click="toggleEditMode"
-                size="large"
-                rounded="xl"
-                class="cancel-btn"
-              >
-                취소
-              </v-btn>
-              <v-btn
-                color="success"
-                variant="flat"
-                prepend-icon="mdi-content-save"
-                @click="saveChanges"
-                :loading="saving"
-                size="large"
-                rounded="xl"
-                class="save-btn"
-              >
-                저장
-              </v-btn>
-            </template>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
-
-      <!-- 날짜 선택 모달 -->
-      <v-dialog
-        v-model="showDatePicker"
-        max-width="400"
-        @click:outside="showDatePicker = false"
-      >
-        <v-card class="date-picker-card" rounded="xl">
-          <v-card-title class="date-picker-header">
-            <span class="text-h6">생일 선택</span>
             <v-btn
-              icon="mdi-close"
-              variant="text"
-              @click="showDatePicker = false"
-              color="grey"
-            />
-          </v-card-title>
-          <v-card-text class="date-picker-content">
-            <v-date-picker
-              v-model="editingPet.birthday"
-              @update:model-value="showDatePicker = false"
-              class="date-picker"
-            />
-          </v-card-text>
+              color="#E87D7D"
+              variant="flat"
+              prepend-icon="mdi-pencil"
+              @click="openEditForm"
+              size="large"
+              rounded="xl"
+              class="edit-btn"
+            >
+              수정
+            </v-btn>
+            <v-btn
+              color="error"
+              variant="flat"
+              prepend-icon="mdi-delete"
+              @click="confirmDeleteFromModal"
+              size="large"
+              rounded="xl"
+              class="delete-btn"
+            >
+              삭제
+            </v-btn>
+          </v-card-actions>
         </v-card>
       </v-dialog>
 
@@ -599,8 +449,6 @@
           </v-card-text>
         </v-card>
       </v-dialog>
-            </div>
-  </div>
 </template>
 
 <script>
@@ -633,7 +481,6 @@ export default {
     const isEditing = ref(false)
     const editingPet = ref(null)
     const saving = ref(false)
-    const showDatePicker = ref(false)
     
     // 등록 화면과 동일한 옵션들
     const speciesOptions = computed(() => {
@@ -820,6 +667,8 @@ export default {
       showEditForm.value = false
     }
     
+
+    
     // 수정 모드 토글
     const toggleEditMode = () => {
       if (isEditing.value) {
@@ -829,45 +678,58 @@ export default {
       } else {
         // 수정 모드 시작 - DB에 저장된 데이터를 제대로 가져오기
         isEditing.value = true
-        
-        // selectedPet이 있는지 확인
-        if (!selectedPet.value) {
-          console.error('❌ 선택된 펫이 없습니다')
-          showSnackbar('펫을 선택해주세요.', 'error')
-          return
-        }
-        
-        const pet = selectedPet.value
-        
         // DB에 저장된 실제 데이터를 정확히 매핑
         editingPet.value = {
-          id: pet.id,
-          name: pet.name || '',
-          age: pet.age || 0,
-          gender: pet.gender || 'FEMALE',
-          weight: pet.weight || 1.0,
-          url: pet.url || '',
-          birthday: pet.birthday || null,
-          introduce: pet.introduce || '',
-          species: pet.species || '',
-          petOrder: pet.petOrder || '',
+          ...selectedPet.value,
           // DB에 저장된 종류 ID - species 필드에서 speciesId 찾기
           speciesId: (() => {
-            if (pet.speciesId) {
-              return pet.speciesId
-            }
-            const speciesName = pet.species
+            const speciesName = selectedPet.value?.species
             if (speciesName && speciesOptions.value.length > 0) {
               const foundSpecies = speciesOptions.value.find(s => s.species === speciesName)
               return foundSpecies ? foundSpecies.speciesId : null
             }
-            return null
-          })()
+            return selectedPet.value?.speciesId || null
+          })(),
+          // DB에 저장된 성별
+          gender: selectedPet.value?.gender || 'FEMALE',
+          // DB에 저장된 나이
+          age: selectedPet.value?.age || 0,
+          // DB에 저장된 체중
+          weight: selectedPet.value?.weight || 0,
+          // DB에 저장된 생일
+          birthday: selectedPet.value?.birthday || null,
+          // DB에 저장된 소개글
+          introduce: selectedPet.value?.introduce || ''
         }
         
         console.log('🔍 수정 모드 시작 - DB 데이터 매핑:', {
-          original: pet,
+          original: selectedPet.value,
           editing: editingPet.value,
+          // 각 필드별로 실제 값 확인
+          speciesId: editingPet.value.speciesId,
+          gender: editingPet.value.gender,
+          age: editingPet.value.age,
+          weight: editingPet.value.weight,
+          birthday: editingPet.value.birthday,
+          introduce: editingPet.value.introduce,
+          // 원본 데이터의 모든 키 확인
+          originalKeys: Object.keys(selectedPet.value || {}),
+          speciesOptions: speciesOptions.value
+        })
+        
+        // selectedPet의 종류 관련 필드들을 자세히 확인
+        console.log('🔍 종류 관련 필드 상세 분석:', {
+          selectedPetSpeciesId: selectedPet.value?.speciesId,
+          selectedPetSpecies: selectedPet.value?.species,
+          selectedPetSpeciesName: selectedPet.value?.speciesName,
+          selectedPetPetOrder: selectedPet.value?.petOrder,
+          // speciesOptions에서 일치하는 항목 찾기
+          matchingSpecies: speciesOptions.value.find(s => s.speciesId === editingPet.value.speciesId),
+          allSpeciesOptions: speciesOptions.value
+        })
+        
+        // 수정 모드 진입 후 실제 표시되는 값들 확인
+        console.log('🔍 수정 모드 진입 후 editingPet 상태:', {
           speciesId: editingPet.value.speciesId,
           gender: editingPet.value.gender,
           age: editingPet.value.age,
@@ -875,6 +737,8 @@ export default {
           birthday: editingPet.value.birthday,
           introduce: editingPet.value.introduce
         })
+        
+
       }
     }
     
@@ -898,54 +762,79 @@ export default {
           return
         }
         
-        // 수정 모드가 아닐 때는 바로 이미지 변경
-        if (!isEditing.value) {
-          showSnackbar('수정 모드에서만 이미지를 변경할 수 있습니다.', 'info')
-          return
+        // 이미지 업데이트를 위한 데이터 준비
+        const updateData = {
+          ...selectedPet.value,
+          image: file  // 이미지 파일 포함
         }
         
-        // editingPet과 selectedPet이 있는지 확인
-        if (!editingPet.value || !selectedPet.value) {
-          console.error('❌ 편집 데이터가 없습니다')
-          showSnackbar('편집 데이터를 불러올 수 없습니다.', 'error')
-          return
-        }
+        console.log('📤 업데이트 데이터:', {
+          id: updateData.id,
+          name: updateData.name,
+          speciesId: updateData.speciesId,
+          gender: updateData.gender,
+          age: updateData.age,
+          weight: updateData.weight,
+          birthday: updateData.birthday,
+          introduce: updateData.introduce,
+          imageFile: file.name
+        })
         
-        // 이미지 업데이트를 위한 FormData 구성
+        // 이미지 변경을 위한 FormData 구성 (백엔드 API 구조에 맞춰)
         const formData = new FormData()
         
-        // PetRegisterReq JSON 데이터 - editingPet을 우선으로 사용
+        // PetRegisterReq JSON 데이터 (백엔드에서 요구하는 구조)
         const petRegisterReq = {
-          name: editingPet.value.name || '',
-          age: editingPet.value.age || 0,
-          gender: editingPet.value.gender || 'FEMALE',
-          weight: editingPet.value.weight || 1.0,
-          url: selectedPet.value.url || '',
-          birthday: editingPet.value.birthday || null,
-          introduce: editingPet.value.introduce || '',
-          speciesId: editingPet.value.speciesId || null
+          name: selectedPet.value.name || '',
+          age: selectedPet.value.age || 0,
+          gender: selectedPet.value.gender || 'FEMALE',
+          weight: selectedPet.value.weight || 1.0, // 기본값 1.0kg으로 설정
+          url: selectedPet.value.url || '', // 기존 이미지 URL 유지
+          birthday: selectedPet.value.birthday || null,
+          introduce: selectedPet.value.introduce || '',
+          speciesId: selectedPet.value.speciesId || (() => {
+            // species 이름으로 speciesId 찾기
+            const speciesName = selectedPet.value.species
+            if (speciesName && speciesOptions.value.length > 0) {
+              const foundSpecies = speciesOptions.value.find(s => s.species === speciesName)
+              return foundSpecies ? foundSpecies.speciesId : null
+            }
+            return null
+          })()
         }
         
         // 필수 필드 검증
-        if (!petRegisterReq.name || !petRegisterReq.age || !petRegisterReq.gender || !petRegisterReq.weight) {
-          console.error('❌ 필수 필드가 누락되었습니다:', petRegisterReq)
-          showSnackbar('필수 정보를 모두 입력해주세요.', 'error')
-          return
+        if (!petRegisterReq.name || !petRegisterReq.age || !petRegisterReq.gender || !petRegisterReq.weight || !petRegisterReq.speciesId) {
+          throw new Error('필수 필드가 누락되었습니다: ' + 
+            (!petRegisterReq.name ? '이름, ' : '') +
+            (!petRegisterReq.age ? '나이, ' : '') +
+            (!petRegisterReq.gender ? '성별, ' : '') +
+            (!petRegisterReq.weight ? '몸무게, ' : '') +
+            (!petRegisterReq.speciesId ? '종류' : '')
+          )
         }
         
         formData.append('PetRegisterReq', new Blob([JSON.stringify(petRegisterReq)], { type: 'application/json' }))
-        formData.append('url', file)
+        formData.append('url', file) // 새 이미지 파일
         
         console.log('📤 FormData 구성 완료:', {
           petId: selectedPet.value.id,
           petRegisterReq,
           fileName: file.name,
           fileSize: file.size,
-          formDataEntries: Array.from(formData.entries())
+          // 각 필드별 값 확인
+          name: petRegisterReq.name,
+          age: petRegisterReq.age,
+          gender: petRegisterReq.gender,
+          weight: petRegisterReq.weight,
+          speciesId: petRegisterReq.speciesId,
+          // 원본 데이터와 비교
+          originalWeight: selectedPet.value.weight,
+          originalSpeciesId: selectedPet.value.speciesId
         })
         
-        // 백엔드 수정 API 호출 - petStore.updatePet은 petData와 petImage를 별도로 받음
-        const result = await petStore.updatePet(selectedPet.value.id, petRegisterReq, file)
+        // 백엔드 수정 API 호출 (PUT /pets/{id})
+        const result = await petStore.updatePet(selectedPet.value.id, formData)
         console.log('✅ 이미지 변경 완료:', result)
         
         // 펫 목록 새로고침
@@ -954,85 +843,89 @@ export default {
         // 선택된 펫 정보도 업데이트
         const updatedPet = petStore.pets.find(p => p.id === selectedPet.value.id)
         if (updatedPet) {
+          // selectedPet 강제 업데이트
           Object.assign(selectedPet.value, updatedPet)
-          if (editingPet.value) {
-            editingPet.value.url = updatedPet.url
-          }
           console.log('🔄 selectedPet 이미지 업데이트 완료:', selectedPet.value)
+          
+          if (editingPet.value) {
+            editingPet.value = { ...updatedPet }
+          }
         }
-        
-        showSnackbar('이미지가 성공적으로 변경되었습니다.', 'success')
         
       } catch (error) {
         console.error('❌ 이미지 변경 실패:', error)
+        console.error('❌ 에러 상세:', error.response?.data)
+        
+        // 백엔드 에러 메시지 추출
         const errorMessage = error.response?.data?.status?.message || error.message
-        showSnackbar(`사진 변경에 실패했습니다: ${errorMessage}`, 'error')
+        console.error('❌ 최종 에러 메시지:', errorMessage)
+        
+        // 사용자에게 적절한 에러 메시지 표시
+        if (errorMessage.includes('id must not be null')) {
+          showSnackbar('펫 정보를 찾을 수 없습니다. 페이지를 새로고침해주세요.', 'error')
+        } else if (errorMessage.includes('Required part')) {
+          showSnackbar('이미지 업로드 형식이 올바르지 않습니다.', 'error')
+        } else if (errorMessage.includes('validation')) {
+          showSnackbar('입력 정보가 올바르지 않습니다. 모든 필수 항목을 확인해주세요.', 'error')
+        } else {
+          showSnackbar(`사진 변경에 실패했습니다: ${errorMessage}`, 'error')
+        }
       }
       
       // 파일 입력 초기화
       event.target.value = ''
     }
-    
+
     // 변경사항 저장
     const saveChanges = async () => {
-      if (!editingPet.value) {
-        console.error('❌ 편집 데이터가 없습니다')
-        showSnackbar('편집할 데이터가 없습니다.', 'error')
-        return
-      }
-      
-      // 필수 필드 검증
-      if (!editingPet.value.name || !editingPet.value.age || !editingPet.value.gender || !editingPet.value.weight) {
-        console.error('❌ 필수 필드가 누락되었습니다:', editingPet.value)
-        showSnackbar('필수 정보를 모두 입력해주세요.', 'error')
-        return
-      }
+      if (!editingPet.value) return
       
       saving.value = true
       try {
         console.log('💾 수정사항 저장 시작:', editingPet.value)
         
-        // PetRegisterReq 데이터 구성
-        const petRegisterReq = {
-          name: editingPet.value.name,
-          age: editingPet.value.age,
-          gender: editingPet.value.gender,
-          weight: editingPet.value.weight,
-          url: selectedPet.value?.url || '',
-          birthday: editingPet.value.birthday,
-          introduce: editingPet.value.introduce,
-          speciesId: editingPet.value.speciesId
-        }
-        
-        // DB에 펫 정보 업데이트 - 이미지는 변경하지 않음 (null)
-        const updatedPet = await petStore.updatePet(editingPet.value.id, petRegisterReq, null)
+        // 1단계: DB에 펫 정보 업데이트
+        const updatedPet = await petStore.updatePet(editingPet.value.id, editingPet.value)
         console.log('✅ DB에 펫 정보 업데이트 완료:', updatedPet)
         
-        // 펫 목록 새로고침
+        // 2단계: 펫 목록 새로고침
         await petStore.fetchPets()
+        console.log('📥 펫 목록 새로고침 완료')
         
-        // 새로고침된 펫 목록에서 업데이트된 펫 찾기
+        // 3단계: 새로고침된 펫 목록에서 업데이트된 펫 찾기
         const refreshedPet = petStore.pets.find(p => p.id === editingPet.value.id)
         if (refreshedPet) {
-          // selectedPet을 새로고침된 정보로 완전히 교체
+          console.log('🔍 새로고침된 펫 정보:', refreshedPet)
+          
+          // 4단계: selectedPet을 새로고침된 정보로 완전히 교체
           selectedPet.value = { ...refreshedPet }
           console.log('🔄 selectedPet을 새로고침된 정보로 교체 완료:', selectedPet.value)
+        } else {
+          console.warn('⚠️ 새로고침된 펫 목록에서 해당 펫을 찾을 수 없음')
+          // 백업: editingPet 정보로 selectedPet 업데이트
+          selectedPet.value = { ...editingPet.value }
         }
         
-        // 수정 모드 종료
+        // 5단계: 수정 모드 종료
         isEditing.value = false
         editingPet.value = null
         
-        // DOM 업데이트 보장
+        // 6단계: DOM 업데이트 보장
         await nextTick()
+        console.log('🔄 DOM 업데이트 완료')
         
+        // 7단계: 강제 리렌더링을 위한 key 값 변경 트리거
+        const currentTime = Date.now()
+        console.log('🔄 강제 리렌더링 트리거:', currentTime)
+        
+        // 8단계: 성공 메시지 표시
         showSnackbar('반려동물 정보가 성공적으로 수정되었습니다.', 'success')
+        
         console.log('🎉 수정 완료 - 상세보기에 반영됨')
         
       } catch (error) {
         console.error('❌ 수정 실패:', error)
-        const errorMessage = error.response?.data?.status?.message || error.message
-        showSnackbar(`수정 중 오류가 발생했습니다: ${errorMessage}`, 'error')
+        showSnackbar('수정 중 오류가 발생했습니다.', 'error')
       } finally {
         saving.value = false
       }
@@ -1084,10 +977,6 @@ export default {
     onMounted(async () => {
       console.log('🔄 PetList 컴포넌트 마운트 시작')
       
-      // species 데이터 가져오기
-      await petStore.fetchSpecies()
-      console.log('📥 species 데이터 가져오기 완료')
-      
       if (pets.value.length === 0) {
         console.log('📥 반려동물 데이터 로드 시작')
         await petStore.fetchPets()
@@ -1109,50 +998,49 @@ export default {
       console.log('🔄 PetList 컴포넌트 마운트 완료')
     })
     
-          return {
-        showAddForm,
-        showDeleteConfirm,
-        petToDelete,
-        deleting,
-        showDetailModal,
-        selectedPet,
-        showEditForm,
-        isEditing,
-        editingPet,
-        saving,
-        showDatePicker,
-        speciesOptions,
-        genderOptions,
-        fileInput,
-        pets,
-        loading,
-        representativePet,
-        otherPets,
-        getDogCount,
-        getCatCount,
-        formatBirthday,
-        getSpeciesIcon,
-        getSpeciesIconColor,
-        getGenderColor,
-        getGenderIcon,
-        getGenderLabel,
-        setAsRepresentative,
-        viewPet,
-        closeDetailModal,
-        openEditForm,
-        handlePetUpdate,
-        handlePetDelete,
-        closeEditForm,
-        toggleEditMode,
-        handleImageChange,
-        onImageFileChange,
-        saveChanges,
-        confirmDeleteFromModal,
-        confirmDelete,
-        deletePet,
-        closeForm,
-        handleFormSuccess
-      }
+    return {
+      showAddForm,
+      showDeleteConfirm,
+      petToDelete,
+      deleting,
+      selectedPet,
+      showEditForm,
+      isEditing,
+      editingPet,
+      saving,
+      speciesOptions,
+      genderOptions,
+      fileInput,
+      handleImageChange,
+      onImageFileChange,
+      pets,
+      loading,
+      representativePet,
+      showDetailModal,
+      otherPets,
+      getDogCount,
+      getCatCount,
+      formatBirthday,
+      getSpeciesIcon,
+      getSpeciesIconColor,
+      getGenderColor,
+      getGenderIcon,
+      getGenderLabel,
+      setAsRepresentative,
+      viewPet,
+      closeDetailModal,
+      openEditForm,
+      handlePetUpdate,
+      handlePetDelete,
+      closeEditForm,
+      toggleEditMode,
+      saveChanges,
+      confirmDeleteFromModal,
+      confirmDelete,
+      deletePet,
+      closeForm,
+      handleFormSuccess
+    }
   }
 }
 </script>
@@ -1690,21 +1578,10 @@ export default {
 }
 
 .detail-layout {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 48px;
-  align-items: flex-start;
-  margin-bottom: 32px;
-}
-
-.pet-image-detail {
-  flex-shrink: 0;
-}
-
-.pet-details-detail {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+  align-items: start;
 }
 
 .pet-image-detail {
@@ -1845,6 +1722,33 @@ export default {
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
 }
 
+.species-value {
+  color: #1e293b !important;
+  font-weight: 600;
+  background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+  padding: 4px 12px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.introduction-text {
+  color: #374151 !important;
+  line-height: 1.7;
+  font-size: 1rem;
+  background: #ffffff;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid #f3f4f6;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.no-introduction {
+  font-style: italic;
+  color: #9ca3af;
+  background: #f9fafb;
+  border: 1px dashed #d1d5db;
+}
+
 
 
 .detail-info-row {
@@ -1897,123 +1801,6 @@ export default {
   gap: 12px;
   justify-content: center;
   padding: 24px;
-}
-
-/* 이미지 변경 오버레이 */
-.image-container {
-  position: relative;
-  display: inline-block;
-}
-
-.image-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 20px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.image-overlay:hover {
-  background: rgba(0, 0, 0, 0.8);
-}
-
-.camera-icon-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  color: white;
-}
-
-.camera-icon {
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-}
-
-.camera-text {
-  font-size: 0.875rem;
-  font-weight: 600;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-}
-
-/* 편집 필드 스타일 - 상세보기와 동일한 디자인 */
-.edit-field {
-  flex: 1;
-  min-width: 120px;
-}
-
-.edit-input {
-  width: 100%;
-  border-radius: 12px !important;
-  background: white !important;
-  border: 1px solid #e2e8f0 !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
-}
-
-.edit-input .v-field {
-  border-radius: 12px !important;
-  background: white !important;
-}
-
-.edit-input .v-field__outline {
-  border-color: #e2e8f0 !important;
-}
-
-.edit-textarea {
-  width: 100%;
-  border-radius: 12px !important;
-  background: white !important;
-  border: 1px solid #e2e8f0 !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
-}
-
-.edit-textarea .v-field {
-  border-radius: 12px !important;
-  background: white !important;
-}
-
-.edit-textarea .v-field__outline {
-  border-color: #e2e8f0 !important;
-}
-
-/* 수정 모드 버튼 스타일 */
-.cancel-btn {
-  background: #6b7280 !important;
-  color: white !important;
-}
-
-.save-btn {
-  background: #10b981 !important;
-  color: white !important;
-}
-
-/* 날짜 선택 모달 스타일 */
-.date-picker-card {
-  border-radius: 20px;
-}
-
-.date-picker-header {
-  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
-  color: white;
-  border-radius: 20px 20px 0 0;
-  padding: 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.date-picker-content {
-  padding: 20px;
-}
-
-.date-picker {
-  width: 100%;
 }
 
 /* 수정 폼 모달 */
