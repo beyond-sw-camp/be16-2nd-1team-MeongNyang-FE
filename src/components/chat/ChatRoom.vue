@@ -877,7 +877,6 @@ export default {
         }, 100)
       } catch (err) {
         console.error('메시지 전송 실패:', err)
-        
         // 파일 업로드 실패인지 확인
         if (err.message && err.message.includes('파일 업로드')) {
           if (showMessage) {
@@ -1225,8 +1224,7 @@ export default {
       } catch (error) {
         console.error('파일 업로드 실패:', error)
         
-        // 서버 응답에서 에러 메시지 추출
-        let errorMessage = '파일 업로드에 실패했습니다. 파일 개수와 형식을 확인해주세요.'
+        let errorMessage = '파일 업로드에 실패했습니다. 파일 개수와 크기, 형식을 확인해주세요.'
         
         throw new Error(errorMessage)
       }
