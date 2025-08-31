@@ -307,7 +307,7 @@
       <!-- 반려동물 상세 모달 -->
       <v-dialog
         v-model="showDetailModal"
-        max-width="1200"
+        max-width="1400"
         class="pet-detail-dialog"
         @click:outside="closeDetailModal"
         persistent
@@ -316,15 +316,6 @@
           <v-card-title class="detail-header">
             <div class="detail-title">
               <span class="text-h4">{{ selectedPet?.name }}</span>
-              <v-chip
-                size="small"
-                variant="tonal"
-                :color="getSpeciesIconColor(selectedPet?.petOrder)"
-                :prepend-icon="getSpeciesIcon(selectedPet?.petOrder)"
-                class="species-chip"
-              >
-                {{ selectedPet?.species || '알 수 없음' }}
-              </v-chip>
             </div>
             <v-btn
               icon="mdi-close"
@@ -359,6 +350,12 @@
               <div class="detail-section">
                 <h4 class="section-title">기본 정보</h4>
                 <div class="info-grid">
+                  <div class="info-item species-item">
+                    <v-icon size="24" :color="getSpeciesIconColor(selectedPet?.petOrder)">{{ getSpeciesIcon(selectedPet?.petOrder) }}</v-icon>
+                    <span class="info-label">종류</span>
+                    <span class="info-value">{{ selectedPet?.species || '알 수 없음' }}</span>
+                    <span class="species-detail">{{ selectedPet?.petOrder || '기타' }}</span>
+                  </div>
                   <div class="info-item">
                     <v-icon size="20" color="grey-darken-1">mdi-gender-male-female</v-icon>
                     <span class="info-label">성별</span>
@@ -1278,19 +1275,24 @@ export default {
   gap: 12px;
 }
 
-.species-chip {
-  background: rgba(255, 255, 255, 0.2) !important;
+.detail-title .text-h4 {
+  font-size: 2.5rem !important;
+  font-weight: 700 !important;
   color: white !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  margin: 0;
 }
+
+
 
 .close-btn {
   color: white !important;
 }
 
 .detail-content {
-  padding: 24px;
+  padding: 32px;
   display: flex;
-  gap: 32px;
+  gap: 48px;
   align-items: flex-start;
 }
 
@@ -1299,16 +1301,16 @@ export default {
 }
 
 .detail-pet-image {
-  width: 400px;
-  height: 400px;
+  width: 500px;
+  height: 500px;
   border-radius: 20px;
   overflow: hidden;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
 .detail-image-placeholder {
-  width: 400px;
-  height: 400px;
+  width: 500px;
+  height: 500px;
   border-radius: 20px;
   background: #f3f4f6;
   display: flex;
@@ -1321,8 +1323,118 @@ export default {
   flex: 1;
   display: flex;
   flex-direction: column;
+  gap: 24px;
+}
+
+.detail-section {
+  background: #f8fafc;
+  padding: 24px;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+}
+
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
   gap: 12px;
 }
+
+.section-title::before {
+  content: '';
+  width: 4px;
+  height: 24px;
+  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
+  border-radius: 2px;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+/* 종류 항목은 전체 너비 사용 */
+.info-grid .species-item {
+  grid-column: 1 / -1;
+  margin-bottom: 8px;
+}
+
+/* 나머지 항목들은 2열로 정렬 */
+.info-grid .info-item:not(.species-item) {
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: white;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+/* 종류 항목은 특별한 레이아웃 */
+.species-item {
+  background: linear-gradient(135deg, #fef7f7, #fef2f2) !important;
+  border-color: #E87D7D !important;
+  padding: 24px !important;
+}
+
+.species-item .info-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+}
+
+.species-item .species-detail {
+  margin-left: auto;
+  font-size: 12px;
+  color: #E87D7D;
+  font-weight: 600;
+  background: rgba(232, 125, 125, 0.1);
+  padding: 6px 12px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.info-item:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+  border-color: #E87D7D;
+}
+
+.info-label {
+  font-weight: 600;
+  color: #64748b;
+  min-width: 60px;
+  font-size: 14px;
+}
+
+.info-value {
+  font-weight: 700;
+  color: #1e293b;
+  font-size: 16px;
+}
+
+/* 종 정보 특별 스타일 */
+.species-item .v-icon {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+
 
 .detail-info-row {
   display: flex;
@@ -1333,18 +1445,29 @@ export default {
 }
 
 .introduction-detail {
-  background: #f9fafb;
-  padding: 20px;
-  border-radius: 12px;
-  border-left: 4px solid #E87D7D;
-  margin-top: 20px;
+  background: #f8fafc;
+  padding: 28px;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .introduction-title {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 12px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.introduction-title::before {
+  content: '';
+  width: 4px;
+  height: 24px;
+  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
+  border-radius: 2px;
 }
 
 .introduction-text {
