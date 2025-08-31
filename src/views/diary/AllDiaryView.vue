@@ -96,6 +96,15 @@
       @refresh-comments="handleRefreshComments"
     />
   </div>
+
+  <div 
+      v-show="!showCommentsModal"
+      class="create-diary-btn"
+      :class="{ 'with-scroll-btn': showScrollToTop }"
+      @click="$router.push('/diarys/create')"
+    >
+      <v-icon size="24" color="white">mdi-plus</v-icon>
+    </div>
 </template>
 
 <script>
@@ -457,6 +466,9 @@ export default {
       currentPostId.value = postId
       showCommentsModal.value = true
       await fetchComments(postId)
+      
+      // 댓글 모달 열림 이벤트 발생
+      window.dispatchEvent(new Event('comments-modal-open'))
       
       console.log('댓글 모달 열기 완료')
       console.log('currentPostId:', currentPostId.value)
@@ -991,11 +1003,41 @@ export default {
       window.addEventListener('scroll', handleScroll)
     })
 
+    // 스크롤 위치 감지 (scroll-to-top 버튼과 겹치지 않도록)
+    const showScrollToTop = ref(false)
+    
+    const handleScrollForButton = () => {
+      showScrollToTop.value = window.scrollY > 300
+    }
+    
+    onMounted(() => {
+      window.addEventListener('scroll', handleScrollForButton)
+    })
+    
+    // 댓글 모달 상태 변화 감지
+    watch(showCommentsModal, (newValue) => {
+      if (!newValue) {
+        // 댓글 모달이 닫힐 때 이벤트 발생
+        window.dispatchEvent(new Event('comments-modal-close'))
+      }
+    })
+    
+    // 라우트 변경 감지 (댓글 모달 상태 초기화)
+    watch(() => route.path, (newPath, oldPath) => {
+      if (newPath !== oldPath && showCommentsModal.value) {
+        // 라우트가 변경되고 댓글 모달이 열려있다면 닫기 이벤트 발생
+        window.dispatchEvent(new Event('comments-modal-close'))
+        showCommentsModal.value = false
+      }
+    })
+    
     onUnmounted(() => {
+      window.removeEventListener('scroll', handleScrollForButton)
       window.removeEventListener('scroll', handleScroll)
     })
 
     return {
+      showScrollToTop,
       posts,
       loading,
       hasMore,
@@ -1552,4 +1594,54 @@ export default {
     padding: 0 12px 8px 12px;
   }
 }
+
+.create-diary-btn {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 56px;
+  height: 56px;
+  background: #FF8B8B;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(255, 139, 139, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1000;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeInUp 0.3s ease forwards;
+}
+
+.create-diary-btn:hover {
+  background: #FF6B6B;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(255, 139, 139, 0.4);
+}
+
+.create-diary-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(255, 139, 139, 0.3);
+}
+
+/* scroll-to-top 버튼이 있을 때 create-diary-btn 위치 조정 */
+.create-diary-btn.with-scroll-btn {
+  bottom: 100px; /* scroll-to-top 버튼 위로 이동 */
+}
+
+/* 반응형 조정 */
+@media (max-width: 768px) {
+  .create-diary-btn.with-scroll-btn {
+    bottom: 90px; /* 모바일에서는 더 가깝게 */
+  }
+}
+
+@media (max-width: 480px) {
+  .create-diary-btn.with-scroll-btn {
+    bottom: 80px; /* 작은 화면에서는 더 가깝게 */
+  }
+}
+
 </style>

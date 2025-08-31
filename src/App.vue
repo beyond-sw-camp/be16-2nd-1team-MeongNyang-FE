@@ -8,7 +8,7 @@
     
     <!-- 맨 위로 버튼 -->
     <div 
-      v-show="showScrollToTop"
+      v-show="showScrollToTop && !isCommentsModalOpen"
       class="scroll-to-top-btn"
       @click="scrollToTop"
     >
@@ -328,6 +328,7 @@
 
 <script>
 import { ref, provide, onMounted, onUnmounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useUIStore } from './stores/ui'
 import { useAuthStore } from './stores/auth'
 import { userAPI } from './services/api'
@@ -354,7 +355,7 @@ export default {
   },
   setup() {
     const uiStore = useUIStore()
-
+    const router = useRouter()
     const authStore = useAuthStore()
     
     // 플로팅 모달 상태 관리
@@ -691,6 +692,15 @@ export default {
       }
     })
     
+    // 라우트 변경 감지 (댓글 모달 상태 초기화)
+    watch(() => router.currentRoute.value.path, (newPath, oldPath) => {
+      if (newPath !== oldPath) {
+        // 라우트가 변경되면 댓글 모달 상태 초기화
+        // 이벤트를 통해 댓글 모달 닫기 신호 전송
+        window.dispatchEvent(new Event('comments-modal-close'))
+      }
+    })
+    
     // 컴포넌트 언마운트 시 SSE 연결 해제
     onUnmounted(() => {
       cleanupSse()
@@ -731,16 +741,23 @@ export default {
   },
   data() {
     return {
-      showScrollToTop: false
+      showScrollToTop: false,
+      isCommentsModalOpen: false
     }
   },
   mounted() {
     // 스크롤 이벤트 리스너 추가
     window.addEventListener('scroll', this.handleScroll)
+    
+    // 댓글 모달 상태 감지 이벤트 리스너 추가
+    window.addEventListener('comments-modal-open', this.handleCommentsModalOpen)
+    window.addEventListener('comments-modal-close', this.handleCommentsModalClose)
   },
   beforeUnmount() {
     // 컴포넌트 제거 시 이벤트 리스너 제거
     window.removeEventListener('scroll', this.handleScroll)
+    window.removeEventListener('comments-modal-open', this.handleCommentsModalOpen)
+    window.removeEventListener('comments-modal-close', this.handleCommentsModalClose)
   },
   methods: {
     handleScroll() {
@@ -753,6 +770,12 @@ export default {
         top: 0,
         behavior: 'smooth'
       })
+    },
+    handleCommentsModalOpen() {
+      this.isCommentsModalOpen = true
+    },
+    handleCommentsModalClose() {
+      this.isCommentsModalOpen = false
     }
   }
 }
