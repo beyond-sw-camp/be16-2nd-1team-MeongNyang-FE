@@ -219,7 +219,7 @@ export default {
         if (previousLikedState) {
           // 좋아요 취소 (백엔드에서 멱등성 보장)
           console.log(`좋아요 취소 요청 시작 - DELETE /posts/${postId}/like`);
-          response = await postAPI.unlike(postId);
+          response = await postAPI.unlikePost(postId);
           console.log('좋아요 취소 응답:', {
             status: response.status,
             statusText: response.statusText,
@@ -229,7 +229,7 @@ export default {
         } else {
           // 좋아요 추가 (백엔드에서 중복 방지)
           console.log(`좋아요 추가 요청 시작 - POST /posts/${postId}/like`);
-          response = await postAPI.like(postId);
+          response = await postAPI.likePost(postId);
           console.log('좋아요 추가 응답:', {
             status: response.status,
             statusText: response.statusText,

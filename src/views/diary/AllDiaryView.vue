@@ -639,13 +639,13 @@ export default {
         if (previousLikedState) {
           // 좋아요 취소 (백엔드에서 멱등성 보장)
           console.log('좋아요 취소 요청 시작')
-          response = await postAPI.unlike(postId)
+          response = await postAPI.unlikePost(postId)
           console.log('좋아요 취소 응답:', response)
           console.log('좋아요 취소 성공')
         } else {
           // 좋아요 추가 (백엔드에서 중복 방지)
           console.log('좋아요 추가 요청 시작')
-          response = await postAPI.like(postId)
+          response = await postAPI.likePost(postId)
           console.log('좋아요 추가 응답:', response)
           console.log('좋아요 추가 성공')
         }
