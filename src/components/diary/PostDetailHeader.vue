@@ -40,7 +40,7 @@
         :disabled="followProcessing"
         :loading="followProcessing"
       >
-        언팔로우
+        팔로우중
       </v-btn>
     </div>
     <!-- 포스트 옵션 메뉴 -->

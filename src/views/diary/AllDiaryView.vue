@@ -593,7 +593,9 @@ export default {
 
     // 사용자 일기로 이동
     const goToUserDiary = (userId) => {
-      if (userId) {
+      if (userId === currentUserId.value) {
+        router.push(`/diarys`)
+      } else {
         router.push(`/diarys/${userId}`)
       }
     }
