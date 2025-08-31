@@ -835,7 +835,9 @@ export default {
                 
                 // 사용자 다이어리로 이동하는 메서드
                 const goToUserDiary = (userId) => {
-                  if (userId) {
+                  if (userId === currentUserId.value) {
+                    $router.push(`/diarys`);
+                  } else {
                     $router.push(`/diarys/${userId}`);
                   }
                 };
