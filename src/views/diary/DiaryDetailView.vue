@@ -924,23 +924,23 @@ export default {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   overflow: hidden;
 }
-
 .caption {
-  padding: 8px 20px;
-  display: flex;
-  gap: 8px;
+  padding: 0 16px 8px 16px;
+  line-height: 1.4;
+  text-align: left;
+  margin: 0;
 }
 
 .caption-username {
   font-weight: 600;
-  font-size: 0.9rem;
-  color: #1a1a1a;
+  color: #1E293B;
+  margin-right: 8px;
 }
 
 .caption-text {
+  color: #374151;
   font-size: 0.9rem;
-  color: #333;
-  line-height: 1.4;
+  margin: 0;
 }
 
 /* 삭제 확인 다이얼로그 스타일 */

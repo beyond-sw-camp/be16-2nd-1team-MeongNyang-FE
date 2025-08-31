@@ -156,6 +156,7 @@ const formatCommentText = (text, mentionUserId = null) => {
 }
 
 .comment-content {
+  text-align: left;
   color: #495057;
   word-break: break-word;
   margin-top: 2px;
