@@ -51,16 +51,19 @@
         </v-btn>
       </template>
       <v-list class="options-menu">
-        <v-list-item @click="$emit('edit-post')" class="menu-item">
-          <v-list-item-title class="menu-text">수정</v-list-item-title>
-        </v-list-item>
-        <v-list-item @click="$emit('show-delete-confirm')" class="menu-item">
-          <v-list-item-title class="menu-text delete-text">삭제</v-list-item-title>
-        </v-list-item>
-        <v-divider></v-divider>
-        <v-list-item @click="$emit('report-post')" class="menu-item">
-          <v-list-item-title class="menu-text report-text">신고</v-list-item-title>
-        </v-list-item>
+        <template v-if="postData?.userId === currentUserId">
+          <v-list-item @click="$emit('edit-post')" class="menu-item">
+            <v-list-item-title class="menu-text">수정</v-list-item-title>
+          </v-list-item>
+          <v-list-item @click="$emit('show-delete-confirm')" class="menu-item">
+            <v-list-item-title class="menu-text delete-text">삭제</v-list-item-title>
+          </v-list-item>
+        </template>
+        <template v-else>
+          <v-list-item @click="$emit('report-post')" class="menu-item">
+            <v-list-item-title class="menu-text report-text">신고</v-list-item-title>
+          </v-list-item>
+        </template>
       </v-list>
     </v-menu>
   </div>
