@@ -58,6 +58,18 @@
             />
           </v-avatar>
           
+          <!-- 사진 변경 오버레이 (이미지가 있을 때만 표시) -->
+          <div 
+            v-if="previewImage && !imageRemoved" 
+            class="image-overlay" 
+            @click="handleImageClick"
+          >
+            <div class="camera-icon-container">
+              <v-icon class="camera-icon" size="32" color="white">mdi-camera</v-icon>
+              <span class="camera-text">사진 변경</span>
+            </div>
+          </div>
+          
           <div class="image-hint">
             <span>이미지 크기는 5MB 이하 권장</span>
           </div>
@@ -334,7 +346,7 @@
       </div>
   </div>
 
-    <!-- 생일 선택기 모달 - 사진 형식대로 -->
+    <!-- 생일 선택기 모달 - PetList와 동일한 달력 -->
     <v-dialog 
       v-model="showBirthdayPicker" 
       max-width="400"
@@ -342,68 +354,78 @@
       content-class="date-picker-dialog"
     >
       <v-card class="date-picker-card">
-                  <!-- 첫 화면: 일반 달력 -->
-          <div v-if="!showYearPicker && !showMonthPicker" class="date-picker-main">
-                                  <div class="date-picker-header">
-              <v-btn
-                icon="mdi-chevron-left"
-                variant="text"
-                @click="previousMonth"
-                class="nav-btn"
-              />
-              <span class="current-month-year" @click="showYearPicker = true">{{ currentDate.getFullYear() }}년 {{ currentDate.getMonth() + 1 }}월</span>
-              <v-btn
-                icon="mdi-chevron-right"
-                variant="text"
-                @click="nextMonth"
-                class="nav-btn"
-              />
-            </div>
-            
-            <!-- 요일 헤더 -->
-            <div class="weekdays-header">
-              <div class="weekday">일</div>
-              <div class="weekday">월</div>
-              <div class="weekday">화</div>
-              <div class="weekday">수</div>
-              <div class="weekday">목</div>
-              <div class="weekday">금</div>
-              <div class="weekday">토</div>
-            </div>
-            
-            <!-- 날짜 그리드 -->
-            <div class="calendar-grid">
-              <div
-                v-for="date in calendarDates"
-                :key="date.key"
-                :class="['calendar-day', {
-                  'other-month': !date.isCurrentMonth,
-                  'selected': date.isSelected,
-                  'today': date.isToday,
-                  'disabled': date.isDisabled
-                }]"
-                @click="!date.isDisabled && selectDate(date)"
-              >
-                {{ date.day }}
-              </div>
-            </div>
+        <!-- 첫 화면: 일반 달력 -->
+        <div v-if="!showYearPicker && !showMonthPicker" class="date-picker-main">
+          <div class="date-picker-header">
+            <v-btn
+              icon="mdi-chevron-left"
+              variant="text"
+              @click="previousMonth"
+              class="nav-btn"
+            />
+            <span class="current-month-year" @click="showYearPicker = true">{{ currentDate.getFullYear() }}년 {{ currentDate.getMonth() + 1 }}월</span>
+            <v-btn
+              icon="mdi-chevron-right"
+              variant="text"
+              @click="nextMonth"
+              class="nav-btn"
+            />
+          </div>
           
-                      <div class="date-picker-actions">
+          <!-- 요일 헤더 -->
+          <div class="weekdays-header">
+            <div class="weekday">일</div>
+            <div class="weekday">월</div>
+            <div class="weekday">화</div>
+            <div class="weekday">수</div>
+            <div class="weekday">목</div>
+            <div class="weekday">금</div>
+            <div class="weekday">토</div>
+          </div>
+          
+          <!-- 날짜 그리드 -->
+          <div class="calendar-grid">
+            <div
+              v-for="date in calendarDates"
+              :key="date.key"
+              :class="['calendar-day', {
+                'other-month': !date.isCurrentMonth,
+                'selected': date.isSelected,
+                'today': date.isToday,
+                'disabled': date.isDisabled
+              }]"
+              @click="!date.isDisabled && selectDate(date)"
+            >
+              {{ date.day }}
+            </div>
+          </div>
+          
+          <div class="date-picker-actions">
+            <v-btn
+              v-show="selectedDate || petData?.birthday"
+              variant="text"
+              class="clear-btn"
+              @click="clearBirthdayFromPicker"
+            >
+              초기화
+            </v-btn>
+            <div class="right-buttons">
               <v-btn
-                variant="outlined"
-                @click="cancelDateSelection"
+                variant="text"
                 class="cancel-btn"
+                @click="cancelDateSelection"
               >
+                <v-icon start size="18">mdi-close</v-icon>
                 취소
               </v-btn>
               <v-btn
-                color="#007bff"
-                @click="confirmDateSelection"
                 class="confirm-btn"
+                @click="confirmDateSelection"
               >
                 확인
               </v-btn>
             </div>
+          </div>
         </div>
         
         <!-- 연도 선택 화면 -->
@@ -415,7 +437,7 @@
               @click="previousYearRange"
               class="nav-btn"
             />
-                          <span class="year-range" @click="showYearPicker = false; showMonthPicker = true">{{ yearRangeStart }} - {{ yearRangeEnd }}</span>
+            <span class="year-range" @click="showYearPicker = false; showMonthPicker = true">{{ yearRangeStart }} - {{ yearRangeEnd }}</span>
             <v-btn
               icon="mdi-chevron-right"
               variant="text"
@@ -428,9 +450,9 @@
             <div
               v-for="year in yearRange"
               :key="year"
-                              :class="['year-cell', {
-                  'selected': year === currentDate.getFullYear()
-                }]"
+              :class="['year-cell', {
+                'selected': year === currentDate.getFullYear()
+              }]"
               @click="selectYear(year)"
             >
               {{ year }}
@@ -457,21 +479,21 @@
         
         <!-- 월 선택 화면 -->
         <div v-if="showMonthPicker" class="month-picker">
-                      <div class="month-picker-header">
-              <v-btn
-                icon="mdi-chevron-left"
-                variant="text"
-                @click="previousYear"
-                class="nav-btn"
-              />
-              <span class="current-year">{{ currentDate.getFullYear() }}년</span>
-              <v-btn
-                icon="mdi-chevron-right"
-                variant="text"
-                @click="nextYear"
-                class="nav-btn"
-              />
-            </div>
+          <div class="month-picker-header">
+            <v-btn
+              icon="mdi-chevron-left"
+              variant="text"
+              @click="previousYear"
+              class="nav-btn"
+            />
+            <span class="current-year">{{ currentDate.getFullYear() }}년</span>
+            <v-btn
+              icon="mdi-chevron-right"
+              variant="text"
+              @click="nextYear"
+              class="nav-btn"
+            />
+          </div>
           
           <div class="month-grid">
             <div
@@ -1149,13 +1171,19 @@ export default {
     }
     
     const selectMonth = (month) => {
+      // 월을 선택하면 해당 월의 달력으로 이동
       selectedMonth.value = month
-      showMonthPicker.value = true
+      const year = currentDate.value.getFullYear()
+      currentDate.value = new Date(year, month - 1, 1)
+      showMonthPicker.value = false
+      showYearPicker.value = false
     }
     
     const selectYear = (year) => {
+      // 연도 선택 즉시 월 선택 화면으로 전환
       currentDate.value = new Date(year, currentDate.value.getMonth(), 1)
       showYearPicker.value = false
+      showMonthPicker.value = true
     }
     
     const backToMain = () => {
@@ -1174,6 +1202,12 @@ export default {
         showMonthPicker.value = false
         selectedMonth.value = null
       }
+    }
+    
+    const clearBirthdayFromPicker = () => {
+      petData.birthday = null
+      petData.age = null
+      selectedDate.value = null
     }
     
     const cancelDateSelection = () => {
@@ -1279,6 +1313,7 @@ export default {
       backToMain,
       confirmYearSelection,
       confirmMonthSelection,
+      clearBirthdayFromPicker,
       cancelDateSelection,
       openBirthdayPicker,
       confirmDateSelection
@@ -1428,6 +1463,7 @@ export default {
   align-items: center;
   gap: 32px;
   margin-bottom: 40px;
+  position: relative;
 }
 
 .upload-surface {
@@ -1457,6 +1493,47 @@ export default {
 
 .clickable-image:hover {
   opacity: 0.9;
+}
+
+/* 이미지 변경 오버레이 */
+.image-overlay {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 240px;
+  height: 240px;
+  background: rgba(0, 0, 0, 0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  opacity: 0;
+}
+
+.image-overlay:hover {
+  background: rgba(0, 0, 0, 0.6);
+  opacity: 1;
+}
+
+.camera-icon-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: white;
+}
+
+.camera-icon {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.camera-text {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 
@@ -1729,6 +1806,15 @@ export default {
     font-weight: 600;
     font-size: 1.1rem;
     color: #333;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+  }
+
+  .year-range:hover {
+    background: #ffe6e6 !important;
+    color: #d32f2f;
   }
 
   .year-grid {
@@ -1891,28 +1977,48 @@ export default {
     background: white !important;
     border-top: 1px solid #e0e0e0;
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+  }
+
+  .right-buttons {
+    display: flex;
     gap: 12px;
   }
 
-  .cancel-btn {
-    border-color: #495057;
-    color: #495057 !important;
-    background: white !important;
-    border-radius: 20px !important;
+  .date-picker-actions .clear-btn {
+    color: #E87D7D !important;
     font-weight: 600;
-    padding: 10px 20px;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 8px 12px;
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .cancel-btn {
+    border: 2px solid #e0e0e0 !important;
+    color: #666 !important;
+    background: white !important;
+    border-radius: 50px !important;
+    font-weight: 500;
+    padding: 8px 24px;
     min-width: 80px;
-    border: 1px solid #495057;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
   }
 
   .confirm-btn {
+    background: #E87D7D !important;
     color: white;
-    background: #f44336 !important;
-    border-radius: 20px !important;
-    font-weight: 500;
-    padding: 10px 20px;
-    min-width: 80px;
+    border-radius: 50px !important;
+    box-shadow: none !important;
+    font-weight: 600;
+    padding: 10px 22px;
+    min-width: 90px;
     border: none;
   }
 
@@ -1982,20 +2088,91 @@ export default {
   }
 }
 
-/* PetForm 내부 스크롤바 비활성화 */
+/* PetForm 내부 스크롤바 - 빨간색 커스텀 스타일 */
 .v-card .step-content::-webkit-scrollbar,
 .step-content::-webkit-scrollbar,
 .pet-form-container .step-content::-webkit-scrollbar,
 .v-card::-webkit-scrollbar {
-  display: none !important;
+  width: 10px !important;
+  height: 10px !important;
+  -webkit-appearance: none !important;
 }
 
-/* PetForm 내부 Firefox 스크롤바 비활성화 */
+.v-card .step-content::-webkit-scrollbar-track,
+.step-content::-webkit-scrollbar-track,
+.pet-form-container .step-content::-webkit-scrollbar-track,
+.v-card::-webkit-scrollbar-track {
+  background: #f8f9fa !important;
+  border-radius: 6px !important;
+  margin: 2px 0 !important;
+  -webkit-appearance: none !important;
+}
+
+.v-card .step-content::-webkit-scrollbar-thumb,
+.step-content::-webkit-scrollbar-thumb,
+.pet-form-container .step-content::-webkit-scrollbar-thumb,
+.v-card::-webkit-scrollbar-thumb {
+  background: #E87D7D !important;
+  border-radius: 6px !important;
+  border: 1px solid #f8f9fa !important;
+  -webkit-appearance: none !important;
+}
+
+.v-card .step-content::-webkit-scrollbar-thumb:hover,
+.step-content::-webkit-scrollbar-thumb:hover,
+.pet-form-container .step-content::-webkit-scrollbar-thumb:hover,
+.v-card::-webkit-scrollbar-thumb:hover {
+  background: #FF6B6B !important;
+  -webkit-appearance: none !important;
+}
+
+/* PetForm 내부 Firefox 스크롤바 */
 .v-card .step-content,
 .step-content,
 .pet-form-container .step-content,
 .v-card {
-  scrollbar-width: none !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: #E87D7D #f8f9fa !important;
+}
+
+/* 사파리 전용 PetForm 스크롤바 스타일 */
+@supports (-webkit-appearance: none) {
+  .v-card .step-content::-webkit-scrollbar,
+  .step-content::-webkit-scrollbar,
+  .pet-form-container .step-content::-webkit-scrollbar,
+  .v-card::-webkit-scrollbar {
+    width: 10px !important;
+    height: 10px !important;
+    -webkit-appearance: none !important;
+  }
+  
+  .v-card .step-content::-webkit-scrollbar-track,
+  .step-content::-webkit-scrollbar-track,
+  .pet-form-container .step-content::-webkit-scrollbar-track,
+  .v-card::-webkit-scrollbar-track {
+    background: #f8f9fa !important;
+    border-radius: 6px !important;
+    margin: 2px 0 !important;
+    -webkit-appearance: none !important;
+  }
+  
+  .v-card .step-content::-webkit-scrollbar-thumb,
+  .step-content::-webkit-scrollbar-thumb,
+  .pet-form-container .step-content::-webkit-scrollbar-thumb,
+  .v-card::-webkit-scrollbar-thumb {
+    background: #E87D7D !important;
+    border-radius: 6px !important;
+    border: 1px solid #f8f9fa !important;
+    -webkit-appearance: none !important;
+  }
+  
+  .v-card .step-content::-webkit-scrollbar-thumb:hover,
+  .step-content::-webkit-scrollbar-thumb:hover,
+  .pet-form-container .step-content::-webkit-scrollbar-thumb:hover,
+  .v-card::-webkit-scrollbar-thumb:hover {
+    background: #FF6B6B !important;
+    -webkit-appearance: none !important;
+  }
 }
 
 /* 텍스트 영역 스크롤바 */

@@ -1,5 +1,12 @@
 <template>
-  <v-card class="pet-card" :class="{ 'is-representative': isRepresentative }" variant="elevated" rounded="xl">
+  <v-card 
+    class="pet-card" 
+    :class="{ 'is-representative': isRepresentative }" 
+    variant="elevated" 
+    rounded="xl"
+    @click="$emit('view-details', pet)"
+    style="cursor: pointer;"
+  >
     <!-- 반려동물 이미지 영역 -->
     <div class="pet-image-section">
       <div class="image-container">
@@ -96,7 +103,7 @@
         <v-btn 
           variant="flat" 
           color="#E87D7D" 
-          @click="$emit('view-details', pet)"
+          @click.stop="$emit('view-details', pet)"
           rounded="xl"
           class="action-btn view-details-btn"
           prepend-icon="mdi-eye"
@@ -104,12 +111,24 @@
           상세보기
         </v-btn>
         
-
+        <!-- 대표 등록 버튼 (현재 대표가 아닌 경우에만 표시) -->
+        <v-btn 
+          v-if="!isRepresentative"
+          variant="outlined" 
+          color="amber" 
+          @click.stop="$emit('set-representative', pet)"
+          rounded="lg"
+          class="action-btn set-representative-btn"
+          prepend-icon="mdi-star"
+          size="small"
+        >
+          대표
+        </v-btn>
         
         <v-btn 
           variant="flat" 
           color="#E87D7D" 
-          @click="$emit('delete', pet)"
+          @click.stop="$emit('delete', pet)"
           rounded="xl"
           class="action-btn delete-btn"
           prepend-icon="mdi-delete"
@@ -261,26 +280,11 @@ export default {
   overflow: hidden;
 }
 
-.pet-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #E87D7D, #FF6B6B, #E87D7D);
-  background-size: 200% 100%;
-  animation: shimmer 3s ease-in-out infinite;
-}
 
-@keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
 
 .pet-card:hover {
-  transform: translateY(-8px) scale(1.02);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
 }
 
 .pet-card.is-representative {
@@ -290,8 +294,8 @@ export default {
 }
 
 .pet-card.is-representative:hover {
-  box-shadow: 0 24px 48px rgba(245, 158, 11, 0.35);
-  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 12px 24px rgba(245, 158, 11, 0.2);
+  transform: translateY(-4px);
 }
 
 /* 이미지 섹션 */
@@ -303,30 +307,36 @@ export default {
 
 .image-container {
   position: relative;
-  width: 100%;
-  height: 220px;
+  width: 200px;
+  height: 200px;
+  margin: 0 auto;
   overflow: hidden;
+  border-radius: 50%;
 }
 
 .pet-image {
   width: 100%;
   height: 100%;
+  border-radius: 50%;
   transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  object-fit: cover;
 }
 
 .pet-card:hover .pet-image {
-  transform: scale(1.08);
+  transform: scale(1.02);
 }
 
 .image-placeholder {
-  width: 100%;
-  height: 100%;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
   color: #64748b;
   position: relative;
+  margin: 0 auto;
 }
 
 .image-placeholder::before {
@@ -421,8 +431,8 @@ export default {
 }
 
 .info-chip:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* 상세 정보 */
@@ -445,7 +455,7 @@ export default {
 
 .detail-row:hover {
   background: rgba(241, 245, 249, 1);
-  transform: translateX(4px);
+  transform: translateX(2px);
 }
 
 .detail-icon {
@@ -461,7 +471,7 @@ export default {
 
 .detail-row:hover .detail-icon {
   background: linear-gradient(135deg, #E87D7D, #FF6B6B);
-  transform: scale(1.1);
+  transform: scale(1.05);
 }
 
 .detail-row:hover .detail-icon .v-icon {
@@ -504,8 +514,8 @@ export default {
 }
 
 .view-details-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(232, 125, 125, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(232, 125, 125, 0.3);
   background: linear-gradient(135deg, #FF6B6B, #E87D7D) !important;
 }
 
@@ -517,9 +527,22 @@ export default {
 }
 
 .delete-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(232, 125, 125, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(232, 125, 125, 0.3);
   background: linear-gradient(135deg, #FF6B6B, #E87D7D) !important;
+}
+
+.set-representative-btn {
+  border-color: #f59e0b !important;
+  color: #f59e0b !important;
+  background: transparent !important;
+}
+
+.set-representative-btn:hover {
+  background: #f59e0b !important;
+  color: white !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
 }
 
 /* 반응형 디자인 */

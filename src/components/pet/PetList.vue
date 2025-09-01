@@ -260,6 +260,13 @@
               <div class="form-title">
               <span class="text-h4">새 반려동물 등록</span>
               </div>
+              <v-btn
+                icon="mdi-close"
+                variant="text"
+                @click="closeForm"
+                color="white"
+                class="close-btn"
+              />
             </v-card-title>
             <v-card-text class="form-content">
               <PetForm
@@ -281,7 +288,7 @@
         <div class="delete-icon-container">
           <div class="delete-icon-circle">
             <v-icon size="48" color="white">mdi-delete</v-icon>
-          </div>
+        </div>
         </div>
         <h3 class="delete-title">반려동물 삭제</h3>
         <p class="delete-message">
@@ -297,7 +304,7 @@
         <div class="delete-actions">
           <v-btn
             variant="outlined"
-            color="grey-darken-1"
+              color="grey-darken-1"
             @click="showDeleteConfirm = false"
             class="cancel-btn"
             size="large"
@@ -307,7 +314,7 @@
           </v-btn>
           <v-btn
             color="error"
-            variant="flat"
+              variant="flat"
             @click="deletePet"
             :loading="deleting"
             class="delete-btn"
@@ -318,7 +325,7 @@
           </v-btn>
         </div>
       </template>
-      </ModalDialog>
+    </ModalDialog>
 
       <!-- 반려동물 상세 모달 -->
       <v-dialog
@@ -340,6 +347,7 @@
               @click="closeDetailModal"
               color="white"
               class="close-btn"
+              size="large"
             />
           </v-card-title>
           <v-card-text class="detail-content">
@@ -381,6 +389,49 @@
                 @change="onImageFileChange"
                 style="display: none"
               />
+              
+              <!-- 생일 정보 (사진 아래) -->
+              <div class="birthday-info">
+                <div class="birthday-item">
+                  <v-icon size="20" color="grey-darken-1">mdi-calendar</v-icon>
+                  <span class="info-label">생일</span>
+                  <div v-if="isEditing" class="edit-field">
+                    <div class="birthday-input-container">
+                      <v-btn
+                        :text="formatBirthday(editingPet.birthday) || '생일 선택'"
+                        variant="outlined"
+                        class="edit-input rounded-input date-btn"
+                        @click="openDatePicker"
+                        prepend-icon="mdi-calendar"
+                        color="#E87D7D"
+                      />
+                      
+                      <!-- 생일 삭제 버튼 -->
+                      <v-btn
+                        v-if="editingPet.birthday"
+                        icon="mdi-close"
+                        variant="text"
+                        size="small"
+                        color="error"
+                        @click="clearBirthday"
+                        class="clear-birthday-btn"
+                        aria-label="생일 삭제"
+                      />
+                    </div>
+                  </div>
+                  <span v-else class="info-value">{{ formatBirthday(selectedPet?.birthday) }}</span>
+                </div>
+                
+                <!-- 생일까지 남은 일수 (편집 모드가 아닐 때만 표시) -->
+                <div v-if="!isEditing && selectedPet?.birthday" class="birthday-countdown">
+                  <v-icon size="18" :color="getBirthdayCountdownColor(selectedPet.birthday)">{{ getBirthdayCountdownIcon(selectedPet.birthday) }}</v-icon>
+                  <span class="countdown-text" :style="{ color: getBirthdayCountdownColor(selectedPet.birthday) }">
+                    {{ getBirthdayCountdown(selectedPet.birthday) }}
+                  </span>
+                </div>
+                
+
+              </div>
               </div>
 
             <div class="pet-details-detail">
@@ -419,7 +470,22 @@
                       />
                     </div>
                     <span v-else class="info-value">{{ selectedPet?.species || '알 수 없음' }}</span>
-                    <span class="species-detail">{{ selectedPet?.petOrder || '기타' }}</span>
+                  </div>
+                  <div class="info-item name-item">
+                    <v-icon size="20" color="grey-darken-1">mdi-account</v-icon>
+                    <span class="info-label">이름</span>
+                    <div v-if="isEditing" class="edit-field">
+                      <v-text-field
+                        v-model="editingPet.name"
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                        class="edit-input rounded-input"
+                        placeholder="이름 입력"
+                        maxlength="20"
+                      />
+                    </div>
+                    <span v-else class="info-value">{{ selectedPet?.name || '알 수 없음' }}</span>
                   </div>
                   <div class="info-item">
                     <v-icon size="20" color="grey-darken-1">mdi-gender-male-female</v-icon>
@@ -486,35 +552,7 @@
                     </div>
                     <span v-else class="info-value">{{ selectedPet?.weight || '알 수 없음' }}kg</span>
                   </div>
-                  <div class="info-item">
-                    <v-icon size="20" color="grey-darken-1">mdi-calendar</v-icon>
-                    <span class="info-label">생일</span>
-                    <div v-if="isEditing" class="edit-field">
-                      <div class="birthday-input-container">
-                        <v-btn
-                          :text="formatBirthday(editingPet.birthday) || '생일 선택'"
-                          variant="outlined"
-                          class="edit-input rounded-input date-btn"
-                          @click="openDatePicker"
-                          prepend-icon="mdi-calendar"
-                          color="#E87D7D"
-                        />
-                        
-                        <!-- 생일 삭제 버튼 -->
-                        <v-btn
-                          v-if="editingPet.birthday"
-                          icon="mdi-close"
-                          variant="text"
-                          size="small"
-                          color="error"
-                          @click="clearBirthday"
-                          class="clear-birthday-btn"
-                          aria-label="생일 삭제"
-                        />
-                      </div>
-                    </div>
-                    <span v-else class="info-value">{{ formatBirthday(selectedPet?.birthday) }}</span>
-                  </div>
+
                 </div>
               </div>
             </div>
@@ -658,19 +696,29 @@
             
             <div class="date-picker-actions">
               <v-btn
-                variant="outlined"
-                @click="cancelDateSelection"
-                class="cancel-btn"
+                v-show="selectedDate || editingPet?.birthday"
+                variant="text"
+                class="clear-btn"
+                @click="clearBirthdayFromPicker"
               >
-                취소
+                초기화
               </v-btn>
-              <v-btn
-                color="#007bff"
-                @click="confirmDateSelection"
-                class="confirm-btn"
-              >
-                확인
-              </v-btn>
+              <div class="right-buttons">
+                <v-btn
+                  variant="text"
+                  class="cancel-btn"
+                  @click="cancelDateSelection"
+                >
+                  <v-icon start size="18">mdi-close</v-icon>
+                  취소
+                </v-btn>
+                <v-btn
+                  class="confirm-btn"
+                  @click="confirmDateSelection"
+                >
+                  확인
+                </v-btn>
+              </div>
             </div>
           </div>
           
@@ -861,7 +909,7 @@ export default {
       { title: '암컷', value: 'FEMALE' },
       { title: '중성', value: 'NEUTRALITY' }
     ]
-
+    
     // 반려동물 데이터
     const pets = computed(() => petStore.pets)
     const loading = computed(() => petStore.loading)
@@ -927,6 +975,66 @@ export default {
       } catch (error) {
         return '알 수 없음'
       }
+    }
+    
+    // 생일까지 남은 일수 계산
+    const getBirthdayCountdown = (birthday) => {
+      if (!birthday) return ''
+      
+      try {
+        const today = new Date()
+        const birthDate = new Date(birthday)
+        
+        // 올해 생일 날짜 계산
+        const thisYearBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate())
+        
+        // 만약 올해 생일이 지났다면 내년 생일로 계산
+        if (thisYearBirthday < today) {
+          thisYearBirthday.setFullYear(today.getFullYear() + 1)
+        }
+        
+        // 오늘이 생일인지 확인
+        const todayStr = today.toDateString()
+        const birthdayStr = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate()).toDateString()
+        
+        if (todayStr === birthdayStr) {
+          return '🎉 오늘이 생일입니다!'
+        }
+        
+        // 남은 일수 계산
+        const timeDiff = thisYearBirthday.getTime() - today.getTime()
+        const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24))
+        
+        if (daysDiff === 1) {
+          return '내일이 생일입니다!'
+        } else if (daysDiff <= 7) {
+          return `생일까지 ${daysDiff}일 남았어요!`
+        } else if (daysDiff <= 30) {
+          return `생일까지 ${daysDiff}일`
+        } else {
+          return `생일까지 ${daysDiff}일`
+        }
+      } catch (error) {
+        return ''
+      }
+    }
+    
+    // 생일 카운트다운 아이콘
+    const getBirthdayCountdownIcon = (birthday) => {
+      const countdown = getBirthdayCountdown(birthday)
+      if (countdown.includes('오늘이 생일')) return 'mdi-cake-variant'
+      if (countdown.includes('내일이 생일')) return 'mdi-gift'
+      if (countdown.includes('7일') || countdown.includes('일 남았어요')) return 'mdi-calendar-heart'
+      return 'mdi-calendar-clock'
+    }
+    
+    // 생일 카운트다운 색상
+    const getBirthdayCountdownColor = (birthday) => {
+      const countdown = getBirthdayCountdown(birthday)
+      if (countdown.includes('오늘이 생일')) return '#FF6B6B'
+      if (countdown.includes('내일이 생일')) return '#FF8E53'
+      if (countdown.includes('7일') || countdown.includes('일 남았어요')) return '#4ECDC4'
+      return '#95A5A6'
     }
     
     // 나이 계산 함수 (더 정확한 계산)
@@ -1037,6 +1145,8 @@ export default {
         showSnackbar('대표 반려동물 설정에 실패했습니다.', 'error')
       }
     }
+    
+
     
     // 반려동물 상세보기
     const viewPet = (pet) => {
@@ -1156,6 +1266,9 @@ export default {
       showEditForm.value = false
     }
     
+    // 원본 데이터 백업용
+    const originalPetData = ref(null)
+    
     // 수정 모드 토글
     const toggleEditMode = () => {
       if (isEditing.value) {
@@ -1171,6 +1284,7 @@ export default {
         imagePreviewUrl.value = null
         
         editingPet.value = null
+        originalPetData.value = null
       } else {
         // 수정 모드 시작 - DB에 저장된 데이터를 제대로 가져오기
         isEditing.value = true
@@ -1184,8 +1298,8 @@ export default {
         
         const pet = selectedPet.value
         
-        // DB에 저장된 실제 데이터를 정확히 매핑
-        editingPet.value = {
+        // 원본 데이터 백업
+        originalPetData.value = {
           id: pet.id,
           name: pet.name || '',
           age: pet.age || 0,
@@ -1196,7 +1310,6 @@ export default {
           introduce: pet.introduce || '',
           species: pet.species || '',
           petOrder: pet.petOrder || '',
-          // DB에 저장된 종류 ID - species 필드에서 speciesId 찾기
           speciesId: (() => {
             if (pet.speciesId) {
               return pet.speciesId
@@ -1209,6 +1322,9 @@ export default {
             return null
           })()
         }
+        
+        // DB에 저장된 실제 데이터를 정확히 매핑
+        editingPet.value = { ...originalPetData.value }
         
         // 생일이 있으면 나이를 다시 계산
         if (editingPet.value.birthday) {
@@ -1594,13 +1710,19 @@ export default {
     }
     
     const selectMonth = (month) => {
+      // 월을 선택하면 해당 월의 달력으로 이동
       selectedMonth.value = month
-      showMonthPicker.value = true
+      const year = currentDate.value.getFullYear()
+      currentDate.value = new Date(year, month - 1, 1)
+      showMonthPicker.value = false
+      showYearPicker.value = false
     }
     
     const selectYear = (year) => {
+      // 연도 선택 즉시 월 선택 화면으로 전환
       currentDate.value = new Date(year, currentDate.value.getMonth(), 1)
       showYearPicker.value = false
+      showMonthPicker.value = true
     }
     
     const backToMain = () => {
@@ -1613,6 +1735,14 @@ export default {
       showYearPicker.value = false
     }
     
+    const clearBirthdayFromPicker = () => {
+      if (editingPet.value) {
+        editingPet.value.birthday = null
+      }
+      selectedDate.value = null
+      showSnackbar('생일이 초기화되었습니다.', 'info')
+    }
+    
     const confirmMonthSelection = () => {
       if (selectedMonth.value) {
         currentDate.value = new Date(currentDate.value.getFullYear(), selectedMonth.value - 1, 1)
@@ -1622,6 +1752,12 @@ export default {
     }
     
     const cancelDateSelection = () => {
+      // 원본 데이터로 롤백
+      if (originalPetData.value && editingPet.value) {
+        editingPet.value.birthday = originalPetData.value.birthday
+        editingPet.value.age = originalPetData.value.age
+      }
+      
       showDatePicker.value = false
       showYearPicker.value = false
       showMonthPicker.value = false
@@ -1656,16 +1792,65 @@ export default {
       showSnackbar('생일이 삭제되었습니다. 나이를 직접 입력할 수 있습니다.', 'info')
     }
     
-          return {
-        showAddForm,
-        showDeleteConfirm,
-        petToDelete,
-        deleting,
+    // 오늘 날짜 포맷팅
+    const formatTodayDate = () => {
+      const today = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
+      return today.toLocaleDateString('ko-KR', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      })
+    }
+    
+    // 생일까지 남은 일수 계산
+    const getDaysUntilBirthday = (birthday) => {
+      if (!birthday) return 0
+      
+      const today = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
+      today.setHours(0, 0, 0, 0)
+      
+      const birthDate = new Date(birthday)
+      const nextBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate())
+      
+      // 올해 생일이 이미 지났으면 내년 생일로 계산
+      if (nextBirthday < today) {
+        nextBirthday.setFullYear(nextBirthday.getFullYear() + 1)
+      }
+      
+      const diffTime = nextBirthday.getTime() - today.getTime()
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      
+      return diffDays
+    }
+    
+    // 100일 단위 마크 계산
+    const getHundredDayMarks = (birthday) => {
+      if (!birthday) return []
+      
+      const daysUntilBirthday = getDaysUntilBirthday(birthday)
+      const marks = []
+      
+      // 100일, 200일, 300일 단위로 마크 추가
+      for (let i = 100; i <= daysUntilBirthday; i += 100) {
+        marks.push(i)
+      }
+      
+      return marks
+    }
+    
+
+    
+    return {
+      showAddForm,
+      showDeleteConfirm,
+      petToDelete,
+      deleting,
         showDetailModal,
         selectedPet,
         showEditForm,
         isEditing,
         editingPet,
+        originalPetData,
         saving,
         showDatePicker,
         // 달력 관련 변수들
@@ -1679,25 +1864,28 @@ export default {
         speciesOptions,
         genderOptions,
         fileInput,
-        pets,
-        loading,
-        representativePet,
-        otherPets,
-        getDogCount,
-        getCatCount,
-        formatBirthday,
+      pets,
+      loading,
+      representativePet,
+      otherPets,
+      getDogCount,
+      getCatCount,
+      formatBirthday,
+      getBirthdayCountdown,
+      getBirthdayCountdownIcon,
+      getBirthdayCountdownColor,
         calculateAge,
-        getSpeciesIcon,
-        getSpeciesIconColor,
-        getGenderColor,
-        getGenderIcon,
-        getGenderLabel,
+      getSpeciesIcon,
+      getSpeciesIconColor,
+      getGenderColor,
+      getGenderIcon,
+      getGenderLabel,
         getCurrentImageUrl,
         imagePreviewUrl,
         showCropper,
         cropperImageUrl,
-        setAsRepresentative,
-        viewPet,
+      setAsRepresentative,
+      viewPet,
         closeDetailModal,
         openEditForm,
         handlePetUpdate,
@@ -1724,16 +1912,20 @@ export default {
         selectYear,
         backToMain,
         confirmYearSelection,
+        clearBirthdayFromPicker,
         confirmMonthSelection,
         cancelDateSelection,
         confirmDateSelection,
         clearBirthday,
+        formatTodayDate,
+        getDaysUntilBirthday,
+        getHundredDayMarks,
         confirmDeleteFromModal,
-        confirmDelete,
-        deletePet,
-        closeForm,
-        handleFormSuccess
-      }
+      confirmDelete,
+      deletePet,
+      closeForm,
+      handleFormSuccess
+    }
   }
 }
 </script>
@@ -1921,14 +2113,14 @@ export default {
 .large-pet-image {
   width: 240px;
   height: 240px;
-  border-radius: 20px;
+  border-radius: 50%;
   overflow: hidden;
 }
 
 .large-image-placeholder {
   width: 240px;
   height: 240px;
-  border-radius: 20px;
+  border-radius: 50%;
   background: #f3f4f6;
   display: flex;
   align-items: center;
@@ -2195,9 +2387,13 @@ export default {
   border-radius: 20px 20px 0 0;
   padding: 24px;
   flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .form-title {
+  flex: 1;
   text-align: center;
 }
 
@@ -2214,6 +2410,7 @@ export default {
 .pet-form-card .form-content::-webkit-scrollbar {
   width: 10px !important;
   height: 10px !important;
+  -webkit-appearance: none !important;
 }
 
 .pet-form-dialog .form-content::-webkit-scrollbar-track,
@@ -2222,6 +2419,7 @@ export default {
   background: #f8f9fa !important;
   border-radius: 6px !important;
   margin: 2px 0 !important;
+  -webkit-appearance: none !important;
 }
 
 .pet-form-dialog .form-content::-webkit-scrollbar-thumb,
@@ -2230,18 +2428,57 @@ export default {
   background: #E87D7D !important;
   border-radius: 6px !important;
   border: 1px solid #f8f9fa !important;
+  -webkit-appearance: none !important;
 }
 
 .pet-form-dialog .form-content::-webkit-scrollbar-thumb:hover,
 .form-content::-webkit-scrollbar-thumb:hover,
 .pet-form-card .form-content::-webkit-scrollbar-thumb:hover {
   background: #FF6B6B !important;
+  -webkit-appearance: none !important;
 }
 
 .pet-form-dialog .form-content::-webkit-scrollbar-corner,
 .form-content::-webkit-scrollbar-corner,
 .pet-form-card .form-content::-webkit-scrollbar-corner {
   background: #f8f9fa !important;
+  -webkit-appearance: none !important;
+}
+
+/* 사파리 전용 등록 폼 스크롤바 스타일 */
+@supports (-webkit-appearance: none) {
+  .pet-form-dialog .form-content::-webkit-scrollbar,
+  .form-content::-webkit-scrollbar,
+  .pet-form-card .form-content::-webkit-scrollbar {
+    width: 10px !important;
+    height: 10px !important;
+    -webkit-appearance: none !important;
+  }
+  
+  .pet-form-dialog .form-content::-webkit-scrollbar-track,
+  .form-content::-webkit-scrollbar-track,
+  .pet-form-card .form-content::-webkit-scrollbar-track {
+    background: #f8f9fa !important;
+    border-radius: 6px !important;
+    margin: 2px 0 !important;
+    -webkit-appearance: none !important;
+  }
+  
+  .pet-form-dialog .form-content::-webkit-scrollbar-thumb,
+  .form-content::-webkit-scrollbar-thumb,
+  .pet-form-card .form-content::-webkit-scrollbar-thumb {
+    background: #E87D7D !important;
+    border-radius: 6px !important;
+    border: 1px solid #f8f9fa !important;
+    -webkit-appearance: none !important;
+  }
+  
+  .pet-form-dialog .form-content::-webkit-scrollbar-thumb:hover,
+  .form-content::-webkit-scrollbar-thumb:hover,
+  .pet-form-card .form-content::-webkit-scrollbar-thumb:hover {
+    background: #FF6B6B !important;
+    -webkit-appearance: none !important;
+  }
 }
 
 /* Firefox 스크롤바 */
@@ -2393,6 +2630,23 @@ export default {
 
 .close-btn {
   color: white !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-radius: 50% !important;
+  width: 40px !important;
+  height: 40px !important;
+  backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  transition: all 0.3s ease !important;
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+  transform: scale(1.1) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.close-btn:active {
+  transform: scale(0.95) !important;
 }
 
 .detail-content {
@@ -2404,13 +2658,14 @@ export default {
 
 .detail-layout {
   display: flex;
-  gap: 48px;
+  gap: 32px;
   align-items: flex-start;
   margin-bottom: 32px;
 }
 
 .pet-image-detail {
   flex-shrink: 0;
+  width: 320px;
 }
 
 .pet-details-detail {
@@ -2420,22 +2675,18 @@ export default {
   gap: 24px;
 }
 
-.pet-image-detail {
-  flex-shrink: 0;
-}
-
 .detail-pet-image {
-  width: 500px;
-  height: 500px;
-  border-radius: 20px;
+  width: 250px;
+  height: 250px;
+  border-radius: 50%;
   overflow: hidden;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
 .detail-image-placeholder {
-  width: 500px;
-  height: 500px;
-  border-radius: 20px;
+  width: 250px;
+  height: 250px;
+  border-radius: 50%;
   background: #f3f4f6;
   display: flex;
   align-items: center;
@@ -2477,15 +2728,27 @@ export default {
 
 .info-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, 1fr); /* 2열 균등 분할 */
   gap: 20px;
   align-items: start;
 }
 
-/* 종류 항목은 전체 너비 사용 */
-.info-grid .species-item {
-  grid-column: 1 / -1;
-  margin-bottom: 8px;
+/* 종류는 첫 줄 전체 너비 */
+.info-grid .species-item { 
+  grid-column: 1 / -1; 
+  margin-bottom: 10px;
+}
+
+/* 반응형 - 모바일에서는 1열로 */
+@media (max-width: 768px) {
+  .info-grid { 
+    grid-template-columns: 1fr; 
+    gap: 16px;
+  }
+  .info-grid .species-item { 
+    grid-column: 1 / 1; 
+    margin-bottom: 8px;
+  }
 }
 
 /* 나머지 항목들은 2열로 정렬 */
@@ -2527,20 +2790,7 @@ export default {
   text-align: center;
 }
 
-.species-item .species-detail {
-  position: absolute;
-  right: 20px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 12px;
-  color: #E87D7D;
-  font-weight: 600;
-  background: rgba(232, 125, 125, 0.1);
-  padding: 8px 16px;
-  border-radius: 12px;
-  white-space: nowrap;
-  z-index: 10;
-}
+
 
 .info-item:hover {
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
@@ -2638,7 +2888,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 20px;
+  border-radius: 50%;
   cursor: pointer;
   transition: all 0.3s ease;
   opacity: 0;
@@ -2666,6 +2916,54 @@ export default {
   font-weight: 600;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
+
+/* 생일 정보 (사진 아래) */
+.birthday-info {
+  margin-top: 20px;
+  width: 100%;
+}
+
+.birthday-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: white;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  text-align: center;
+}
+
+.birthday-item:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+  border-color: #E87D7D;
+}
+
+/* 생일 카운트다운 */
+.birthday-countdown {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.countdown-text {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+
 
 /* 편집 필드 스타일 - 모던하고 세련된 디자인 */
 .edit-field {
@@ -3017,6 +3315,9 @@ export default {
   font-weight: 600;
   font-size: 1.1rem;
   color: #333;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 8px;
 }
 
 .year-grid {
@@ -3044,6 +3345,11 @@ export default {
   background: #ffe6e6 !important;
   border-color: #f44336;
   transform: scale(1.05);
+  color: #d32f2f;
+}
+
+.year-range:hover {
+  background: #ffe6e6;
   color: #d32f2f;
 }
 
@@ -3179,28 +3485,48 @@ export default {
   background: white !important;
   border-top: 1px solid #e0e0e0;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+}
+
+.right-buttons {
+  display: flex;
   gap: 12px;
 }
 
-.cancel-btn {
-  border-color: #495057;
-  color: #495057 !important;
-  background: white !important;
-  border-radius: 20px !important;
+.date-picker-actions .clear-btn {
+  color: #E87D7D !important;
   font-weight: 600;
-  padding: 10px 20px;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 8px 12px;
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.cancel-btn {
+  border: 2px solid #e0e0e0 !important;
+  color: #666 !important;
+  background: white !important;
+  border-radius: 50px !important;
+  font-weight: 500;
+  padding: 8px 24px;
   min-width: 80px;
-  border: 1px solid #495057;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
 }
 
 .confirm-btn {
+  background: #E87D7D !important;
   color: white;
-  background: #f44336 !important;
-  border-radius: 20px !important;
-  font-weight: 500;
-  padding: 10px 20px;
-  min-width: 80px;
+  border-radius: 50px !important; /* 알약 모양 */
+  box-shadow: none !important;
+  font-weight: 600;
+  padding: 10px 22px;
+  min-width: 90px;
   border: none;
 }
 
@@ -3459,20 +3785,52 @@ body::-webkit-scrollbar {
 .detail-content::-webkit-scrollbar {
   width: 8px;
   height: 8px;
+  -webkit-appearance: none;
 }
 
 .detail-content::-webkit-scrollbar-track {
   background: #f1f5f9;
   border-radius: 4px;
+  -webkit-appearance: none;
 }
 
 .detail-content::-webkit-scrollbar-thumb {
   background: #E87D7D;
   border-radius: 4px;
+  -webkit-appearance: none;
+  border: 1px solid #f1f5f9;
 }
 
 .detail-content::-webkit-scrollbar-thumb:hover {
   background: #FF6B6B;
+  -webkit-appearance: none;
+}
+
+/* 사파리 전용 스크롤바 스타일 */
+@supports (-webkit-appearance: none) {
+  .detail-content::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+    -webkit-appearance: none;
+  }
+  
+  .detail-content::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+    -webkit-appearance: none;
+  }
+  
+  .detail-content::-webkit-scrollbar-thumb {
+    background: #E87D7D;
+    border-radius: 4px;
+    -webkit-appearance: none;
+    border: 1px solid #f1f5f9;
+  }
+  
+  .detail-content::-webkit-scrollbar-thumb:hover {
+    background: #FF6B6B;
+    -webkit-appearance: none;
+  }
 }
 
 /* 텍스트 영역 스크롤바 - 간단한 빨간색 스타일 */
