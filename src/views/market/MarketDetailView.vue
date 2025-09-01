@@ -53,9 +53,9 @@
             {{ getStatusLabel(post.saleStatus) }}
           </div>
 
-          <!-- 찜하기 버튼 (우상단) - 판매자 본인에게는 표시하지 않음 -->
+          <!-- 찜하기 버튼 (우상단) -->
           <button
-            v-if="post && post.sellerEmail !== currentUserEmail"
+            v-if="post"
             class="like-btn"
             @click="toggleLike"
             :class="{ liked: post.isLiked }"
