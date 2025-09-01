@@ -24,11 +24,17 @@
       <v-icon size="32" color="grey">mdi-pound</v-icon>
       <span class="empty-text">인기 해시태그가 없습니다</span>
     </div>
+
+    <!-- 마지막 업데이트 시간 -->
+    <div v-if="lastUpdated" class="last-updated">
+      <v-icon size="12" color="grey">mdi-clock-outline</v-icon>
+      <span class="updated-text">{{ formatLastUpdated() }}</span>
+    </div>
   </v-card>
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { postAPI } from '@/services/api'
 
 export default {
@@ -37,6 +43,11 @@ export default {
     const hashtags = ref([])
     const loading = ref(false)
     const error = ref(null)
+    const lastUpdated = ref(null)
+    let pollingTimer = null
+    
+    // 5분 = 5 * 60 * 1000 밀리초
+    const POLLING_INTERVAL = 5 * 60 * 1000
 
     // 인기 해시태그 가져오기
     const fetchTrendingHashtags = async () => {
@@ -50,6 +61,7 @@ export default {
         
         if (response.data && response.data.isSuccess && response.data.data) {
           hashtags.value = response.data.data
+          lastUpdated.value = new Date()
           console.log('설정된 인기 해시태그:', hashtags.value)
         } else {
           console.log('인기 해시태그 데이터가 없습니다')
@@ -64,16 +76,59 @@ export default {
       }
     }
 
-    // 컴포넌트 마운트 시 데이터 가져오기
-    onMounted(() => {
-      fetchTrendingHashtags()
+    // polling 시작
+    const startPolling = () => {
+      console.log(`Polling 시작 - ${POLLING_INTERVAL}ms 간격 (5분)`)
+      pollingTimer = setInterval(async () => {
+        console.log('Polling으로 해시태그 새로고침')
+        await fetchTrendingHashtags()
+      }, POLLING_INTERVAL)
+    }
+
+    // polling 중지
+    const stopPolling = () => {
+      if (pollingTimer) {
+        console.log('Polling 중지')
+        clearInterval(pollingTimer)
+        pollingTimer = null
+      }
+    }
+
+    // 마지막 업데이트 시간 포맷팅
+    const formatLastUpdated = () => {
+      if (!lastUpdated.value) return ''
+      
+      const now = new Date()
+      const diff = now - lastUpdated.value
+      const minutes = Math.floor(diff / (1000 * 60))
+      
+      if (minutes < 1) return '방금 전'
+      if (minutes < 60) return `${minutes}분 전`
+      
+      const hours = Math.floor(minutes / 60)
+      if (hours < 24) return `${hours}시간 전`
+      
+      const days = Math.floor(hours / 24)
+      return `${days}일 전`
+    }
+
+    // 컴포넌트 마운트 시 데이터 가져오기 및 polling 시작
+    onMounted(async () => {
+      await fetchTrendingHashtags()
+      startPolling()
+    })
+
+    // 컴포넌트 언마운트 시 polling 중지
+    onUnmounted(() => {
+      stopPolling()
     })
 
     return {
       hashtags,
       loading,
       error,
-      fetchTrendingHashtags
+      lastUpdated,
+      formatLastUpdated
     }
   }
 }
@@ -88,6 +143,7 @@ export default {
   margin-bottom: 16px;
   background: #FFFFFF;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  position: relative;
 }
 
 .insight-card:last-child {
@@ -165,6 +221,22 @@ export default {
   background: #F1F5F9;
   padding: 2px 8px;
   border-radius: 12px;
+}
+
+/* 마지막 업데이트 시간 */
+.last-updated {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.updated-text {
+  font-size: 0.75rem;
+  color: #9CA3AF;
 }
 
 /* 반응형 디자인 */
