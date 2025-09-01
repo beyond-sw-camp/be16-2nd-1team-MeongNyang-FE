@@ -1,11 +1,7 @@
 <template>
   <div class="diary-page">
-    <SearchComponent
-      v-model="searchKeyword"
-      :search-type="searchType"
-      @update:search-type="searchType = $event"
+    <SearchBar
       @search="handleSearch"
-      @clear="handleClearSearch"
     />
 
     <DiaryProfileSection
@@ -52,7 +48,7 @@ import { useAuthStore } from '@/stores/auth';
 import { usePetStore } from '@/stores/pet';
 import { postAPI, userAPI, petAPI } from '@/services/api';
 import { validatePetAndRedirect } from '@/utils/petValidation';
-import SearchComponent from '@/components/SearchComponent.vue';
+import SearchBar from '@/components/common/SearchBar.vue';
 import FollowModal from '@/components/FollowModal.vue';
 import DiaryProfileSection from '@/components/diary/DiaryProfileSection.vue';
 import DiaryGridDisplay from '@/components/diary/DiaryGridDisplay.vue';
@@ -60,7 +56,7 @@ import DiaryGridDisplay from '@/components/diary/DiaryGridDisplay.vue';
 export default {
   name: 'DiaryListView',
   components: {
-    SearchComponent,
+    SearchBar,
     FollowModal,
     DiaryProfileSection,
     DiaryGridDisplay,
@@ -122,8 +118,6 @@ export default {
       return mainPet.value?.introduce || '반려동물과 함께하는 특별한 순간들을 기록해보세요!';
     });
 
-    const searchType = ref('CONTENT');
-    const searchKeyword = ref('');
     const currentPage = ref(0);
     const hasMore = ref(true);
     const isLoading = ref(false);
@@ -197,14 +191,9 @@ export default {
       if (isLoading.value) return;
       isLoading.value = true;
       try {
-        let response;
         const params = { page, size: 9 };
-        if (searchKeyword.value.trim()) {
-          response = await postAPI.search(searchType.value, searchKeyword.value.trim(), params);
-        } else {
-          const apiCall = isMyProfile.value ? postAPI.getMyPosts : (p) => postAPI.getUserPosts(targetUserId.value, p);
-          response = await apiCall(params);
-        }
+        const apiCall = isMyProfile.value ? postAPI.getMyPosts : (p) => postAPI.getUserPosts(targetUserId.value, p);
+        const response = await apiCall(params);
         const newContent = response.data.data.content || [];
         diaryList.value = append ? [...diaryList.value, ...newContent] : newContent;
         hasMore.value = !response.data.data.last;
@@ -258,11 +247,6 @@ export default {
       router.push({ path: '/search', query: { searchType: searchData.searchType, keyword: searchData.keyword } });
     };
 
-    const handleClearSearch = () => {
-      searchKeyword.value = '';
-      fetchDiaryList(0, false);
-    };
-
     const handleChangeMainPet = async () => {
       await fetchData();
     };
@@ -311,8 +295,6 @@ export default {
       petBio,
       diaryList,
       isLoading,
-      searchType,
-      searchKeyword,
       isFollowModalVisible,
       followModalTab,
       targetUserId,
@@ -323,7 +305,6 @@ export default {
       handleFollowUpdated,
       handleUnfollowUpdated,
       handleSearch,
-      handleClearSearch,
       handleChangeMainPet,
       handleFollow,
       handleUnfollow,
