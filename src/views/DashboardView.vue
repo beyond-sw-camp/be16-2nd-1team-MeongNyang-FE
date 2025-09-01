@@ -121,18 +121,7 @@
                 <v-row>
                   <!-- 인기 해시태그 섹션 -->
                   <v-col cols="12">
-                    <v-card class="insight-card">
-                      <div class="insight-header">
-                        <v-icon color="#FF8B8B" size="24">mdi-pound</v-icon>
-                        <div class="insight-title">인기 해시태그</div>
-                      </div>
-                      <div class="hashtag-list">
-                        <div class="hashtag-item" v-for="tag in trendingHashtags" :key="tag.name">
-                          <span class="hashtag-text">#{{ tag.name }}</span>
-                          <span class="hashtag-count">{{ tag.count }}회</span>
-                        </div>
-                      </div>
-                    </v-card>
+                    <TrendingHashtags :hashtags="trendingHashtags" />
                   </v-col>
 
                   <!-- 오늘의 날씨 섹션 -->
@@ -198,9 +187,13 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { usePetStore } from '@/stores/pet'
 import { postAPI, marketAPI, petAPI, chatAPI } from '@/services/api'
+import TrendingHashtags from '@/components/common/TrendingHashtags.vue'
 
 export default {
   name: 'DashboardView',
+  components: {
+    TrendingHashtags
+  },
   setup() {
     const router = useRouter()
     const authStore = useAuthStore()
@@ -742,36 +735,7 @@ export default {
   margin-left: 12px;
 }
 
-/* 해시태그 리스트 */
-.hashtag-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
 
-.hashtag-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 12px;
-  background: white;
-  border-radius: 8px;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-}
-
-.hashtag-text {
-  font-size: 0.875rem;
-  color: #FF8B8B;
-  font-weight: 500;
-}
-
-.hashtag-count {
-  font-size: 0.75rem;
-  color: #6B7280;
-  background: #F1F5F9;
-  padding: 2px 8px;
-  border-radius: 12px;
-}
 
 /* 날씨 상세 정보 */
 .weather-detail {
@@ -976,10 +940,6 @@ export default {
     grid-template-columns: 1fr;
   }
 
-  .hashtag-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-  }
+
 }
 </style>
