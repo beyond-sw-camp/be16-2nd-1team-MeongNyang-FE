@@ -61,8 +61,10 @@
         </div>
       </div>
 
+
       <!-- 오른쪽: 인기 해시태그 -->
       <div class="sidebar">
+        <SearchBar @search="handleSearch" />
         <TrendingHashtags />
       </div>
     </div>
@@ -131,6 +133,7 @@ import PostEngagementBar from '@/components/diary/PostEngagementBar.vue'
 import PostHashtags from '@/components/diary/PostHashtags.vue'
 import PostCommentsPreview from '@/components/diary/PostCommentsPreview.vue'
 import TrendingHashtags from '@/components/common/TrendingHashtags.vue'
+import SearchBar from '@/components/common/SearchBar.vue'
 
 export default {
   name: 'AllPostsView',
@@ -143,6 +146,7 @@ export default {
     PostHashtags,
     PostCommentsPreview,
     TrendingHashtags,
+    SearchBar,
   },
   setup() {
     const router = useRouter()
@@ -873,6 +877,12 @@ export default {
       router.push(`/search?searchType=HASHTAG&keyword=${encodeURIComponent(tag)}`)
     }
 
+    // 검색 처리
+    const handleSearch = (searchData) => {
+      console.log('검색 데이터:', searchData)
+      router.push(`/search?searchType=${searchData.searchType}&keyword=${encodeURIComponent(searchData.keyword)}`)
+    }
+
     // 게시글 수정
     const editPost = (postId) => {
       console.log('수정 페이지로 이동:', postId)
@@ -1094,7 +1104,8 @@ export default {
       isLikeProcessing,
       fetchAllFollowStatus,
       fetchAllCommentsPreview,
-      formatCommentText
+      formatCommentText,
+      handleSearch
     }
   }
 }
