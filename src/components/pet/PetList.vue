@@ -349,7 +349,7 @@
                 <v-img
                   v-if="imagePreviewUrl || selectedPet?.url"
                   :src="imagePreviewUrl || selectedPet?.url"
-                  :alt="selectedPet.name"
+                  :alt="selectedPet?.name || '반려동물'"
                   class="detail-pet-image"
                   aspect-ratio="1"
                   cover
@@ -1041,6 +1041,10 @@ export default {
     // 반려동물 상세보기
     const viewPet = (pet) => {
       console.log('🔍 viewPet 함수 호출됨:', pet)
+      
+      // 이전 동물의 미리보기 이미지 초기화
+      imagePreviewUrl.value = null
+      
       selectedPet.value = pet
       showDetailModal.value = true
       console.log('🔍 모달 상태:', { selectedPet: selectedPet.value, showDetailModal: showDetailModal.value })
@@ -1302,6 +1306,8 @@ export default {
     
     // 이미지 크롭 완료 처리
     const handleCrop = ({ blob, url }) => {
+      console.log('🎯 handleCrop 호출됨:', { blob, url })
+      
       if (!editingPet.value || !selectedPet.value) {
         console.error('❌ 편집 데이터가 없습니다')
         return
@@ -1310,6 +1316,14 @@ export default {
       // 크롭된 이미지를 editingPet에 저장
       editingPet.value.imageFile = blob
       editingPet.value.previewImage = url
+      
+      console.log('✅ 크롭된 이미지 저장됨:', {
+        blob: blob,
+        blobType: typeof blob,
+        blobSize: blob?.size,
+        url: url,
+        editingPetImageFile: editingPet.value.imageFile
+      })
       
       // 즉시 미리보기 반영
       imagePreviewUrl.value = url
@@ -1371,6 +1385,13 @@ export default {
         
         // DB에 펫 정보 업데이트 - 이미지 파일이 있으면 함께 전송
         const imageFile = editingPet.value.imageFile || null
+        console.log('🔍 저장할 이미지 파일:', {
+          imageFile: imageFile,
+          imageFileType: typeof imageFile,
+          imageFileSize: imageFile?.size,
+          imageFileName: imageFile?.name
+        })
+        
         const updatedPet = await petStore.updatePet(editingPet.value.id, petRegisterReq, imageFile)
         console.log('✅ DB에 펫 정보 업데이트 완료:', updatedPet)
         
@@ -1388,7 +1409,10 @@ export default {
           selectedPet.value = { ...refreshedPet }
           console.log('🔄 selectedPet을 새로고침된 정보로 교체 완료:', selectedPet.value)
           
-
+          // 미리보기 URL을 새로고침된 이미지로 업데이트
+          if (refreshedPet.url) {
+            imagePreviewUrl.value = refreshedPet.url
+          }
         }
         
         // 수정 모드 종료
@@ -1398,9 +1422,6 @@ export default {
         if (selectedPet.value && selectedPet.value.tempImageUrl) {
           delete selectedPet.value.tempImageUrl
         }
-        
-        // 미리보기 URL 정리
-        imagePreviewUrl.value = null
         
         editingPet.value = null
         

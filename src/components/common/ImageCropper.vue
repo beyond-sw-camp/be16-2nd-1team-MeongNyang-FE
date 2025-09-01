@@ -121,6 +121,7 @@ const dragStart = ref({ x: 0, y: 0 })
 const cropPosition = ref({ x: 50, y: 50 }) // 퍼센트 기준
 const cropSize = ref(200) // 크롭 원의 크기 (px)
 const zoomLevel = ref(1)
+const zoomCenter = ref({ x: 50, y: 50 }) // 줌 중심점 (퍼센트 기준)
 
 // 이미지 로드 완료 시
 const onImageLoad = () => {
@@ -146,17 +147,41 @@ const updateZoom = (value) => {
 // 마우스 휠 이벤트 처리
 const handleWheel = (event) => {
   event.preventDefault()
-  if (event.deltaY < 0) {
-    zoomIn()
-  } else {
-    zoomOut()
+  
+  const rect = imageWrapper.value.getBoundingClientRect()
+  const mouseX = event.clientX - rect.left
+  const mouseY = event.clientY - rect.top
+  
+  // 마우스 위치를 이미지 내에서의 상대적 위치로 변환 (0-1 범위)
+  const relativeX = mouseX / rect.width
+  const relativeY = mouseY / rect.height
+  
+  const oldZoom = zoomLevel.value
+  const zoomFactor = event.deltaY < 0 ? 1.1 : 0.9
+  const newZoom = Math.max(0.5, Math.min(3, oldZoom * zoomFactor))
+  
+  if (newZoom !== oldZoom) {
+    // 줌 중심점을 마우스 위치로 설정
+    zoomCenter.value = {
+      x: relativeX * 100,
+      y: relativeY * 100
+    }
+    
+    // 줌 레벨 업데이트
+    zoomLevel.value = newZoom
+    
+    // 크롭 위치도 마우스 위치로 조정
+    cropPosition.value = {
+      x: relativeX * 100,
+      y: relativeY * 100
+    }
   }
 }
 
 // 이미지 스타일
 const imageStyle = computed(() => ({
   transform: `scale(${zoomLevel.value})`,
-  transformOrigin: 'center'
+  transformOrigin: `${zoomCenter.value.x}% ${zoomCenter.value.y}%`
 }))
 
 // 오버레이 스타일
@@ -233,6 +258,8 @@ const crop = async () => {
   cropping.value = true
   
   try {
+    console.log('🎯 크롭 시작')
+    
     const canvas = document.createElement('canvas')
     const ctx = canvas.getContext('2d')
     
@@ -241,6 +268,8 @@ const crop = async () => {
     canvas.width = size
     canvas.height = size
     
+    console.log('📐 캔버스 크기:', { width: size, height: size })
+    
     // 이미지 요소와 래퍼 가져오기
     const img = imageElement.value
     const wrapper = imageWrapper.value
@@ -248,6 +277,13 @@ const crop = async () => {
     if (!img || !wrapper) {
       throw new Error('이미지 또는 래퍼를 찾을 수 없습니다')
     }
+    
+    console.log('🖼️ 이미지 정보:', {
+      naturalWidth: img.naturalWidth,
+      naturalHeight: img.naturalHeight,
+      displayWidth: img.offsetWidth,
+      displayHeight: img.offsetHeight
+    })
     
     // 이미지의 실제 크기와 화면에 표시되는 크기 계산
     const imgRect = img.getBoundingClientRect()
@@ -280,6 +316,12 @@ const crop = async () => {
     const cropWidth = size * scaleX
     const cropHeight = size * scaleY
     
+    console.log('📍 크롭 위치:', { 
+      cropX, cropY, cropWidth, cropHeight, 
+      cropPosition: cropPosition.value,
+      scaleX, scaleY
+    })
+    
     // 원형 마스크 생성
     ctx.save()
     ctx.beginPath()
@@ -295,20 +337,36 @@ const crop = async () => {
     
     ctx.restore()
     
+    console.log('🎨 캔버스 그리기 완료')
+    
     // 캔버스를 Blob으로 변환
     canvas.toBlob((blob) => {
       if (blob) {
+        console.log('✅ Blob 생성 성공:', {
+          size: blob.size,
+          type: blob.type
+        })
+        
+        // Blob을 File 객체로 변환 (서버 전송을 위해)
+        const file = new File([blob], 'cropped-image.jpg', { type: 'image/jpeg' })
+        console.log('📁 File 객체 생성:', {
+          name: file.name,
+          size: file.size,
+          type: file.type
+        })
+        
         const croppedUrl = URL.createObjectURL(blob)
-        emit('crop', { blob, url: croppedUrl })
+        emit('crop', { blob: file, url: croppedUrl })
         show.value = false
         cropping.value = false
       } else {
+        console.error('❌ Blob 생성 실패')
         throw new Error('Blob 생성 실패')
       }
     }, 'image/jpeg', 0.9)
     
   } catch (error) {
-    console.error('크롭 실패:', error)
+    console.error('❌ 크롭 실패:', error)
     cropping.value = false
   }
 }
