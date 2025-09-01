@@ -31,9 +31,6 @@ test.describe('Drag and Drop Overlay Tests', () => {
     // 작은 테스트 파일 생성
     const testFile = Buffer.from('test content');
     
-    // 채팅방 헤더 영역에서 드래그 시작
-    const header = page.locator('.chat-header');
-    
     // 드래그 이벤트 시뮬레이션
     await page.evaluate((fileData) => {
       const file = new File([fileData], 'test.txt', { type: 'text/plain' });

@@ -960,7 +960,7 @@ export default {
       }
       
       // 하단이 아니고 스크롤이 위로 올라갔을 때만 버튼 표시 (더 민감하게)
-      const shouldShowButton = !atBottom && scrollTop > 20
+      const shouldShowButton = !atBottom
       showScrollToBottomButton.value = shouldShowButton
     }
     

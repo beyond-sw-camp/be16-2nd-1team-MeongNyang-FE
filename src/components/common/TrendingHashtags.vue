@@ -276,7 +276,7 @@ export default {
 
 .hashtag-text {
   font-size: 0.875rem;
-  color: #FF8B8B;
+  color: #000000;
   font-weight: 500;
   flex: 1;
 }
