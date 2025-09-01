@@ -166,7 +166,7 @@
             <v-text-field
               v-model="petData.age"
               type="number"
-              placeholder="자동 계산됨"
+              :placeholder="petData.birthday ? '자동 계산됨' : '나이를 입력하세요'"
               variant="outlined"
               rounded="lg"
               class="form-input"
@@ -174,11 +174,14 @@
               density="comfortable"
               min="0"
               max="30"
-              readonly
-              :disabled="true"
+              :readonly="!!petData.birthday"
+              :disabled="!!petData.birthday"
               required
               :rules="[v => v !== null && v !== undefined || '나이를 입력해주세요']"
             />
+            <div v-if="petData.birthday" class="field-hint">
+              <span>생일이 설정되어 나이가 자동 계산됩니다</span>
+            </div>
           </div>
 
           <!-- 몸무게 -->

@@ -458,11 +458,11 @@
                         density="compact"
                         hide-details
                         class="edit-input rounded-input"
-                        placeholder="자동 계산됨"
+                        :placeholder="editingPet.birthday ? '자동 계산됨' : '나이를 입력하세요'"
                         min="0"
                         max="30"
-                        readonly
-                        :disabled="true"
+                        :readonly="!!editingPet.birthday"
+                        :disabled="!!editingPet.birthday"
                       />
                     </div>
                     <span v-else class="info-value">{{ selectedPet?.age !== null && selectedPet?.age !== undefined ? selectedPet.age + '살' : '알 수 없음' }}</span>
@@ -490,14 +490,28 @@
                     <v-icon size="20" color="grey-darken-1">mdi-calendar</v-icon>
                     <span class="info-label">생일</span>
                     <div v-if="isEditing" class="edit-field">
-                      <v-btn
-                        :text="formatBirthday(editingPet.birthday) || '생일 선택'"
-                        variant="outlined"
-                        class="edit-input rounded-input date-btn"
-                        @click="openDatePicker"
-                        prepend-icon="mdi-calendar"
-                        color="#E87D7D"
-                      />
+                      <div class="birthday-input-container">
+                        <v-btn
+                          :text="formatBirthday(editingPet.birthday) || '생일 선택'"
+                          variant="outlined"
+                          class="edit-input rounded-input date-btn"
+                          @click="openDatePicker"
+                          prepend-icon="mdi-calendar"
+                          color="#E87D7D"
+                        />
+                        
+                        <!-- 생일 삭제 버튼 -->
+                        <v-btn
+                          v-if="editingPet.birthday"
+                          icon="mdi-close"
+                          variant="text"
+                          size="small"
+                          color="error"
+                          @click="clearBirthday"
+                          class="clear-birthday-btn"
+                          aria-label="생일 삭제"
+                        />
+                      </div>
                     </div>
                     <span v-else class="info-value">{{ formatBirthday(selectedPet?.birthday) }}</span>
                   </div>
@@ -1614,6 +1628,13 @@ export default {
       }
     }
     
+    // 생일 삭제
+    const clearBirthday = () => {
+      editingPet.value.birthday = null
+      editingPet.value.age = null
+      showSnackbar('생일이 삭제되었습니다. 나이를 직접 입력할 수 있습니다.', 'info')
+    }
+    
           return {
         showAddForm,
         showDeleteConfirm,
@@ -1685,6 +1706,7 @@ export default {
         confirmMonthSelection,
         cancelDateSelection,
         confirmDateSelection,
+        clearBirthday,
         confirmDeleteFromModal,
         confirmDelete,
         deletePet,
@@ -3449,6 +3471,22 @@ body::-webkit-scrollbar {
 
 .edit-textarea::-webkit-scrollbar-thumb:hover {
   background: #FF6B6B;
+}
+
+/* 생일 입력 컨테이너 */
+.birthday-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.birthday-input-container .date-btn {
+  flex: 1;
+}
+
+.clear-birthday-btn {
+  flex-shrink: 0;
 }
 </style>
 
