@@ -246,6 +246,8 @@
           max-width="800"
           class="pet-form-dialog"
           @click:outside="closeForm"
+          :scrim="false"
+          persistent
         >
           <v-card class="pet-form-card" rounded="xl">
             <v-card-title class="form-header">
@@ -318,6 +320,7 @@
         max-width="1400"
         class="pet-detail-dialog"
         @click:outside="closeDetailModal"
+        :scrim="false"
         persistent
       >
         <v-card class="pet-detail-card" rounded="xl">
@@ -379,7 +382,7 @@
                 <h4 class="section-title">기본 정보</h4>
                 <div class="info-grid">
                   <div class="info-item species-item">
-                    <v-icon size="24" :color="getSpeciesIconColor(selectedPet?.petOrder)">{{ getSpeciesIcon(selectedPet?.petOrder) }}</v-icon>
+                    <v-icon size="20" color="grey-darken-1">mdi-paw</v-icon>
                     <span class="info-label">종류</span>
                     <div v-if="isEditing" class="edit-field">
                       <v-autocomplete
@@ -392,6 +395,21 @@
                         hide-details
                         class="edit-input rounded-input"
                         placeholder="종류 선택"
+                        :model-value="editingPet.speciesId"
+                        @update:model-value="(value) => {
+                          console.log('🔍 종류 선택 변경:', {
+                            newValue: value,
+                            newValueType: typeof value,
+                            selectedSpecies: speciesOptions.find(s => s.speciesId === value)
+                          })
+                          editingPet.speciesId = value
+                          // petOrder도 함께 업데이트
+                          const selectedSpecies = speciesOptions.find(s => s.speciesId === value)
+                          if (selectedSpecies) {
+                            editingPet.petOrder = selectedSpecies.petOrder
+                            editingPet.species = selectedSpecies.species
+                          }
+                        }"
                       />
                     </div>
                     <span v-else class="info-value">{{ selectedPet?.species || '알 수 없음' }}</span>
@@ -495,6 +513,7 @@
                     class="edit-textarea rounded-textarea"
                     placeholder="반려동물에 대한 소개를 입력해주세요"
                     rows="4"
+                    no-resize
                   />
                 </div>
                 <p v-else-if="selectedPet?.introduce && selectedPet.introduce.trim() !== ''" class="introduction-text">
@@ -1003,6 +1022,22 @@ export default {
     
     // 모달 닫기
     const closeDetailModal = () => {
+      // 수정 모드일 때 취소 처리
+      if (isEditing.value) {
+        // 수정 모드 취소
+        isEditing.value = false
+        
+        // 임시 이미지 URL 정리
+        if (selectedPet.value && selectedPet.value.tempImageUrl) {
+          delete selectedPet.value.tempImageUrl
+        }
+        
+        // 미리보기 URL 정리
+        imagePreviewUrl.value = null
+        
+        editingPet.value = null
+      }
+      
       showDetailModal.value = false
       selectedPet.value = null
     }
@@ -1080,6 +1115,14 @@ export default {
     
     // 수정 폼 닫기
     const closeEditForm = () => {
+      // 수정 중인 데이터가 있으면 초기화
+      if (editingPet.value) {
+        editingPet.value = null
+      }
+      
+      // 미리보기 URL 정리
+      imagePreviewUrl.value = null
+      
       showEditForm.value = false
     }
     
@@ -1375,6 +1418,8 @@ export default {
     
     // 폼 관련
     const closeForm = () => {
+      // 등록 폼에서 입력된 데이터가 있으면 초기화
+      // PetForm 컴포넌트 내부에서 처리되므로 여기서는 모달만 닫기
       showAddForm.value = false
     }
     
@@ -2063,8 +2108,18 @@ export default {
   z-index: 1000;
 }
 
+.pet-form-dialog .v-dialog {
+  max-height: 90vh;
+  margin: 20px;
+  overflow: hidden !important;
+}
+
 .pet-form-card {
   border-radius: 20px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden !important;
 }
 
 .form-header {
@@ -2072,6 +2127,7 @@ export default {
   color: white;
   border-radius: 20px 20px 0 0;
   padding: 24px;
+  flex-shrink: 0;
 }
 
 .form-title {
@@ -2080,6 +2136,53 @@ export default {
 
 .form-content {
   padding: 24px;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* 등록 폼 스크롤바 - 빨간색 커스텀 스타일 (최강제 적용) */
+.pet-form-dialog .form-content::-webkit-scrollbar,
+.form-content::-webkit-scrollbar,
+.pet-form-card .form-content::-webkit-scrollbar {
+  width: 10px !important;
+  height: 10px !important;
+}
+
+.pet-form-dialog .form-content::-webkit-scrollbar-track,
+.form-content::-webkit-scrollbar-track,
+.pet-form-card .form-content::-webkit-scrollbar-track {
+  background: #f8f9fa !important;
+  border-radius: 6px !important;
+  margin: 2px 0 !important;
+}
+
+.pet-form-dialog .form-content::-webkit-scrollbar-thumb,
+.form-content::-webkit-scrollbar-thumb,
+.pet-form-card .form-content::-webkit-scrollbar-thumb {
+  background: #E87D7D !important;
+  border-radius: 6px !important;
+  border: 1px solid #f8f9fa !important;
+}
+
+.pet-form-dialog .form-content::-webkit-scrollbar-thumb:hover,
+.form-content::-webkit-scrollbar-thumb:hover,
+.pet-form-card .form-content::-webkit-scrollbar-thumb:hover {
+  background: #FF6B6B !important;
+}
+
+.pet-form-dialog .form-content::-webkit-scrollbar-corner,
+.form-content::-webkit-scrollbar-corner,
+.pet-form-card .form-content::-webkit-scrollbar-corner {
+  background: #f8f9fa !important;
+}
+
+/* Firefox 스크롤바 */
+.pet-form-dialog .form-content,
+.form-content,
+.pet-form-card .form-content {
+  scrollbar-width: thin !important;
+  scrollbar-color: #E87D7D #f8f9fa !important;
 }
 
 /* 삭제 확인 모달 */
@@ -2184,11 +2287,14 @@ export default {
 
 .pet-detail-dialog .v-dialog {
   max-height: 90vh;
-  overflow-y: auto;
+  margin: 20px;
 }
 
 .pet-detail-card {
   border-radius: 20px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .detail-header {
@@ -2199,6 +2305,7 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .detail-title {
@@ -2223,6 +2330,9 @@ export default {
 
 .detail-content {
   padding: 32px;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .detail-layout {
@@ -2322,6 +2432,7 @@ export default {
 .info-item {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 16px;
   padding: 20px;
   background: white;
@@ -2330,31 +2441,38 @@ export default {
   transition: all 0.3s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   position: relative;
+  text-align: center;
 }
 
 /* 종류 항목은 특별한 레이아웃 */
 .species-item {
   background: linear-gradient(135deg, #fef7f7, #fef2f2) !important;
   border-color: #E87D7D !important;
-  padding: 24px !important;
+  padding: 24px 80px 24px 24px !important;
 }
 
 .species-item .info-content {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 16px;
   flex: 1;
+  text-align: center;
 }
 
 .species-item .species-detail {
-  margin-left: auto;
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
   font-size: 12px;
   color: #E87D7D;
   font-weight: 600;
   background: rgba(232, 125, 125, 0.1);
-  padding: 6px 12px;
-  border-radius: 10px;
+  padding: 8px 16px;
+  border-radius: 12px;
   white-space: nowrap;
+  z-index: 10;
 }
 
 .info-item:hover {
@@ -2368,12 +2486,14 @@ export default {
   color: #64748b;
   min-width: 60px;
   font-size: 14px;
+  text-align: center;
 }
 
 .info-value {
   font-weight: 700;
   color: #1e293b;
   font-size: 16px;
+  text-align: center;
 }
 
 /* 종 정보 특별 스타일 */
@@ -2480,29 +2600,40 @@ export default {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
-/* 편집 필드 스타일 - 상세보기와 동일한 디자인 */
+/* 편집 필드 스타일 - 모던하고 세련된 디자인 */
 .edit-field {
   flex: 1;
   min-width: 120px;
+  position: relative;
 }
 
+/* 입력창 기본 스타일 - 완전히 새로운 디자인 */
 .edit-input {
   width: 100%;
-  border-radius: 20px !important;
-  background: white !important;
-  border: 2px solid #f3f4f6 !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
-  transition: all 0.3s ease !important;
+  border-radius: 8px !important;
+  background: #f9fafb !important;
+  border: 1px solid #d1d5db !important;
+  box-shadow: none !important;
+  transition: all 0.15s ease !important;
+  position: relative;
 }
 
 .edit-input:hover {
+  background: #ffffff !important;
+  border-color: #9ca3af !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+.edit-input:focus-within {
+  background: #ffffff !important;
   border-color: #E87D7D !important;
-  box-shadow: 0 6px 16px rgba(232, 125, 125, 0.15) !important;
+  box-shadow: 0 0 0 2px rgba(232, 125, 125, 0.2) !important;
 }
 
 .edit-input .v-field {
-  border-radius: 20px !important;
-  background: white !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  min-height: 40px !important;
 }
 
 .edit-input .v-field__outline {
@@ -2510,53 +2641,152 @@ export default {
 }
 
 .edit-input .v-field__input {
-  padding: 12px 16px !important;
+  padding: 10px 14px !important;
   font-size: 14px !important;
-  color: #374151 !important;
+  font-weight: 500 !important;
+  color: #1f2937 !important;
+  line-height: 1.4 !important;
+}
+
+.edit-input .v-field__input::placeholder {
+  color: #6b7280 !important;
+  font-weight: 400 !important;
+}
+
+/* 드롭다운 화살표 스타일 */
+.edit-input .v-field__append-inner {
+  color: #9ca3af !important;
+}
+
+.edit-input .v-field__append-inner .v-icon {
+  font-size: 14px !important;
+  transition: color 0.15s ease !important;
+}
+
+.edit-input:hover .v-field__append-inner .v-icon {
+  color: #E87D7D !important;
 }
 
 .rounded-input {
-  border-radius: 20px !important;
+  border-radius: 8px !important;
 }
 
 .rounded-input .v-field {
-  border-radius: 20px !important;
+  border-radius: 8px !important;
 }
 
+/* 날짜 선택 버튼 */
 .date-btn {
   width: 100% !important;
-  height: 48px !important;
-  border-radius: 20px !important;
-  border: 2px solid #f3f4f6 !important;
-  background: white !important;
-  color: #374151 !important;
+  height: 40px !important;
+  border-radius: 8px !important;
+  background: linear-gradient(145deg, #ffffff, #f8fafc) !important;
+  border: 2px solid #e2e8f0 !important;
+  color: #1f2937 !important;
   font-weight: 500 !important;
-  transition: all 0.3s ease !important;
+  font-size: 14px !important;
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.date-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(232, 125, 125, 0.3), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .date-btn:hover {
   border-color: #E87D7D !important;
-  background: #fef2f2 !important;
+  background: linear-gradient(145deg, #fef2f2, #fdf2f8) !important;
+  box-shadow: 
+    0 8px 25px -5px rgba(232, 125, 125, 0.25),
+    0 4px 10px -3px rgba(232, 125, 125, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
   transform: translateY(-2px) !important;
+  color: #E87D7D !important;
 }
 
+.date-btn:hover::before {
+  opacity: 1;
+}
+
+.date-btn .v-btn__content {
+  gap: 8px !important;
+}
+
+.date-btn .v-icon {
+  color: #E87D7D !important;
+  transition: transform 0.2s ease !important;
+}
+
+.date-btn:hover .v-icon {
+  color: #E87D7D !important;
+}
+
+/* 텍스트 영역 */
 .edit-textarea {
   width: 100%;
-  border-radius: 20px !important;
-  background: white !important;
-  border: 2px solid #f3f4f6 !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
-  transition: all 0.3s ease !important;
+  border-radius: 16px !important;
+  background: linear-gradient(145deg, #ffffff, #f8fafc) !important;
+  border: 2px solid #e2e8f0 !important;
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.edit-textarea::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(232, 125, 125, 0.3), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .edit-textarea:hover {
   border-color: #E87D7D !important;
-  box-shadow: 0 6px 16px rgba(232, 125, 125, 0.15) !important;
+  box-shadow: 
+    0 8px 25px -5px rgba(232, 125, 125, 0.25),
+    0 4px 10px -3px rgba(232, 125, 125, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  transform: translateY(-2px) !important;
+}
+
+.edit-textarea:hover::before {
+  opacity: 1;
+}
+
+.edit-textarea:focus-within {
+  border-color: #E87D7D !important;
+  box-shadow: 
+    0 0 0 3px rgba(232, 125, 125, 0.1),
+    0 8px 25px -5px rgba(232, 125, 125, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  transform: translateY(-1px) !important;
 }
 
 .edit-textarea .v-field {
-  border-radius: 20px !important;
-  background: white !important;
+  border-radius: 16px !important;
+  background: transparent !important;
+  min-height: 120px !important;
 }
 
 .edit-textarea .v-field__outline {
@@ -2564,19 +2794,45 @@ export default {
 }
 
 .edit-textarea .v-field__input {
-  padding: 16px !important;
+  padding: 18px !important;
   font-size: 14px !important;
-  color: #374151 !important;
-  line-height: 1.5 !important;
+  font-weight: 500 !important;
+  color: #1f2937 !important;
+  line-height: 1.6 !important;
+  resize: vertical !important;
+}
+
+.edit-textarea .v-field__input::placeholder {
+  color: #9ca3af !important;
+  font-weight: 400 !important;
 }
 
 .rounded-textarea {
-  border-radius: 20px !important;
+  border-radius: 16px !important;
 }
 
 .rounded-textarea .v-field {
-  border-radius: 20px !important;
+  border-radius: 16px !important;
 }
+
+/* 비활성화된 입력창 스타일 */
+.edit-input.v-input--disabled,
+.edit-textarea.v-input--disabled {
+  background: linear-gradient(145deg, #f9fafb, #f3f4f6) !important;
+  border-color: #e5e7eb !important;
+  color: #9ca3af !important;
+  cursor: not-allowed !important;
+}
+
+.edit-input.v-input--disabled:hover,
+.edit-textarea.v-input--disabled:hover {
+  transform: none !important;
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+
 
 /* 수정 모드 버튼 스타일 */
 .cancel-btn {
@@ -2888,11 +3144,14 @@ export default {
 
 .edit-form-dialog .v-dialog {
   max-height: 90vh;
-  overflow-y: auto;
+  margin: 20px;
 }
 
 .edit-form-card {
   border-radius: 20px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .edit-form-header {
@@ -2903,6 +3162,7 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .edit-form-title {
@@ -2913,6 +3173,258 @@ export default {
 
 .edit-form-content {
   padding: 24px;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* 수정 폼 스크롤바 */
+.edit-form-content::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.edit-form-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+.edit-form-content::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
+  border-radius: 10px;
+  border: 2px solid #f1f5f9;
+}
+
+.edit-form-content::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #FF6B6B, #E87D7D);
+}
+
+.edit-form-content::-webkit-scrollbar-corner {
+  background: #f1f5f9;
+}
+
+/* Firefox 스크롤바 */
+.edit-form-content {
+  scrollbar-width: thin;
+  scrollbar-color: #E87D7D #f1f5f9;
+}
+
+/* 모달 내부 콘텐츠 영역 스크롤바 - 빨간색 커스텀 스타일 */
+.form-content::-webkit-scrollbar,
+.edit-form-content::-webkit-scrollbar,
+.detail-content::-webkit-scrollbar,
+.form-content .step-content::-webkit-scrollbar {
+  width: 10px !important;
+  height: 10px !important;
+}
+
+.form-content::-webkit-scrollbar-track,
+.edit-form-content::-webkit-scrollbar-track,
+.detail-content::-webkit-scrollbar-track,
+.form-content .step-content::-webkit-scrollbar-track {
+  background: #f8f9fa !important;
+  border-radius: 6px !important;
+  margin: 2px 0 !important;
+}
+
+.form-content::-webkit-scrollbar-thumb,
+.edit-form-content::-webkit-scrollbar-thumb,
+.detail-content::-webkit-scrollbar-thumb,
+.form-content .step-content::-webkit-scrollbar-thumb {
+  background: #E87D7D !important;
+  border-radius: 6px !important;
+  border: 1px solid #f8f9fa !important;
+}
+
+.form-content::-webkit-scrollbar-thumb:hover,
+.edit-form-content::-webkit-scrollbar-thumb:hover,
+.detail-content::-webkit-scrollbar-thumb:hover,
+.form-content .step-content::-webkit-scrollbar-thumb:hover {
+  background: #FF6B6B !important;
+}
+
+.form-content::-webkit-scrollbar-corner,
+.edit-form-content::-webkit-scrollbar-corner,
+.detail-content::-webkit-scrollbar-corner,
+.form-content .step-content::-webkit-scrollbar-corner {
+  background: #f8f9fa !important;
+}
+
+/* 모달 내부 콘텐츠 영역의 Firefox 스크롤바 */
+.form-content,
+.edit-form-content {
+  scrollbar-width: thin;
+  scrollbar-color: #E87D7D rgba(241, 245, 249, 0.3);
+}
+
+/* 등록 폼 내부 step-content의 Firefox 스크롤바 */
+.form-content .step-content {
+  scrollbar-width: thin;
+  scrollbar-color: #E87D7D #f8f9fa;
+}
+
+/* 등록 폼 전체 스크롤바 강제 적용 */
+.form-content {
+  overflow-y: auto !important;
+}
+
+.form-content .step-content {
+  overflow-y: auto !important;
+}
+
+/* 모든 스크롤바를 빨간색으로 강제 적용 */
+.pet-form-dialog *::-webkit-scrollbar,
+.pet-form-card *::-webkit-scrollbar,
+.form-content *::-webkit-scrollbar {
+  width: 10px !important;
+  height: 10px !important;
+}
+
+.pet-form-dialog *::-webkit-scrollbar-track,
+.pet-form-card *::-webkit-scrollbar-track,
+.form-content *::-webkit-scrollbar-track {
+  background: #f8f9fa !important;
+  border-radius: 6px !important;
+  margin: 2px 0 !important;
+}
+
+.pet-form-dialog *::-webkit-scrollbar-thumb,
+.pet-form-card *::-webkit-scrollbar-thumb,
+.form-content *::-webkit-scrollbar-thumb {
+  background: #E87D7D !important;
+  border-radius: 6px !important;
+  border: 1px solid #f8f9fa !important;
+}
+
+.pet-form-dialog *::-webkit-scrollbar-thumb:hover,
+.pet-form-card *::-webkit-scrollbar-thumb:hover,
+.form-content *::-webkit-scrollbar-thumb:hover {
+  background: #FF6B6B !important;
+}
+
+.pet-form-dialog *::-webkit-scrollbar-corner,
+.pet-form-card *::-webkit-scrollbar-corner,
+.form-content *::-webkit-scrollbar-corner {
+  background: #f8f9fa !important;
+}
+
+/* PetForm 내부 스크롤바 비활성화 */
+.form-content .pet-form-container .step-content::-webkit-scrollbar {
+  display: none !important;
+}
+
+.form-content .pet-form-container .step-content {
+  scrollbar-width: none !important;
+}
+
+/* 상세보기 모달 Firefox 스크롤바 강화 */
+.detail-content {
+  scrollbar-width: auto;
+  scrollbar-color: #E87D7D rgba(241, 245, 249, 0.2);
+}
+
+/* 모달 열릴 때 바디 스크롤 완전 차단 */
+.pet-form-dialog.v-dialog--active,
+.edit-form-dialog.v-dialog--active,
+.pet-detail-dialog.v-dialog--active {
+  overflow: hidden !important;
+}
+
+.pet-form-dialog.v-dialog--active ~ .v-overlay,
+.edit-form-dialog.v-dialog--active ~ .v-overlay,
+.pet-detail-dialog.v-dialog--active ~ .v-overlay {
+  overflow: hidden !important;
+}
+
+/* 모달 자체 스크롤 차단 */
+.pet-form-dialog .v-dialog,
+.edit-form-dialog .v-dialog,
+.pet-detail-dialog .v-dialog {
+  overflow: hidden !important;
+}
+
+/* 모달 카드 스크롤 차단 */
+.pet-form-card,
+.edit-form-card,
+.pet-detail-card {
+  overflow: hidden !important;
+}
+
+/* 전역 바디 스크롤 차단 (모달 열릴 때) */
+body.v-dialog--active {
+  overflow: hidden !important;
+  padding-right: 0 !important;
+}
+
+/* 전역 스크롤바 숨김 */
+html {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar {
+  display: none;
+}
+
+body {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+body::-webkit-scrollbar {
+  display: none;
+}
+
+/* 모달 전체 스크롤바 숨김 */
+.pet-form-dialog .v-dialog::-webkit-scrollbar,
+.edit-form-dialog .v-dialog::-webkit-scrollbar,
+.pet-detail-dialog .v-dialog::-webkit-scrollbar {
+  display: none;
+}
+
+.pet-form-card::-webkit-scrollbar,
+.edit-form-card::-webkit-scrollbar,
+.pet-detail-card::-webkit-scrollbar {
+  display: none;
+}
+
+/* 상세보기 모달 스크롤바 - 간단한 빨간색 스타일 */
+.detail-content::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.detail-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.detail-content::-webkit-scrollbar-thumb {
+  background: #E87D7D;
+  border-radius: 4px;
+}
+
+.detail-content::-webkit-scrollbar-thumb:hover {
+  background: #FF6B6B;
+}
+
+/* 텍스트 영역 스크롤바 - 간단한 빨간색 스타일 */
+.edit-textarea::-webkit-scrollbar {
+  width: 6px;
+}
+
+.edit-textarea::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.edit-textarea::-webkit-scrollbar-thumb {
+  background: #E87D7D;
+  border-radius: 4px;
+}
+
+.edit-textarea::-webkit-scrollbar-thumb:hover {
+  background: #FF6B6B;
 }
 </style>
 

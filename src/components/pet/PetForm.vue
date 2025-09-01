@@ -266,6 +266,8 @@
           다음
         </v-btn>
       </div>
+      
+
     </div>
 
     <!-- 3단계: 소개글 -->
@@ -290,6 +292,7 @@
             counter="500"
             maxlength="500"
             density="comfortable"
+            no-resize
           />
           <div class="field-hint">
             <span>반려동물의 성격이나 특징을 자유롭게 작성해주세요 (최대 500자)</span>
@@ -1354,6 +1357,9 @@ export default {
 /* 단계별 콘텐츠 */
 .step-content {
   padding: 48px 60px;
+  min-height: 600px;
+  overflow-y: visible !important;
+  max-height: none;
 }
 
 .step-header {
@@ -1939,6 +1945,54 @@ export default {
   .image-upload-section {
     padding: 24px 20px 20px;
   }
+}
+
+/* PetForm 내부 스크롤바 비활성화 */
+.v-card .step-content::-webkit-scrollbar,
+.step-content::-webkit-scrollbar,
+.pet-form-container .step-content::-webkit-scrollbar,
+.v-card::-webkit-scrollbar {
+  display: none !important;
+}
+
+/* PetForm 내부 Firefox 스크롤바 비활성화 */
+.v-card .step-content,
+.step-content,
+.pet-form-container .step-content,
+.v-card {
+  scrollbar-width: none !important;
+}
+
+/* 텍스트 영역 스크롤바 */
+.v-textarea::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.v-textarea::-webkit-scrollbar-track {
+  background: #f8f9fa;
+  border-radius: 6px;
+  margin: 2px 0;
+}
+
+.v-textarea::-webkit-scrollbar-thumb {
+  background: #E87D7D;
+  border-radius: 6px;
+  border: 1px solid #f8f9fa;
+}
+
+.v-textarea::-webkit-scrollbar-thumb:hover {
+  background: #FF6B6B;
+}
+
+.v-textarea::-webkit-scrollbar-corner {
+  background: #f8f9fa;
+}
+
+/* 텍스트 영역 Firefox 스크롤바 */
+.v-textarea {
+  scrollbar-width: thin;
+  scrollbar-color: #E87D7D #f8f9fa;
 }
 </style>
 
