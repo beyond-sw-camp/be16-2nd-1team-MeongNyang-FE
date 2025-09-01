@@ -64,7 +64,9 @@
 
       <!-- 오른쪽: 인기 해시태그 -->
       <div class="sidebar">
-        <SearchBar @search="handleSearch" />
+        <div class="search-section">
+          <SearchBar @search="handleSearch" />
+        </div>
         <TrendingHashtags />
       </div>
     </div>
@@ -1174,6 +1176,10 @@ export default {
   position: sticky;
   top: 20px;
   height: fit-content;
+}
+
+.search-section {
+  margin-bottom: 20px;
 }
 
 /* 포스트 헤더 */

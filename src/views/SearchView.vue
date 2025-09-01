@@ -1,13 +1,11 @@
 <template>
   <div class="search-page">
     <!-- 검색 컴포넌트 -->
-    <SearchComponent
-      v-model="searchKeyword"
-      :search-type="searchType"
-      @update:search-type="searchType = $event"
-      @search="handleSearch"
-      @clear="handleClearSearch"
-    />
+    <div class="search-container">
+      <SearchBar
+        @search="handleSearch"
+      />
+    </div>
 
                     <!-- 검색 결과 컴포넌트 -->
                 <SearchResultsComponent
@@ -26,7 +24,7 @@
 <script>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import SearchComponent from '@/components/SearchComponent.vue'
+import SearchBar from '@/components/common/SearchBar.vue'
 import SearchResultsComponent from '@/components/SearchResultsComponent.vue'
 import { postAPI } from '@/services/api'
 import { handleApiError } from '@/utils/errorHandler'
@@ -34,7 +32,7 @@ import { handleApiError } from '@/utils/errorHandler'
 export default {
   name: 'SearchView',
   components: {
-    SearchComponent,
+    SearchBar,
     SearchResultsComponent
   },
   setup() {
@@ -163,6 +161,7 @@ export default {
                 
                 // 검색 처리
                 const handleSearch = (searchData) => {
+                  console.log('SearchView - 검색 데이터 수신:', searchData)
                   searchType.value = searchData.searchType
                   searchKeyword.value = searchData.keyword
                   showSearchResults.value = true
@@ -223,5 +222,26 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+.search-container {
+  width: 100%;
+  max-width: 900px;
+  padding: 0 20px;
+  margin-bottom: 32px;
+}
+
+@media (max-width: 768px) {
+  .search-container {
+    padding: 0 16px;
+    margin-bottom: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .search-container {
+    padding: 0 12px;
+    margin-bottom: 20px;
+  }
 }
 </style>

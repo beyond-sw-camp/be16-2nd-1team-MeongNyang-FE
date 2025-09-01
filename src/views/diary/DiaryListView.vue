@@ -1,8 +1,10 @@
 <template>
   <div class="diary-page">
-    <SearchBar
-      @search="handleSearch"
-    />
+    <div class="search-section">
+      <SearchBar
+        @search="handleSearch"
+      />
+    </div>
 
     <DiaryProfileSection
       :user-info="isMyProfile ? userInfo : otherUserInfo"
@@ -320,15 +322,27 @@ export default {
   padding: 32px;
 }
 
+.search-section {
+  margin-bottom: 32px;
+}
+
 @media (max-width: 768px) {
   .diary-page {
     padding: 20px;
+  }
+  
+  .search-section {
+    margin-bottom: 24px;
   }
 }
 
 @media (max-width: 480px) {
   .diary-page {
     padding: 16px;
+  }
+  
+  .search-section {
+    margin-bottom: 20px;
   }
 }
 </style>

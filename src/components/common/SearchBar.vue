@@ -71,7 +71,7 @@ export default {
 
 <style scoped>
 .search-component {
-  margin-bottom: 20px;
+  margin-bottom: 0;
   padding: 0;
   width: 100%;
 }
@@ -84,7 +84,7 @@ export default {
   background: white;
   border: 1px solid #E2E8F0;
   border-radius: 12px;
-  padding: 12px;
+  padding: 12px 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   transition: all 0.3s ease;
 }
