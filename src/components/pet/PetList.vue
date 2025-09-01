@@ -339,7 +339,8 @@
         <v-card class="pet-detail-card" rounded="xl">
           <v-card-title class="detail-header">
             <div class="detail-title">
-              <span class="text-h4">{{ selectedPet?.name }}</span>
+              <v-icon size="32" color="white">mdi-paw</v-icon>
+              <span class="text-h5">반려동물 정보</span>
             </div>
             <v-btn
               icon="mdi-close"
@@ -2618,9 +2619,9 @@ export default {
   gap: 12px;
 }
 
-.detail-title .text-h4 {
-  font-size: 2.5rem !important;
-  font-weight: 700 !important;
+.detail-title .text-h5 {
+  font-size: 1.5rem !important;
+  font-weight: 600 !important;
   color: white !important;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   margin: 0;
