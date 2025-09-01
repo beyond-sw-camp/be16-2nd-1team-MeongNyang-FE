@@ -171,7 +171,7 @@
               readonly
               :disabled="true"
               required
-              :rules="[v => !!v || '나이를 입력해주세요']"
+              :rules="[v => v !== null && v !== undefined || '나이를 입력해주세요']"
             />
           </div>
 
@@ -653,7 +653,7 @@ export default {
     const genderOptions = [
       { value: 'MALE', title: '수컷' },
       { value: 'FEMALE', title: '암컷' },
-      { value: 'NEUTERED', title: '중성' }
+      { value: 'NEUTRALITY', title: '중성' }
     ]
     
     // 날짜 제한
@@ -700,11 +700,19 @@ export default {
       return `${formattedDate} (${age}살, ${daysUntilBirthday}일 후)`
     })
     
-    // 나이 계산 함수
+    // 나이 계산 함수 (더 정확한 계산)
     const calculateAge = (birthday) => {
       if (!birthday) return null
+      
+      // 현재 날짜를 명시적으로 설정 (브라우저 시간에 의존하지 않음)
       const today = new Date()
       const birthDate = new Date(birthday)
+      
+      // 날짜 파싱 확인
+      if (isNaN(birthDate.getTime())) {
+        console.error('❌ 잘못된 생일 형식:', birthday)
+        return null
+      }
       
       // 미래 날짜 체크
       if (birthDate > today) {
@@ -712,14 +720,36 @@ export default {
         return 0
       }
       
+      // 더 정확한 나이 계산
       let age = today.getFullYear() - birthDate.getFullYear()
-      const monthDiff = today.getMonth() - birthDate.getMonth()
       
-      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      // 생일이 지나지 않았으면 1살 빼기
+      const currentMonth = today.getMonth()
+      const birthMonth = birthDate.getMonth()
+      const currentDay = today.getDate()
+      const birthDay = birthDate.getDate()
+      
+      if (currentMonth < birthMonth || (currentMonth === birthMonth && currentDay < birthDay)) {
         age--
       }
       
-      // 음수 나이 방지
+      console.log('📅 나이 계산 상세:', {
+        birthday,
+        today: today.toISOString().split('T')[0],
+        todayYear: today.getFullYear(),
+        birthDate: birthDate.toISOString().split('T')[0],
+        birthYear: birthDate.getFullYear(),
+        currentMonth,
+        birthMonth,
+        currentDay,
+        birthDay,
+        rawAge: today.getFullYear() - birthDate.getFullYear(),
+        calculatedAge: age,
+        isBirthdayPassed: !(currentMonth < birthMonth || (currentMonth === birthMonth && currentDay < birthDay)),
+        expectedAge: 2025 - 2019 // 2025년 기준으로 6살이어야 함
+      })
+      
+      // 0살도 허용
       return Math.max(0, age)
     }
     

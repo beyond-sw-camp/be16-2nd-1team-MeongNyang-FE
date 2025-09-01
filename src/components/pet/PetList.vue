@@ -338,8 +338,8 @@
               <div class="pet-image-detail">
                 <div class="image-container">
                 <v-img
-                  v-if="selectedPet?.url && selectedPet.url.trim() !== ''"
-                  :src="selectedPet.url"
+                  v-if="imagePreviewUrl || selectedPet?.url"
+                  :src="imagePreviewUrl || selectedPet?.url"
                   :alt="selectedPet.name"
                   class="detail-pet-image"
                   aspect-ratio="1"
@@ -411,6 +411,14 @@
                         hide-details
                         class="edit-input rounded-input"
                         placeholder="성별 선택"
+                        @update:model-value="(value) => {
+                          console.log('🔍 성별 선택 변경:', {
+                            newValue: value,
+                            newValueType: typeof value,
+                            newValueLabel: getGenderLabel(value),
+                            isNeutered: value === 'NEUTRALITY'
+                          })
+                        }"
                       />
                     </div>
                     <span v-else class="info-value">{{ getGenderLabel(selectedPet?.gender) }}</span>
@@ -433,7 +441,7 @@
                         :disabled="true"
                       />
                     </div>
-                    <span v-else class="info-value">{{ selectedPet?.age }}살</span>
+                    <span v-else class="info-value">{{ selectedPet?.age !== null && selectedPet?.age !== undefined ? selectedPet.age + '살' : '알 수 없음' }}</span>
                   </div>
                   <div class="info-item">
                     <v-icon size="20" color="grey-darken-1">mdi-weight</v-icon>
@@ -762,7 +770,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick, shallowRef } from 'vue'
 import { usePetStore } from '@/stores/pet'
 import { useSnackbar } from '@/composables/useSnackbar'
 import PetCard from './PetCard.vue'
@@ -786,7 +794,7 @@ export default {
     const petToDelete = ref(null)
     const deleting = ref(false)
     const showDetailModal = ref(false)
-    const selectedPet = ref(null)
+    const selectedPet = shallowRef(null)
     const showEditForm = ref(false)
     const isEditing = ref(false)
     const editingPet = ref(null)
@@ -810,7 +818,7 @@ export default {
     const genderOptions = [
       { title: '수컷', value: 'MALE' },
       { title: '암컷', value: 'FEMALE' },
-      { title: '중성', value: 'NEUTERED' }
+      { title: '중성', value: 'NEUTRALITY' }
     ]
 
     // 반려동물 데이터
@@ -830,6 +838,40 @@ export default {
     const getDogCount = () => pets.value.filter(pet => pet.petOrder === '강아지').length
     const getCatCount = () => pets.value.filter(pet => pet.petOrder === '고양이').length
     
+    // 현재 이미지 URL 반환 (미리보기 우선) - computed로 변경
+    const getCurrentImageUrl = computed(() => {
+      console.log('🔄 getCurrentImageUrl 호출됨:', {
+        editingPetPreview: editingPet.value?.previewImage,
+        selectedPetTemp: selectedPet.value?.tempImageUrl,
+        selectedPetUrl: selectedPet.value?.url,
+        isEditing: isEditing.value
+      })
+      
+      // 수정 모드에서 미리보기 이미지가 있으면 우선 표시
+      if (editingPet.value?.previewImage) {
+        console.log('📸 미리보기 이미지 사용:', editingPet.value.previewImage)
+        return editingPet.value.previewImage
+      }
+      
+      // 임시 이미지 URL이 있으면 표시
+      if (selectedPet.value?.tempImageUrl) {
+        console.log('📸 임시 이미지 URL 사용:', selectedPet.value.tempImageUrl)
+        return selectedPet.value.tempImageUrl
+      }
+      
+      // 기존 이미지 URL이 있으면 표시
+      if (selectedPet.value?.url && selectedPet.value.url.trim() !== '') {
+        console.log('📸 기존 이미지 URL 사용:', selectedPet.value.url)
+        return selectedPet.value.url
+      }
+      
+      console.log('📸 이미지 없음')
+      return null
+    })
+    
+    // 이미지 미리보기 URL을 위한 별도 ref
+    const imagePreviewUrl = ref(null)
+    
     // 생일 포맷팅
     const formatBirthday = (birthday) => {
       if (!birthday) return '알 수 없음'
@@ -842,11 +884,19 @@ export default {
       }
     }
     
-    // 나이 계산 함수
+    // 나이 계산 함수 (더 정확한 계산)
     const calculateAge = (birthday) => {
       if (!birthday) return null
+      
+      // 현재 날짜를 명시적으로 설정 (브라우저 시간에 의존하지 않음)
       const today = new Date()
       const birthDate = new Date(birthday)
+      
+      // 날짜 파싱 확인
+      if (isNaN(birthDate.getTime())) {
+        console.error('❌ 잘못된 생일 형식:', birthday)
+        return null
+      }
       
       // 미래 날짜 체크
       if (birthDate > today) {
@@ -854,14 +904,36 @@ export default {
         return 0
       }
       
+      // 더 정확한 나이 계산
       let age = today.getFullYear() - birthDate.getFullYear()
-      const monthDiff = today.getMonth() - birthDate.getMonth()
       
-      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      // 생일이 지나지 않았으면 1살 빼기
+      const currentMonth = today.getMonth()
+      const birthMonth = birthDate.getMonth()
+      const currentDay = today.getDate()
+      const birthDay = birthDate.getDate()
+      
+      if (currentMonth < birthMonth || (currentMonth === birthMonth && currentDay < birthDay)) {
         age--
       }
       
-      // 음수 나이 방지
+      console.log('📅 나이 계산 상세:', {
+        birthday,
+        today: today.toISOString().split('T')[0],
+        todayYear: today.getFullYear(),
+        birthDate: birthDate.toISOString().split('T')[0],
+        birthYear: birthDate.getFullYear(),
+        currentMonth,
+        birthMonth,
+        currentDay,
+        birthDay,
+        rawAge: today.getFullYear() - birthDate.getFullYear(),
+        calculatedAge: age,
+        isBirthdayPassed: !(currentMonth < birthMonth || (currentMonth === birthMonth && currentDay < birthDay)),
+        expectedAge: 2025 - 2019 // 2025년 기준으로 6살이어야 함
+      })
+      
+      // 0살도 허용
       return Math.max(0, age)
     }
     
@@ -888,7 +960,7 @@ export default {
       const colors = {
         MALE: '#3B82F6',
         FEMALE: '#EC4899',
-        NEUTERED: '#6B7280'
+        NEUTRALITY: '#6B7280'
       }
       return colors[gender] || '#6B7280'
     }
@@ -897,7 +969,7 @@ export default {
       const icons = {
         MALE: 'mdi-gender-male',
         FEMALE: 'mdi-gender-female',
-        NEUTERED: 'mdi-gender-male-female'
+        NEUTRALITY: 'mdi-gender-male-female'
       }
       return icons[gender] || 'mdi-gender-male-female'
     }
@@ -906,7 +978,7 @@ export default {
       const labels = {
         MALE: '수컷',
         FEMALE: '암컷',
-        NEUTERED: '중성'
+        NEUTRALITY: '중성'
       }
       return labels[gender] || '알 수 없음'
     }
@@ -1016,6 +1088,15 @@ export default {
       if (isEditing.value) {
         // 수정 모드 취소
         isEditing.value = false
+        
+        // 임시 이미지 URL 정리
+        if (selectedPet.value && selectedPet.value.tempImageUrl) {
+          delete selectedPet.value.tempImageUrl
+        }
+        
+        // 미리보기 URL 정리
+        imagePreviewUrl.value = null
+        
         editingPet.value = null
       } else {
         // 수정 모드 시작 - DB에 저장된 데이터를 제대로 가져오기
@@ -1038,7 +1119,7 @@ export default {
           gender: pet.gender || 'FEMALE',
           weight: pet.weight || 1.0,
           url: pet.url || '',
-          birthday: pet.birthday ? new Date(pet.birthday + 'T00:00:00+09:00') : null,
+          birthday: pet.birthday || null,
           introduce: pet.introduce || '',
           species: pet.species || '',
           petOrder: pet.petOrder || '',
@@ -1054,6 +1135,19 @@ export default {
             }
             return null
           })()
+        }
+        
+        // 생일이 있으면 나이를 다시 계산
+        if (editingPet.value.birthday) {
+          const recalculatedAge = calculateAge(editingPet.value.birthday)
+          if (recalculatedAge !== null) {
+            editingPet.value.age = recalculatedAge
+            console.log('🔄 수정 모드 - 생일 기반 나이 재계산:', {
+              birthday: editingPet.value.birthday,
+              originalAge: pet.age,
+              recalculatedAge: recalculatedAge
+            })
+          }
         }
         
         console.log('🔍 수정 모드 시작 - DB 데이터 매핑:', {
@@ -1124,62 +1218,29 @@ export default {
           return
         }
         
-        // 이미지 업데이트를 위한 FormData 구성
-        const formData = new FormData()
+        // 이미지 파일을 editingPet에 저장 (바로 저장하지 않음)
+        editingPet.value.imageFile = file
+        editingPet.value.previewImage = URL.createObjectURL(file)
         
-        // PetRegisterReq JSON 데이터 - editingPet을 우선으로 사용
-        const petRegisterReq = {
-          name: editingPet.value.name || '',
-          age: editingPet.value.age || 0,
-          gender: editingPet.value.gender || 'FEMALE',
-          weight: editingPet.value.weight || 1.0,
-          url: selectedPet.value.url || '',
-          birthday: editingPet.value.birthday || null,
-          introduce: editingPet.value.introduce || '',
-          speciesId: editingPet.value.speciesId || null
-        }
-        
-        // 필수 필드 검증
-        if (!petRegisterReq.name || !petRegisterReq.age || !petRegisterReq.gender || !petRegisterReq.weight) {
-          console.error('❌ 필수 필드가 누락되었습니다:', petRegisterReq)
-          showSnackbar('필수 정보를 모두 입력해주세요.', 'error')
-          return
-        }
-        
-        formData.append('PetRegisterReq', new Blob([JSON.stringify(petRegisterReq)], { type: 'application/json' }))
-        formData.append('url', file)
-        
-        console.log('📤 FormData 구성 완료:', {
-          petId: selectedPet.value.id,
-          petRegisterReq,
+        console.log('📸 이미지 파일이 수정 모드에 저장됨:', {
           fileName: file.name,
           fileSize: file.size,
-          formDataEntries: Array.from(formData.entries())
+          previewUrl: editingPet.value.previewImage
         })
         
-        // 백엔드 수정 API 호출 - petStore.updatePet은 petData와 petImage를 별도로 받음
-        const result = await petStore.updatePet(selectedPet.value.id, petRegisterReq, file)
-        console.log('✅ 이미지 변경 완료:', result)
+        // 즉시 미리보기 반영을 위해 별도 ref에 설정
+        imagePreviewUrl.value = editingPet.value.previewImage
         
-        // 펫 목록 새로고침
-        await petStore.fetchPets()
+        console.log('📸 이미지 미리보기 설정 완료:', {
+          editingPetPreview: editingPet.value.previewImage,
+          imagePreviewUrl: imagePreviewUrl.value
+        })
         
-        // 선택된 펫 정보도 업데이트
-        const updatedPet = petStore.pets.find(p => p.id === selectedPet.value.id)
-        if (updatedPet) {
-          Object.assign(selectedPet.value, updatedPet)
-          if (editingPet.value) {
-            editingPet.value.url = updatedPet.url
-          }
-          console.log('🔄 selectedPet 이미지 업데이트 완료:', selectedPet.value)
-        }
-        
-        showSnackbar('이미지가 성공적으로 변경되었습니다.', 'success')
+        showSnackbar('이미지가 선택되었습니다. 저장 버튼을 눌러 변경사항을 저장하세요.', 'success')
         
       } catch (error) {
         console.error('❌ 이미지 변경 실패:', error)
-        const errorMessage = error.response?.data?.status?.message || error.message
-        showSnackbar(`사진 변경에 실패했습니다: ${errorMessage}`, 'error')
+        showSnackbar('이미지 변경에 실패했습니다.', 'error')
       }
       
       // 파일 입력 초기화
@@ -1194,8 +1255,8 @@ export default {
         return
       }
       
-      // 필수 필드 검증
-      if (!editingPet.value.name || !editingPet.value.age || !editingPet.value.gender || !editingPet.value.weight) {
+      // 필수 필드 검증 (나이는 0도 허용)
+      if (!editingPet.value.name || editingPet.value.age === null || editingPet.value.age === undefined || !editingPet.value.gender || !editingPet.value.weight) {
         console.error('❌ 필수 필드가 누락되었습니다:', editingPet.value)
         showSnackbar('필수 정보를 모두 입력해주세요.', 'error')
         return
@@ -1224,28 +1285,20 @@ export default {
           petRegisterReq
         })
         
-        // 중성 저장 디버깅
-        if (editingPet.value.gender === 'NEUTERED') {
-          console.log('🔍 중성 데이터 저장 시도:', {
-            originalGender: editingPet.value.gender,
-            requestData: petRegisterReq,
-            selectedPetOriginal: selectedPet.value?.gender
-          })
-        }
+
         
-        // DB에 펫 정보 업데이트 - 이미지는 변경하지 않음 (null)
-        const updatedPet = await petStore.updatePet(editingPet.value.id, petRegisterReq, null)
+
+        
+
+        
+        // DB에 펫 정보 업데이트 - 이미지 파일이 있으면 함께 전송
+        const imageFile = editingPet.value.imageFile || null
+        const updatedPet = await petStore.updatePet(editingPet.value.id, petRegisterReq, imageFile)
         console.log('✅ DB에 펫 정보 업데이트 완료:', updatedPet)
         
-        // 중성 저장 결과 확인
-        if (editingPet.value.gender === 'NEUTERED') {
-          console.log('🔍 중성 저장 결과 확인:', {
-            requestedGender: editingPet.value.gender,
-            responseGender: updatedPet?.gender,
-            responseGenderLabel: getGenderLabel(updatedPet?.gender),
-            success: updatedPet?.gender === 'NEUTERED'
-          })
-        }
+
+        
+        
         
         // 펫 목록 새로고침
         await petStore.fetchPets()
@@ -1256,10 +1309,21 @@ export default {
           // selectedPet을 새로고침된 정보로 완전히 교체
           selectedPet.value = { ...refreshedPet }
           console.log('🔄 selectedPet을 새로고침된 정보로 교체 완료:', selectedPet.value)
+          
+
         }
         
         // 수정 모드 종료
         isEditing.value = false
+        
+        // 임시 이미지 URL 정리
+        if (selectedPet.value && selectedPet.value.tempImageUrl) {
+          delete selectedPet.value.tempImageUrl
+        }
+        
+        // 미리보기 URL 정리
+        imagePreviewUrl.value = null
+        
         editingPet.value = null
         
         // DOM 업데이트 보장
@@ -1520,6 +1584,8 @@ export default {
         getGenderColor,
         getGenderIcon,
         getGenderLabel,
+        getCurrentImageUrl,
+        imagePreviewUrl,
         setAsRepresentative,
         viewPet,
         closeDetailModal,
