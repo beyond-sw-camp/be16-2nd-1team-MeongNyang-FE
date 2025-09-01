@@ -59,8 +59,8 @@ export default {
     const hasInitialData = ref(false)
     let pollingTimer = null
     
-    // 5분 = 5 * 60 * 1000 밀리초
-    const POLLING_INTERVAL = 0.1 * 60 * 1000
+    // 1분 = 1 * 60 * 1000 밀리초
+    const POLLING_INTERVAL = 1 * 60 * 1000
 
     // 인기 해시태그 가져오기
     const fetchTrendingHashtags = async (isInitial = false) => {
@@ -96,7 +96,7 @@ export default {
 
     // polling 시작
     const startPolling = () => {
-      console.log(`Polling 시작 - ${POLLING_INTERVAL}ms 간격 (5분)`)
+      console.log(`Polling 시작 - ${POLLING_INTERVAL}ms 간격 (1분)`)
       pollingTimer = setInterval(async () => {
         console.log('Polling으로 해시태그 새로고침')
         await fetchTrendingHashtags(false)
