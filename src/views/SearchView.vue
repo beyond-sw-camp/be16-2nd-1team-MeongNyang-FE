@@ -26,8 +26,9 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import SearchBar from '@/components/common/SearchBar.vue'
 import SearchResultsComponent from '@/components/SearchResultsComponent.vue'
-import { postAPI } from '@/services/api'
+import { postAPI, userAPI } from '@/services/api'
 import { handleApiError } from '@/utils/errorHandler'
+import { useAuthStore } from '@/stores/auth'
 
 export default {
   name: 'SearchView',
@@ -38,6 +39,7 @@ export default {
   setup() {
     const $router = useRouter()
     const $route = useRoute()
+    const authStore = useAuthStore()
     
                     // 검색 상태
                 const searchType = ref('CONTENT')
@@ -101,6 +103,14 @@ export default {
                       
                       console.log('추출된 검색 데이터:', searchData)
                       searchResults.value = Array.isArray(searchData) ? searchData : []
+                      
+                      // 검색 결과에 댓글 수와 팔로우 상태 추가
+                      if (searchResults.value.length > 0) {
+                        await Promise.all([
+                          fetchAllCommentsCount(),
+                          fetchAllFollowStatus()
+                        ])
+                      }
                     } else {
                       console.log('검색 결과 데이터가 없음')
                       searchResults.value = []
@@ -111,6 +121,102 @@ export default {
                     handleApiError(error, $router, '검색에 실패했습니다.')
                   } finally {
                     isLoading.value = false
+                  }
+                }
+                
+                // 모든 포스트의 댓글 수 조회
+                const fetchAllCommentsCount = async () => {
+                  try {
+                    console.log('=== 모든 포스트 댓글 수 조회 시작 ===')
+                    
+                    const promises = searchResults.value.map(async (post) => {
+                      try {
+                        console.log(`=== 포스트 ${post.id} 댓글 수 조회 ===`)
+                        const response = await postAPI.getCommentsCount(post.id)
+                        console.log(`포스트 ${post.id} 댓글 수 API 응답:`, response)
+                        
+                        const commentsCount = response.data?.data?.commentsCount || 0
+                        console.log(`포스트 ${post.id} 댓글 수 추출:`, commentsCount)
+                        
+                        // 검색 결과에서 해당 포스트 업데이트
+                        const postIndex = searchResults.value.findIndex(p => p.id === post.id)
+                        if (postIndex !== -1) {
+                          searchResults.value[postIndex].commentsCount = commentsCount
+                        }
+                        
+                        return { postId: post.id, commentsCount }
+                      } catch (error) {
+                        console.error(`포스트 ${post.id} 댓글 수 조회 실패:`, error)
+                        return { postId: post.id, commentsCount: 0 }
+                      }
+                    })
+                    
+                    const results = await Promise.all(promises)
+                    console.log('=== 모든 포스트 댓글 수 조회 완료 ===', results)
+                    
+                  } catch (error) {
+                    console.error('전체 댓글 수 조회 실패:', error)
+                  }
+                }
+
+                // 모든 포스트의 팔로우 상태 가져오기
+                const fetchAllFollowStatus = async () => {
+                  try {
+                    console.log('=== 모든 포스트 팔로우 상태 조회 시작 ===')
+                    
+                    // 현재 로그인한 사용자가 있는 경우에만 실행
+                    const currentUserId = authStore.user?.userId || authStore.user?.id
+                    if (!currentUserId) {
+                      console.log('로그인한 사용자가 없어 팔로우 상태 조회 건너뜀')
+                      return
+                    }
+                    
+                    // 현재 로드된 모든 포스트에 대해 팔로우 상태 조회
+                    const promises = searchResults.value.map(async (post) => {
+                      // 내 게시글이면 팔로우 상태 조회 불필요
+                      if (post.userId === currentUserId) {
+                        return { postId: post.id, isFollowing: null }
+                      }
+                      
+                      try {
+                        console.log(`=== 포스트 ${post.id} 팔로우 상태 조회 ===`)
+                        console.log('post 객체:', post)
+                        console.log('post.userId:', post.userId, '타입:', typeof post.userId)
+                        console.log('post.userId 값이 유효한지:', post.userId && post.userId > 0)
+                        
+                        if (!post.userId || post.userId <= 0) {
+                          console.error(`포스트 ${post.id}의 userId가 유효하지 않음:`, post.userId)
+                          return { postId: post.id, isFollowing: false }
+                        }
+                        
+                        console.log(`API 호출 시작: userAPI.checkFollowStatus(${post.userId})`)
+                        const response = await userAPI.checkFollowStatus(post.userId)
+                        console.log(`포스트 ${post.id} 팔로우 상태 API 응답:`, response)
+                        console.log(`포스트 ${post.id} 팔로우 상태 API 응답 데이터:`, response.data)
+                        console.log(`포스트 ${post.id} 팔로우 상태 API 응답 전체 구조:`, JSON.stringify(response, null, 2))
+                        
+                        const isFollowing = response.data?.data?.isFollowing || false
+                        console.log(`포스트 ${post.id} 팔로우 상태 추출:`, isFollowing)
+                        console.log(`response.data?.data?.isFollowing 값:`, response.data?.data?.isFollowing)
+                        
+                        // 검색 결과에서 해당 포스트 업데이트
+                        const postIndex = searchResults.value.findIndex(p => p.id === post.id)
+                        if (postIndex !== -1) {
+                          searchResults.value[postIndex].isFollowing = isFollowing
+                        }
+                        
+                        return { postId: post.id, isFollowing }
+                      } catch (error) {
+                        console.error(`포스트 ${post.id} 팔로우 상태 조회 실패:`, error)
+                        return { postId: post.id, isFollowing: false }
+                      }
+                    })
+                    
+                    const results = await Promise.all(promises)
+                    console.log('=== 모든 포스트 팔로우 상태 조회 완료 ===', results)
+                    
+                  } catch (error) {
+                    console.error('전체 팔로우 상태 조회 실패:', error)
                   }
                 }
                 
@@ -141,7 +247,16 @@ export default {
                       console.log('추출된 무한 스크롤 검색 데이터:', searchData)
                       
                       // 기존 결과에 추가
-                      searchResults.value = [...searchResults.value, ...(Array.isArray(searchData) ? searchData : [])]
+                      const newResults = Array.isArray(searchData) ? searchData : []
+                      searchResults.value = [...searchResults.value, ...newResults]
+                      
+                      // 새로 추가된 결과에 댓글 수와 팔로우 상태 추가
+                      if (newResults.length > 0) {
+                        await Promise.all([
+                          fetchAllCommentsCount(),
+                          fetchAllFollowStatus()
+                        ])
+                      }
                       
                       // 더 불러올 데이터가 있는지 확인
                       hasMore.value = !response.data.data.last

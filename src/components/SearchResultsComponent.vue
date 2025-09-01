@@ -8,85 +8,74 @@
     </div>
     
     <!-- 검색 결과 목록 -->
-    <div class="search-results-list">
-      <div 
-        v-for="(result, index) in results" 
-        :key="result.id || index"
-        class="search-result-item"
-        @click="handleResultClick(result)"
-      >
-        <!-- 프로필 섹션 -->
-        <div class="profile-section">
-          <v-avatar 
-            size="56" 
-            class="profile-avatar clickable"
-            @click.stop="goToUserDiary(result.userId)"
-          >
-            <v-img 
-              :src="result.petProfile" 
-              :alt="result.petName"
-              cover
-            ></v-img>
-          </v-avatar>
-        </div>
-        
-        <!-- 메인 콘텐츠 -->
-        <div class="main-content">
-          <!-- 헤더 정보 -->
-          <div class="content-header">
-            <div class="user-info">
-              <div class="username">{{ result.petName }}</div>
-              <div class="date">{{ formatDate(result.createdAt) }}</div>
-            </div>
-            <div class="action-buttons">
-              <v-btn
-                icon="mdi-heart-outline"
-                size="small"
-                variant="text"
-                color="#64748B"
-                class="action-btn"
-              ></v-btn>
-              <v-btn
-                icon="mdi-share-variant-outline"
-                size="small"
-                variant="text"
-                color="#64748B"
-                class="action-btn"
-              ></v-btn>
-            </div>
+    <div v-if="results.length > 0" class="main-content">
+      <!-- 왼쪽: 일기 목록 -->
+      <div class="posts-list">
+        <div
+          v-for="post in results"
+          :key="post.id"
+          class="post-section"
+        >
+          <!-- 포스트 헤더 -->
+          <PostDetailHeader
+            :post-data="post"
+            :current-user-id="currentUserId"
+            :follow-processing="isFollowProcessing(post.userId)"
+            @go-to-user-diary="goToUserDiary"
+            @follow-user="followUser(post.userId)"
+            @unfollow-user="unfollowUser(post.userId)"
+            @edit-post="editPost(post.id)"
+            @show-delete-confirm="deletePost(post.id)"
+            @report-post="reportPost(post.id)"
+          />
+
+          <!-- 메인 이미지 -->
+          <PostMediaDisplay :media-list="post.mediaList" />
+
+          <!-- 좋아요/댓글 바 -->
+          <PostEngagementBar
+            :like-count="post.likeCount"
+            :comments-count="post.commentsCount"
+            :is-liked="post.liked"
+            :is-like-processing="isLikeProcessing(post.id)"
+            @toggle-like="toggleLike(post.id)"
+            @toggle-comments-modal="openCommentsModal(post.id)"
+            @handle-likes-text-click="handleLikesTextClick(post.id)"
+          />
+
+          <!-- 캡션 -->
+          <div class="caption" v-if="post.content">
+            <span class="caption-username">{{ post.userName || post.petName }}</span>
+            <span class="caption-text">{{ removeHashtags(post.content) }}</span>
           </div>
-          
-          <!-- 포스트 내용 -->
-          <div class="post-content">
-            <div class="post-title">{{ result.title }}</div>
-            <div class="post-text">{{ result.content }}</div>
-          </div>
-          
-          <!-- 태그 섹션 -->
-          <div class="tags-section">
-            <v-chip
-              v-for="tag in extractHashtags(result.content)"
-              :key="tag"
-              size="small"
-              variant="outlined"
-              color="#FF8B8B"
-              class="tag-chip"
-            >
-              {{ tag }}
-            </v-chip>
-          </div>
+
+          <!-- 해시태그 -->
+          <PostHashtags :hash-tag-list="post.hashTagList" @search-by-hashtag="searchByHashtag" />
+
+          <!-- 댓글 미리보기 -->
+          <PostCommentsPreview
+            :comments-count="post.commentsCount"
+            :preview-comments="post.previewComments"
+            @toggle-comments-modal="openCommentsModal(post.id)"
+            @go-to-user-diary="goToUserDiary"
+          />
         </div>
       </div>
-      
-      <!-- 로딩 상태 -->
-      <div v-if="isLoading" class="loading-section">
-        <v-progress-circular
-          indeterminate
-          color="#FF8B8B"
-          size="40"
-        ></v-progress-circular>
-        <p class="loading-text">검색 중...</p>
+
+      <!-- 오른쪽: 인기 해시태그 -->
+      <div class="sidebar">
+        <TrendingHashtags @search="handleSearch" />
       </div>
+    </div>
+    
+    <!-- 로딩 상태 -->
+    <div v-if="isLoading" class="loading-section">
+      <v-progress-circular
+        indeterminate
+        color="#FF8B8B"
+        size="40"
+      ></v-progress-circular>
+      <p class="loading-text">검색 중...</p>
     </div>
     
     <!-- 결과가 없을 때 -->
@@ -97,12 +86,58 @@
       <p class="no-results-text">검색 결과가 없습니다.</p>
       <p class="no-results-subtext">다른 검색어를 시도해보세요.</p>
     </div>
+
+    <!-- 좋아요 모달 -->
+    <LikesModal 
+      v-model="showLikesModal"
+      :likes-list="likesList"
+      @update:modelValue="handleLikesModalToggle"
+    />
+
+    <!-- 댓글 모달 -->
+    <CommentsModal
+      v-model="showCommentsModal"
+      :comments-list="commentsList"
+      :post-id="currentPostId"
+      @add-comment="handleAddComment"
+      @add-reply="handleAddReply"
+      @edit-comment="handleEditComment"
+      @delete-comment="handleDeleteComment"
+      @edit-reply="handleEditReply"
+      @delete-reply="handleDeleteReply"
+      @refresh-comments="handleRefreshComments"
+    />
   </div>
 </template>
 
 <script>
+import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import { postAPI, userAPI } from '@/services/api'
+
+// Import AllDiaryView components
+import PostDetailHeader from '@/components/diary/PostDetailHeader.vue'
+import PostMediaDisplay from '@/components/diary/PostMediaDisplay.vue'
+import PostEngagementBar from '@/components/diary/PostEngagementBar.vue'
+import PostHashtags from '@/components/diary/PostHashtags.vue'
+import PostCommentsPreview from '@/components/diary/PostCommentsPreview.vue'
+import TrendingHashtags from '@/components/common/TrendingHashtags.vue'
+import LikesModal from '@/components/LikesModal.vue'
+import CommentsModal from '@/components/CommentsModal.vue'
+
 export default {
   name: 'SearchResultsComponent',
+  components: {
+    PostDetailHeader,
+    PostMediaDisplay,
+    PostEngagementBar,
+    PostHashtags,
+    PostCommentsPreview,
+    TrendingHashtags,
+    LikesModal,
+    CommentsModal,
+  },
   props: {
     searchKeyword: {
       type: String,
@@ -130,122 +165,345 @@ export default {
     }
   },
   emits: ['result-click'],
-  data() {
-    return {
-      // 더미 검색 결과 데이터
-      dummyResults: {
-        TITLE: [
-          {
-            id: 1,
-            username: 'cuteCat',
-            date: '2025년 5월 21일',
-            title: '냥냥냥냥',
-            content: '집사는 뭘 그렇게 열심히 보는걸까..... 냐옹',
-            profileImage: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=80&h=80&fit=crop&crop=center'
-          },
-          {
-            id: 2,
-            username: 'fluffyKitty',
-            date: '2025년 5월 20일',
-            title: '냥냥이 일기',
-            content: '오늘은 정말 행복한 하루였어요. 집사가 새로운 장난감을 사줬어요!',
-            profileImage: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=80&h=80&fit=crop&crop=center'
-          },
-          {
-            id: 3,
-            username: 'meowMaster',
-            date: '2025년 5월 19일',
-            title: '냥냥이 산책',
-            content: '그만 보고 날 놀아줘라 냥냥. 산책 가자고!',
-            profileImage: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=80&h=80&fit=crop&crop=center'
-          },
-          {
-            id: 4,
-            username: 'catLover',
-            date: '2025년 5월 18일',
-            title: '냥냥이 건강',
-            content: '오늘 병원에서 건강검진을 받았어요. 모두 정상이라고 해요!',
-            profileImage: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=80&h=80&fit=crop&crop=center'
-          }
-        ],
-        CONTENT: [
-          {
-            id: 5,
-            username: 'happyCat',
-            date: '2025년 5월 21일',
-            title: '오늘의 일기',
-            content: '냥냥냥냥 오늘은 정말 재미있었어요!',
-            profileImage: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=80&h=80&fit=crop&crop=center'
-          },
-          {
-            id: 6,
-            username: 'sleepyCat',
-            date: '2025년 5월 20일',
-            title: '잠자는 고양이',
-            content: '냥냥냥냥 곤히 자고 있어요...',
-            profileImage: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=80&h=80&fit=crop&crop=center'
-          }
-        ],
-        USER: [
-          {
-            id: 7,
-            username: '냥냥이맘',
-            date: '2025년 5월 21일',
-            title: '우리 아이들',
-            content: '냥냥이들이 너무 귀여워요!',
-            profileImage: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=80&h=80&fit=crop&crop=center'
-          },
-          {
-            id: 8,
-            username: '강아지사랑',
-            date: '2025년 5월 20일',
-            title: '강아지와 고양이',
-            content: '냥냥이와 함께하는 시간이에요!',
-            profileImage: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=80&h=80&fit=crop&crop=center'
-          }
-        ],
-        HASHTAG: [
-          {
-            id: 9,
-            username: 'hashtagLover',
-            date: '2025년 5월 21일',
-            title: '#냥냥이 #고양이',
-            content: '냥냥이 해시태그 모음!',
-            profileImage: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=80&h=80&fit=crop&crop=center'
-          }
-        ]
-      }
+  setup(props, { emit }) {
+    const router = useRouter()
+    const authStore = useAuthStore()
+    
+    // 현재 사용자 ID
+    const currentUserId = computed(() => {
+      return authStore.user?.userId || authStore.user?.id
+    })
+
+    // 좋아요 모달 관련 상태
+    const showLikesModal = ref(false)
+    const likesList = ref([])
+    const isLoadingLikes = ref(false)
+    const currentPostId = ref(null)
+    const likeProcessingPosts = ref(new Set()) // 좋아요 처리 중인 포스트 ID들
+    const followProcessingUsers = ref(new Set()) // 팔로우 처리 중인 사용자 ID들
+
+    // 댓글 모달 관련 상태
+    const showCommentsModal = ref(false)
+    const commentsList = ref([])
+    const isLoadingComments = ref(false)
+
+    // 좋아요 처리 중인지 확인하는 함수
+    const isLikeProcessing = (postId) => {
+      return likeProcessingPosts.value?.has(postId) || false
     }
-  },
-  computed: {
-    results() {
-      return this.searchResults
+
+    // 팔로우 처리 중인지 확인하는 함수
+    const isFollowProcessing = (userId) => {
+      return followProcessingUsers.value?.has(userId) || false
     }
-  },
-  methods: {
-    handleResultClick(result) {
-      this.$emit('result-click', result)
-    },
-    formatDate(dateString) {
-      if (!dateString) return ''
-      const date = new Date(dateString)
-      return date.toLocaleDateString('ko-KR', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      })
-    },
+
+    const results = computed(() => {
+      return props.searchResults
+    })
+
     // 사용자 다이어리로 이동하는 메서드
-    goToUserDiary(userId) {
+    const goToUserDiary = (userId) => {
       if (userId) {
-        this.$router.push(`/diarys/${userId}`)
+        router.push(`/diarys/${userId}`)
       }
-    },
-    // 해시태그 추출 메서드
-    extractHashtags(content) {
-      if (!content) return []
-      const hashtagRegex = /#\w+/g
-      return content.match(hashtagRegex) || []
+    }
+
+    // 해시태그 제거 함수
+    const removeHashtags = (content) => {
+      if (!content) return ''
+      return content.replace(/#\w+/g, '').trim()
+    }
+
+    // 해시태그 검색
+    const searchByHashtag = (hashtag) => {
+      router.push({ 
+        path: '/search', 
+        query: { 
+          searchType: 'HASHTAG', 
+          keyword: hashtag 
+        } 
+      })
+    }
+
+    // 좋아요 토글
+    const toggleLike = async (postId) => {
+      if (likeProcessingPosts.value.has(postId)) return
+
+      likeProcessingPosts.value.add(postId)
+      try {
+        const response = await postAPI.toggleLike(postId)
+        const isLiked = response.data.data.isLiked
+        const likeCount = response.data.data.likeCount
+
+        // 검색 결과에서 해당 포스트 업데이트
+        const postIndex = results.value.findIndex(post => post.id === postId)
+        if (postIndex !== -1) {
+          results.value[postIndex].liked = isLiked
+          results.value[postIndex].likeCount = likeCount
+        }
+      } catch (error) {
+        console.error('좋아요 토글 실패:', error)
+      } finally {
+        likeProcessingPosts.value.delete(postId)
+      }
+    }
+
+    // 팔로우
+    const followUser = async (userId) => {
+      if (followProcessingUsers.value.has(userId)) return
+
+      followProcessingUsers.value.add(userId)
+      try {
+        await userAPI.follow(userId)
+        // 검색 결과에서 해당 사용자의 팔로우 상태 업데이트
+        results.value.forEach(post => {
+          if (post.userId === userId) {
+            post.isFollowing = true
+          }
+        })
+      } catch (error) {
+        console.error('팔로우 실패:', error)
+      } finally {
+        followProcessingUsers.value.delete(userId)
+      }
+    }
+
+    // 언팔로우
+    const unfollowUser = async (userId) => {
+      if (followProcessingUsers.value.has(userId)) return
+
+      followProcessingUsers.value.add(userId)
+      try {
+        await userAPI.unfollow(userId)
+        // 검색 결과에서 해당 사용자의 팔로우 상태 업데이트
+        results.value.forEach(post => {
+          if (post.userId === userId) {
+            post.isFollowing = false
+          }
+        })
+      } catch (error) {
+        console.error('언팔로우 실패:', error)
+      } finally {
+        followProcessingUsers.value.delete(userId)
+      }
+    }
+
+    // 댓글 모달 열기
+    const openCommentsModal = async (postId) => {
+      currentPostId.value = postId
+      showCommentsModal.value = true
+      
+      try {
+        isLoadingComments.value = true
+        const response = await postAPI.getComments(postId)
+        commentsList.value = response.data.data || []
+      } catch (error) {
+        console.error('댓글 조회 실패:', error)
+        commentsList.value = []
+      } finally {
+        isLoadingComments.value = false
+      }
+    }
+
+    // 좋아요 모달 열기
+    const handleLikesTextClick = async (postId) => {
+      currentPostId.value = postId
+      showLikesModal.value = true
+      
+      try {
+        isLoadingLikes.value = true
+        const response = await postAPI.getLikes(postId)
+        likesList.value = response.data.data || []
+      } catch (error) {
+        console.error('좋아요 목록 조회 실패:', error)
+        likesList.value = []
+      } finally {
+        isLoadingLikes.value = false
+      }
+    }
+
+    // 좋아요 모달 토글
+    const handleLikesModalToggle = (value) => {
+      showLikesModal.value = value
+    }
+
+    // 댓글 관련 핸들러들
+    const handleAddComment = async (commentData) => {
+      try {
+        const response = await postAPI.addComment(currentPostId.value, commentData)
+        const newComment = response.data.data
+        commentsList.value.unshift(newComment)
+        
+        // 검색 결과에서 댓글 수 업데이트
+        const postIndex = results.value.findIndex(post => post.id === currentPostId.value)
+        if (postIndex !== -1) {
+          results.value[postIndex].commentsCount = (results.value[postIndex].commentsCount || 0) + 1
+        }
+      } catch (error) {
+        console.error('댓글 추가 실패:', error)
+      }
+    }
+
+    const handleAddReply = async (replyData) => {
+      try {
+        const response = await postAPI.addReply(currentPostId.value, replyData)
+        const newReply = response.data.data
+        // 댓글 목록 업데이트 로직
+        const commentIndex = commentsList.value.findIndex(comment => comment.id === replyData.parentCommentId)
+        if (commentIndex !== -1) {
+          if (!commentsList.value[commentIndex].replies) {
+            commentsList.value[commentIndex].replies = []
+          }
+          commentsList.value[commentIndex].replies.push(newReply)
+        }
+      } catch (error) {
+        console.error('답글 추가 실패:', error)
+      }
+    }
+
+    const handleEditComment = async (commentData) => {
+      try {
+        const response = await postAPI.editComment(currentPostId.value, commentData.commentId, commentData.content)
+        const updatedComment = response.data.data
+        const commentIndex = commentsList.value.findIndex(comment => comment.id === commentData.commentId)
+        if (commentIndex !== -1) {
+          commentsList.value[commentIndex] = updatedComment
+        }
+      } catch (error) {
+        console.error('댓글 수정 실패:', error)
+      }
+    }
+
+    const handleDeleteComment = async (commentId) => {
+      try {
+        await postAPI.deleteComment(currentPostId.value, commentId)
+        commentsList.value = commentsList.value.filter(comment => comment.id !== commentId)
+        
+        // 검색 결과에서 댓글 수 업데이트
+        const postIndex = results.value.findIndex(post => post.id === currentPostId.value)
+        if (postIndex !== -1) {
+          results.value[postIndex].commentsCount = Math.max(0, (results.value[postIndex].commentsCount || 0) - 1)
+        }
+      } catch (error) {
+        console.error('댓글 삭제 실패:', error)
+      }
+    }
+
+    const handleEditReply = async (replyData) => {
+      try {
+        const response = await postAPI.editReply(currentPostId.value, replyData.replyId, replyData.content)
+        const updatedReply = response.data.data
+        // 답글 업데이트 로직
+        commentsList.value.forEach(comment => {
+          if (comment.replies) {
+            const replyIndex = comment.replies.findIndex(reply => reply.id === replyData.replyId)
+            if (replyIndex !== -1) {
+              comment.replies[replyIndex] = updatedReply
+            }
+          }
+        })
+      } catch (error) {
+        console.error('답글 수정 실패:', error)
+      }
+    }
+
+    const handleDeleteReply = async (replyId) => {
+      try {
+        await postAPI.deleteReply(currentPostId.value, replyId)
+        // 답글 삭제 로직
+        commentsList.value.forEach(comment => {
+          if (comment.replies) {
+            comment.replies = comment.replies.filter(reply => reply.id !== replyId)
+          }
+        })
+      } catch (error) {
+        console.error('답글 삭제 실패:', error)
+      }
+    }
+
+    const handleRefreshComments = async () => {
+      if (!currentPostId.value) return
+      
+      try {
+        isLoadingComments.value = true
+        const response = await postAPI.getComments(currentPostId.value)
+        commentsList.value = response.data.data || []
+      } catch (error) {
+        console.error('댓글 새로고침 실패:', error)
+      } finally {
+        isLoadingComments.value = false
+      }
+    }
+
+    // 포스트 편집/삭제/신고
+    const editPost = (postId) => {
+      router.push(`/diarys/edit/${postId}`)
+    }
+
+    const deletePost = (postId) => {
+      // 삭제 확인 모달 표시 로직
+      if (confirm('정말로 이 게시글을 삭제하시겠습니까?')) {
+        // 삭제 API 호출
+        postAPI.deletePost(postId).then(() => {
+          // 검색 결과에서 해당 포스트 제거
+          const postIndex = results.value.findIndex(post => post.id === postId)
+          if (postIndex !== -1) {
+            results.value.splice(postIndex, 1)
+          }
+        }).catch(error => {
+          console.error('게시글 삭제 실패:', error)
+        })
+      }
+    }
+
+    const reportPost = (postId) => {
+      // 신고 로직
+      console.log('게시글 신고:', postId)
+    }
+
+    // 검색 처리
+    const handleSearch = (searchData) => {
+      router.push({ 
+        path: '/search', 
+        query: { 
+          searchType: searchData.searchType, 
+          keyword: searchData.keyword 
+        } 
+      })
+    }
+
+    return {
+      currentUserId,
+      results,
+      showLikesModal,
+      likesList,
+      isLoadingLikes,
+      currentPostId,
+      showCommentsModal,
+      commentsList,
+      isLoadingComments,
+      goToUserDiary,
+      removeHashtags,
+      searchByHashtag,
+      toggleLike,
+      followUser,
+      unfollowUser,
+      openCommentsModal,
+      handleLikesTextClick,
+      handleLikesModalToggle,
+      handleAddComment,
+      handleAddReply,
+      handleEditComment,
+      handleDeleteComment,
+      handleEditReply,
+      handleDeleteReply,
+      handleRefreshComments,
+      editPost,
+      deletePost,
+      reportPost,
+      handleSearch,
+      isLikeProcessing,
+      isFollowProcessing,
     }
   }
 }
@@ -264,7 +522,7 @@ export default {
 .search-results-header {
   margin-bottom: 32px;
   width: 100%;
-  max-width: 900px;
+  max-width: 1200px;
   text-align: center;
 }
 
@@ -287,160 +545,67 @@ export default {
   box-shadow: 0 2px 8px rgba(255, 139, 139, 0.2);
 }
 
-.search-results-list {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  width: 100%;
-  max-width: 900px;
-  align-items: center;
-}
-
-.search-result-item {
-  display: flex;
-  gap: 20px;
-  padding: 24px;
-  background: white;
-  border-radius: 20px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-  border: 1px solid #F1F5F9;
-  cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  width: 100%;
-  position: relative;
-  overflow: hidden;
-}
-
-.search-result-item::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #FF8B8B, #FF6B6B);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.search-result-item:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.12);
-  border-color: #E2E8F0;
-}
-
-.search-result-item:hover::before {
-  opacity: 1;
-}
-
-.profile-section {
-  flex-shrink: 0;
-}
-
-.profile-avatar {
-  border: 3px solid #FF8B8B;
-  box-shadow: 0 6px 20px rgba(255, 139, 139, 0.2);
-  transition: all 0.3s ease;
-}
-
-.clickable {
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.clickable:hover {
-  opacity: 0.8;
-  transform: scale(1.05);
-  box-shadow: 0 8px 24px rgba(255, 139, 139, 0.3);
-}
-
+/* 메인 콘텐츠 영역 */
 .main-content {
-  flex: 1;
-  min-width: 0;
+  display: flex;
+  gap: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.posts-list {
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-
-.content-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-}
-
-.user-info {
   flex: 1;
-  min-width: 0;
 }
 
-.username {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #1E293B;
-  margin-bottom: 4px;
-  line-height: 1.3;
+.post-section {
+  width: 700px;
+  margin: 0 auto;
+  border-bottom: 1px solid #E5E7EB;
+  padding: 16px 0;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  border: 1px solid #f0f0f0;
 }
 
-.date {
-  font-size: 0.85rem;
-  color: #64748B;
-  line-height: 1.3;
-  font-weight: 500;
+.post-section:last-child {
+  border-bottom: none;
 }
 
-.action-buttons {
-  display: flex;
-  gap: 8px;
+/* 사이드바 */
+.sidebar {
+  width: 300px;
   flex-shrink: 0;
+  position: sticky;
+  top: 20px;
+  height: fit-content;
 }
 
-.action-btn {
-  transition: all 0.2s ease;
-}
-
-.action-btn:hover {
-  color: #FF8B8B !important;
-  transform: scale(1.1);
-}
-
-.post-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.post-title {
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: #1E293B;
-  margin-bottom: 12px;
-  line-height: 1.4;
-}
-
-.post-text {
-  font-size: 1rem;
-  color: #475569;
-  line-height: 1.6;
-  word-break: break-word;
-  font-weight: 500;
-}
-
-.tags-section {
+/* 캡션 스타일 */
+.caption {
+  padding: 12px 20px 8px 20px;
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 8px;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.tag-chip {
-  font-size: 0.8rem;
-  font-weight: 500;
-  transition: all 0.2s ease;
+.caption-username {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #1a1a1a;
+  margin-right: 8px;
 }
 
-.tag-chip:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(255, 139, 139, 0.2);
+.caption-text {
+  font-size: 0.9rem;
+  color: #333;
+  line-height: 1.4;
+  word-break: break-word;
 }
 
 .no-results {
@@ -505,19 +670,15 @@ export default {
   }
   
   .search-results-header {
-    max-width: 800px;
+    max-width: 1000px;
   }
   
-  .search-results-list {
-    max-width: 800px;
+  .main-content {
+    max-width: 1000px;
   }
   
-  .no-results {
-    max-width: 800px;
-  }
-  
-  .loading-section {
-    max-width: 800px;
+  .sidebar {
+    width: 250px;
   }
 }
 
@@ -540,33 +701,19 @@ export default {
     padding: 3px 10px;
   }
   
-  .search-result-item {
-    padding: 20px;
+  .main-content {
+    flex-direction: column;
     gap: 16px;
-    border-radius: 16px;
   }
   
-  .profile-avatar {
-    width: 48px !important;
-    height: 48px !important;
-    border-width: 2px;
+  .sidebar {
+    width: 100%;
+    position: static;
   }
   
-  .username {
-    font-size: 1rem;
-  }
-  
-  .date {
-    font-size: 0.8rem;
-  }
-  
-  .post-title {
-    font-size: 1.1rem;
-    margin-bottom: 10px;
-  }
-  
-  .post-text {
-    font-size: 0.95rem;
+  .post-section {
+    width: 100%;
+    border-radius: 12px;
   }
   
   .no-results {
@@ -606,33 +753,8 @@ export default {
     padding: 2px 8px;
   }
   
-  .search-result-item {
-    padding: 16px;
-    gap: 12px;
-    border-radius: 14px;
-  }
-  
-  .profile-avatar {
-    width: 40px !important;
-    height: 40px !important;
-    border-width: 2px;
-  }
-  
-  .username {
-    font-size: 0.95rem;
-  }
-  
-  .date {
-    font-size: 0.75rem;
-  }
-  
-  .post-title {
-    font-size: 1rem;
-    margin-bottom: 8px;
-  }
-  
-  .post-text {
-    font-size: 0.9rem;
+  .post-section {
+    border-radius: 10px;
   }
   
   .no-results {
