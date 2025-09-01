@@ -67,7 +67,7 @@
         <div class="search-section">
           <SearchBar @search="handleSearch" />
         </div>
-        <TrendingHashtags />
+        <TrendingHashtags @search="handleSearch" />
       </div>
     </div>
 

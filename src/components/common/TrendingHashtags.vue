@@ -23,6 +23,7 @@
           :key="tag.tagName"
           :data-index="index"
           class="hashtag-item"
+          @click="handleHashtagClick(tag.tagName)"
         >
           <div class="rank-badge">{{ index + 1 }}</div>
           <span class="hashtag-text">#{{ tag.tagName }}</span>
@@ -51,7 +52,8 @@ import { postAPI } from '@/services/api'
 
 export default {
   name: 'TrendingHashtags',
-  setup() {
+  emits: ['search'],
+  setup(props, { emit }) {
     const hashtags = ref([])
     const loading = ref(false)
     const error = ref(null)
@@ -61,6 +63,15 @@ export default {
     
     // 1분 = 1 * 60 * 1000 밀리초
     const POLLING_INTERVAL = 1 * 60 * 1000
+
+    // 해시태그 클릭 핸들러
+    const handleHashtagClick = (tagName) => {
+      console.log('해시태그 클릭:', tagName)
+      emit('search', {
+        searchType: 'HASHTAG',
+        keyword: tagName
+      })
+    }
 
     // 인기 해시태그 가져오기
     const fetchTrendingHashtags = async (isInitial = false) => {
@@ -147,6 +158,7 @@ export default {
       error,
       lastUpdated,
       hasInitialData,
+      handleHashtagClick,
       formatLastUpdated
     }
   }
@@ -231,6 +243,19 @@ export default {
   border: 1px solid rgba(0, 0, 0, 0.06);
   position: relative;
   transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.hashtag-item:hover {
+  background: #FEF2F2;
+  border-color: #FF8B8B;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 139, 139, 0.15);
+}
+
+.hashtag-item:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(255, 139, 139, 0.1);
 }
 
 /* 순위 배지 */

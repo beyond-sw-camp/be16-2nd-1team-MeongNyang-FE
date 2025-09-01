@@ -121,7 +121,7 @@
                 <v-row>
                   <!-- 인기 해시태그 섹션 -->
                   <v-col cols="12">
-                    <TrendingHashtags />
+                    <TrendingHashtags @search="handleSearch" />
                   </v-col>
 
                   <!-- 오늘의 날씨 섹션 -->
@@ -272,6 +272,12 @@ export default {
       }
     }
     
+    // 검색 처리
+    const handleSearch = (searchData) => {
+      console.log('대시보드에서 검색:', searchData)
+      router.push(`/search?searchType=${searchData.searchType}&keyword=${encodeURIComponent(searchData.keyword)}`)
+    }
+    
     // 오늘의 할 일 데이터
     const todayTasks = ref([
       {
@@ -350,7 +356,8 @@ export default {
       representativePet,
       todayTasks,
       dailyTip,
-      goToRepresentativePet
+      goToRepresentativePet,
+      handleSearch
     }
   }
 }
