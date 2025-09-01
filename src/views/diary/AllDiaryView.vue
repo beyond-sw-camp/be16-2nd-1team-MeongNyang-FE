@@ -6,56 +6,64 @@
       <p class="loading-text">일기를 불러오는 중...</p>
     </div>
 
-    <!-- 일기 목록 -->
-    <div v-else-if="posts.length > 0" class="posts-list">
-      <div
-        v-for="post in posts"
-        :key="post.id"
-        class="post-section"
-      >
-        <!-- 포스트 헤더 -->
-        <PostDetailHeader
-          :post-data="post"
-          :current-user-id="currentUserId"
-          :follow-processing="isFollowProcessing(post.userId)"
-          @go-to-user-diary="goToUserDiary"
-          @follow-user="followUser(post.userId)"
-          @unfollow-user="unfollowUser(post.userId)"
-          @edit-post="editPost(post.id)"
-          @show-delete-confirm="deletePost(post.id)"
-          @report-post="reportPost(post.id)"
-        />
+    <!-- 메인 콘텐츠 영역 -->
+    <div v-else-if="posts.length > 0" class="main-content">
+      <!-- 왼쪽: 일기 목록 -->
+      <div class="posts-list">
+        <div
+          v-for="post in posts"
+          :key="post.id"
+          class="post-section"
+        >
+          <!-- 포스트 헤더 -->
+          <PostDetailHeader
+            :post-data="post"
+            :current-user-id="currentUserId"
+            :follow-processing="isFollowProcessing(post.userId)"
+            @go-to-user-diary="goToUserDiary"
+            @follow-user="followUser(post.userId)"
+            @unfollow-user="unfollowUser(post.userId)"
+            @edit-post="editPost(post.id)"
+            @show-delete-confirm="deletePost(post.id)"
+            @report-post="reportPost(post.id)"
+          />
 
-        <!-- 메인 이미지 -->
-        <PostMediaDisplay :media-list="post.mediaList" />
+          <!-- 메인 이미지 -->
+          <PostMediaDisplay :media-list="post.mediaList" />
 
-        <!-- 좋아요/댓글 바 -->
-        <PostEngagementBar
-          :like-count="post.likeCount"
-          :comments-count="post.commentsCount"
-          :is-liked="post.liked"
-          :is-like-processing="isLikeProcessing(post.id)"
-          @toggle-like="toggleLike(post.id)"
-          @toggle-comments-modal="openCommentsModal(post.id)"
-          @handle-likes-text-click="handleLikesTextClick(post.id)"
-        />
+          <!-- 좋아요/댓글 바 -->
+          <PostEngagementBar
+            :like-count="post.likeCount"
+            :comments-count="post.commentsCount"
+            :is-liked="post.liked"
+            :is-like-processing="isLikeProcessing(post.id)"
+            @toggle-like="toggleLike(post.id)"
+            @toggle-comments-modal="openCommentsModal(post.id)"
+            @handle-likes-text-click="handleLikesTextClick(post.id)"
+          />
 
-        <!-- 캡션 -->
-        <div class="caption" v-if="post.content">
-          <span class="caption-username">{{ post.userName || post.petName }}</span>
-          <span class="caption-text">{{ removeHashtags(post.content) }}</span>
+          <!-- 캡션 -->
+          <div class="caption" v-if="post.content">
+            <span class="caption-username">{{ post.userName || post.petName }}</span>
+            <span class="caption-text">{{ removeHashtags(post.content) }}</span>
+          </div>
+
+          <!-- 해시태그 -->
+          <PostHashtags :hash-tag-list="post.hashTagList" @search-by-hashtag="searchByHashtag" />
+
+          <!-- 댓글 미리보기 -->
+          <PostCommentsPreview
+            :comments-count="post.commentsCount"
+            :preview-comments="post.previewComments"
+            @toggle-comments-modal="openCommentsModal(post.id)"
+            @go-to-user-diary="goToUserDiary"
+          />
         </div>
+      </div>
 
-        <!-- 해시태그 -->
-        <PostHashtags :hash-tag-list="post.hashTagList" @search-by-hashtag="searchByHashtag" />
-
-        <!-- 댓글 미리보기 -->
-        <PostCommentsPreview
-          :comments-count="post.commentsCount"
-          :preview-comments="post.previewComments"
-          @toggle-comments-modal="openCommentsModal(post.id)"
-          @go-to-user-diary="goToUserDiary"
-        />
+      <!-- 오른쪽: 인기 해시태그 -->
+      <div class="sidebar">
+        <TrendingHashtags :hashtags="trendingHashtags" />
       </div>
     </div>
 
@@ -122,6 +130,7 @@ import PostMediaDisplay from '@/components/diary/PostMediaDisplay.vue'
 import PostEngagementBar from '@/components/diary/PostEngagementBar.vue'
 import PostHashtags from '@/components/diary/PostHashtags.vue'
 import PostCommentsPreview from '@/components/diary/PostCommentsPreview.vue'
+import TrendingHashtags from '@/components/common/TrendingHashtags.vue'
 
 export default {
   name: 'AllPostsView',
@@ -133,6 +142,7 @@ export default {
     PostEngagementBar,
     PostHashtags,
     PostCommentsPreview,
+    TrendingHashtags,
   },
   setup() {
     const router = useRouter()
@@ -736,6 +746,15 @@ export default {
 
 
 
+    // 인기 해시태그 데이터
+    const trendingHashtags = ref([
+      { name: '강아지', count: 156 },
+      { name: '산책', count: 89 },
+      { name: '고양이', count: 67 },
+      { name: '장난감', count: 45 },
+      { name: '목욕', count: 34 }
+    ])
+
     // 해시태그 제거
     const removeHashtags = (content) => {
       if (!content) return ''
@@ -1082,7 +1101,8 @@ export default {
       isLikeProcessing,
       fetchAllFollowStatus,
       fetchAllCommentsPreview,
-      formatCommentText
+      formatCommentText,
+      trendingHashtags
     }
   }
 }
@@ -1113,10 +1133,19 @@ export default {
   font-size: 1rem;
 }
 
+/* 메인 콘텐츠 영역 */
+.main-content {
+  display: flex;
+  gap: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
 .posts-list {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  flex: 1;
 }
 
 .post-section {
@@ -1133,6 +1162,15 @@ export default {
 
 .post-section:last-child {
   border-bottom: none;
+}
+
+/* 사이드바 */
+.sidebar {
+  width: 300px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 20px;
+  height: fit-content;
 }
 
 /* 포스트 헤더 */
@@ -1565,6 +1603,18 @@ export default {
 }
 
 /* 반응형 */
+@media (max-width: 1200px) {
+  .main-content {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .sidebar {
+    width: 100%;
+    position: static;
+  }
+}
+
 @media (max-width: 768px) {
   .all-posts-container {
     max-width: 100%;
