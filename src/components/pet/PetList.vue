@@ -1,5 +1,11 @@
 <template>
   <div class="pet-list">
+    <!-- 이미지 크롭 모달 -->
+    <ImageCropper
+      v-model="showCropper"
+      :image-url="cropperImageUrl"
+      @crop="handleCrop"
+    />
     <div class="pet-container">
       <!-- 헤더 (배경 위에 직접) -->
       <div class="page-header">
@@ -795,13 +801,15 @@ import { useSnackbar } from '@/composables/useSnackbar'
 import PetCard from './PetCard.vue'
 import PetForm from './PetForm.vue'
 import ModalDialog from '@/components/ui/organisms/ModalDialog.vue'
+import ImageCropper from '@/components/common/ImageCropper.vue'
 
 export default {
   name: 'PetList',
   components: {
     PetCard,
     PetForm,
-    ModalDialog
+    ModalDialog,
+    ImageCropper
   },
   emits: ['set-representative', 'view-details', 'delete'],
   setup() {
@@ -890,6 +898,10 @@ export default {
     
     // 이미지 미리보기 URL을 위한 별도 ref
     const imagePreviewUrl = ref(null)
+    
+    // 이미지 크롭 관련
+    const showCropper = ref(false)
+    const cropperImageUrl = ref('')
     
     // 생일 포맷팅
     const formatBirthday = (birthday) => {
@@ -1261,25 +1273,9 @@ export default {
           return
         }
         
-        // 이미지 파일을 editingPet에 저장 (바로 저장하지 않음)
-        editingPet.value.imageFile = file
-        editingPet.value.previewImage = URL.createObjectURL(file)
-        
-        console.log('📸 이미지 파일이 수정 모드에 저장됨:', {
-          fileName: file.name,
-          fileSize: file.size,
-          previewUrl: editingPet.value.previewImage
-        })
-        
-        // 즉시 미리보기 반영을 위해 별도 ref에 설정
-        imagePreviewUrl.value = editingPet.value.previewImage
-        
-        console.log('📸 이미지 미리보기 설정 완료:', {
-          editingPetPreview: editingPet.value.previewImage,
-          imagePreviewUrl: imagePreviewUrl.value
-        })
-        
-        showSnackbar('이미지가 선택되었습니다. 저장 버튼을 눌러 변경사항을 저장하세요.', 'success')
+        // 크롭 모달 열기
+        cropperImageUrl.value = URL.createObjectURL(file)
+        showCropper.value = true
         
       } catch (error) {
         console.error('❌ 이미지 변경 실패:', error)
@@ -1288,6 +1284,31 @@ export default {
       
       // 파일 입력 초기화
       event.target.value = ''
+    }
+    
+    // 이미지 크롭 완료 처리
+    const handleCrop = ({ blob, url }) => {
+      if (!editingPet.value || !selectedPet.value) {
+        console.error('❌ 편집 데이터가 없습니다')
+        return
+      }
+      
+      // 크롭된 이미지를 editingPet에 저장
+      editingPet.value.imageFile = blob
+      editingPet.value.previewImage = url
+      
+      // 즉시 미리보기 반영
+      imagePreviewUrl.value = url
+      
+      showCropper.value = false
+      
+      // 원본 URL 정리
+      if (cropperImageUrl.value) {
+        URL.revokeObjectURL(cropperImageUrl.value)
+        cropperImageUrl.value = ''
+      }
+      
+      showSnackbar('이미지가 크롭되었습니다. 저장 버튼을 눌러 변경사항을 저장하세요.', 'success')
     }
     
     // 변경사항 저장
@@ -1631,6 +1652,8 @@ export default {
         getGenderLabel,
         getCurrentImageUrl,
         imagePreviewUrl,
+        showCropper,
+        cropperImageUrl,
         setAsRepresentative,
         viewPet,
         closeDetailModal,
@@ -1641,6 +1664,7 @@ export default {
         toggleEditMode,
         handleImageChange,
         onImageFileChange,
+        handleCrop,
         saveChanges,
         openDatePicker,
         handleDateSelection,

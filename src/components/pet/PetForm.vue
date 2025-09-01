@@ -1,5 +1,11 @@
 <template>
   <v-card class="no-inner-surface" variant="text" elevation="0">
+    <!-- 이미지 크롭 모달 -->
+    <ImageCropper
+      v-model="showCropper"
+      :image-url="cropperImageUrl"
+      @crop="handleCrop"
+    />
     <!-- 단계별 진행 표시 -->
     <div class="step-indicator">
       <div class="step" :class="{ active: currentStep === 1, completed: currentStep > 1 }">
@@ -502,9 +508,14 @@
 <script>
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { usePetStore } from '@/stores/pet'
+import ImageCropper from '@/components/common/ImageCropper.vue'
 
 export default {
   name: 'PetForm',
+  
+  components: {
+    ImageCropper
+  },
   
   props: {
     pet: {
@@ -562,6 +573,10 @@ export default {
     const imageRemoved = ref(false)
     const submitting = ref(false)
     const showBirthdayPicker = ref(false)
+    
+    // 이미지 크롭 관련
+    const showCropper = ref(false)
+    const cropperImageUrl = ref('')
     
     // 달력 관련 변수들
     const currentDate = ref(new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"})))
@@ -786,9 +801,23 @@ export default {
           return
         }
         
-        imageFile.value = file
-        previewImage.value = URL.createObjectURL(file)
-          imageRemoved.value = false
+        // 크롭 모달 열기
+        cropperImageUrl.value = URL.createObjectURL(file)
+        showCropper.value = true
+      }
+    }
+    
+    // 이미지 크롭 완료 처리
+    const handleCrop = ({ blob, url }) => {
+      imageFile.value = blob
+      previewImage.value = url
+      imageRemoved.value = false
+      showCropper.value = false
+      
+      // 원본 URL 정리
+      if (cropperImageUrl.value) {
+        URL.revokeObjectURL(cropperImageUrl.value)
+        cropperImageUrl.value = ''
       }
     }
     
@@ -1206,6 +1235,8 @@ export default {
       isEditMode,
       
       // UI 상태
+      showCropper,
+      cropperImageUrl,
       showBirthdayPicker,
       maxDate,
       minDate,
@@ -1222,6 +1253,7 @@ export default {
       // 메서드들
       handleImageClick,
       handleImageChange,
+      handleCrop,
       clearImage,
       handleSpeciesIdChange,
       onBirthdayChange,
