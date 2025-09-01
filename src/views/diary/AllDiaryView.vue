@@ -63,7 +63,7 @@
 
       <!-- 오른쪽: 인기 해시태그 -->
       <div class="sidebar">
-        <TrendingHashtags :hashtags="trendingHashtags" />
+        <TrendingHashtags />
       </div>
     </div>
 
@@ -746,14 +746,7 @@ export default {
 
 
 
-    // 인기 해시태그 데이터
-    const trendingHashtags = ref([
-      { name: '강아지', count: 156 },
-      { name: '산책', count: 89 },
-      { name: '고양이', count: 67 },
-      { name: '장난감', count: 45 },
-      { name: '목욕', count: 34 }
-    ])
+
 
     // 해시태그 제거
     const removeHashtags = (content) => {
@@ -1101,8 +1094,7 @@ export default {
       isLikeProcessing,
       fetchAllFollowStatus,
       fetchAllCommentsPreview,
-      formatCommentText,
-      trendingHashtags
+      formatCommentText
     }
   }
 }

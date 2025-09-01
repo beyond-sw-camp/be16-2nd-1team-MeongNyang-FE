@@ -321,7 +321,10 @@ export const postAPI = {
     apiClient.get('/posts/search', { params: { searchType, keyword, ...pageable } }),
 
   // 신고
-  report: (postId, reason) => apiClient.post(`/posts/${postId}/reports`, { reason })
+  report: (postId, reason) => apiClient.post(`/posts/${postId}/reports`, { reason }),
+
+  // 인기 해시태그 조회
+  getTrendingHashtags: () => apiClient.get('/posts/trend-hashtags')
 }
 
 

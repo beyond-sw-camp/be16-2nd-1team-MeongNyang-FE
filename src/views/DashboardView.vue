@@ -121,7 +121,7 @@
                 <v-row>
                   <!-- 인기 해시태그 섹션 -->
                   <v-col cols="12">
-                    <TrendingHashtags :hashtags="trendingHashtags" />
+                    <TrendingHashtags />
                   </v-col>
 
                   <!-- 오늘의 날씨 섹션 -->
@@ -304,14 +304,7 @@ export default {
       }
     ])
 
-    // 인기 해시태그 데이터
-    const trendingHashtags = ref([
-      { name: '강아지', count: 156 },
-      { name: '산책', count: 89 },
-      { name: '고양이', count: 67 },
-      { name: '장난감', count: 45 },
-      { name: '목욕', count: 34 }
-    ])
+
 
     // 오늘의 팁 데이터
     const dailyTip = ref({
@@ -356,7 +349,6 @@ export default {
       chatCount,
       representativePet,
       todayTasks,
-      trendingHashtags,
       dailyTip,
       goToRepresentativePet
     }
