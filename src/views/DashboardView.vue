@@ -19,7 +19,6 @@
               <div 
                 v-if="representativePet" 
                 class="representative-pet-avatar"
-                @click="goToRepresentativePet"
               >
                 <v-avatar size="120" class="pet-avatar">
                   <v-img
@@ -426,9 +425,9 @@ export default {
   transition: transform 0.3s ease;
 }
 
-.representative-pet-avatar:hover {
+/* .representative-pet-avatar:hover {
   transform: scale(1.05);
-}
+} */
 
 .pet-avatar {
   border: 4px solid #FF8B8B; /* 테두리 두께 조정 */
