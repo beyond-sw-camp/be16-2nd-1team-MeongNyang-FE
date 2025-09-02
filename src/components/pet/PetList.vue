@@ -2004,7 +2004,7 @@ export default {
       if (selectedPet.value) {
         petToDelete.value = selectedPet.value
         showDeleteConfirm.value = true
-        closeDetailModal() // 상세보기 모달 닫기
+        // 상세보기 모달은 닫지 않음 - 삭제 확인 모달이 위에 표시됨
       }
     }
     
@@ -2024,6 +2024,8 @@ export default {
           showSnackbar('반려동물이 삭제되었습니다.', 'success')
           showDeleteConfirm.value = false
           petToDelete.value = null
+          // 삭제 완료 후 상세보기 모달도 닫기
+          closeDetailModal()
       } catch (error) {
         showSnackbar('반려동물 삭제에 실패했습니다.', 'error')
       } finally {
@@ -2902,7 +2904,11 @@ export default {
 
 /* 삭제 확인 모달 - PetForm 스타일 적용 */
 .delete-dialog {
-  z-index: 2000;
+  z-index: 3000 !important;
+}
+
+.delete-dialog .v-overlay__content {
+  z-index: 3000 !important;
 }
 
 .delete-dialog .v-overlay__content {
