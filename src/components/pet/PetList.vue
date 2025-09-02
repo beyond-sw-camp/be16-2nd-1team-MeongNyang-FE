@@ -2177,7 +2177,11 @@ export default {
     
     const confirmDateSelection = () => {
       if (editingPet.value && selectedDate.value) {
-        editingPet.value.birthday = selectedDate.value.toISOString().substr(0, 10)
+        // 로컬 시간 기준으로 날짜 포맷 (UTC 변환 문제 해결)
+        const year = selectedDate.value.getFullYear()
+        const month = String(selectedDate.value.getMonth() + 1).padStart(2, '0')
+        const day = String(selectedDate.value.getDate()).padStart(2, '0')
+        editingPet.value.birthday = `${year}-${month}-${day}`
         
         // 생일 변경 시 나이 자동 계산
         if (editingPet.value.birthday) {
