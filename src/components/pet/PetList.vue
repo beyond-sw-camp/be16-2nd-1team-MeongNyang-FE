@@ -90,37 +90,11 @@
                         <v-icon :size="80" :color="getSpeciesIconColor(representativePet.petOrder)" :icon="getSpeciesIcon(representativePet.petOrder)" />
                       </div>
                     </template>
-                    <!-- 대표동물 설정 버튼을 사진 위에 오버레이 -->
-                    <div class="representative-overlay">
-                      <v-btn
-                        color="amber"
-                        variant="flat"
-                        prepend-icon="mdi-star"
-                        size="small"
-                        rounded="lg"
-                        class="representative-set-btn"
-                        @click="setAsRepresentative(representativePet)"
-                      >
-                        대표
-                      </v-btn>
-                    </div>
+
                   </v-img>
                   <div v-else class="large-image-placeholder">
                     <v-icon :size="80" :color="getSpeciesIconColor(representativePet.petOrder)" :icon="getSpeciesIcon(representativePet.petOrder)" />
-                    <!-- 대표동물 설정 버튼을 플레이스홀더 위에 오버레이 -->
-                    <div class="representative-overlay">
-                      <v-btn
-                        color="amber"
-                        variant="flat"
-                        prepend-icon="mdi-star"
-                        size="small"
-                        rounded="lg"
-                        class="representative-set-btn"
-                        @click="setAsRepresentative(representativePet)"
-                      >
-                        대표
-                      </v-btn>
-                    </div>
+
                   </div>
                 </div>
                 

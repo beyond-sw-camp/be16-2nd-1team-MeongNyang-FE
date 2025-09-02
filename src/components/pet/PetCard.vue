@@ -7,6 +7,19 @@
     @click="$emit('view-details', pet)"
     style="cursor: pointer;"
   >
+    <!-- 카드 우상단 대표 설정 버튼 -->
+    <div v-if="!isRepresentative" class="card-top-representative-btn">
+      <v-btn
+        variant="flat"
+        prepend-icon="mdi-star"
+        size="small"
+        rounded="lg"
+        class="representative-set-btn"
+        @click.stop="$emit('set-representative', pet)"
+      >
+        대표
+      </v-btn>
+    </div>
     <!-- 반려동물 이미지 영역 -->
     <div class="pet-image-section">
       <div class="image-container">
@@ -33,21 +46,6 @@
         <div v-if="isRepresentative" class="representative-badge">
           <v-icon color="white" size="16">mdi-crown</v-icon>
           <span>대표</span>
-        </div>
-        
-        <!-- 대표 설정 버튼 (현재 대표가 아닌 경우에만 표시) -->
-        <div v-if="!isRepresentative" class="representative-set-overlay">
-          <v-btn
-            color="amber"
-            variant="flat"
-            prepend-icon="mdi-star"
-            size="small"
-            rounded="lg"
-            class="representative-set-btn"
-            @click.stop="$emit('set-representative', pet)"
-          >
-            대표
-          </v-btn>
         </div>
         
         <!-- 이미지 오버레이 그라데이션 -->
@@ -557,21 +555,31 @@ export default {
 }
 
 .representative-set-btn {
-  background: #FFD700 !important;
-  color: #B8860B !important;
+  background: linear-gradient(135deg, #E87D7D, #FF6B6B) !important;
+  color: white !important;
   font-weight: 600 !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+  box-shadow: 0 4px 16px rgba(232, 125, 125, 0.25) !important;
   transition: all 0.3s ease !important;
   min-width: 70px !important;
   height: 36px !important;
   font-size: 12px !important;
-  border: 2px solid #FFA500 !important;
+  border: none !important;
+  backdrop-filter: blur(10px) !important;
 }
 
 .representative-set-btn:hover {
-  background: #FFED4E !important;
-  transform: scale(1.05) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  background: linear-gradient(135deg, #FF6B6B, #E87D7D) !important;
+  color: white !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(232, 125, 125, 0.35) !important;
+}
+
+/* 카드 우상단 대표 설정 버튼 */
+.card-top-representative-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 999;
 }
 
 /* 반응형 디자인 */
