@@ -72,10 +72,6 @@
             <div v-if="representativePet" class="representative-pet-card">
               <div class="representative-header">
                 <h3 class="representative-title">대표 반려동물</h3>
-                <div class="representative-badge">
-                  <v-icon color="amber" size="20">mdi-star</v-icon>
-                  <span>대표</span>
-            </div>
                   </div>
                   
               <!-- 대표동물 전체 정보 -->
@@ -92,11 +88,39 @@
                     <template v-slot:error>
                       <div class="large-image-placeholder">
                         <v-icon :size="80" :color="getSpeciesIconColor(representativePet.petOrder)" :icon="getSpeciesIcon(representativePet.petOrder)" />
-                        </div>
+                      </div>
                     </template>
+                    <!-- 대표동물 설정 버튼을 사진 위에 오버레이 -->
+                    <div class="representative-overlay">
+                      <v-btn
+                        color="amber"
+                        variant="flat"
+                        prepend-icon="mdi-star"
+                        size="small"
+                        rounded="lg"
+                        class="representative-set-btn"
+                        @click="setAsRepresentative(representativePet)"
+                      >
+                        대표
+                      </v-btn>
+                    </div>
                   </v-img>
                   <div v-else class="large-image-placeholder">
                     <v-icon :size="80" :color="getSpeciesIconColor(representativePet.petOrder)" :icon="getSpeciesIcon(representativePet.petOrder)" />
+                    <!-- 대표동물 설정 버튼을 플레이스홀더 위에 오버레이 -->
+                    <div class="representative-overlay">
+                      <v-btn
+                        color="amber"
+                        variant="flat"
+                        prepend-icon="mdi-star"
+                        size="small"
+                        rounded="lg"
+                        class="representative-set-btn"
+                        @click="setAsRepresentative(representativePet)"
+                      >
+                        대표
+                      </v-btn>
+                    </div>
                   </div>
                 </div>
                 
@@ -106,32 +130,35 @@
                   <!-- 기본 정보 태그들 -->
                   <div class="pet-tags-large">
                     <v-chip 
-                      size="medium" 
+                      size="small" 
                       variant="tonal" 
                       :color="getSpeciesIconColor(representativePet.petOrder)"
                       :prepend-icon="getSpeciesIcon(representativePet.petOrder)"
+                      class="info-chip"
                     >
                       {{ representativePet.species || '알 수 없음' }}
                     </v-chip>
                     
                     <v-chip 
-                      size="medium" 
+                      size="small" 
                       variant="tonal" 
                       :color="getGenderColor(representativePet.gender)"
                       :prepend-icon="getGenderIcon(representativePet.gender)"
+                      class="info-chip"
                     >
                       {{ getGenderLabel(representativePet.gender) }}
                     </v-chip>
                     
                     <v-chip 
-                      size="medium" 
+                      size="small" 
                       variant="tonal" 
                       color="orange"
                       prepend-icon="mdi-cake-variant"
+                      class="info-chip"
                     >
                       {{ representativePet.age }}살
                     </v-chip>
-                        </div>
+                  </div>
                   
                   <!-- 추가 정보 -->
                   <div class="additional-info-large">
@@ -143,7 +170,7 @@
                       <v-icon size="20" color="grey-darken-1">mdi-calendar</v-icon>
                       <span>{{ formatBirthday(representativePet.birthday) }}</span>
                     </div>
-                    </div>
+                  </div>
 
                   <!-- 소개글 -->
                   <div class="introduction-large">
@@ -154,28 +181,30 @@
                   
                   <!-- 액션 버튼들 -->
                   <div class="action-buttons-large">
-                    <v-btn
-                      color="#E87D7D"
-                      variant="flat"
-                      prepend-icon="mdi-eye"
-                      @click="viewPet(representativePet)"
-                      size="large"
-                      rounded="xl"
-                      class="view-details-btn"
-                    >
-                      상세보기
-                    </v-btn>
-                    <v-btn
-                      color="#E87D7D"
-                      variant="flat"
-                      prepend-icon="mdi-delete"
-                      @click="$emit('delete', representativePet)"
-                      size="large"
-                      rounded="xl"
-                      class="delete-btn"
-                    >
-                      삭제
-                    </v-btn>
+                    <div style="margin-left: auto; display: flex; gap: 8px;">
+                      <v-btn
+                        color="#E87D7D"
+                        variant="flat"
+                        prepend-icon="mdi-eye"
+                        @click="viewPet(representativePet)"
+                        size="small"
+                        rounded="lg"
+                        class="action-btn"
+                      >
+                        상세보기
+                      </v-btn>
+                      <v-btn
+                        color="#E87D7D"
+                        variant="flat"
+                        prepend-icon="mdi-delete"
+                        @click="$emit('delete', representativePet)"
+                        size="small"
+                        rounded="lg"
+                        class="action-btn"
+                      >
+                        삭제
+                      </v-btn>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -330,7 +359,7 @@
       <!-- 반려동물 상세 모달 -->
       <v-dialog
         v-model="showDetailModal"
-        max-width="1400"
+        max-width="1000"
         class="pet-detail-dialog"
         @click:outside="closeDetailModal"
         :scrim="false"
@@ -397,28 +426,18 @@
                   <v-icon size="20" color="grey-darken-1">mdi-calendar</v-icon>
                   <span class="info-label">생일</span>
                   <div v-if="isEditing" class="edit-field">
-                    <div class="birthday-input-container">
-                      <v-btn
-                        :text="formatBirthday(editingPet.birthday) || '생일 선택'"
-                        variant="outlined"
-                        class="edit-input rounded-input date-btn"
-                        @click="openDatePicker"
-                        prepend-icon="mdi-calendar"
-                        color="#E87D7D"
-                      />
-                      
-                      <!-- 생일 삭제 버튼 -->
-                      <v-btn
-                        v-if="editingPet.birthday"
-                        icon="mdi-close"
-                        variant="text"
-                        size="small"
-                        color="error"
-                        @click="clearBirthday"
-                        class="clear-birthday-btn"
-                        aria-label="생일 삭제"
-                      />
-                    </div>
+                    <v-text-field
+                      :model-value="formatBirthday(editingPet.birthday) || ''"
+                      placeholder="생일 선택"
+                      readonly
+                      variant="outlined"
+                      density="compact"
+                      hide-details="auto"
+                      class="edit-input rounded-input modern-input"
+                      prepend-inner-icon="mdi-calendar"
+                      @click="openDatePicker"
+                      style="cursor: pointer;"
+                    />
                   </div>
                   <span v-else class="info-value">{{ formatBirthday(selectedPet?.birthday) }}</span>
                 </div>
@@ -438,11 +457,11 @@
             <div class="pet-details-detail">
               <div class="detail-section">
                 <h4 class="section-title">기본 정보</h4>
-                <div class="info-grid">
-                  <div class="info-item species-item">
-                    <v-icon size="20" color="grey-darken-1">mdi-paw</v-icon>
-                    <span class="info-label">종류</span>
-                    <div v-if="isEditing" class="edit-field">
+                <div class="info-grid compact-info-grid">
+                  <div class="info-item compact-info-item species-item">
+                    <v-icon size="18" color="grey-darken-1">mdi-paw</v-icon>
+                    <span class="info-label compact-label">종류</span>
+                    <div v-if="isEditing" class="edit-field compact-edit-field">
                       <v-autocomplete
                         v-model="editingPet.speciesId"
                         :items="speciesOptions"
@@ -451,7 +470,7 @@
                         variant="outlined"
                         density="compact"
                         hide-details
-                        class="edit-input rounded-input"
+                        class="edit-input modern-input"
                         placeholder="종류 선택"
                         :model-value="editingPet.speciesId"
                         @update:model-value="(value) => {
@@ -470,28 +489,28 @@
                         }"
                       />
                     </div>
-                    <span v-else class="info-value">{{ selectedPet?.species || '알 수 없음' }}</span>
+                    <span v-else class="info-value compact-value">{{ selectedPet?.species || '알 수 없음' }}</span>
                   </div>
-                  <div class="info-item name-item">
-                    <v-icon size="20" color="grey-darken-1">mdi-account</v-icon>
-                    <span class="info-label">이름</span>
-                    <div v-if="isEditing" class="edit-field">
+                  <div class="info-item compact-info-item name-item">
+                    <v-icon size="18" color="grey-darken-1">mdi-account</v-icon>
+                    <span class="info-label compact-label">이름</span>
+                    <div v-if="isEditing" class="edit-field compact-edit-field">
                       <v-text-field
                         v-model="editingPet.name"
                         variant="outlined"
                         density="compact"
                         hide-details
-                        class="edit-input rounded-input"
+                        class="edit-input modern-input"
                         placeholder="이름 입력"
                         maxlength="20"
                       />
                     </div>
-                    <span v-else class="info-value">{{ selectedPet?.name || '알 수 없음' }}</span>
+                    <span v-else class="info-value compact-value">{{ selectedPet?.name || '알 수 없음' }}</span>
                   </div>
-                  <div class="info-item">
-                    <v-icon size="20" color="grey-darken-1">mdi-gender-male-female</v-icon>
-                    <span class="info-label">성별</span>
-                    <div v-if="isEditing" class="edit-field">
+                  <div class="info-item compact-info-item">
+                    <v-icon size="18" color="grey-darken-1">mdi-gender-male-female</v-icon>
+                    <span class="info-label compact-label">성별</span>
+                    <div v-if="isEditing" class="edit-field compact-edit-field">
                       <v-select
                         v-model="editingPet.gender"
                         :items="genderOptions"
@@ -500,7 +519,7 @@
                         variant="outlined"
                         density="compact"
                         hide-details
-                        class="edit-input rounded-input"
+                        class="edit-input modern-input"
                         placeholder="성별 선택"
                         @update:model-value="(value) => {
                           console.log('🔍 성별 선택 변경:', {
@@ -512,46 +531,49 @@
                         }"
                       />
                     </div>
-                    <span v-else class="info-value">{{ getGenderLabel(selectedPet?.gender) }}</span>
+                    <span v-else class="info-value compact-value">{{ getGenderLabel(selectedPet?.gender) }}</span>
                   </div>
-                  <div class="info-item">
-                    <v-icon size="20" color="grey-darken-1">mdi-cake-variant</v-icon>
-                    <span class="info-label">나이</span>
-                    <div v-if="isEditing" class="edit-field">
+                  <div class="info-item compact-info-item">
+                    <v-icon size="18" color="grey-darken-1">mdi-cake-variant</v-icon>
+                    <span class="info-label compact-label">나이</span>
+                    <div v-if="isEditing" class="edit-field compact-edit-field">
                       <v-text-field
                         v-model="editingPet.age"
                         type="number"
                         variant="outlined"
                         density="compact"
-                        hide-details
-                        class="edit-input rounded-input"
+                        hide-details="auto"
+                        class="edit-input modern-input"
                         :placeholder="editingPet.birthday ? '자동 계산됨' : '나이를 입력하세요'"
                         min="0"
                         max="30"
                         :readonly="!!editingPet.birthday"
                         :disabled="!!editingPet.birthday"
+                        :rules="!editingPet.birthday ? [v => v !== null && v !== undefined && v !== '' || '나이를 입력하세요'] : []"
+                        required
+                        ref="ageInput"
                       />
                     </div>
-                    <span v-else class="info-value">{{ selectedPet?.age !== null && selectedPet?.age !== undefined ? selectedPet.age + '살' : '알 수 없음' }}</span>
+                    <span v-else class="info-value compact-value">{{ selectedPet?.age !== null && selectedPet?.age !== undefined ? selectedPet.age + '살' : '알 수 없음' }}</span>
                   </div>
-                  <div class="info-item">
-                    <v-icon size="20" color="grey-darken-1">mdi-weight</v-icon>
-                    <span class="info-label">체중</span>
-                    <div v-if="isEditing" class="edit-field">
+                  <div class="info-item compact-info-item">
+                    <v-icon size="18" color="grey-darken-1">mdi-weight</v-icon>
+                    <span class="info-label compact-label">체중</span>
+                    <div v-if="isEditing" class="edit-field compact-edit-field">
                       <v-text-field
                         v-model="editingPet.weight"
                         type="number"
                         variant="outlined"
                         density="compact"
                         hide-details
-                        class="edit-input rounded-input"
+                        class="edit-input modern-input"
                         placeholder="체중 입력"
                         min="0.1"
                         max="100"
                         step="0.1"
                       />
                     </div>
-                    <span v-else class="info-value">{{ selectedPet?.weight || '알 수 없음' }}kg</span>
+                    <span v-else class="info-value compact-value">{{ selectedPet?.weight || '알 수 없음' }}kg</span>
                   </div>
 
                 </div>
@@ -560,83 +582,83 @@
             </div>
             
             <!-- 소개글 섹션 (아래쪽에 배치) -->
-            <div class="introduction-detail">
-              <h4 class="introduction-title">소개글</h4>
-              <div class="introduction-content">
-                <div v-if="isEditing" class="edit-field">
+            <div class="introduction-detail compact-introduction">
+              <h4 class="introduction-title compact-title">소개글</h4>
+              <div class="introduction-content compact-content">
+                <div v-if="isEditing" class="edit-field compact-edit-field">
                   <v-textarea
                     v-model="editingPet.introduce"
                     variant="outlined"
                     density="compact"
                     hide-details
-                    class="edit-textarea rounded-textarea"
+                    class="edit-textarea modern-input modern-textarea"
                     placeholder="반려동물에 대한 소개를 입력해주세요"
-                    rows="4"
+                    rows="5"
                     no-resize
                   />
                 </div>
-                <p v-else-if="selectedPet?.introduce && selectedPet.introduce.trim() !== ''" class="introduction-text">
+                <p v-else-if="selectedPet?.introduce && selectedPet.introduce.trim() !== ''" class="introduction-text compact-text">
                   {{ selectedPet.introduce }}
                 </p>
-                <p v-else class="introduction-text no-introduction">
+                <p v-else class="introduction-text no-introduction compact-text">
                   소개글이 등록되지 않았습니다.
                 </p>
               </div>
             </div>
           </v-card-text>
           <v-card-actions class="detail-actions">
-            <!-- 수정 모드가 아닐 때 -->
-            <template v-if="!isEditing">
-              <v-btn
-                color="#E87D7D"
-                variant="flat"
-                prepend-icon="mdi-pencil"
-                @click="toggleEditMode"
-                size="large"
-                rounded="xl"
-                class="edit-btn"
-              >
-                수정
-              </v-btn>
-              <v-btn
-                color="error"
-                variant="flat"
-                prepend-icon="mdi-delete"
-                @click="confirmDeleteFromModal"
-                size="large"
-                rounded="xl"
-                class="delete-btn"
-              >
-                삭제
-              </v-btn>
-            </template>
-            
-            <!-- 수정 모드일 때 -->
-            <template v-else>
-              <v-btn
-                color="grey"
-                variant="flat"
-                prepend-icon="mdi-close"
-                @click="toggleEditMode"
-                size="large"
-                rounded="xl"
-                class="cancel-btn"
-              >
-                취소
-              </v-btn>
-              <v-btn
-                color="success"
-                variant="flat"
-                prepend-icon="mdi-content-save"
-                @click="saveChanges"
-                :loading="saving"
-                size="large"
-                rounded="xl"
-                class="save-btn"
-              >
-                저장
-              </v-btn>
-            </template>
+                          <!-- 수정 모드가 아닐 때 -->
+              <template v-if="!isEditing">
+                <v-btn
+                  color="#E87D7D"
+                  variant="flat"
+                  prepend-icon="mdi-pencil"
+                  @click="toggleEditMode"
+                  size="small"
+                  rounded="lg"
+                  class="edit-btn action-btn"
+                >
+                  수정
+                </v-btn>
+                <v-btn
+                  color="error"
+                  variant="flat"
+                  prepend-icon="mdi-delete"
+                  @click="confirmDeleteFromModal"
+                  size="small"
+                  rounded="lg"
+                  class="delete-btn action-btn"
+                >
+                  삭제
+                </v-btn>
+              </template>
+              
+              <!-- 수정 모드일 때 -->
+              <template v-else>
+                <v-btn
+                  color="grey"
+                  variant="flat"
+                  prepend-icon="mdi-close"
+                  @click="toggleEditMode"
+                  size="small"
+                  rounded="lg"
+                  class="cancel-btn action-btn"
+                >
+                  취소
+                </v-btn>
+                <v-btn
+                  color="success"
+                  variant="flat"
+                  prepend-icon="mdi-content-save"
+                  @click="saveChanges"
+                  :loading="saving"
+                  size="small"
+                  rounded="lg"
+                  class="save-btn action-btn"
+                >
+                  저장
+                </v-btn>
+              </template>
           </v-card-actions>
         </v-card>
       </v-dialog>
@@ -781,7 +803,7 @@
                 @click="previousYear"
                 class="nav-btn"
               />
-              <span class="current-year">{{ currentDate.getFullYear() }}년</span>
+              <span class="current-year clickable-year" @click="goToYearPicker">{{ currentDate.getFullYear() }}년</span>
               <v-btn
                 icon="mdi-chevron-right"
                 variant="text"
@@ -826,7 +848,7 @@
       <!-- 반려동물 수정 폼 모달 -->
       <v-dialog
         v-model="showEditForm"
-        max-width="1200"
+        max-width="1100"
         class="edit-form-dialog"
         @click:outside="closeEditForm"
         persistent
@@ -966,13 +988,13 @@ export default {
     const showCropper = ref(false)
     const cropperImageUrl = ref('')
     
-    // 생일 포맷팅
+    // 생일 포맷팅 - 간단하게 표시
     const formatBirthday = (birthday) => {
       if (!birthday) return '알 수 없음'
       try {
         const date = new Date(birthday)
         if (isNaN(date.getTime())) return '알 수 없음'
-        return `${date.getFullYear()}. ${String(date.getMonth() + 1).padStart(2, '0')}. ${String(date.getDate()).padStart(2, '0')}.`
+        return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`
       } catch (error) {
         return '알 수 없음'
       }
@@ -1103,9 +1125,9 @@ export default {
     
     const getSpeciesIconColor = (petOrder) => {
       const colors = {
-        DOG: '#E87D7D',
-        CAT: '#FF6B6B',
-        OTHER: '#6B7280'
+        '강아지': '#3B82F6',  // 파란색
+        '고양이': '#8B5CF6',  // 보라색
+        OTHER: '#6B7280'  // 회색
       }
       return colors[petOrder] || '#6B7280'
     }
@@ -1465,9 +1487,28 @@ export default {
       }
       
       // 필수 필드 검증 (나이는 0도 허용)
-      if (!editingPet.value.name || editingPet.value.age === null || editingPet.value.age === undefined || !editingPet.value.gender || !editingPet.value.weight) {
+      if (!editingPet.value.name || editingPet.value.age === null || editingPet.value.age === undefined || editingPet.value.age === '' || !editingPet.value.gender || !editingPet.value.weight) {
         console.error('❌ 필수 필드가 누락되었습니다:', editingPet.value)
-        showSnackbar('필수 정보를 모두 입력해주세요.', 'error')
+        
+        // 구체적인 오류 메시지 제공
+        if (!editingPet.value.name) {
+          showSnackbar('이름을 입력해주세요.', 'error')
+        } else if (editingPet.value.age === null || editingPet.value.age === undefined || editingPet.value.age === '') {
+          showSnackbar('나이를 입력해주세요.', 'error')
+          // 나이 입력 필드에 포커스
+          setTimeout(() => {
+            const ageInput = document.querySelector('.info-item .edit-field input[type="number"]')
+            if (ageInput) {
+              ageInput.focus()
+            }
+          }, 100)
+        } else if (!editingPet.value.gender) {
+          showSnackbar('성별을 선택해주세요.', 'error')
+        } else if (!editingPet.value.weight) {
+          showSnackbar('체중을 입력해주세요.', 'error')
+        } else {
+          showSnackbar('필수 정보를 모두 입력해주세요.', 'error')
+        }
         return
       }
       
@@ -1732,6 +1773,11 @@ export default {
       selectedMonth.value = null
     }
     
+    const goToYearPicker = () => {
+      showMonthPicker.value = false
+      showYearPicker.value = true
+    }
+    
     const confirmYearSelection = () => {
       showYearPicker.value = false
     }
@@ -1739,9 +1785,24 @@ export default {
     const clearBirthdayFromPicker = () => {
       if (editingPet.value) {
         editingPet.value.birthday = null
+        editingPet.value.age = null  // 나이도 초기화
       }
       selectedDate.value = null
-      showSnackbar('생일이 초기화되었습니다.', 'info')
+      
+      // 초기화 후 자동으로 달력 닫기
+      showDatePicker.value = false
+      showYearPicker.value = false
+      showMonthPicker.value = false
+      
+      showSnackbar('생일이 초기화되었습니다. 나이를 직접 입력해주세요.', 'warning')
+      
+      // 나이 입력 필드에 포커스 (약간의 지연 후)
+      setTimeout(() => {
+        const ageInput = document.querySelector('.info-item .edit-field input[type="number"]')
+        if (ageInput) {
+          ageInput.focus()
+        }
+      }, 100)
     }
     
     const confirmMonthSelection = () => {
@@ -1912,6 +1973,7 @@ export default {
         selectMonth,
         selectYear,
         backToMain,
+        goToYearPicker,
         confirmYearSelection,
         clearBirthdayFromPicker,
         confirmMonthSelection,
@@ -2116,6 +2178,7 @@ export default {
   height: 240px;
   border-radius: 50%;
   overflow: hidden;
+  position: relative;
 }
 
 .large-image-placeholder {
@@ -2127,6 +2190,29 @@ export default {
   align-items: center;
   justify-content: center;
   border: 2px dashed #d1d5db;
+  position: relative;
+}
+
+/* 대표동물 설정 버튼 오버레이 */
+.representative-overlay {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+}
+
+.representative-set-btn {
+  background: #FFD700 !important;
+  color: #B8860B !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+  transition: all 0.3s ease !important;
+}
+
+.representative-set-btn:hover {
+  background: #FFED4E !important;
+  transform: scale(1.05) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
 }
 
 .pet-details-large {
@@ -2147,6 +2233,14 @@ export default {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
+}
+
+/* 글자가 터지는 문제 해결 */
+.pet-tags-large .v-chip {
+  max-width: 150px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .additional-info-large {
@@ -2190,35 +2284,33 @@ export default {
 
 .action-buttons-large {
   display: flex;
-  gap: 12px;
+  gap: 16px;
   margin-top: auto;
   align-items: center;
+  justify-content: center;
+  width: 100%;
 }
 
-.view-details-btn {
-  background: #E87D7D !important;
-  color: white !important;
-  font-weight: 600;
-  box-shadow: 0 4px 12px rgba(232, 125, 125, 0.3);
+
+
+/* 공통 액션 버튼 스타일 - PetCard와 동일 */
+.action-btn {
+  flex: 1;
+  font-weight: 700;
+  font-size: 0.9rem;
   transition: all 0.3s ease;
-}
-
-.view-details-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(232, 125, 125, 0.4);
-}
-
-.delete-btn {
+  height: 40px;
+  min-width: 120px;
+  text-transform: none;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
   background: linear-gradient(135deg, #E87D7D, #FF6B6B) !important;
   color: white !important;
-  font-weight: 600;
-  box-shadow: 0 4px 12px rgba(232, 125, 125, 0.3);
-  transition: all 0.3s ease;
 }
 
-.delete-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(232, 125, 125, 0.4);
+.action-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(232, 125, 125, 0.3);
   background: linear-gradient(135deg, #FF6B6B, #E87D7D) !important;
 }
 
@@ -2651,7 +2743,7 @@ export default {
 }
 
 .detail-content {
-  padding: 32px;
+  padding: 24px;
   flex: 1;
   overflow-y: auto;
   min-height: 0;
@@ -2659,34 +2751,34 @@ export default {
 
 .detail-layout {
   display: flex;
-  gap: 32px;
+  gap: 24px;
   align-items: flex-start;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 }
 
 .pet-image-detail {
   flex-shrink: 0;
-  width: 320px;
+  width: 280px;
 }
 
 .pet-details-detail {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
 .detail-pet-image {
-  width: 250px;
-  height: 250px;
+  width: 220px;
+  height: 220px;
   border-radius: 50%;
   overflow: hidden;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
 .detail-image-placeholder {
-  width: 250px;
-  height: 250px;
+  width: 220px;
+  height: 220px;
   border-radius: 50%;
   background: #f3f4f6;
   display: flex;
@@ -2730,14 +2822,16 @@ export default {
 .info-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr); /* 2열 균등 분할 */
-  gap: 20px;
+  gap: 16px;
   align-items: start;
+  max-width: 500px;
+  margin: 0 auto;
 }
 
 /* 종류는 첫 줄 전체 너비 */
 .info-grid .species-item { 
   grid-column: 1 / -1; 
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 /* 반응형 - 모바일에서는 1열로 */
@@ -2758,14 +2852,15 @@ export default {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  min-width: 200px;
 }
 
 .info-item {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  padding: 20px;
+  gap: 12px;
+  padding: 16px 20px;
   background: white;
   border-radius: 16px;
   border: 1px solid #e2e8f0;
@@ -2773,13 +2868,15 @@ export default {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   position: relative;
   text-align: center;
+  min-width: 200px;
 }
 
 /* 종류 항목은 특별한 레이아웃 */
 .species-item {
   background: linear-gradient(135deg, #fef7f7, #fef2f2) !important;
   border-color: #E87D7D !important;
-  padding: 24px 80px 24px 24px !important;
+  padding: 20px 80px 20px 20px !important;
+  text-align: center;
 }
 
 .species-item .info-content {
@@ -2841,7 +2938,7 @@ export default {
   font-size: 1.25rem;
   font-weight: 700;
   color: #1e293b;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -2870,7 +2967,7 @@ export default {
   display: flex;
   gap: 12px;
   justify-content: center;
-  padding: 24px;
+  padding: 20px;
 }
 
 /* 이미지 변경 오버레이 */
@@ -2936,6 +3033,7 @@ export default {
   transition: all 0.3s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   text-align: center;
+  min-width: 320px;
 }
 
 .birthday-item:hover {
@@ -2966,52 +3064,11 @@ export default {
 
 
 
-/* 편집 필드 스타일 - 모던하고 세련된 디자인 */
+/* 편집 필드 스타일 - 등록 모달과 동일한 디자인 */
 .edit-field {
   flex: 1;
   min-width: 120px;
   position: relative;
-}
-
-/* 입력창 기본 스타일 - 완전히 새로운 디자인 */
-.edit-input {
-  width: 100%;
-  border-radius: 8px !important;
-  background: #f9fafb !important;
-  border: 1px solid #d1d5db !important;
-  box-shadow: none !important;
-  transition: all 0.15s ease !important;
-  position: relative;
-}
-
-.edit-input:hover {
-  background: #ffffff !important;
-  border-color: #9ca3af !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
-}
-
-.edit-input:focus-within {
-  background: #ffffff !important;
-  border-color: #E87D7D !important;
-  box-shadow: 0 0 0 2px rgba(232, 125, 125, 0.2) !important;
-}
-
-.edit-input .v-field {
-  border-radius: 8px !important;
-  background: transparent !important;
-  min-height: 40px !important;
-}
-
-.edit-input .v-field__outline {
-  border-color: transparent !important;
-}
-
-.edit-input .v-field__input {
-  padding: 10px 14px !important;
-  font-size: 14px !important;
-  font-weight: 500 !important;
-  color: #1f2937 !important;
-  line-height: 1.4 !important;
 }
 
 .edit-input .v-field__input::placeholder {
@@ -3033,6 +3090,119 @@ export default {
   color: #E87D7D !important;
 }
 
+/* 현대적인 입력 필드 스타일 - 2번째 사진처럼 깔끔하게 */
+.modern-input :deep(.v-field) {
+  background: #ffffff !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  border: 2px solid #e5e7eb !important;
+  transition: all 0.2s ease !important;
+}
+
+.modern-input :deep(.v-field--focused) {
+  background: #ffffff !important;
+  border-color: #E87D7D !important;
+  box-shadow: 0 0 0 3px rgba(232, 125, 125, 0.1) !important;
+}
+
+.modern-input :deep(.v-field:hover) {
+  background: #ffffff !important;
+  border-color: #d1d5db !important;
+}
+
+.modern-input :deep(.v-field__input) {
+  padding: 8px 12px !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+  color: #111827 !important;
+  font-weight: 500 !important;
+}
+
+.modern-input :deep(.v-field__input::placeholder) {
+  color: #9ca3af !important;
+  opacity: 1 !important;
+  font-weight: 400 !important;
+}
+
+.modern-input :deep(.v-field__prepend-inner) {
+  padding-right: 8px !important;
+  color: #6b7280 !important;
+}
+
+.modern-input :deep(.v-field--focused .v-field__prepend-inner) {
+  color: #E87D7D !important;
+}
+
+.modern-input :deep(.v-field--disabled) {
+  background: #f9fafb !important;
+  border-color: #e5e7eb !important;
+  opacity: 0.6 !important;
+}
+
+.modern-input :deep(.v-field--disabled .v-field__input) {
+  color: #9ca3af !important;
+}
+
+/* 액션 버튼 크기 통일 */
+.action-btn {
+  min-width: 100px !important;
+  height: 40px !important;
+}
+
+/* 입력 필드 높이 조정 */
+.modern-input :deep(.v-field) {
+  min-height: 44px !important;
+}
+
+/* 컴팩트한 기본정보 영역 */
+.compact-info-grid {
+  gap: 12px !important;
+  max-width: 400px !important;
+}
+
+.compact-info-item {
+  padding: 8px 0 !important;
+}
+
+.compact-label {
+  font-size: 13px !important;
+  margin-bottom: 4px !important;
+}
+
+.compact-value {
+  font-size: 14px !important;
+}
+
+.compact-edit-field {
+  margin-top: 4px !important;
+}
+
+/* 입력 필드 너비 제한 */
+.compact-edit-field .modern-input {
+  max-width: 350px !important;
+}
+
+/* 컴팩트한 소개글 영역 */
+.compact-introduction {
+  margin-top: 16px !important;
+}
+
+.compact-title {
+  font-size: 16px !important;
+  margin-bottom: 8px !important;
+}
+
+.compact-content {
+  margin-top: 8px !important;
+}
+
+.compact-text {
+  font-size: 14px !important;
+  line-height: 1.4 !important;
+}
+
+/* 현대적인 날짜 입력 필드 - v-text-field로 통일 */
+
 .rounded-input {
   border-radius: 8px !important;
 }
@@ -3041,64 +3211,7 @@ export default {
   border-radius: 8px !important;
 }
 
-/* 날짜 선택 버튼 */
-.date-btn {
-  width: 100% !important;
-  height: 40px !important;
-  border-radius: 8px !important;
-  background: linear-gradient(145deg, #ffffff, #f8fafc) !important;
-  border: 2px solid #e2e8f0 !important;
-  color: #1f2937 !important;
-  font-weight: 500 !important;
-  font-size: 14px !important;
-  box-shadow: 
-    0 4px 6px -1px rgba(0, 0, 0, 0.1),
-    0 2px 4px -1px rgba(0, 0, 0, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  position: relative;
-  overflow: hidden;
-}
-
-.date-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(232, 125, 125, 0.3), transparent);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.date-btn:hover {
-  border-color: #E87D7D !important;
-  background: linear-gradient(145deg, #fef2f2, #fdf2f8) !important;
-  box-shadow: 
-    0 8px 25px -5px rgba(232, 125, 125, 0.25),
-    0 4px 10px -3px rgba(232, 125, 125, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
-  transform: translateY(-2px) !important;
-  color: #E87D7D !important;
-}
-
-.date-btn:hover::before {
-  opacity: 1;
-}
-
-.date-btn .v-btn__content {
-  gap: 8px !important;
-}
-
-.date-btn .v-icon {
-  color: #E87D7D !important;
-  transition: transform 0.2s ease !important;
-}
-
-.date-btn:hover .v-icon {
-  color: #E87D7D !important;
-}
+/* 날짜 선택 버튼 - v-text-field로 통일되어 더 이상 사용하지 않음 */
 
 /* 텍스트 영역 */
 .edit-textarea {
@@ -3261,6 +3374,19 @@ export default {
   font-weight: 600;
   font-size: 1.1rem;
   color: #333;
+}
+
+.clickable-year {
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.clickable-year:hover {
+  background: #ffe6e6 !important;
+  color: #d32f2f;
+  transform: scale(1.05);
 }
 
 .month-grid {
@@ -3865,8 +3991,77 @@ body::-webkit-scrollbar {
   flex: 1;
 }
 
-.clear-birthday-btn {
-  flex-shrink: 0;
+/* clear-birthday-btn 스타일 제거됨 - X 버튼 제거로 인해 불필요 */
+
+/* 액션 버튼 오른쪽 정렬 및 크기 조정 */
+.v-card-actions {
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+  padding: 16px !important;
+}
+
+.edit-btn, .delete-btn, .cancel-btn, .save-btn {
+  min-width: 70px !important;
+  height: 32px !important;
+  font-size: 0.8rem !important;
+  padding: 0 12px !important;
+  flex-shrink: 0 !important;
+}
+
+/* Vuetify 기본 스타일 강제 덮어쓰기 */
+.v-card-actions .v-btn {
+  min-width: 70px !important;
+  height: 32px !important;
+  font-size: 0.8rem !important;
+  padding: 0 12px !important;
+}
+
+/* 모든 액션 버튼 강제 덮어쓰기 */
+.v-card-actions .edit-btn,
+.v-card-actions .delete-btn,
+.v-card-actions .cancel-btn,
+.v-card-actions .save-btn {
+  min-width: 80px !important;
+  height: 36px !important;
+  font-size: 0.85rem !important;
+  padding: 0 16px !important;
+  width: auto !important;
+  max-width: 80px !important;
+}
+
+/* 대표 반려동물 버튼 강제 덮어쓰기 */
+.action-buttons-large .action-btn {
+  min-width: 80px !important;
+  height: 36px !important;
+  font-size: 0.85rem !important;
+  padding: 0 16px !important;
+  width: auto !important;
+  max-width: 80px !important;
+}
+
+/* Vuetify 기본 스타일 완전 덮어쓰기 */
+.action-buttons-large .v-btn {
+  min-width: 80px !important;
+  height: 36px !important;
+  font-size: 0.85rem !important;
+  padding: 0 16px !important;
+  width: auto !important;
+  max-width: 80px !important;
+}
+
+/* 대표 반려동물 버튼들을 오른쪽에 정렬 */
+.action-buttons-large {
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+  margin-left: auto !important;
+  width: 100% !important;
+}
+
+/* 추가로 버튼들을 오른쪽으로 밀어내기 */
+.action-buttons-large .action-btn:first-child {
+  margin-left: auto !important;
 }
 </style>
 

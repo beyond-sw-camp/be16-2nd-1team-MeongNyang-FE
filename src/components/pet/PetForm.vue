@@ -1,5 +1,5 @@
 <template>
-  <v-card class="no-inner-surface" variant="text" elevation="0">
+  <v-card class="no-inner-surface" variant="text" elevation="0" :class="{ 'edit-mode': isEditMode }">
     <!-- 이미지 크롭 모달 -->
     <ImageCropper
       v-model="showCropper"
@@ -88,7 +88,7 @@
         <v-btn
           variant="outlined"
           @click="$emit('close')"
-          class="cancel-btn"
+          class="cancel-btn action-btn"
           rounded="lg"
           size="large"
         >
@@ -98,7 +98,7 @@
         <v-btn
           :disabled="!previewImage || imageRemoved"
           @click="nextStep"
-          class="next-btn"
+          class="next-btn action-btn"
           rounded="lg"
           size="large"
         >
@@ -117,10 +117,10 @@
       </div>
       
       <v-form ref="form" v-model="isValid">
-      <div class="form-fields-section">
+      <div class="form-fields-section compact-form-section">
           <!-- 이름 -->
-          <div class="form-field">
-            <label class="field-label">반려동물 이름 *</label>
+          <div class="form-field compact-form-field">
+            <label class="field-label compact-label">반려동물 이름 *</label>
             <v-text-field
               v-model="petData.name"
               placeholder="반려동물 이름을 입력하세요"
@@ -128,15 +128,15 @@
               required
               variant="outlined"
               rounded="lg"
-              class="form-input"
+              class="form-input modern-input"
               hide-details="auto"
-              density="comfortable"
+              density="compact"
             />
           </div>
 
           <!-- 종류 -->
-          <div class="form-field">
-            <label class="field-label">반려동물 종류 *</label>
+          <div class="form-field compact-form-field">
+            <label class="field-label compact-label">반려동물 종류 *</label>
             <v-autocomplete
               v-model="petData.speciesId"
               :items="speciesOptions"
@@ -147,15 +147,15 @@
               required
               variant="outlined"
               rounded="lg"
-              class="form-input"
+              class="form-input modern-input"
               hide-details="auto"
-              density="comfortable"
+              density="compact"
             />
           </div>
 
           <!-- 성별 -->
-          <div class="form-field">
-            <label class="field-label">성별 *</label>
+          <div class="form-field compact-form-field">
+            <label class="field-label compact-label">성별 *</label>
             <v-select
               v-model="petData.gender"
               :items="genderOptions"
@@ -164,26 +164,26 @@
               placeholder="성별을 선택하세요"
               variant="outlined"
               rounded="lg"
-              class="form-input"
+              class="form-input modern-input"
               hide-details="auto"
-              density="comfortable"
+              density="compact"
               required
               :rules="[v => !!v || '성별을 선택해주세요']"
             />
           </div>
 
           <!-- 나이 -->
-          <div class="form-field">
-            <label class="field-label">나이 *</label>
+          <div class="form-field compact-form-field">
+            <label class="field-label compact-label">나이 *</label>
             <v-text-field
               v-model="petData.age"
               type="number"
               :placeholder="petData.birthday ? '자동 계산됨' : '나이를 입력하세요'"
               variant="outlined"
               rounded="lg"
-              class="form-input"
+              class="form-input modern-input"
               hide-details="auto"
-              density="comfortable"
+              density="compact"
               min="0"
               max="30"
               :readonly="!!petData.birthday"
@@ -191,23 +191,23 @@
               required
               :rules="[v => v !== null && v !== undefined || '나이를 입력해주세요']"
             />
-            <div v-if="petData.birthday" class="field-hint">
+            <div v-if="petData.birthday" class="field-hint compact-hint">
               <span>생일이 설정되어 나이가 자동 계산됩니다</span>
             </div>
           </div>
 
           <!-- 몸무게 -->
-          <div class="form-field">
-            <label class="field-label">몸무게 (kg) *</label>
+          <div class="form-field compact-form-field">
+            <label class="field-label compact-label">몸무게 (kg) *</label>
             <v-text-field
               v-model="petData.weight"
               type="number"
               placeholder="몸무게를 입력하세요"
               variant="outlined"
               rounded="lg"
-              class="form-input"
+              class="form-input modern-input"
               hide-details="auto"
-              density="comfortable"
+              density="compact"
               min="0"
               max="100"
               step="0.1"
@@ -217,36 +217,23 @@
           </div>
 
           <!-- 생일 -->
-          <div class="form-field">
-            <label class="field-label">생일 (선택사항)</label>
-            <div class="birthday-input-container">
-                  <v-text-field
-                :model-value="formattedBirthday"
-                    placeholder="생일을 선택하세요"
-                    readonly
-                    variant="outlined"
-                    rounded="lg"
-                    class="form-input"
-                    hide-details="auto"
-                    density="comfortable"
-                    prepend-inner-icon="mdi-calendar"
-                @click="openBirthdayPicker"
-              />
-              
-              <!-- 생일 삭제 버튼 -->
-              <v-btn
-                v-if="petData.birthday"
-                icon="mdi-close"
-                variant="text"
-                size="small"
-                color="error"
-                @click="clearBirthday"
-                class="clear-birthday-btn"
-                aria-label="생일 삭제"
-              />
-            </div>
+          <div class="form-field compact-form-field">
+            <label class="field-label compact-label">생일 (선택사항)</label>
+            <v-text-field
+              :model-value="formattedBirthday"
+              placeholder="생일을 선택하세요"
+              readonly
+              variant="outlined"
+              rounded="lg"
+              class="form-input modern-input"
+              hide-details="auto"
+              density="compact"
+              prepend-inner-icon="mdi-calendar"
+              @click="openBirthdayPicker"
+              style="cursor: pointer;"
+            />
             
-            <div class="field-hint">
+            <div class="field-hint compact-hint">
               <span>생일을 입력하면 나이가 자동으로 계산됩니다</span>
             </div>
           </div>
@@ -257,7 +244,7 @@
         <v-btn
           variant="outlined"
           @click="previousStep"
-          class="cancel-btn"
+          class="cancel-btn action-btn"
           rounded="lg"
           size="large"
         >
@@ -269,7 +256,7 @@
           v-if="isEditMode"
           variant="outlined"
           @click="goToImageStep"
-          class="image-edit-btn"
+          class="image-edit-btn action-btn"
           rounded="lg"
           size="large"
           prepend-icon="mdi-image-edit"
@@ -280,7 +267,7 @@
         <v-btn
           :disabled="!isValid"
           @click="nextStep"
-          class="next-btn"
+          class="next-btn action-btn"
           rounded="lg"
           size="large"
         >
@@ -298,24 +285,24 @@
         <p>{{ isEditMode ? '반려동물 소개글을 수정해주세요.' : '반려동물을 소개해주세요.' }}</p>
       </div>
       
-      <div class="form-fields-section">
-        <div class="form-field full-width">
-          <label class="field-label">소개글 (선택사항)</label>
+            <div class="form-fields-section compact-form-section">
+        <div class="form-field full-width compact-form-field">
+          <label class="field-label compact-label">소개글 (선택사항)</label>
           <v-textarea
             v-model="petData.introduce"
             placeholder="반려동물을 소개해주세요"
             variant="outlined"
             rounded="lg"
-            class="form-input"
+            class="form-input modern-input modern-textarea"
             hide-details="auto"
-            rows="5"
-            max-rows="8"
+            rows="3"
+            max-rows="5"
             counter="500"
             maxlength="500"
-            density="comfortable"
+            density="compact"
             no-resize
           />
-          <div class="field-hint">
+          <div class="field-hint compact-hint">
             <span>반려동물의 성격이나 특징을 자유롭게 작성해주세요 (최대 500자)</span>
           </div>
         </div>
@@ -325,7 +312,7 @@
         <v-btn
           variant="outlined"
           @click="previousStep"
-          class="cancel-btn"
+          class="cancel-btn action-btn"
           rounded="lg"
           size="large"
         >
@@ -337,7 +324,7 @@
           :loading="submitting"
           :disabled="submitting"
           @click="handleSubmit"
-          class="submit-btn"
+          class="submit-btn action-btn"
           rounded="lg"
           size="large"
         >
@@ -486,7 +473,7 @@
               @click="previousYear"
               class="nav-btn"
             />
-            <span class="current-year">{{ currentDate.getFullYear() }}년</span>
+            <span class="current-year clickable-year" @click="goToYearPicker">{{ currentDate.getFullYear() }}년</span>
             <v-btn
               icon="mdi-chevron-right"
               variant="text"
@@ -711,36 +698,19 @@ export default {
       return thirtyYearsAgo.toISOString().split('T')[0]
     })
     
-    // 포맷된 생일 표시
+    // 포맷된 생일 표시 - 간단하게 표시
     const formattedBirthday = computed(() => {
       if (!petData.birthday) return ''
       
       const date = new Date(petData.birthday)
-      const today = new Date()
       const age = calculateAge(petData.birthday)
       
-      // 올해 생일이 지났는지 확인
-      const thisYearBirthday = new Date(today.getFullYear(), date.getMonth(), date.getDate())
-      const isBirthdayPassed = thisYearBirthday <= today
+      // 간단한 형식으로 표시 (날짜가 짤리지 않도록)
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const day = String(date.getDate()).padStart(2, '0')
       
-      // 다음 생일까지 남은 일수 계산
-      let nextBirthday
-      if (isBirthdayPassed) {
-        nextBirthday = new Date(today.getFullYear() + 1, date.getMonth(), date.getDate())
-      } else {
-        nextBirthday = thisYearBirthday
-      }
-      
-      const daysUntilBirthday = Math.ceil((nextBirthday - today) / (1000 * 60 * 60 * 24))
-      
-      // 포맷된 날짜 반환
-      const formattedDate = date.toLocaleDateString('ko-KR', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      })
-      
-      return `${formattedDate} (${age}살, ${daysUntilBirthday}일 후)`
+      return `${year}.${month}.${day} (${age}살)`
     })
     
     // 나이 계산 함수 (더 정확한 계산)
@@ -1192,6 +1162,11 @@ export default {
       selectedMonth.value = null
     }
     
+    const goToYearPicker = () => {
+      showMonthPicker.value = false
+      showYearPicker.value = true
+    }
+    
     const confirmYearSelection = () => {
       showYearPicker.value = false
     }
@@ -1208,6 +1183,19 @@ export default {
       petData.birthday = null
       petData.age = null
       selectedDate.value = null
+      
+      // 초기화 후 자동으로 달력 닫기
+      showBirthdayPicker.value = false
+      showYearPicker.value = false
+      showMonthPicker.value = false
+      
+      // 나이 입력 필드에 포커스 (약간의 지연 후)
+      setTimeout(() => {
+        const ageInput = document.querySelector('input[type="number"]')
+        if (ageInput && !ageInput.disabled) {
+          ageInput.focus()
+        }
+      }, 100)
     }
     
     const cancelDateSelection = () => {
@@ -1311,6 +1299,7 @@ export default {
       selectMonth,
       selectYear,
       backToMain,
+      goToYearPicker,
       confirmYearSelection,
       confirmMonthSelection,
       clearBirthdayFromPicker,
@@ -1353,6 +1342,11 @@ export default {
   overflow: hidden;
 }
 
+/* 수정 모드일 때만 narrow하게 */
+.v-card.edit-mode .pet-form-container {
+  max-width: 500px;
+}
+
 /* 단계별 진행 표시 */
 .step-indicator {
   display: flex;
@@ -1361,6 +1355,11 @@ export default {
   padding: 48px 60px 40px;
   background: transparent;
   border-bottom: none;
+}
+
+/* 수정 모드일 때만 패딩 줄이기 */
+.v-card.edit-mode .step-indicator {
+  padding: 48px 40px 40px;
 }
 
 .step {
@@ -1430,6 +1429,11 @@ export default {
   min-height: 600px;
   overflow-y: visible !important;
   max-height: none;
+}
+
+/* 수정 모드일 때만 패딩 줄이기 */
+.v-card.edit-mode .step-content {
+  padding: 48px 40px;
 }
 
 .step-header {
@@ -1619,8 +1623,140 @@ export default {
   font-size: 14px;
 }
 
+/* 기본 폼 입력 필드 */
 .form-input {
+  border-radius: 12px;
+}
+
+/* 현대적인 입력 필드 스타일 - 2번째 사진처럼 깔끔하게 */
+.modern-input :deep(.v-field) {
+  background: #ffffff;
   border-radius: 8px;
+  box-shadow: none;
+  border: 2px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.modern-input :deep(.v-field--focused) {
+  background: #ffffff;
+  border-color: #E87D7D;
+  box-shadow: 0 0 0 3px rgba(232, 125, 125, 0.1);
+}
+
+.modern-input :deep(.v-field:hover) {
+  background: #ffffff;
+  border-color: #d1d5db;
+}
+
+.modern-input :deep(.v-field__input) {
+  padding: 8px 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #111827;
+  font-weight: 500;
+}
+
+.modern-input :deep(.v-field__input::placeholder) {
+  color: #9ca3af;
+  opacity: 1;
+  font-weight: 400;
+}
+
+.modern-input :deep(.v-field__prepend-inner) {
+  padding-right: 8px;
+  color: #6b7280;
+}
+
+.modern-input :deep(.v-field--focused .v-field__prepend-inner) {
+  color: #E87D7D;
+}
+
+.modern-input :deep(.v-field--disabled) {
+  background: #f9fafb;
+  border-color: #e5e7eb;
+  opacity: 0.6;
+}
+
+.modern-input :deep(.v-field--disabled .v-field__input) {
+  color: #9ca3af;
+}
+
+/* 액션 버튼 크기 통일 */
+.action-btn {
+  min-width: 100px;
+  height: 40px;
+}
+
+/* 입력 필드 높이 조정 */
+.modern-input :deep(.v-field) {
+  min-height: 44px;
+}
+
+/* 컴팩트한 폼 영역 - 수정 모드일 때만 적용 */
+.v-card.edit-mode .compact-form-section {
+  gap: 16px !important;
+  max-width: 360px !important;
+}
+
+.v-card.edit-mode .compact-form-field {
+  margin-bottom: 16px !important;
+}
+
+.v-card.edit-mode .compact-label {
+  font-size: 14px !important;
+  margin-bottom: 6px !important;
+  font-weight: 500 !important;
+}
+
+.v-card.edit-mode .compact-hint {
+  margin-top: 4px !important;
+  font-size: 12px !important;
+}
+
+/* 입력 필드 너비 제한 - 수정 모드일 때만 적용 */
+.v-card.edit-mode .compact-form-field .modern-input {
+  max-width: 320px !important;
+}
+
+.v-card.edit-mode .compact-form-field .modern-textarea {
+  max-width: 320px !important;
+}
+
+/* 현대적인 텍스트 영역 스타일 - 2번째 사진처럼 깔끔하게 */
+.modern-textarea :deep(.v-field) {
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: none;
+  border: 2px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.modern-textarea :deep(.v-field--focused) {
+  background: #ffffff;
+  border-color: #E87D7D;
+  box-shadow: 0 0 0 3px rgba(232, 125, 125, 0.1);
+}
+
+.modern-textarea :deep(.v-field:hover) {
+  background: #ffffff;
+  border-color: #d1d5db;
+}
+
+.modern-textarea :deep(.v-field__field) {
+  padding: 10px;
+}
+
+.modern-textarea :deep(.v-field__input) {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #111827;
+  font-weight: 500;
+}
+
+.modern-textarea :deep(.v-field__input::placeholder) {
+  color: #9ca3af;
+  opacity: 1;
+  font-weight: 400;
 }
 
 .field-hint {
@@ -1629,18 +1765,7 @@ export default {
   margin-top: 4px;
 }
 
-/* 생일 입력 컨테이너 */
-.birthday-input-container {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.clear-birthday-btn {
-  position: absolute;
-  right: 8px;
-  z-index: 1;
-}
+/* 생일 입력 필드는 modern-input 클래스로 스타일링됨 */
 
 /* 단계별 액션 버튼 */
 .step-actions {
@@ -1751,6 +1876,19 @@ export default {
     font-weight: 600;
     font-size: 1.1rem;
     color: #333;
+  }
+  
+  .clickable-year {
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+  }
+  
+  .clickable-year:hover {
+    background: #ffe6e6 !important;
+    color: #d32f2f;
+    transform: scale(1.05);
   }
 
   .month-grid {

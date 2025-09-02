@@ -35,6 +35,21 @@
           <span>대표</span>
         </div>
         
+        <!-- 대표 설정 버튼 (현재 대표가 아닌 경우에만 표시) -->
+        <div v-if="!isRepresentative" class="representative-set-overlay">
+          <v-btn
+            color="amber"
+            variant="flat"
+            prepend-icon="mdi-star"
+            size="small"
+            rounded="lg"
+            class="representative-set-btn"
+            @click.stop="$emit('set-representative', pet)"
+          >
+            대표
+          </v-btn>
+        </div>
+        
         <!-- 이미지 오버레이 그라데이션 -->
         <div class="image-overlay"></div>
       </div>
@@ -111,19 +126,7 @@
           상세보기
         </v-btn>
         
-        <!-- 대표 등록 버튼 (현재 대표가 아닌 경우에만 표시) -->
-        <v-btn 
-          v-if="!isRepresentative"
-          variant="outlined" 
-          color="amber" 
-          @click.stop="$emit('set-representative', pet)"
-          rounded="lg"
-          class="action-btn set-representative-btn"
-          prepend-icon="mdi-star"
-          size="small"
-        >
-          대표
-        </v-btn>
+
         
         <v-btn 
           variant="flat" 
@@ -543,6 +546,32 @@ export default {
   color: white !important;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+/* 대표 설정 버튼 오버레이 */
+.representative-set-overlay {
+  position: absolute !important;
+  top: 8px !important;
+  right: 8px !important;
+  z-index: 999 !important;
+}
+
+.representative-set-btn {
+  background: #FFD700 !important;
+  color: #B8860B !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+  transition: all 0.3s ease !important;
+  min-width: 70px !important;
+  height: 36px !important;
+  font-size: 12px !important;
+  border: 2px solid #FFA500 !important;
+}
+
+.representative-set-btn:hover {
+  background: #FFED4E !important;
+  transform: scale(1.05) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
 }
 
 /* 반응형 디자인 */
