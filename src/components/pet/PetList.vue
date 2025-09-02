@@ -50,10 +50,11 @@
                 color="#E87D7D"
                 variant="flat"
                 prepend-icon="mdi-plus"
-                @click="showAddForm = true"
+                @click="handleAddPet"
                 size="large"
                 rounded="xl"
                 class="add-button"
+                :disabled="showDetailModal || showEditForm || showDeleteConfirm"
               >
                               반려동물 추가
             </v-btn>
@@ -164,6 +165,7 @@
                         size="small"
                         rounded="lg"
                         class="action-btn"
+                        :disabled="showDetailModal || showAddForm || showEditForm || showDeleteConfirm"
                       >
                         상세보기
                       </v-btn>
@@ -175,6 +177,7 @@
                         size="small"
                         rounded="lg"
                         class="action-btn"
+                        :disabled="showDetailModal || showAddForm || showEditForm || showDeleteConfirm"
                       >
                         삭제
                       </v-btn>
@@ -208,6 +211,7 @@
                 <PetCard
                   :pet="pet"
                   :representative-pet="representativePet"
+                  :disabled="showDetailModal || showAddForm || showEditForm || showDeleteConfirm"
                   @set-representative="setAsRepresentative"
                   @view-details="viewPet"
                   @delete="confirmDelete"
@@ -238,9 +242,10 @@
             color="#E87D7D"
             variant="flat"
             prepend-icon="mdi-plus"
-            @click="showAddForm = true"
+            @click="handleAddPet"
             size="large"
             rounded="xl"
+            :disabled="showDetailModal || showEditForm || showDeleteConfirm"
           >
             첫 반려동물 등록
           </v-btn>
@@ -1553,6 +1558,19 @@ export default {
     const viewPet = (pet) => {
       console.log('🔍 viewPet 함수 호출됨:', pet)
       
+      // 다른 모달이 열려있으면 상세보기 차단
+      if (showAddForm.value || showEditForm.value || showDeleteConfirm.value) {
+        console.log('⚠️ 다른 모달이 열려있어서 상세보기 차단됨')
+        showSnackbar('다른 작업이 진행 중입니다. 먼저 완료해주세요.', 'warning')
+        return
+      }
+      
+      // 이미 같은 펫의 상세보기가 열려있으면 무시
+      if (showDetailModal.value && selectedPet.value && selectedPet.value.id === pet.id) {
+        console.log('⚠️ 이미 같은 펫의 상세보기가 열려있음')
+        return
+      }
+      
       // 이전 동물의 미리보기 이미지 초기화
       imagePreviewUrl.value = null
       
@@ -2033,6 +2051,18 @@ export default {
       }
     }
     
+    // 반려동물 추가 처리
+    const handleAddPet = () => {
+      // 다른 모달이 열려있으면 추가 차단
+      if (showDetailModal.value || showEditForm.value || showDeleteConfirm.value) {
+        console.log('⚠️ 다른 모달이 열려있어서 반려동물 추가 차단됨')
+        showSnackbar('다른 작업이 진행 중입니다. 먼저 완료해주세요.', 'warning')
+        return
+      }
+      
+      showAddForm.value = true
+    }
+    
     // 폼 관련
     const closeForm = () => {
       // 등록 폼에서 입력된 데이터가 있으면 초기화
@@ -2313,6 +2343,7 @@ export default {
         confirmDeleteFromModal,
               confirmDelete,
       deletePet,
+      handleAddPet,
       closeForm,
       handleFormSuccess,
       getGridClass

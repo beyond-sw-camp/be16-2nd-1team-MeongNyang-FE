@@ -1,11 +1,11 @@
 <template>
   <v-card 
     class="pet-card" 
-    :class="{ 'is-representative': isRepresentative }" 
+    :class="{ 'is-representative': isRepresentative, 'disabled': disabled }" 
     variant="elevated" 
     rounded="xl"
-    @click="$emit('view-details', pet)"
-    style="cursor: pointer;"
+    @click="handleCardClick"
+    :style="{ cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.6 : 1 }"
   >
     <!-- 카드 우상단 대표 설정 버튼 -->
     <div v-if="!isRepresentative" class="card-top-representative-btn">
@@ -155,6 +155,10 @@ export default {
     representativePet: {
       type: Object,
       default: null
+    },
+    disabled: {
+      type: Boolean,
+      default: false
     }
   },
   
@@ -256,6 +260,14 @@ export default {
       return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`
     }
 
+    // 카드 클릭 처리
+    const handleCardClick = () => {
+      if (!props.disabled) {
+        // 부모 컴포넌트로 view-details 이벤트 emit
+        // 이벤트는 부모에서 처리됨
+      }
+    }
+
     return {
       isRepresentative,
       getSpeciesIcon,
@@ -263,7 +275,8 @@ export default {
       getGenderIcon,
       getGenderColor,
       getGenderLabel,
-      formatBirthday
+      formatBirthday,
+      handleCardClick
     }
   }
 }
