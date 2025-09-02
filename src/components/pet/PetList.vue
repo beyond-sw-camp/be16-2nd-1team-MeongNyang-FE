@@ -3151,8 +3151,8 @@ export default {
   margin-top: 4px !important;
 }
 
-/* 입력 필드 너비 제한 */
-.compact-edit-field .modern-input {
+/* 입력 필드 너비 제한 (소개글 제외) */
+.compact-edit-field .modern-input:not(.modern-textarea) {
   max-width: 350px !important;
 }
 
