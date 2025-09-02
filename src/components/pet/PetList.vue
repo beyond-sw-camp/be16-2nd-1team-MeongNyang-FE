@@ -199,7 +199,7 @@
           <!-- 우측: 다른 동물들 (간단한 PetCard) -->
           <div class="other-pets-section">
             <h3 class="other-pets-title">등록된 다른 동물들</h3>
-            <div class="other-pets-grid">
+            <div class="other-pets-grid" :class="getGridClass(otherPets.length)">
               <div
                 v-for="pet in otherPets"
                 :key="`pet-${pet.id}-${pet.url || 'no-image'}`"
@@ -2218,6 +2218,13 @@ export default {
       return marks
     }
     
+    // 카드 개수에 따른 그리드 클래스 반환
+    const getGridClass = (count) => {
+      if (count === 1) return 'grid-single'
+      if (count === 2) return 'grid-double'
+      if (count === 3) return 'grid-triple'
+      return 'grid-multiple'
+    }
 
     
     return {
@@ -2304,10 +2311,11 @@ export default {
         getDaysUntilBirthday,
         getHundredDayMarks,
         confirmDeleteFromModal,
-      confirmDelete,
+              confirmDelete,
       deletePet,
       closeForm,
-      handleFormSuccess
+      handleFormSuccess,
+      getGridClass
     }
   }
 }
@@ -2675,8 +2683,32 @@ export default {
 
 .other-pets-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 20px;
+  justify-content: center;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* 카드 개수에 따른 일관된 레이아웃 */
+.other-pets-grid.grid-single {
+  grid-template-columns: 1fr;
+  max-width: 400px;
+}
+
+.other-pets-grid.grid-double {
+  grid-template-columns: repeat(2, 1fr);
+  max-width: 800px;
+}
+
+.other-pets-grid.grid-triple {
+  grid-template-columns: repeat(3, 1fr);
+  max-width: 1200px;
+}
+
+.other-pets-grid.grid-multiple {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  max-width: 1200px;
 }
 
 .pet-card-wrapper {
@@ -2727,8 +2759,25 @@ export default {
 /* 반응형 디자인 */
 @media (max-width: 1024px) {
   .other-pets-grid {
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 16px;
+  }
+  
+  .other-pets-grid.grid-single {
+    max-width: 350px;
+  }
+  
+  .other-pets-grid.grid-double {
+    max-width: 700px;
+  }
+  
+  .other-pets-grid.grid-triple {
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 700px;
+  }
+  
+  .other-pets-grid.grid-multiple {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    max-width: 1000px;
   }
   
   .representative-content {
@@ -2762,6 +2811,14 @@ export default {
   .representative-pet-section,
   .other-pets-section {
     padding: 20px;
+  }
+  
+  .other-pets-grid.grid-single,
+  .other-pets-grid.grid-double,
+  .other-pets-grid.grid-triple,
+  .other-pets-grid.grid-multiple {
+    grid-template-columns: 1fr;
+    max-width: 100%;
   }
   
   .large-pet-image,
