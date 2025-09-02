@@ -25,7 +25,7 @@
     </div>
 
     <!-- 1단계: 이미지 업로드 -->
-    <Transition name="modal-scale" appear>
+    <Transition name="step-slide" appear>
       <div v-if="currentStep === 1" class="step-content modal-optimized">
       <div class="step-header">
         <h2>{{ isEditMode ? '프로필 사진 수정' : '프로필 사진 선택하기' }}</h2>
@@ -117,7 +117,7 @@
     
 
     <!-- 2단계: 기본 정보 -->
-    <Transition name="modal-scale" appear>
+    <Transition name="step-slide" appear>
       <div v-if="currentStep === 2" class="step-content modal-optimized">
         <div class="step-header">
           <h2>{{ isEditMode ? '기본 정보 수정' : '기본 정보 입력' }}</h2>
@@ -286,7 +286,7 @@
       </Transition>
 
     <!-- 3단계: 소개글 -->
-    <Transition name="modal-scale" appear>
+    <Transition name="step-slide" appear>
       <div v-if="currentStep === 3" class="step-content modal-optimized">
         <div class="step-header">
           <h2>{{ isEditMode ? '소개글 수정' : '소개글 작성' }}</h2>
@@ -624,13 +624,19 @@ export default {
     // 단계 이동 메서드들
     const nextStep = () => {
       if (currentStep.value < 3) {
-        currentStep.value++
+        // 부드러운 전환을 위한 지연
+        setTimeout(() => {
+          currentStep.value++
+        }, 150)
       }
     }
     
     const previousStep = () => {
       if (currentStep.value > 1) {
-        currentStep.value--
+        // 부드러운 전환을 위한 지연
+        setTimeout(() => {
+          currentStep.value--
+        }, 150)
       }
     }
     
@@ -1357,6 +1363,28 @@ export default {
 <style scoped>
 @import '@/assets/styles/modal-animations.css';
 
+/* 단계별 슬라이드 애니메이션 */
+.step-slide-enter-active,
+.step-slide-leave-active {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.step-slide-enter-from {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+.step-slide-leave-to {
+  opacity: 0;
+  transform: translateX(-30px);
+}
+
+.step-slide-enter-to,
+.step-slide-leave-from {
+  opacity: 1;
+  transform: translateX(0);
+}
+
 /* no-inner-surface 클래스 - 내부 카드 느낌 제거 */
 .no-inner-surface {
   background: transparent !important;
@@ -1414,23 +1442,48 @@ export default {
   justify-content: center;
   font-weight: 600;
   font-size: 14px;
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.step-number::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transform: translate(-50%, -50%);
+  transition: width 0.3s ease, height 0.3s ease;
 }
 
 .step.active .step-number {
   background: #f43f5e;
   color: white;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(244, 63, 94, 0.3);
+}
+
+.step.active .step-number::before {
+  width: 40px;
+  height: 40px;
 }
 
 .step.completed .step-number {
   background: #10b981;
   color: white;
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
 }
 
 .step-label {
   font-size: 13px;
   color: #64748b;
   font-weight: 500;
+  transition: all 0.3s ease;
 }
 
 .step.active .step-label {
@@ -1448,11 +1501,29 @@ export default {
   height: 2px;
   background: #d1d5db;
   margin: 0 16px;
-  transition: all 0.3s ease;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.step-line::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, #10b981, transparent);
+  transition: left 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .step-line.completed {
   background: #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
+}
+
+.step-line.completed::before {
+  left: 100%;
 }
 
 
@@ -1732,11 +1803,37 @@ export default {
   height: 40px;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: transform, box-shadow;
+  position: relative;
+  overflow: hidden;
 }
 
 .action-btn:hover {
   transform: translateY(-2px) scale(1.02);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.action-btn:active {
+  transform: translateY(0) scale(0.98);
+  transition: all 0.1s ease;
+}
+
+/* 버튼 클릭 시 리플 효과 */
+.action-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.3s ease, height 0.3s ease;
+}
+
+.action-btn:active::before {
+  width: 200px;
+  height: 200px;
 }
 
 /* 입력 필드 높이 조정 */
