@@ -12,16 +12,19 @@
       </div>
 
       <div class="form-container">
-        <v-form ref="form" v-model="valid" @submit.prevent="submitForm">
+        <v-form ref="formRef" v-model="valid" @submit.prevent="submitForm">
           <!-- 상품 이미지 섹션 -->
           <div class="form-section">
             <div class="section-header">
               <h3 class="section-title">상품 이미지</h3>
             </div>
-            
+
             <div class="image-upload-section">
               <!-- 메인 업로드 영역 -->
-              <div class="main-upload-area" :class="{ 'has-images': imageUrls.length > 0 }">
+              <div
+                class="main-upload-area"
+                :class="{ 'has-images': imageUrls.length > 0 }"
+              >
                 <!-- 파일 입력 -->
                 <input
                   ref="fileInput"
@@ -31,9 +34,13 @@
                   class="hidden-file-input"
                   @change="handleImageChange"
                 />
-                
+
                 <!-- 이미지가 없을 때 업로드 안내 -->
-                <div v-if="imageUrls.length === 0" class="upload-content" @click="triggerFileInput">
+                <div
+                  v-if="imageUrls.length === 0"
+                  class="upload-content"
+                  @click="triggerFileInput"
+                >
                   <div class="upload-icon">
                     <v-icon icon="mdi-cloud-upload" size="48" color="white" />
                   </div>
@@ -44,31 +51,39 @@
                     <span>클릭하여 이미지 선택</span>
                   </div>
                 </div>
-                
+
                 <!-- 이미지가 있을 때 슬라이더 -->
                 <div v-else class="image-slider-container">
                   <!-- 이미지 슬라이더 -->
                   <div class="image-slider">
-                    <div 
-                      v-for="(url, index) in imageUrls" 
+                    <div
+                      v-for="(url, index) in imageUrls"
                       :key="index"
                       class="slide"
-                      :class="{ 'active': index === currentSlide }"
-                      :style="{ transform: `translateX(${(index - currentSlide) * 100}%)` }"
+                      :class="{ active: index === currentSlide }"
+                      :style="{
+                        transform: `translateX(${(index - currentSlide) * 100}%)`,
+                      }"
                     >
-                      <img
-                        :src="url"
-                        class="slide-image"
-                        alt="상품 이미지"
-                      />
-                      
+                      <img :src="url" class="slide-image" alt="상품 이미지" />
+
                       <!-- 대표 이미지 표시 -->
-                      <div class="main-image-checkbox" @click.stop="setMainImage(index)">
-                        <div class="checkbox" :class="{ 'checked': index === mainImageIndex }">
-                          <span v-if="index === mainImageIndex" class="check-mark">✓</span>
+                      <div
+                        class="main-image-checkbox"
+                        @click.stop="setMainImage(index)"
+                      >
+                        <div
+                          class="checkbox"
+                          :class="{ checked: index === mainImageIndex }"
+                        >
+                          <span
+                            v-if="index === mainImageIndex"
+                            class="check-mark"
+                            >✓</span
+                          >
                         </div>
                       </div>
-                      
+
                       <!-- 이미지 제거 버튼 -->
                       <button
                         @click.stop="removeImage(index)"
@@ -78,7 +93,7 @@
                       </button>
                     </div>
                   </div>
-                  
+
                   <!-- 네비게이션 버튼 -->
                   <div class="slider-nav">
                     <button
@@ -88,17 +103,17 @@
                     >
                       <v-icon icon="mdi-chevron-left" size="24" />
                     </button>
-                    
+
                     <div class="slide-indicators">
                       <div
                         v-for="(url, index) in imageUrls"
                         :key="index"
                         class="indicator"
-                        :class="{ 'active': index === currentSlide }"
+                        :class="{ active: index === currentSlide }"
                         @click="goToSlide(index)"
                       ></div>
                     </div>
-                    
+
                     <button
                       @click="nextSlide"
                       :disabled="currentSlide === imageUrls.length - 1"
@@ -117,7 +132,7 @@
             <div class="section-header">
               <h3 class="section-title">기본 정보</h3>
             </div>
-            
+
             <div class="form-grid">
               <div class="form-field">
                 <label class="field-label">상품명 *</label>
@@ -149,18 +164,38 @@
                     {{ category.label }}
                   </option>
                 </select>
-                
+
                 <!-- 카테고리가 선택된 경우 -->
-                <div v-if="form.category && form.category !== null && form.category !== ''" class="category-selected">
+                <div
+                  v-if="
+                    form.category &&
+                    form.category !== null &&
+                    form.category !== ''
+                  "
+                  class="category-selected"
+                >
                   <div class="selected-category-content">
                     <v-icon icon="mdi-check-circle" size="20" color="#E87D7D" />
-                    <span class="selected-text">선택된 카테고리: <strong>{{ categoryOptions.find(c => c.value === form.category)?.label }}</strong></span>
+                    <span class="selected-text"
+                      >선택된 카테고리:
+                      <strong>{{
+                        categoryOptions.find((c) => c.value === form.category)
+                          ?.label
+                      }}</strong></span
+                    >
                     <span class="debug-info">({{ form.category }})</span>
                   </div>
                 </div>
-                
+
                 <!-- 카테고리가 선택되지 않은 경우 -->
-                <div v-if="!form.category || form.category === null || form.category === ''" class="category-hint">
+                <div
+                  v-if="
+                    !form.category ||
+                    form.category === null ||
+                    form.category === ''
+                  "
+                  class="category-hint"
+                >
                   <v-icon icon="mdi-information" size="16" color="#6c757d" />
                   <span>카테고리를 선택해주세요</span>
                 </div>
@@ -191,7 +226,7 @@
             <div class="section-header">
               <h3 class="section-title">상세 설명</h3>
             </div>
-            
+
             <div class="description-section">
               <textarea
                 v-model="form.description"
@@ -202,10 +237,13 @@
                 @input="handleDescriptionInput"
                 @change="handleDescriptionChange"
               ></textarea>
-              
+
               <div class="description-hint">
                 <v-icon icon="mdi-lightbulb" size="16" color="#E87D7D" />
-                <span>구체적이고 정확한 정보를 제공하면 더 빠른 거래가 가능합니다</span>
+                <span
+                  >구체적이고 정확한 정보를 제공하면 더 빠른 거래가
+                  가능합니다</span
+                >
               </div>
             </div>
           </div>
@@ -215,32 +253,54 @@
             <div class="section-header">
               <h3 class="section-title">거래 지역</h3>
             </div>
-            
+
             <div class="region-section">
               <!-- 지도 기반 위치 선택 -->
               <div class="map-selection-section">
                 <div class="map-header">
                   <div class="map-icon">
-                    <v-icon icon="mdi-map-marker-radius" size="28" color="#E87D7D" />
+                    <v-icon
+                      icon="mdi-map-marker-radius"
+                      size="28"
+                      color="#E87D7D"
+                    />
                   </div>
                   <div class="map-title-content">
                     <h4 class="section-subtitle">지도에서 거래 장소 선택</h4>
-                    <p class="map-description">지도를 클릭하거나 핀을 드래그하여 정확한 거래 장소를 지정하세요</p>
+                    <p class="map-description">
+                      지도를 클릭하거나 핀을 드래그하여 정확한 거래 장소를
+                      지정하세요
+                    </p>
                   </div>
                 </div>
-                
+
                 <div class="map-container">
                   <div class="map-wrapper">
                     <div id="location-map" class="location-map"></div>
                     <div v-if="!mapLoaded" class="map-overlay">
                       <div class="map-status">
-                        <v-icon icon="mdi-crosshairs-gps" size="16" color="#E87D7D" />
-                        <span>지도를 클릭하거나 핀을 드래그하여 위치를 설정하세요</span>
+                        <v-icon
+                          icon="mdi-crosshairs-gps"
+                          size="16"
+                          color="#E87D7D"
+                        />
+                        <span
+                          >지도를 클릭하거나 핀을 드래그하여 위치를
+                          설정하세요</span
+                        >
                       </div>
                     </div>
                   </div>
-                  
+
                   <div class="map-controls">
+                    <button
+                      type="button"
+                      @click="moveToCurrentLocation"
+                      class="map-btn primary-btn"
+                    >
+                      <v-icon icon="mdi-crosshairs-gps" size="18" />
+                      내 위치로
+                    </button>
                     <button
                       @click="resetMapLocation"
                       class="map-btn secondary-btn"
@@ -250,12 +310,16 @@
                     </button>
                   </div>
                 </div>
-                
+
                 <!-- 선택된 위치 정보 -->
                 <div v-if="selectedLocation" class="location-info">
                   <div class="info-header">
                     <div class="info-icon">
-                      <v-icon icon="mdi-map-marker-check" size="20" color="white" />
+                      <v-icon
+                        icon="mdi-map-marker-check"
+                        size="20"
+                        color="white"
+                      />
                     </div>
                     <span>선택된 거래 장소</span>
                   </div>
@@ -265,22 +329,29 @@
                       <p class="address-text">{{ selectedLocation.address }}</p>
                     </div>
                     <div class="coordinate-display">
-                      <v-icon icon="mdi-crosshairs-gps" size="16" color="#7f8c8d" />
+                      <v-icon
+                        icon="mdi-crosshairs-gps"
+                        size="16"
+                        color="#7f8c8d"
+                      />
                       <p class="coordinate-text">
-                        위도: {{ selectedLocation.lat.toFixed(6) }}, 
-                        경도: {{ selectedLocation.lng.toFixed(6) }}
+                        위도: {{ selectedLocation.lat.toFixed(6) }}, 경도:
+                        {{ selectedLocation.lng.toFixed(6) }}
                       </p>
                     </div>
                   </div>
                 </div>
-                
+
                 <div class="map-hint">
                   <div class="hint-icon">
                     <v-icon icon="mdi-lightbulb-on" size="18" color="#E87D7D" />
                   </div>
                   <div class="hint-content">
                     <span class="hint-title">사용 팁</span>
-                    <span class="hint-text">지도에서 핀을 드래그하여 정확한 위치를 조정할 수 있습니다. 클릭으로도 위치를 변경할 수 있어요!</span>
+                    <span class="hint-text"
+                      >지도에서 핀을 드래그하여 정확한 위치를 조정할 수
+                      있습니다. 클릭으로도 위치를 변경할 수 있어요!</span
+                    >
                   </div>
                 </div>
               </div>
@@ -297,7 +368,7 @@
               <v-icon icon="mdi-close" size="18" />
               취소
             </button>
-            
+
             <button
               type="submit"
               :disabled="!valid || loading"
@@ -305,13 +376,13 @@
             >
               <v-icon v-if="!loading" icon="mdi-check" size="18" />
               <div v-else class="loading-spinner-small"></div>
-              {{ loading ? '등록 중...' : '등록하기' }}
+              {{ loading ? "등록 중..." : "등록하기" }}
             </button>
           </div>
         </v-form>
       </div>
     </v-container>
-    
+
     <!-- 스낵바 -->
     <v-snackbar
       v-model="snackbar.show"
@@ -329,451 +400,654 @@
 </template>
 
 <script>
-import { ref, reactive, onMounted, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
-import { marketAPI } from '@/services/api'
+import { ref, reactive, onMounted, nextTick } from "vue";
+import { useRouter } from "vue-router";
+import { marketAPI } from "@/services/api";
 
 export default {
-  name: 'MarketCreateView',
+  name: "MarketCreateView",
   setup() {
-    const router = useRouter()
-    
+    const router = useRouter();
+
     const form = reactive({
-      title: '',
+      title: "",
       category: null, // null로 초기화하여 명확하게 구분
       price: null,
-      description: ''
-    })
+      description: "",
+    });
 
     // 폼 초기화 후 상태 확인
-    console.log('폼 초기 상태:', {
+    console.log("폼 초기 상태:", {
       title: form.title,
       category: form.category,
       price: form.price,
-      description: form.description
-    })
+      description: form.description,
+    });
 
     // 폼 데이터 변경 감지를 위한 watcher 추가
     const logFormChanges = () => {
-      console.log('=== 폼 데이터 변경 감지 ===')
-      console.log('form.title:', `"${form.title}"`)
-      console.log('form.category:', form.category)
-      console.log('form.price:', form.price)
-      console.log('form.description:', `"${form.description}"`)
-      console.log('========================')
-    }
+      console.log("=== 폼 데이터 변경 감지 ===");
+      console.log("form.title:", `"${form.title}"`);
+      console.log("form.category:", form.category);
+      console.log("form.price:", form.price);
+      console.log("form.description:", `"${form.description}"`);
+      console.log("========================");
+    };
 
     // 가격 입력 처리 함수
     const handlePriceInput = (event) => {
-      const value = event.target.value
-      console.log('가격 입력 이벤트:', value, '타입:', typeof value)
-      
+      const value = event.target.value;
+      console.log("가격 입력 이벤트:", value, "타입:", typeof value);
+
       // 빈 문자열이면 null로 설정
-      if (value === '' || value === null || value === undefined) {
-        form.price = null
+      if (value === "" || value === null || value === undefined) {
+        form.price = null;
       } else {
         // 숫자로 변환
-        const numValue = parseInt(value, 10)
+        const numValue = parseInt(value, 10);
         if (!isNaN(numValue) && numValue >= 0) {
-          form.price = numValue
+          form.price = numValue;
         } else {
-          form.price = null
+          form.price = null;
         }
       }
-      
-      console.log('가격 처리 후:', form.price)
-      validateForm()
-    }
+
+      console.log("가격 처리 후:", form.price);
+      validateForm();
+    };
 
     const handlePriceChange = (event) => {
-      const value = event.target.value
-      console.log('가격 변경 이벤트:', value, '타입:', typeof value)
-      
+      const value = event.target.value;
+      console.log("가격 변경 이벤트:", value, "타입:", typeof value);
+
       // 최종 값 검증 및 설정
-      if (value === '' || value === null || value === undefined) {
-        form.price = null
+      if (value === "" || value === null || value === undefined) {
+        form.price = null;
       } else {
-        const numValue = parseInt(value, 10)
+        const numValue = parseInt(value, 10);
         if (!isNaN(numValue) && numValue >= 0) {
-          form.price = numValue
+          form.price = numValue;
         } else {
-          form.price = null
+          form.price = null;
         }
       }
-      
-      console.log('가격 최종 설정:', form.price)
-      logFormChanges()
-      validateForm()
-    }
+
+      console.log("가격 최종 설정:", form.price);
+      logFormChanges();
+      validateForm();
+    };
 
     // 제목 입력 처리 함수
     const handleTitleInput = (event) => {
-      const value = event.target.value
-      console.log('제목 입력 이벤트:', value, '타입:', typeof value)
-      
+      const value = event.target.value;
+      console.log("제목 입력 이벤트:", value, "타입:", typeof value);
+
       // 값 설정
-      form.title = value
-      
-      console.log('제목 처리 후:', form.title)
-      validateForm()
-    }
+      form.title = value;
+
+      console.log("제목 처리 후:", form.title);
+      validateForm();
+    };
 
     const handleTitleChange = (event) => {
-      const value = event.target.value
-      console.log('제목 변경 이벤트:', value, '타입:', typeof value)
-      
+      const value = event.target.value;
+      console.log("제목 변경 이벤트:", value, "타입:", typeof value);
+
       // 최종 값 설정
-      form.title = value
-      
-      console.log('제목 최종 설정:', form.title)
-      logFormChanges()
-      validateForm()
-    }
+      form.title = value;
+
+      console.log("제목 최종 설정:", form.title);
+      logFormChanges();
+      validateForm();
+    };
 
     // 설명 입력 처리 함수
     const handleDescriptionInput = (event) => {
-      const value = event.target.value
-      console.log('설명 입력 이벤트:', value, '타입:', typeof value)
-      
+      const value = event.target.value;
+      console.log("설명 입력 이벤트:", value, "타입:", typeof value);
+
       // 값 설정
-      form.description = value
-      
-      console.log('설명 처리 후:', form.description)
-      validateForm()
-    }
+      form.description = value;
+
+      console.log("설명 처리 후:", form.description);
+      validateForm();
+    };
 
     const handleDescriptionChange = (event) => {
-      const value = event.target.value
-      console.log('설명 변경 이벤트:', value, '타입:', typeof value)
-      
+      const value = event.target.value;
+      console.log("설명 변경 이벤트:", value, "타입:", typeof value);
+
       // 최종 값 설정
-      form.description = value
-      
-      console.log('설명 최종 설정:', form.description)
-      logFormChanges()
-      validateForm()
-    }
+      form.description = value;
+
+      console.log("설명 최종 설정:", form.description);
+      logFormChanges();
+      validateForm();
+    };
 
     // 폼 validation 함수
     const validateForm = () => {
       // 문자열 필드는 공백 제거 후 검사
-      const hasTitle = form.title && form.title.trim().length > 0
-      const hasCategory = !!form.category
+      const hasTitle = form.title && form.title.trim().length > 0;
+      const hasCategory = !!form.category;
       // 가격은 0보다 큰 숫자인지 확인
-      const hasPrice = form.price !== null && form.price !== undefined && form.price > 0
-      const hasDescription = form.description && form.description.trim().length > 0
-      const hasLocation = !!selectedLocation.value
-      
-      console.log('=== 폼 유효성 검사 ===')
-      console.log('제목:', `"${form.title}"`, '→', hasTitle)
-      console.log('카테고리:', form.category, '→', hasCategory)
-      console.log('가격:', form.price, '→', hasPrice)
-      console.log('설명:', `"${form.description}"`, '→', hasDescription)
-      console.log('위치:', selectedLocation.value, '→', hasLocation)
-      
-      valid.value = hasTitle && hasCategory && hasPrice && hasDescription && hasLocation
-      
-      console.log('최종 유효성:', valid.value)
-      console.log('========================')
-    }
+      const hasPrice =
+        form.price !== null && form.price !== undefined && form.price > 0;
+      const hasDescription =
+        form.description && form.description.trim().length > 0;
+      const hasLocation = !!selectedLocation.value;
 
-    const valid = ref(false)
-    const loading = ref(false)
-    const images = ref([])
-    const imageUrls = ref([])
-    const mainImageIndex = ref(0)
-    const currentSlide = ref(0)
-    
+      console.log("=== 폼 유효성 검사 ===");
+      console.log("제목:", `"${form.title}"`, "→", hasTitle);
+      console.log("카테고리:", form.category, "→", hasCategory);
+      console.log("가격:", form.price, "→", hasPrice);
+      console.log("설명:", `"${form.description}"`, "→", hasDescription);
+      console.log("위치:", selectedLocation.value, "→", hasLocation);
+
+      valid.value =
+        hasTitle && hasCategory && hasPrice && hasDescription && hasLocation;
+
+      console.log("최종 유효성:", valid.value);
+      console.log("========================");
+    };
+
+    const formRef = ref(null);
+    const valid = ref(false);
+    const loading = ref(false);
+    const images = ref([]);
+    const imageUrls = ref([]);
+    const mainImageIndex = ref(0);
+    const currentSlide = ref(0);
+
     // 지도 관련 상태
-    const map = ref(null)
-    const marker = ref(null)
-    const selectedLocation = ref(null)
-    const mapLoaded = ref(false)
-    
+    const map = ref(null);
+    const marker = ref(null);
+    const selectedLocation = ref(null);
+    const mapLoaded = ref(false);
+
     // 스낵바 상태
     const snackbar = reactive({
       show: false,
-      message: '',
-      color: 'success',
-      icon: 'mdi-check-circle'
-    })
-    
+      message: "",
+      color: "success",
+      icon: "mdi-check-circle",
+    });
+
     // 카테고리 옵션
     const categoryOptions = ref([
-      { label: '장난감', value: 'TOY' },
-      { label: '사료', value: 'FEED' },
-      { label: '의류', value: 'CLOTH' },
-      { label: '기타', value: 'OTHER' }
-    ])
+      { label: "장난감", value: "TOY" },
+      { label: "사료", value: "FEED" },
+      { label: "의류", value: "CLOTH" },
+      { label: "기타", value: "OTHER" },
+    ]);
 
     // 카테고리 선택
     const selectCategory = (category) => {
       try {
-        console.log('=== 카테고리 선택 시작 ===')
-        console.log('선택할 카테고리:', category)
-        console.log('선택 전 form.category:', form.category)
-        
+        console.log("=== 카테고리 선택 시작 ===");
+        console.log("선택할 카테고리:", category);
+        console.log("선택 전 form.category:", form.category);
+
         // 유효한 카테고리인지 확인
-        const validCategory = categoryOptions.value.find(c => c.value === category)
+        const validCategory = categoryOptions.value.find(
+          (c) => c.value === category
+        );
         if (!validCategory) {
-          console.error('유효하지 않은 카테고리:', category)
-          return
+          console.error("유효하지 않은 카테고리:", category);
+          return;
         }
-        
+
         // 카테고리 값 설정 (간단하게)
-        form.category = category
-        
-        console.log('선택 후 form.category:', form.category)
-        
+        form.category = category;
+
+        console.log("선택 후 form.category:", form.category);
+
         // 스낵바 테스트
-        snackbar.message = `카테고리 "${validCategory.label}"가 선택되었습니다!`
-        snackbar.color = 'success'
-        snackbar.icon = 'mdi-check-circle'
-        snackbar.show = true
-        
+        snackbar.message = `카테고리 "${validCategory.label}"가 선택되었습니다!`;
+        snackbar.color = "success";
+        snackbar.icon = "mdi-check-circle";
+        snackbar.show = true;
+
         // 폼 유효성 검사
-        validateForm()
-        
+        validateForm();
       } catch (error) {
-        console.error('카테고리 선택 중 오류 발생:', error)
+        console.error("카테고리 선택 중 오류 발생:", error);
       }
-    }
+    };
 
     // 카테고리 변경 처리
     const handleCategoryChange = (event) => {
-      const value = event.target.value
-      console.log('카테고리 변경 이벤트:', value, '타입:', typeof value)
-      
+      const value = event.target.value;
+      console.log("카테고리 변경 이벤트:", value, "타입:", typeof value);
+
       // 값 설정
-      form.category = value
-      
-      console.log('카테고리 처리 후:', form.category)
-      
+      form.category = value;
+
+      console.log("카테고리 처리 후:", form.category);
+
       // 유효한 카테고리인지 확인
-      const validCategory = categoryOptions.value.find(c => c.value === value)
+      const validCategory = categoryOptions.value.find(
+        (c) => c.value === value
+      );
       if (validCategory) {
         // 스낵바 표시
-        snackbar.message = `카테고리 "${validCategory.label}"가 선택되었습니다!`
-        snackbar.color = 'success'
-        snackbar.icon = 'mdi-check-circle'
-        snackbar.show = true
+        snackbar.message = `카테고리 "${validCategory.label}"가 선택되었습니다!`;
+        snackbar.color = "success";
+        snackbar.icon = "mdi-check-circle";
+        snackbar.show = true;
       }
-      
+
       // 폼 유효성 검사
-      validateForm()
-    }
+      validateForm();
+    };
 
     // 파일 입력 트리거
     const triggerFileInput = () => {
-      const fileInput = document.querySelector('.hidden-file-input')
+      const fileInput = document.querySelector(".hidden-file-input");
       if (fileInput) {
-        fileInput.click()
+        fileInput.click();
       }
-    }
+    };
 
     // 이미지 변경 처리
     const handleImageChange = (event) => {
-      const files = event.target.files
-      if (!files || files.length === 0) return
+      const files = event.target.files;
+      if (!files || files.length === 0) return;
 
       // 기존 URL 정리
-      imageUrls.value.forEach(url => {
+      imageUrls.value.forEach((url) => {
         try {
-          URL.revokeObjectURL(url)
+          URL.revokeObjectURL(url);
         } catch (e) {
-          console.warn('Error revoking URL:', e)
+          console.warn("Error revoking URL:", e);
         }
-      })
+      });
 
       // 파일 유효성 검사 및 URL 생성
-      const validFiles = Array.from(files).filter(file => {
-        if (!file || !(file instanceof File)) return false
-        if (!file.type.startsWith('image/')) return false
-        return true
-      })
+      const validFiles = Array.from(files).filter((file) => {
+        if (!file || !(file instanceof File)) return false;
+        if (!file.type.startsWith("image/")) return false;
+        return true;
+      });
 
-             if (validFiles.length === 0) {
-         console.error('유효한 이미지 파일을 선택해주세요')
-         return
-       }
+      if (validFiles.length === 0) {
+        console.error("유효한 이미지 파일을 선택해주세요");
+        return;
+      }
 
       // 파일과 URL 모두 저장
-      images.value = validFiles
+      images.value = validFiles;
       try {
-        imageUrls.value = validFiles.map(file => URL.createObjectURL(file))
+        imageUrls.value = validFiles.map((file) => URL.createObjectURL(file));
         if (mainImageIndex.value >= imageUrls.value.length) {
-          mainImageIndex.value = 0
+          mainImageIndex.value = 0;
         }
-        currentSlide.value = 0
+        currentSlide.value = 0;
       } catch (error) {
-        console.error('Error creating object URLs:', error)
-        imageUrls.value = []
-        images.value = []
-        mainImageIndex.value = 0
+        console.error("Error creating object URLs:", error);
+        imageUrls.value = [];
+        images.value = [];
+        mainImageIndex.value = 0;
       }
-    }
+    };
 
     // 이미지 제거
     const removeImage = (index) => {
       try {
         if (imageUrls.value[index]) {
-          URL.revokeObjectURL(imageUrls.value[index])
+          URL.revokeObjectURL(imageUrls.value[index]);
         }
-        imageUrls.value.splice(index, 1)
-        images.value.splice(index, 1)
+        imageUrls.value.splice(index, 1);
+        images.value.splice(index, 1);
         if (mainImageIndex.value >= imageUrls.value.length) {
-          mainImageIndex.value = Math.max(0, imageUrls.value.length - 1)
+          mainImageIndex.value = Math.max(0, imageUrls.value.length - 1);
         }
         if (currentSlide.value >= imageUrls.value.length) {
-          currentSlide.value = Math.max(0, imageUrls.value.length - 1)
+          currentSlide.value = Math.max(0, imageUrls.value.length - 1);
         }
       } catch (error) {
-        console.error('Error removing image:', error)
+        console.error("Error removing image:", error);
       }
-    }
+    };
 
     // 대표 이미지 설정
     const setMainImage = (index) => {
-      mainImageIndex.value = index
-    }
-    
+      mainImageIndex.value = index;
+    };
+
     // 슬라이더 관련 함수들
     const nextSlide = () => {
       if (currentSlide.value < imageUrls.value.length - 1) {
-        currentSlide.value++
+        currentSlide.value++;
       }
-    }
-    
+    };
+
     const previousSlide = () => {
       if (currentSlide.value > 0) {
-        currentSlide.value--
+        currentSlide.value--;
       }
-    }
-    
+    };
+
     const goToSlide = (index) => {
-      currentSlide.value = index
-    }
+      currentSlide.value = index;
+    };
+
+    // 카카오맵 API 로딩 대기
+    const waitForKakaoMap = () => {
+      return new Promise((resolve, reject) => {
+        if (typeof window.kakao !== "undefined" && window.kakao.maps) {
+          resolve();
+          return;
+        }
+
+        const apiKey = process.env.VUE_APP_KAKAO_MAP_API_KEY;
+
+        // API 키가 없는 경우 에러 처리
+        if (!apiKey || apiKey === "your_kakao_map_api_key_here") {
+          reject(
+            new Error(
+              "카카오맵 API 키가 설정되지 않았습니다. .env 파일에 VUE_APP_KAKAO_MAP_API_KEY를 설정해주세요."
+            )
+          );
+          return;
+        }
+
+        console.log(
+          "카카오맵 스크립트 로딩 시작:",
+          `//dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&autoload=false&libraries=services`
+        );
+
+        const script = document.createElement("script");
+        script.type = "text/javascript";
+        script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&autoload=false&libraries=services`;
+
+        script.onload = () => {
+          console.log("카카오맵 스크립트 로딩 성공!");
+          // autoload=false 이므로 반드시 load() 실행해야 함
+          window.kakao.maps.load(() => {
+            console.log("카카오맵 API 초기화 완료!");
+            resolve();
+          });
+        };
+        script.onerror = (error) => {
+          console.error("카카오맵 스크립트 로딩 실패:", error);
+          reject(
+            new Error("카카오맵 스크립트 로드 실패. API 키를 확인해주세요.")
+          );
+        };
+
+        document.head.appendChild(script);
+      });
+    };
 
     // 지도 관련 함수들
     const initMap = () => {
-      if (typeof window.kakao === 'undefined') {
-        console.warn('Kakao Map API not loaded')
-        return
+      if (typeof window.kakao === "undefined") {
+        console.warn("Kakao Map API not loaded");
+        return;
       }
 
       try {
-        const mapContainer = document.getElementById('location-map')
-        if (!mapContainer) return
+        const mapContainer = document.getElementById("location-map");
+        if (!mapContainer) return;
 
-        const mapOption = {
-          center: new window.kakao.maps.LatLng(37.5665, 126.9780), // 서울시청
-          level: 3
-        }
+        // 사용자 위치를 가져와서 지도 중심 설정
+        getUserLocation()
+          .then((userLocation) => {
+            const mapOption = {
+              center: new window.kakao.maps.LatLng(
+                userLocation.lat,
+                userLocation.lng
+              ),
+              level: 3,
+            };
 
-        map.value = new window.kakao.maps.Map(mapContainer, mapOption)
-        
-        // 마커 생성
-        marker.value = new window.kakao.maps.Marker({
-          position: mapOption.center,
-          draggable: true
-        })
+            map.value = new window.kakao.maps.Map(mapContainer, mapOption);
 
-        // 마커를 지도에 표시
-        marker.value.setMap(map.value)
+            // 마커 생성
+            marker.value = new window.kakao.maps.Marker({
+              position: mapOption.center,
+              draggable: true,
+            });
 
-        // 마커 드래그 이벤트
-        window.kakao.maps.event.addListener(marker.value, 'dragend', function() {
-          const position = marker.value.getPosition()
-          updateLocationFromCoordinates(position.getLat(), position.getLng())
-        })
+            // 마커를 지도에 표시
+            marker.value.setMap(map.value);
 
-        // 지도 클릭 이벤트
-        window.kakao.maps.event.addListener(map.value, 'click', function(mouseEvent) {
-          const latlng = mouseEvent.latLng
-          marker.value.setPosition(latlng)
-          updateLocationFromCoordinates(latlng.getLat(), latlng.getLng())
-        })
+            // 마커 드래그 이벤트
+            window.kakao.maps.event.addListener(
+              marker.value,
+              "dragend",
+              function () {
+                const position = marker.value.getPosition();
+                updateLocationFromCoordinates(
+                  position.getLat(),
+                  position.getLng()
+                );
+              }
+            );
 
-        console.log('Map initialized successfully')
-        mapLoaded.value = true
+            // 지도 클릭 이벤트
+            window.kakao.maps.event.addListener(
+              map.value,
+              "click",
+              function (mouseEvent) {
+                const latlng = mouseEvent.latLng;
+                marker.value.setPosition(latlng);
+                updateLocationFromCoordinates(latlng.getLat(), latlng.getLng());
+              }
+            );
+
+            // 초기 위치 정보 설정
+            updateLocationFromCoordinates(userLocation.lat, userLocation.lng);
+
+            console.log("Map initialized successfully with user location");
+            mapLoaded.value = true;
+          })
+          .catch((error) => {
+            console.warn(
+              "사용자 위치를 가져올 수 없어 기본 위치(서울시청)로 설정합니다:",
+              error
+            );
+            // 기본 위치로 설정
+            const mapOption = {
+              center: new window.kakao.maps.LatLng(37.5665, 126.978), // 서울시청
+              level: 3,
+            };
+
+            map.value = new window.kakao.maps.Map(mapContainer, mapOption);
+
+            marker.value = new window.kakao.maps.Marker({
+              position: mapOption.center,
+              draggable: true,
+            });
+
+            marker.value.setMap(map.value);
+
+            // 마커 드래그 이벤트
+            window.kakao.maps.event.addListener(
+              marker.value,
+              "dragend",
+              function () {
+                const position = marker.value.getPosition();
+                updateLocationFromCoordinates(
+                  position.getLat(),
+                  position.getLng()
+                );
+              }
+            );
+
+            // 지도 클릭 이벤트
+            window.kakao.maps.event.addListener(
+              map.value,
+              "click",
+              function (mouseEvent) {
+                const latlng = mouseEvent.latLng;
+                marker.value.setPosition(latlng);
+                updateLocationFromCoordinates(latlng.getLat(), latlng.getLng());
+              }
+            );
+
+            console.log("Map initialized successfully with default location");
+            mapLoaded.value = true;
+          });
       } catch (error) {
-        console.error('Error initializing map:', error)
+        console.error("Error initializing map:", error);
       }
-    }
+    };
 
     const updateLocationFromCoordinates = (lat, lng) => {
-      if (typeof window.kakao === 'undefined') return
+      if (typeof window.kakao === "undefined") return;
 
-      const geocoder = new window.kakao.maps.services.Geocoder()
-      const coords = new window.kakao.maps.LatLng(lat, lng)
-      
-      geocoder.coord2Address(coords.getLng(), coords.getLat(), function(result, status) {
-        if (status === window.kakao.maps.services.Status.OK) {
-          const address = result[0].address.address_name
-          selectedLocation.value = {
-            address: address,
-            lat: lat,
-            lng: lng
+      const geocoder = new window.kakao.maps.services.Geocoder();
+      const coords = new window.kakao.maps.LatLng(lat, lng);
+
+      geocoder.coord2Address(
+        coords.getLng(),
+        coords.getLat(),
+        function (result, status) {
+          if (status === window.kakao.maps.services.Status.OK) {
+            const address = result[0].address.address_name;
+            selectedLocation.value = {
+              address: address,
+              lat: lat,
+              lng: lng,
+            };
+            // validateForm() 호출 제거 - 이 줄을 삭제하거나 주석 처리
           }
-          validateForm()
         }
-      })
-    }
+      );
+    };
+
+    // 사용자 현재 위치 가져오기
+    const getUserLocation = () => {
+      return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+          reject(new Error("Geolocation is not supported by this browser."));
+          return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const location = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            };
+            console.log("사용자 위치 획득:", location);
+            resolve(location);
+          },
+          (error) => {
+            console.error("위치 정보 획득 실패:", error);
+            let errorMessage = "위치 정보를 가져올 수 없습니다.";
+            switch (error.code) {
+              case error.PERMISSION_DENIED:
+                errorMessage = "위치 권한이 거부되었습니다.";
+                break;
+              case error.POSITION_UNAVAILABLE:
+                errorMessage = "위치 정보를 사용할 수 없습니다.";
+                break;
+              case error.TIMEOUT:
+                errorMessage = "위치 정보 요청 시간이 초과되었습니다.";
+                break;
+            }
+            reject(new Error(errorMessage));
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 300000, // 5분
+          }
+        );
+      });
+    };
+
+    // GPS 버튼 클릭 시 현재 위치로 이동
+    const moveToCurrentLocation = () => {
+      getUserLocation()
+        .then((userLocation) => {
+          if (map.value && marker.value) {
+            const newCenter = new window.kakao.maps.LatLng(
+              userLocation.lat,
+              userLocation.lng
+            );
+            map.value.setCenter(newCenter);
+            marker.value.setPosition(newCenter);
+            updateLocationFromCoordinates(userLocation.lat, userLocation.lng);
+            console.log("현재 위치로 이동했습니다:", userLocation);
+          }
+        })
+        .catch((error) => {
+          alert("현재 위치를 가져올 수 없습니다: " + error.message);
+        });
+    };
 
     const resetMapLocation = () => {
       if (map.value && marker.value) {
-        const center = new window.kakao.maps.LatLng(37.5665, 126.9780)
-        map.value.setCenter(center)
-        marker.value.setPosition(center)
-        selectedLocation.value = null
-        validateForm()
-        
-                 console.log('위치가 초기화되었습니다')
+        const center = new window.kakao.maps.LatLng(37.5665, 126.978);
+        map.value.setCenter(center);
+        marker.value.setPosition(center);
+        selectedLocation.value = null;
+        validateForm();
+
+        console.log("위치가 초기화되었습니다");
       }
-    }
+    };
 
     // 컴포넌트 마운트 후 지도 초기화
     onMounted(() => {
       // 초기 폼 유효성 검사
       nextTick(() => {
-        validateForm()
-      })
-      
-      // Kakao Map API가 로드될 때까지 대기
-      const checkKakaoMap = () => {
-        if (typeof window.kakao !== 'undefined' && window.kakao.maps) {
-          initMap()
-        } else {
-          setTimeout(checkKakaoMap, 100)
-        }
-      }
-      checkKakaoMap()
-    })
+        validateForm();
+      });
+
+      // 카카오맵 API 로드 및 초기화
+      waitForKakaoMap()
+        .then(() => {
+          console.log("카카오맵 로딩 완료, 지도 초기화 시작");
+          initMap();
+        })
+        .catch((error) => {
+          console.error("카카오맵 로딩 실패:", error);
+          // 지도 컨테이너에 에러 메시지 표시
+          const mapContainer = document.getElementById("location-map");
+          if (mapContainer) {
+            mapContainer.innerHTML = `
+              <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #6c757d; padding: 20px; text-align: center; background: #f8f9fa; border-radius: 12px;">
+                <div style="font-size: 48px; margin-bottom: 16px; color: #E87D7D;">🗺️</div>
+                <p style="margin: 0 0 8px 0; font-size: 1rem; font-weight: 600; color: #2c3e50;">지도를 불러올 수 없습니다</p>
+                <small style="color: #adb5bd; font-size: 0.85rem; line-height: 1.4;">${error.message}</small>
+                <div style="margin-top: 12px; padding: 8px 16px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; color: #856404; font-size: 0.8rem;">
+                  💡 카카오 개발자 콘솔에서 API 키를 발급받아 .env 파일에 설정해주세요
+                </div>
+              </div>
+            `;
+          }
+        });
+    });
 
     // 폼 제출
     const submitForm = async () => {
-      if (!valid.value) return
+      if (!valid.value) return;
 
-      loading.value = true
-      
+      loading.value = true;
+
       try {
-        const formData = new FormData()
-        formData.append('mainImageIndex', mainImageIndex.value)
-        formData.append('title', form.title)
-        formData.append('category', form.category)
-        formData.append('price', form.price)
-        formData.append('description', form.description)
-        
+        const formData = new FormData();
+        formData.append("mainImageIndex", mainImageIndex.value);
+        formData.append("title", form.title);
+        formData.append("category", form.category);
+        formData.append("price", form.price);
+        formData.append("description", form.description);
+
         // 지도에서 선택된 위치 정보 추가
         if (selectedLocation.value) {
-          formData.append('latitude', selectedLocation.value.lat)
-          formData.append('longitude', selectedLocation.value.lng)
+          formData.append("latitude", selectedLocation.value.lat);
+          formData.append("longitude", selectedLocation.value.lng);
         }
-        
+
         if (images.value) {
           images.value.forEach((file) => {
-            formData.append('images', file)
-          })
+            formData.append("images", file);
+          });
         }
 
         // API 호출을 위한 데이터 준비
@@ -784,82 +1058,84 @@ export default {
           description: form.description,
           latitude: selectedLocation.value?.lat,
           longitude: selectedLocation.value?.lng,
-          mainImageIndex: mainImageIndex.value
-        }
-        
-        console.log('=== API 호출 준비 ===')
-        console.log('전송할 데이터:', postData)
-        console.log('이미지 파일들:', images.value)
-        console.log('이미지 개수:', images.value?.length || 0)
-        console.log('위치 정보:', selectedLocation.value)
-        console.log('========================')
-        
+          mainImageIndex: mainImageIndex.value,
+        };
+
+        console.log("=== API 호출 준비 ===");
+        console.log("전송할 데이터:", postData);
+        console.log("이미지 파일들:", images.value);
+        console.log("이미지 개수:", images.value?.length || 0);
+        console.log("위치 정보:", selectedLocation.value);
+        console.log("========================");
+
         try {
           // API 호출
-          console.log('API 호출 시작...')
-          
+          console.log("API 호출 시작...");
+
           // 요청 헤더 확인
-          const token = localStorage.getItem('accessToken')
-          console.log('=== 요청 정보 ===')
-          console.log('토큰:', token)
-          console.log('토큰 길이:', token?.length)
-          console.log('토큰 형식:', token?.substring(0, 20) + '...')
-          console.log('================')
-          
-          const response = await marketAPI.create(postData, images.value)
-          
-          console.log('=== API 응답 ===')
-          console.log('응답 상태:', response.status)
-          console.log('응답 데이터:', response.data)
-          console.log('응답 헤더:', response.headers)
-          console.log('================')
-          
+          const token = localStorage.getItem("accessToken");
+          console.log("=== 요청 정보 ===");
+          console.log("토큰:", token);
+          console.log("토큰 길이:", token?.length);
+          console.log("토큰 형식:", token?.substring(0, 20) + "...");
+          console.log("================");
+
+          const response = await marketAPI.create(postData, images.value);
+
+          console.log("=== API 응답 ===");
+          console.log("응답 상태:", response.status);
+          console.log("응답 데이터:", response.data);
+          console.log("응답 헤더:", response.headers);
+          console.log("================");
+
           if (response.status === 200 || response.status === 201) {
-             // 성공 메시지
-             snackbar.message = '거래글이 성공적으로 등록되었습니다!'
-             snackbar.color = 'success'
-             snackbar.icon = 'mdi-check-circle'
-             snackbar.show = true
-             
-             setTimeout(() => {
-               router.push('/market')
-             }, 2000)
+            // 성공 메시지
+            snackbar.message = "거래글이 성공적으로 등록되었습니다!";
+            snackbar.color = "success";
+            snackbar.icon = "mdi-check-circle";
+            snackbar.show = true;
+
+            setTimeout(() => {
+              router.push("/market");
+            }, 2000);
           } else {
-            throw new Error(`서버 응답이 성공이 아닙니다. 상태: ${response.status}`)
+            throw new Error(
+              `서버 응답이 성공이 아닙니다. 상태: ${response.status}`
+            );
           }
         } catch (apiError) {
-          console.error('API 호출 중 오류:', apiError)
-          console.error('오류 상세:', {
+          console.error("API 호출 중 오류:", apiError);
+          console.error("오류 상세:", {
             message: apiError.message,
             response: apiError.response,
             status: apiError.response?.status,
             data: apiError.response?.data,
-            headers: apiError.response?.headers
-          })
-          
+            headers: apiError.response?.headers,
+          });
+
           // 403 오류인 경우 인증 문제일 가능성이 높음
           if (apiError.response?.status === 403) {
-            console.error('=== 403 오류 분석 ===')
-            console.error('인증 토큰 확인 필요')
-            console.error('현재 토큰:', localStorage.getItem('accessToken'))
-            console.error('====================')
+            console.error("=== 403 오류 분석 ===");
+            console.error("인증 토큰 확인 필요");
+            console.error("현재 토큰:", localStorage.getItem("accessToken"));
+            console.error("====================");
           }
-          
-          throw apiError
+
+          throw apiError;
         }
-        
       } catch (error) {
-        console.error('거래글 등록 실패:', error)
-        snackbar.message = '거래글 등록에 실패했습니다. 다시 시도해주세요.'
-        snackbar.color = 'error'
-        snackbar.icon = 'mdi-alert-circle'
-        snackbar.show = true
+        console.error("거래글 등록 실패:", error);
+        snackbar.message = "거래글 등록에 실패했습니다. 다시 시도해주세요.";
+        snackbar.color = "error";
+        snackbar.icon = "mdi-alert-circle";
+        snackbar.show = true;
       } finally {
-        loading.value = false
+        loading.value = false;
       }
-    }
+    };
 
     return {
+      formRef,
       form,
       valid,
       loading,
@@ -892,12 +1168,14 @@ export default {
       handleDescriptionInput,
       handleDescriptionChange,
       submitForm,
+      waitForKakaoMap, // 추가된 함수
       initMap,
       updateLocationFromCoordinates,
-      resetMapLocation
-    }
-  }
-}
+      resetMapLocation,
+      moveToCurrentLocation,
+    };
+  },
+};
 </script>
 
 <style scoped>
@@ -909,7 +1187,7 @@ export default {
 }
 
 .back-btn {
-  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
+  background: linear-gradient(135deg, #e87d7d, #ff6b6b);
   color: white;
   border: none;
   border-radius: 50px;
@@ -968,10 +1246,10 @@ export default {
 }
 
 .section-title::before {
-  content: '';
+  content: "";
   width: 4px;
   height: 24px;
-  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
+  background: linear-gradient(135deg, #e87d7d, #ff6b6b);
   border-radius: 2px;
 }
 
@@ -1011,7 +1289,7 @@ export default {
 
 .form-input:focus {
   outline: none;
-  border-color: #E87D7D;
+  border-color: #e87d7d;
   box-shadow: 0 0 0 3px rgba(232, 125, 125, 0.1);
 }
 
@@ -1043,13 +1321,13 @@ export default {
 
 .form-select:focus {
   outline: none;
-  border-color: #E87D7D;
+  border-color: #e87d7d;
   box-shadow: 0 0 0 3px rgba(232, 125, 125, 0.1);
   transform: translateY(-1px);
 }
 
 .form-select:hover {
-  border-color: #E87D7D;
+  border-color: #e87d7d;
   background-color: #fff5f5;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(232, 125, 125, 0.15);
@@ -1069,13 +1347,13 @@ export default {
 
 .form-select option:hover {
   background: linear-gradient(135deg, #fff5f5, #ffe6e6);
-  color: #E87D7D;
+  color: #e87d7d;
   transform: translateX(8px);
   padding-left: 28px;
 }
 
 .form-select option:checked {
-  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
+  background: linear-gradient(135deg, #e87d7d, #ff6b6b);
   color: white;
   font-weight: 600;
   box-shadow: 0 4px 12px rgba(232, 125, 125, 0.3);
@@ -1101,7 +1379,7 @@ export default {
 /* 드롭다운 옵션 그룹 스타일링 */
 .form-select optgroup {
   font-weight: 600;
-  color: #E87D7D;
+  color: #e87d7d;
   background: #fff5f5;
   padding: 8px 16px;
   border-bottom: 1px solid #ffe6e6;
@@ -1109,20 +1387,20 @@ export default {
 
 /* 드롭다운 옵션 선택 효과 */
 .form-select option:active {
-  background: linear-gradient(135deg, #FF6B6B, #E87D7D);
+  background: linear-gradient(135deg, #ff6b6b, #e87d7d);
   color: white;
   transform: scale(1.05);
 }
 
 /* 드롭다운 포커스 링 효과 */
 .form-select:focus::before {
-  content: '';
+  content: "";
   position: absolute;
   top: -2px;
   left: -2px;
   right: -2px;
   bottom: -2px;
-  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
+  background: linear-gradient(135deg, #e87d7d, #ff6b6b);
   border-radius: 14px;
   z-index: -1;
   opacity: 0.3;
@@ -1174,7 +1452,7 @@ export default {
 }
 
 .main-upload-area:hover {
-  border-color: #E87D7D;
+  border-color: #e87d7d;
   background: #fff5f5;
 }
 
@@ -1210,7 +1488,7 @@ export default {
   justify-content: center;
   width: 80px;
   height: 80px;
-  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
+  background: linear-gradient(135deg, #e87d7d, #ff6b6b);
   border-radius: 50%;
   box-shadow: 0 8px 25px rgba(232, 125, 125, 0.3);
   transition: all 0.3s ease;
@@ -1298,7 +1576,7 @@ export default {
 }
 
 .checkbox.checked {
-  background: #E87D7D;
+  background: #e87d7d;
   border-color: white;
 }
 
@@ -1383,7 +1661,7 @@ export default {
 }
 
 .indicator.active {
-  background: #E87D7D;
+  background: #e87d7d;
   transform: scale(1.2);
 }
 
@@ -1484,7 +1762,7 @@ export default {
 }
 
 .primary-btn {
-  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
+  background: linear-gradient(135deg, #e87d7d, #ff6b6b);
   color: white;
   box-shadow: 0 4px 15px rgba(232, 125, 125, 0.3);
 }
@@ -1524,7 +1802,7 @@ export default {
   align-items: center;
   gap: 12px;
   padding: 16px 20px;
-  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
+  background: linear-gradient(135deg, #e87d7d, #ff6b6b);
   color: white;
   font-weight: 600;
 }
@@ -1619,7 +1897,7 @@ export default {
 
 .form-textarea:focus {
   outline: none;
-  border-color: #E87D7D;
+  border-color: #e87d7d;
   box-shadow: 0 0 0 3px rgba(232, 125, 125, 0.1);
 }
 
@@ -1671,7 +1949,7 @@ export default {
 }
 
 .submit-btn {
-  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
+  background: linear-gradient(135deg, #e87d7d, #ff6b6b);
   color: white;
   box-shadow: 0 4px 15px rgba(232, 125, 125, 0.3);
 }
@@ -1698,11 +1976,15 @@ export default {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
- 
- /* 카테고리 힌트 */
+
+/* 카테고리 힌트 */
 .category-hint {
   margin-top: 8px;
   padding: 8px 12px;
@@ -1710,7 +1992,7 @@ export default {
   border-radius: 8px;
   font-size: 0.9rem;
   color: #595454;
-  border-left: 3px solid #E87D7D;
+  border-left: 3px solid #e87d7d;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1721,24 +2003,24 @@ export default {
   .create-container {
     padding: 16px;
   }
-  
+
   .form-section {
     padding: 24px 20px;
   }
-  
+
   .page-title {
     font-size: 2rem;
   }
-  
+
   .action-section {
     flex-direction: column;
     padding: 24px 20px;
   }
-  
+
   .map-controls {
     flex-direction: column;
   }
-  
+
   .slider-nav {
     padding: 0 8px;
   }
@@ -1748,161 +2030,177 @@ export default {
   .create-container {
     padding: 12px;
   }
-  
+
   .form-section {
     padding: 20px 16px;
   }
-  
+
   .page-title {
     font-size: 1.8rem;
   }
-  
+
   .section-title {
     font-size: 1.2rem;
   }
-  
+
   .form-input,
   .form-textarea {
     padding: 14px 16px;
   }
 }
- 
- /* 스낵바 스타일 */
- .custom-snackbar {
-   border-radius: 16px;
-   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
-   backdrop-filter: blur(20px);
-   border: 1px solid rgba(255, 255, 255, 0.2);
-   max-width: 400px;
-   min-width: 300px;
-   margin: 16px;
-   overflow: hidden;
-   position: relative;
-   z-index: 9999;
- }
- 
- .custom-snackbar::before {
-   content: '';
-   position: absolute;
-   top: 0;
-   left: 0;
-   right: 0;
-   height: 3px;
-   background: linear-gradient(90deg, #E87D7D, #FF6B6B, #E87D7D);
-   background-size: 200% 100%;
-   animation: shimmer 2s ease-in-out infinite;
- }
- 
- @keyframes shimmer {
-   0% { background-position: 200% 0; }
-   100% { background-position: -200% 0; }
- }
- 
- .snackbar-content {
-   display: flex;
-   align-items: center;
-   gap: 16px;
-   flex: 1;
-   padding: 20px 24px;
-   position: relative;
-   z-index: 1;
- }
- 
- .snackbar-icon {
-   flex-shrink: 0;
-   width: 24px;
-   height: 24px;
-   display: flex;
-   align-items: center;
-   justify-content: center;
-   border-radius: 50%;
-   background: rgba(255, 255, 255, 0.15);
-   backdrop-filter: blur(10px);
-   border: 1px solid rgba(255, 255, 255, 0.2);
-   transition: all 0.3s ease;
- }
- 
- .snackbar-message {
-   font-size: 0.95rem;
-   font-weight: 500;
-   line-height: 1.5;
-   color: inherit;
-   flex: 1;
-   text-align: left;
- }
- 
- /* 스낵바 색상 커스터마이징 */
- .custom-snackbar.v-snackbar--success {
-   background: linear-gradient(135deg, rgba(76, 175, 80, 0.95), rgba(76, 175, 80, 0.85)) !important;
-   color: white !important;
-   border-color: rgba(76, 175, 80, 0.3) !important;
- }
- 
- .custom-snackbar.v-snackbar--success .snackbar-icon {
-   background: rgba(255, 255, 255, 0.2);
-   border-color: rgba(255, 255, 255, 0.3);
- }
- 
- .custom-snackbar.v-snackbar--error {
-   background: linear-gradient(135deg, rgba(244, 67, 54, 0.95), rgba(244, 67, 54, 0.85)) !important;
-   color: white !important;
-   border-color: rgba(244, 67, 54, 0.3) !important;
- }
- 
- .custom-snackbar.v-snackbar--error .snackbar-icon {
-   background: rgba(255, 255, 255, 0.2);
-   border-color: rgba(255, 255, 255, 0.3);
- }
- 
- .custom-snackbar.v-snackbar--info {
-   background: linear-gradient(135deg, rgba(33, 150, 243, 0.95), rgba(33, 150, 243, 0.85)) !important;
-   color: white !important;
-   border-color: rgba(33, 150, 243, 0.3) !important;
- }
- 
- .custom-snackbar.v-snackbar--info .snackbar-icon {
-   background: rgba(255, 255, 255, 0.2);
-   border-color: rgba(255, 255, 255, 0.3);
- }
- 
- /* 스낵바 애니메이션 */
- .custom-snackbar {
-   animation: slideInDown 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
- }
- 
- @keyframes slideInDown {
-   0% {
-     transform: translateY(-100%) scale(0.8);
-     opacity: 0;
-   }
-   100% {
-     transform: translateY(0) scale(1);
-     opacity: 1;
-   }
- }
- 
- /* 호버 효과 */
- .custom-snackbar:hover {
-   transform: translateY(-2px);
-   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15);
-   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
- }
- 
- /* 반응형 디자인 */
- @media (max-width: 480px) {
-   .custom-snackbar {
-     max-width: calc(100vw - 32px);
-     min-width: auto;
-     margin: 8px;
-   }
-   
-   .snackbar-content {
-     padding: 16px 20px;
-     gap: 12px;
-   }
-   
-   .snackbar-message {
-     font-size: 0.9rem;
-   }
- }
+
+/* 스낵바 스타일 */
+.custom-snackbar {
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  max-width: 400px;
+  min-width: 300px;
+  margin: 16px;
+  overflow: hidden;
+  position: relative;
+  z-index: 9999;
+}
+
+.custom-snackbar::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #e87d7d, #ff6b6b, #e87d7d);
+  background-size: 200% 100%;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.snackbar-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  padding: 20px 24px;
+  position: relative;
+  z-index: 1;
+}
+
+.snackbar-icon {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.snackbar-message {
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.5;
+  color: inherit;
+  flex: 1;
+  text-align: left;
+}
+
+/* 스낵바 색상 커스터마이징 */
+.custom-snackbar.v-snackbar--success {
+  background: linear-gradient(
+    135deg,
+    rgba(76, 175, 80, 0.95),
+    rgba(76, 175, 80, 0.85)
+  ) !important;
+  color: white !important;
+  border-color: rgba(76, 175, 80, 0.3) !important;
+}
+
+.custom-snackbar.v-snackbar--success .snackbar-icon {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.custom-snackbar.v-snackbar--error {
+  background: linear-gradient(
+    135deg,
+    rgba(244, 67, 54, 0.95),
+    rgba(244, 67, 54, 0.85)
+  ) !important;
+  color: white !important;
+  border-color: rgba(244, 67, 54, 0.3) !important;
+}
+
+.custom-snackbar.v-snackbar--error .snackbar-icon {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.custom-snackbar.v-snackbar--info {
+  background: linear-gradient(
+    135deg,
+    rgba(33, 150, 243, 0.95),
+    rgba(33, 150, 243, 0.85)
+  ) !important;
+  color: white !important;
+  border-color: rgba(33, 150, 243, 0.3) !important;
+}
+
+.custom-snackbar.v-snackbar--info .snackbar-icon {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* 스낵바 애니메이션 */
+.custom-snackbar {
+  animation: slideInDown 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes slideInDown {
+  0% {
+    transform: translateY(-100%) scale(0.8);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+/* 호버 효과 */
+.custom-snackbar:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 반응형 디자인 */
+@media (max-width: 480px) {
+  .custom-snackbar {
+    max-width: calc(100vw - 32px);
+    min-width: auto;
+    margin: 8px;
+  }
+
+  .snackbar-content {
+    padding: 16px 20px;
+    gap: 12px;
+  }
+
+  .snackbar-message {
+    font-size: 0.9rem;
+  }
+}
 </style>

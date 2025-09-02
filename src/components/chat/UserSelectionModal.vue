@@ -409,9 +409,9 @@ export default {
         
         let response
         if (activeTab.value === 'followers') {
-          response = await userAPI.getFollowers(pageable)
+          response = await userAPI.getMyFollowers(pageable)
         } else {
-          response = await userAPI.getFollowings(pageable)
+          response = await userAPI.getMyFollowings(pageable)
         }
         
         users.value = response.data.data.content || []

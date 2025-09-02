@@ -9,14 +9,14 @@
             :class="{ active: activeTab === 'followers' }"
             @click="activeTab = 'followers'"
           >
-            팔로워 {{ followersCount }}
+            팔로워 {{ internalFollowersCount }}
           </div>
           <div 
             class="tab" 
             :class="{ active: activeTab === 'followings' }"
             @click="activeTab = 'followings'"
           >
-            팔로잉 {{ followingsCount }}
+            팔로잉 {{ internalFollowingsCount }}
           </div>
         </div>
         <button class="close-btn" @click="closeModal">
@@ -61,7 +61,7 @@
           <div class="action-buttons">
             <!-- 팔로잉 목록에서 언팔로우 버튼 (내 팔로잉 목록일 때만) -->
             <button 
-              v-if="activeTab === 'followings' && props.userId == currentUserId"
+              v-if="activeTab === 'followings' && props.userId == null"
               class="action-btn delete-btn" 
               @click="handleUnfollow(user.userId || user.id)"
             >
@@ -70,14 +70,14 @@
             
             <!-- 팔로워 목록에서 팔로우/언팔로우 버튼 (내 팔로워 목록일 때만) -->
             <button 
-              v-if="activeTab === 'followers' && props.userId == currentUserId && !user.isFollowing"
+              v-if="activeTab === 'followers' && props.userId == null && !user.isFollowing"
               class="action-btn follow-btn" 
               @click="handleFollow(user.userId || user.id)"
             >
               팔로우
             </button>
             <button 
-              v-if="activeTab === 'followers' && props.userId == currentUserId && user.isFollowing"
+              v-if="activeTab === 'followers' && props.userId == null && user.isFollowing"
               class="action-btn delete-btn" 
               @click="handleUnfollow(user.userId || user.id)"
             >
@@ -86,7 +86,7 @@
             
             <!-- 차단 버튼 (내 목록일 때만) -->
             <button 
-              v-if="props.userId == currentUserId"
+              v-if="props.userId == null"
               class="action-btn block-btn"
             >
               차단
@@ -105,7 +105,7 @@
 
 <script setup>
 import { ref, computed, watch, defineProps, defineEmits } from 'vue'
-import { useAuthStore } from '@/stores/auth'
+import { useRouter } from 'vue-router'
 import { userAPI } from '@/services/api'
 
 // Props
@@ -132,40 +132,25 @@ const props = defineProps({
   }
 })
 
+const router = useRouter()
+
 // Emits
 const emit = defineEmits(['close', 'follow-updated', 'unfollow-updated'])
-
-// Store
-const authStore = useAuthStore()
 
 // Reactive data
 const activeTab = ref(props.initialTab)
 const searchQuery = ref('')
+
+// 내부 팔로워/팔로잉 수
+const internalFollowersCount = ref(props.followersCount)
+const internalFollowingsCount = ref(props.followingsCount)
+
 
 // 실제 데이터
 const followers = ref([])
 const followings = ref([])
 const isLoading = ref(false)
 
-// 현재 로그인한 사용자 ID
-const currentUserId = computed(() => {
-  const user = authStore.user
-  if (!user) return null
-  
-  // 가능한 ID 필드들을 확인
-  const possibleIds = [
-    user.id,
-    user.userId,
-    user.memberId,
-    user.user_id,
-    user.member_id,
-    user.member?.id,
-    user.member?.userId,
-    user.member?.memberId
-  ]
-  
-  return possibleIds.find(id => id != null && id !== undefined)
-})
 
 // Computed
 const filteredUsers = computed(() => {
@@ -196,7 +181,7 @@ const goToUserDiary = (userId) => {
     // 모달을 닫고 해당 사용자의 다이어리로 이동
     closeModal()
     // 라우터를 사용하여 페이지 이동
-    window.location.href = `/diarys/${userId}`
+    router.push(`/diarys/${userId}`)
   }
 }
 
@@ -225,7 +210,10 @@ const handleFollow = async (id) => {
     }
     
     // 부모 컴포넌트에 팔로우 업데이트 이벤트 발생
-    emit('follow-updated')
+    emit('follow-updated', { 
+      followersCount: internalFollowersCount.value, 
+      followingsCount: internalFollowingsCount.value 
+    })
     
   } catch (error) {
     console.error('❌ 팔로우 실패:', error)
@@ -259,7 +247,10 @@ const handleUnfollow = async (id) => {
     }
     
     // 부모 컴포넌트에 언팔로우 업데이트 이벤트 발생
-    emit('unfollow-updated')
+    emit('unfollow-updated', { 
+      followersCount: internalFollowersCount.value, 
+      followingsCount: internalFollowingsCount.value 
+    })
     
   } catch (error) {
     console.error('❌ 언팔로우 실패:', error)
@@ -276,33 +267,39 @@ const fetchFollowers = async () => {
   try {
     console.log('🔍 팔로워 목록 조회 시작 - userId:', props.userId, '타입:', typeof props.userId)
     console.log('🔍 props.userId가 유효한지:', props.userId && props.userId > 0)
-    const response = await userAPI.getUserFollowers(props.userId)
+    let response;
+    const pageable = { page: 0, size: 2000 }; // Fetch up to 2000 users
+    if (props.userId == null) {
+      response = await userAPI.getMyFollowers(pageable);
+    } else {
+      response = await userAPI.getFollowers(props.userId, pageable);
+    }
     console.log('📥 팔로워 API 응답:', response)
     
     if (response.data && response.data.data) {
-      followers.value = response.data.data.content || []
-      console.log('✅ 팔로워 목록 데이터:', followers.value)
-      console.log('🔍 팔로워 첫 번째 사용자 데이터 구조:', followers.value[0])
-      console.log('🔍 팔로워 사용자들의 id 필드 확인:', followers.value.map(user => ({ id: user.id, userId: user.userId, userEmail: user.userEmail })))
+      const fetchedFollowers = response.data.data.content || [];
+
+      // Get the list of users the current user is following
+      const myFollowingsResponse = await userAPI.getMyFollowings(pageable);
+      const myFollowings = myFollowingsResponse.data?.data?.content || [];
+      const myFollowingIds = new Set(myFollowings.map(u => u.userId || u.id));
+
+      // Set the isFollowing status for each follower
+      followers.value = fetchedFollowers.map(follower => ({
+        ...follower,
+        isFollowing: myFollowingIds.has(follower.userId || follower.id)
+      }));
       
-      // 각 팔로워의 팔로우 상태 조회
-      await Promise.all(followers.value.map(async (user) => {
-        try {
-          const followStatusResponse = await userAPI.checkFollowStatus(user.userId || user.id)
-          user.isFollowing = followStatusResponse.data?.data?.isFollowing || false
-          console.log(`팔로워 ${user.userName || user.petName} 팔로우 상태:`, user.isFollowing)
-        } catch (error) {
-          console.error(`팔로워 ${user.userName || user.petName} 팔로우 상태 조회 실패:`, error)
-          user.isFollowing = false
-        }
-      }))
+      internalFollowersCount.value = followers.value.length;
     } else {
       console.log('⚠️ 팔로워 데이터가 없습니다.')
       followers.value = []
+      internalFollowersCount.value = 0;
     }
   } catch (error) {
     console.error('❌ 팔로워 목록 조회 실패:', error)
     followers.value = []
+    internalFollowersCount.value = 0;
   } finally {
     isLoading.value = false
   }
@@ -316,21 +313,30 @@ const fetchFollowings = async () => {
   try {
     console.log('🔍 팔로잉 목록 조회 시작 - userId:', props.userId, '타입:', typeof props.userId)
     console.log('🔍 props.userId가 유효한지:', props.userId && props.userId > 0)
-    const response = await userAPI.getUserFollowings(props.userId)
+    let response;
+    const pageable = { page: 0, size: 2000 }; // Fetch up to 2000 users
+    if (props.userId == null) {
+      response = await userAPI.getMyFollowings(pageable);
+    } else {
+      response = await userAPI.getFollowings(props.userId, pageable);
+    }
     console.log('📥 팔로잉 API 응답:', response)
     
     if (response.data && response.data.data) {
       followings.value = response.data.data.content || []
+      internalFollowingsCount.value = followings.value.length;
       console.log('✅ 팔로잉 목록 데이터:', followings.value)
       console.log('🔍 팔로잉 첫 번째 사용자 데이터 구조:', followings.value[0])
       console.log('🔍 팔로잉 사용자들의 id 필드 확인:', followings.value.map(user => ({ id: user.id, userId: user.userId, userEmail: user.userEmail })))
     } else {
       console.log('⚠️ 팔로잉 데이터가 없습니다.')
       followings.value = []
+      internalFollowingsCount.value = 0;
     }
   } catch (error) {
     console.error('❌ 팔로잉 목록 조회 실패:', error)
     followings.value = []
+    internalFollowingsCount.value = 0;
   } finally {
     isLoading.value = false
   }
@@ -354,6 +360,10 @@ watch(activeTab, (newTab) => {
 watch(() => props.isVisible, (isVisible) => {
   console.log('🚪 모달 상태 변경:', isVisible)
   if (isVisible) {
+    // 내부 카운트 초기화
+    internalFollowersCount.value = props.followersCount;
+    internalFollowingsCount.value = props.followingsCount;
+
     console.log('🎯 모달 열림 - 초기 탭:', props.initialTab)
     // 초기 탭 설정
     activeTab.value = props.initialTab

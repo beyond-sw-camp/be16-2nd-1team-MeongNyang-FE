@@ -843,7 +843,8 @@ export default {
       if (!text) return []
       
       const parts = []
-      const tagRegex = /@(\w+)/g
+      // @username 패턴을 더 정확하게 매칭 (한글, 영문, 숫자, 언더스코어 포함)
+      const tagRegex = /@([a-zA-Z0-9가-힣_]+)/g
       let lastIndex = 0
       let match
       
@@ -893,7 +894,7 @@ export default {
     const deletePost = async (postId) => {
       if (confirm('정말로 이 게시글을 삭제하시겠습니까?')) {
         try {
-          await postAPI.deletePost(postId)
+          await postAPI.delete(postId)
           alert('게시글이 삭제되었습니다.')
           // 삭제된 게시글을 목록에서 제거
           posts.value = posts.value.filter(post => post.id !== postId)

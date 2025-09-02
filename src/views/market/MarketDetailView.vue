@@ -6,16 +6,16 @@
         <v-icon icon="mdi-arrow-left" size="20" />
         목록으로
       </button>
-      
-         <!-- 수정 버튼 - 본인이 작성한 게시글인 경우에만 표시 -->
-         <button 
-           v-if="post && post.sellerEmail === currentUserEmail" 
-           @click="goToEditPage" 
-           class="edit-btn"
-         >
-           <v-icon icon="mdi-pencil" size="20" />
-           수정하기
-         </button>
+
+      <!-- 수정 버튼 - 본인이 작성한 게시글인 경우에만 표시 -->
+      <button
+        v-if="post && post.sellerEmail === currentUserEmail"
+        @click="goToEditPage"
+        class="edit-btn"
+      >
+        <v-icon icon="mdi-pencil" size="20" />
+        수정하기
+      </button>
     </div>
 
     <!-- 로딩 상태 -->
@@ -35,75 +35,89 @@
       <!-- 이미지 섹션 -->
       <div class="image-section">
         <div class="image-container">
-          <img 
+          <img
             v-if="currentImage"
-            :src="currentImage" 
+            :src="currentImage"
             :alt="post.title"
             class="main-image"
+            @click="openImageModal(currentImage)"
           />
           <!-- 이미지가 없는 경우 기본 이미지 표시 -->
           <div v-else class="default-main-image">
             <v-icon icon="mdi-image-off" size="80" color="#E87D7D" />
             <span class="default-image-text">이미지 없음</span>
           </div>
-          
+
           <!-- 상태 뱃지 (좌상단) -->
           <div class="status-badge" :class="post.saleStatus.toLowerCase()">
             {{ getStatusLabel(post.saleStatus) }}
           </div>
-          
+
           <!-- 찜하기 버튼 (우상단) -->
-          <button 
+          <button
+            v-if="post"
             class="like-btn"
             @click="toggleLike"
             :class="{ liked: post.isLiked }"
           >
-            <v-icon 
-              :icon="post.isLiked ? 'mdi-heart' : 'mdi-heart-outline'" 
+            <v-icon
+              :icon="post.isLiked ? 'mdi-heart' : 'mdi-heart-outline'"
               size="20"
             />
           </button>
-          
-                     <!-- 이미지 네비게이션 -->
-           <div class="image-nav">
-             <button 
-               class="nav-btn prev"
-               @click="previousImage"
-               :disabled="currentImageIndex === 0"
-             >
-               <v-icon icon="mdi-chevron-left" size="24" />
-             </button>
-             <button 
-               class="nav-btn next"
-               @click="nextImage"
-               :disabled="currentImageIndex === (post.productImageList?.length || 1) - 1"
-             >
-               <v-icon icon="mdi-chevron-right" size="24" />
-             </button>
-           </div>
-           
-           <!-- 이미지 인덱스 표시 -->
-           <div v-if="post.productImageList && post.productImageList.length > 1" class="image-counter">
-             {{ currentImageIndex + 1 }} / {{ post.productImageList.length }}
-           </div>
+
+          <!-- 이미지 네비게이션 -->
+          <div class="image-nav">
+            <button
+              class="nav-btn prev"
+              @click="previousImage"
+              :disabled="currentImageIndex === 0"
+            >
+              <v-icon icon="mdi-chevron-left" size="24" />
+            </button>
+            <button
+              class="nav-btn next"
+              @click="nextImage"
+              :disabled="
+                currentImageIndex === (post.productImageList?.length || 1) - 1
+              "
+            >
+              <v-icon icon="mdi-chevron-right" size="24" />
+            </button>
+          </div>
+
+          <!-- 이미지 인덱스 표시 -->
+          <div
+            v-if="post.productImageList && post.productImageList.length > 1"
+            class="image-counter"
+          >
+            {{ currentImageIndex + 1 }} / {{ post.productImageList.length }}
+          </div>
         </div>
-        
-         <!-- 이미지 썸네일 -->
-         <div v-if="post.productImageList && post.productImageList.length > 1" class="thumbnails">
-           <div 
-             v-for="(image, index) in post.productImageList" 
-             :key="index"
-             class="thumbnail"
-             :class="{ active: index === currentImageIndex }"
-             @click="setCurrentImage(index)"
-           >
-             <img v-if="image" :src="image" :alt="`${post.title} ${index + 1}`" />
-             <!-- 썸네일 이미지가 없는 경우 기본 이미지 표시 -->
-             <div v-else class="default-thumbnail">
-               <v-icon icon="mdi-image-off" size="24" color="#E87D7D" />
-             </div>
-           </div>
-         </div>
+
+        <!-- 이미지 썸네일 -->
+        <div
+          v-if="post.productImageList && post.productImageList.length > 1"
+          class="thumbnails"
+        >
+          <div
+            v-for="(image, index) in post.productImageList"
+            :key="index"
+            class="thumbnail"
+            :class="{ active: index === currentImageIndex }"
+            @click="setCurrentImage(index)"
+          >
+            <img
+              v-if="image"
+              :src="image"
+              :alt="`${post.title} ${index + 1}`"
+            />
+            <!-- 썸네일 이미지가 없는 경우 기본 이미지 표시 -->
+            <div v-else class="default-thumbnail">
+              <v-icon icon="mdi-image-off" size="24" color="#E87D7D" />
+            </div>
+          </div>
+        </div>
         <!-- 판매자 정보 -->
         <div class="seller-info">
           <div class="seller-header">
@@ -111,33 +125,38 @@
           </div>
           <div class="seller-profile">
             <div class="profile-image-container">
-              <img 
-                 v-if="getProfileImage(post.sellerProfileUrl)"
-                 :src="getProfileImage(post.sellerProfileUrl)" 
-                 :alt="post.sellerNickname || '판매자'"
-                 class="profile-image"
-                 @error="handleImageError"
-               />
-               <!-- 기본 프로필 아이콘 (이미지가 없거나 로드 실패 시 표시) -->
-               <v-icon 
-                 v-else
-                 icon="mdi-account-circle" 
-                 size="40" 
-                 class="default-profile-icon"
-               />
-               <!-- <div class="online-indicator"></div> -->
+              <img
+                v-if="getProfileImage(post.sellerProfileUrl)"
+                :src="getProfileImage(post.sellerProfileUrl)"
+                :alt="post.sellerNickname || '판매자'"
+                class="profile-image"
+                @error="handleImageError"
+              />
+              <v-icon
+                v-else
+                icon="mdi-account-circle"
+                size="40"
+                class="default-profile-icon"
+              />
             </div>
-              <div class="seller-details">
-               <div class="seller-name">{{ post.sellerNickname || '판매자' }}</div>
-             </div>
+
+            <!-- 이름 + 버튼을 가로로 배치 -->
+            <div class="seller-details">
+              <div class="seller-row">
+                <div class="seller-name">
+                  {{ post.sellerNickname || "판매자" }}
+                </div>
+                <button
+                  class="chat-btn-inline"
+                  @click="startChat"
+                  :disabled="!canStartChat"
+                >
+                  <v-icon icon="mdi-chat" size="16" />
+                  {{ getChatButtonText() }}
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-        <!-- 채팅하기 버튼 -->
-        <div class="action-section">
-          <button class="chat-btn primary">
-            <v-icon icon="mdi-chat" size="20" />
-            채팅하기
-          </button>
         </div>
       </div>
 
@@ -147,7 +166,9 @@
         <div class="post-header">
           <div class="title-row">
             <h2 class="post-title">{{ post.title }}</h2>
-            <span class="category-badge">{{ getCategoryLabel(post.category) }}</span>
+            <span class="category-badge">{{
+              getCategoryLabel(post.category)
+            }}</span>
           </div>
           <div class="post-meta">
             <span class="date">
@@ -164,501 +185,625 @@
           </div>
         </div>
 
-
         <!-- 본문 -->
         <div class="post-description">
           <div class="description-header">
             <h3>상품 설명</h3>
           </div>
           <div class="description-content">
-            <p>{{ post.description || '상품 설명이 없습니다.' }}</p>
+            <p>{{ post.description || "상품 설명이 없습니다." }}</p>
           </div>
         </div>
 
-          <!-- 거래 위치 -->
-          <div class="location-section">
-            <div class="location-header">
-              <h3>거래 위치</h3>
-              <span class="location-detail">{{ getLocationDisplay() }}</span>
-            </div>
-            
-            
-            <div class="map-container" ref="mapContainer">
-              <!-- 지도 로딩 상태 표시 -->
-              <div class="map-loading">
-                <div class="map-loading-spinner"></div>
-                <p>지도를 불러오는 중...</p>
-              </div>
-            </div>
-         </div>
+        <!-- 거래 위치 -->
+        <div class="location-section">
+          <div class="location-header">
+            <h3>거래 위치</h3>
+            <span class="location-detail">{{ getLocationDisplay() }}</span>
+          </div>
 
+          <div class="map-container" ref="mapContainer">
+            <!-- 지도 로딩 상태 표시 -->
+            <div class="map-loading">
+              <div class="map-loading-spinner"></div>
+              <p>지도를 불러오는 중...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 이미지 모달창 -->
+    <div
+      v-if="showImageModal"
+      class="image-modal-overlay"
+      @click="closeImageModal"
+    >
+      <div class="image-modal-content" @click.stop>
+        <button class="modal-close-btn" @click="closeImageModal">
+          <v-icon icon="mdi-close" size="24" />
+        </button>
+        <img
+          :src="modalImage"
+          :alt="post?.title || '이미지'"
+          class="modal-image"
+        />
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import { ref, onMounted, computed, nextTick } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { marketAPI } from '@/services/api'
-import { getToken } from '@/utils/auth'
+import { ref, onMounted, computed, nextTick } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { marketAPI } from "@/services/api";
+import { getToken } from "@/utils/auth";
+import { useChatStore } from "@/stores/chat";
 
 export default {
-  name: 'MarketDetailView',
+  name: "MarketDetailView",
   setup() {
-          const route = useRoute()
-          const router = useRouter()
-    
-         // 반응형 데이터
-     const post = ref(null)
-     const loading = ref(true)
-     const error = ref(null)
-     const currentImageIndex = ref(0)
-           const mapContainer = ref(null)
-      const locationAddress = ref('위치 정보를 불러오는 중...')
-      
-             // 현재 사용자 정보 (JWT 토큰에서 추출)
-       const currentUserId = ref(null)
-       const currentUserEmail = ref(null)
-    
+    const route = useRoute();
+    const router = useRouter();
+    const chatStore = useChatStore();
+
+    // 반응형 데이터
+    const post = ref(null);
+    const loading = ref(true);
+    const error = ref(null);
+    const currentImageIndex = ref(0);
+    const mapContainer = ref(null);
+    const locationAddress = ref("위치 정보를 불러오는 중...");
+
+    // 이미지 모달 관련 상태
+    const showImageModal = ref(false);
+    const modalImage = ref("");
+
+    // 현재 사용자 정보 (JWT 토큰에서 추출)
+    const currentUserId = ref(null);
+    const currentUserEmail = ref(null);
+
     // 카테고리 라벨
     const categoryLabels = {
-      'FEED': '사료',
-      'CLOTH': '의류', 
-      'TOY': '장난감',
-      'OTHER': '기타'
-    }
-    
-         // 현재 이미지
+      FEED: "사료",
+      CLOTH: "의류",
+      TOY: "장난감",
+      OTHER: "기타",
+    };
+
+    // 현재 이미지
     const currentImage = computed(() => {
-      if (!post.value || !post.value.productImageList || post.value.productImageList.length === 0) {
-        return null
+      if (
+        !post.value ||
+        !post.value.productImageList ||
+        post.value.productImageList.length === 0
+      ) {
+        return null;
       }
-      return post.value.productImageList[currentImageIndex.value]
-    })
-    
-         // 거래글 상세 조회
-     const fetchPostDetail = async () => {
-       loading.value = true
-       error.value = null
-       
-       try {
-         const response = await marketAPI.getDetail(route.params.id)
-                    if (response.data && response.data.isSuccess) {
-             post.value = response.data.data
-             
-             // 백엔드의 'liked' 필드를 'isLiked'로 매핑
-             if (post.value.liked !== undefined) {
-               post.value.isLiked = post.value.liked
-               console.log('백엔드 liked 필드를 isLiked로 매핑:', post.value.liked, '→', post.value.isLiked)
-             }
-             
-             console.log('거래글 상세:', post.value)
-             console.log('백엔드에서 받은 liked 값:', post.value.liked)
-             console.log('매핑된 isLiked 값:', post.value.isLiked)
-           
-           // 썸네일을 첫 번째 이미지로 설정
-           if (post.value.productImageList && post.value.productImageList.length > 0) {
-             currentImageIndex.value = 0
-           }
-             // 위도, 경도가 있으면 주소 정보 가져오기
-             if (post.value.latitude && post.value.longitude) {
-               nextTick(() => {
-                 // 카카오맵 API 로딩 대기
-                 waitForKakaoMap().then(() => {
-                   getAddressFromCoordinates(post.value.latitude, post.value.longitude)
-                   initKakaoMap()
-                 }).catch(() => {
-                   console.error('카카오맵 API 로딩 실패')
-                 })
-               })
-             } else {
-               // 위도, 경도가 없는 경우
-               locationAddress.value = '위치 정보 없음'
-               nextTick(() => {
-                 // 카카오맵 API 로딩 대기
-                 waitForKakaoMap().then(() => {
-                   initKakaoMap()
-                 }).catch(() => {
-                   console.error('카카오맵 API 로딩 실패')
-                 })
-               })
-             }
-         } else {
-           error.value = '거래글을 불러올 수 없습니다.'
-         }
-       } catch (err) {
-         console.error('거래글 상세 조회 오류:', err)
-         error.value = '거래글을 불러오는 중 오류가 발생했습니다.'
-       } finally {
-         loading.value = false
-       }
-     }
-     // 프로필 이미지 처리
-     const getProfileImage = (profileUrl) => {
-       if (!profileUrl || profileUrl === 'null' || profileUrl === '') {
-         // 기본 프로필 이미지 반환 (Vuetify 아이콘 사용)
-         return null
-       }
-       return profileUrl
-     }
-     
-     // 이미지 로드 실패 시 처리
-     const handleImageError = (event) => {
-       console.log('프로필 이미지 로드 실패, 기본 아이콘으로 대체')
-       // 이미지 요소를 숨기고 기본 아이콘 표시
-       event.target.style.display = 'none'
-       const iconElement = event.target.nextElementSibling
-       if (iconElement) {
-         iconElement.style.display = 'block'
-       }
-     }
-     
-     // 카카오맵 API 로딩 대기
-     const waitForKakaoMap = () => {
-       return new Promise((resolve, reject) => {
-         // 이미 로드된 경우
-         if (typeof window.kakao !== 'undefined' && window.kakao.maps) {
-           resolve()
-           return
-         }
-         
-         // 로딩 대기 (최대 10초)
-         let attempts = 0
-         const maxAttempts = 100 // 100ms * 100 = 10초
-         
-         const checkKakaoMap = () => {
-           attempts++
-           
-           if (typeof window.kakao !== 'undefined' && window.kakao.maps) {
-             console.log('카카오맵 API 로딩 완료')
-             resolve()
-           } else if (attempts >= maxAttempts) {
-             console.error('카카오맵 API 로딩 시간 초과')
-             reject(new Error('카카오맵 API 로딩 시간 초과'))
-           } else {
-             setTimeout(checkKakaoMap, 100)
-           }
-         }
-         
-         checkKakaoMap()
-       })
-     }
-     
-           // 카카오맵 초기화
-      const initKakaoMap = () => {
-        if (!post.value || !mapContainer.value) return
-        
-        // 카카오맵 API 로딩 확인
-        if (typeof window.kakao === 'undefined' || !window.kakao.maps) {
-          console.error('카카오맵 API가 로드되지 않았습니다.')
-          // 지도 컨테이너에 에러 메시지 표시
-          mapContainer.value.innerHTML = `
-            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #6c757d;">
-              <v-icon icon="mdi-map-marker-off" size="48" color="#E87D7D" />
-              <p style="margin: 10px 0 5px 0; font-size: 0.9rem;">지도를 불러올 수 없습니다</p>
-              <small style="color: #adb5bd; font-size: 0.8rem;">카카오맵 API 로딩 중...</small>
-            </div>
-          `
-          return
-        }
-        
-        try {
-          // 위도, 경도 정보가 있는지 확인
+      return post.value.productImageList[currentImageIndex.value];
+    });
+
+    // 거래글 상세 조회
+    const fetchPostDetail = async () => {
+      loading.value = true;
+      error.value = null;
+
+      try {
+        const response = await marketAPI.getDetail(route.params.id);
+        if (response.data && response.data.isSuccess) {
+          post.value = response.data.data;
+
+          if (post.value.liked !== undefined) {
+            post.value.isLiked = post.value.liked;
+          }
+
+          // 위도/경도가 있는 경우 지도 + 주소 표시
           if (post.value.latitude && post.value.longitude) {
-            console.log('정확한 좌표 정보로 지도 초기화:', post.value.latitude, post.value.longitude)
-            
-             // 로딩 상태 제거
-             mapContainer.value.innerHTML = ''
-             
-             // 카카오맵 생성 (위도, 경도로 중심 설정)
-             const map = new window.kakao.maps.Map(mapContainer.value, {
-               center: new window.kakao.maps.LatLng(post.value.latitude, post.value.longitude),
-               level: 3,
-               zoomControl: true,
-               scaleControl: true
-             })
-            
-            // 마커 생성
-            const marker = new window.kakao.maps.Marker({
-              position: new window.kakao.maps.LatLng(post.value.latitude, post.value.longitude)
-            })
-            
-            // 마커를 지도에 표시
-            marker.setMap(map)
-            
-            // 인포윈도우 생성
-            const infowindow = new window.kakao.maps.InfoWindow({
-              content: `<div style="padding:8px;font-size:13px;font-weight:600;color:#2c3e50;">
+            nextTick(() => {
+              waitForKakaoMap().then(() => {
+                window.kakao.maps.load(() => {
+                  getAddressFromCoordinates(
+                    post.value.latitude,
+                    post.value.longitude
+                  );
+                  initKakaoMap();
+                });
+              });
+            });
+          } else {
+            locationAddress.value = "위치 정보 없음";
+            nextTick(() => {
+              waitForKakaoMap().then(() => {
+                window.kakao.maps.load(() => {
+                  initKakaoMap();
+                });
+              });
+            });
+          }
+        } else {
+          error.value = "거래글을 불러올 수 없습니다.";
+        }
+      } catch (err) {
+        console.error("거래글 상세 조회 오류:", err);
+        error.value = "거래글을 불러오는 중 오류가 발생했습니다.";
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    // 프로필 이미지 처리
+    const getProfileImage = (profileUrl) => {
+      if (!profileUrl || profileUrl === "null" || profileUrl === "") {
+        // 기본 프로필 이미지 반환 (Vuetify 아이콘 사용)
+        return null;
+      }
+      return profileUrl;
+    };
+
+    // 이미지 로드 실패 시 처리
+    const handleImageError = (event) => {
+      console.log("프로필 이미지 로드 실패, 기본 아이콘으로 대체");
+      // 이미지 요소를 숨기고 기본 아이콘 표시
+      event.target.style.display = "none";
+      const iconElement = event.target.nextElementSibling;
+      if (iconElement) {
+        iconElement.style.display = "block";
+      }
+    };
+
+    // 카카오맵 API 로딩 대기
+    const waitForKakaoMap = () => {
+      return new Promise((resolve, reject) => {
+        if (typeof window.kakao !== "undefined" && window.kakao.maps) {
+          resolve();
+          return;
+        }
+
+        const apiKey = process.env.VUE_APP_KAKAO_MAP_API_KEY;
+        const script = document.createElement("script");
+        script.type = "text/javascript";
+        script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&autoload=false&libraries=services`;
+
+        script.onload = () => {
+          // autoload=false 이므로 반드시 load() 실행해야 함
+          window.kakao.maps.load(() => resolve());
+        };
+        script.onerror = () => reject(new Error("카카오맵 스크립트 로드 실패"));
+
+        document.head.appendChild(script);
+      });
+    };
+
+    // 카카오맵 초기화
+    const initKakaoMap = () => {
+      if (!post.value || !mapContainer.value) return;
+
+      // 카카오맵 API 로딩 확인
+      if (typeof window.kakao === "undefined" || !window.kakao.maps) {
+        console.error("카카오맵 API가 로드되지 않았습니다.");
+        // 지도 컨테이너에 에러 메시지 표시
+        mapContainer.value.innerHTML = `
+           <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #6c757d;">
+             <v-icon icon="mdi-map-marker-off" size="48" color="#E87D7D" />
+             <p style="margin: 10px 0 5px 0; font-size: 0.9rem;">지도를 불러올 수 없습니다</p>
+             <small style="color: #adb5bd; font-size: 0.8rem;">카카오맵 API 로딩 중...</small>
+           </div>
+         `;
+        return;
+      }
+
+      try {
+        // 위도, 경도 정보가 있는지 확인
+        if (post.value.latitude && post.value.longitude) {
+          console.log(
+            "정확한 좌표 정보로 지도 초기화:",
+            post.value.latitude,
+            post.value.longitude
+          );
+
+          // 로딩 상태 제거
+          mapContainer.value.innerHTML = "";
+
+          // 카카오맵 생성 (위도, 경도로 중심 설정)
+          const map = new window.kakao.maps.Map(mapContainer.value, {
+            center: new window.kakao.maps.LatLng(
+              post.value.latitude,
+              post.value.longitude
+            ),
+            level: 3,
+            zoomControl: true,
+            scaleControl: true,
+          });
+
+          // 마커 생성
+          const marker = new window.kakao.maps.Marker({
+            position: new window.kakao.maps.LatLng(
+              post.value.latitude,
+              post.value.longitude
+            ),
+          });
+
+          // 마커를 지도에 표시
+          marker.setMap(map);
+
+          // 인포윈도우 생성
+          const infowindow = new window.kakao.maps.InfoWindow({
+            content: `<div style="padding:8px;font-size:13px;font-weight:600;color:#2c3e50;">
                 <div style="margin-bottom:4px;">${post.value.title}</div>
                 <div style="font-size:11px;color:#6c757d;">${formatPrice(post.value.price)}</div>
-              </div>`
-            })
-            
-            // 마커 클릭 시 인포윈도우 표시
-            window.kakao.maps.event.addListener(marker, 'click', () => {
-              infowindow.open(map, marker)
-            })
-            
-            // 마커에 마우스 오버 시 인포윈도우 표시
-            window.kakao.maps.event.addListener(marker, 'mouseover', () => {
-              infowindow.open(map, marker)
-            })
-            
-            // 마커에서 마우스 아웃 시 인포윈도우 숨기기
-            window.kakao.maps.event.addListener(marker, 'mouseout', () => {
-              infowindow.close()
-            })
-            
-            console.log('카카오맵 초기화 완료 - 좌표 기반:', post.value.latitude, post.value.longitude)
-            
-          } else {
-             // 위도, 경도가 없는 경우
-             console.log('위치 정보가 없어 지도를 표시할 수 없습니다.')
-             mapContainer.value.innerHTML = `
+              </div>`,
+          });
+
+          // 마커 클릭 시 인포윈도우 표시
+          window.kakao.maps.event.addListener(marker, "click", () => {
+            infowindow.open(map, marker);
+          });
+
+          // 마커에 마우스 오버 시 인포윈도우 표시
+          window.kakao.maps.event.addListener(marker, "mouseover", () => {
+            infowindow.open(map, marker);
+          });
+
+          // 마커에서 마우스 아웃 시 인포윈도우 숨기기
+          window.kakao.maps.event.addListener(marker, "mouseout", () => {
+            infowindow.close();
+          });
+
+          console.log(
+            "카카오맵 초기화 완료 - 좌표 기반:",
+            post.value.latitude,
+            post.value.longitude
+          );
+        } else {
+          // 위도, 경도가 없는 경우
+          console.log("위치 정보가 없어 지도를 표시할 수 없습니다.");
+          mapContainer.value.innerHTML = `
                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #6c757d;">
                  <v-icon icon="mdi-map-marker-off" size="48" color="#E87D7D" />
                  <p style="margin: 10px 0 5px 0; font-size: 0.9rem;">위치 정보가 없습니다</p>
                  <small style="color: #adb5bd; font-size: 0.8rem;">거래글 작성 시 위치를 설정해주세요</small>
                </div>
-             `
-             return
-           }
-          
-        } catch (error) {
-          console.error('카카오맵 초기화 오류:', error)
-          // 에러 메시지 표시
-          mapContainer.value.innerHTML = `
-            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #6c757d;">
-              <v-icon icon="mdi-map-marker-off" size="48" color="#E87D7D" />
-              <p style="margin: 10px 0 5px 0; font-size: 0.9rem;">지도 로딩 오류</p>
-              <small style="color: #adb5bd; font-size: 0.8rem;">${error.message}</small>
-            </div>
-          `
+             `;
+          return;
         }
+      } catch (error) {
+        console.error("카카오맵 초기화 오류:", error);
+        // 에러 메시지 표시
+        mapContainer.value.innerHTML = `
+           <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #6c757d;">
+             <v-icon icon="mdi-map-marker-off" size="48" color="#E87D7D" />
+             <p style="margin: 10px 0 5px 0; font-size: 0.9rem;">지도 로딩 오류</p>
+             <small style="color: #adb5bd; font-size: 0.8rem;">${error.message}</small>
+           </div>
+         `;
       }
-     
-     // 찜하기 토글
+    };
+
+    // 찜하기 토글
     const toggleLike = async () => {
       try {
-        const token = getToken('accessToken')
+        const token = getToken("accessToken");
         if (!token) {
-          alert('로그인이 필요합니다.')
-          return
+          alert("로그인이 필요합니다.");
+          return;
         }
-        
-        const postId = post.value.id
-        const isLiked = post.value.isLiked
-        
-        console.log('찜하기 토글 시작 - postId:', postId, '현재 상태:', isLiked)
-        
+
+        const postId = post.value.id;
+        const isLiked = post.value.isLiked;
+
+        console.log(
+          "찜하기 토글 시작 - postId:",
+          postId,
+          "현재 상태:",
+          isLiked
+        );
+
         if (isLiked) {
           // 찜 취소
-          console.log('찜 취소 시도...')
-          await marketAPI.unlike(postId)
-          console.log('찜 취소 성공')
+          console.log("찜 취소 시도...");
+          await marketAPI.unlikeMarket(postId);
+          console.log("찜 취소 성공");
         } else {
           // 찜하기
-          console.log('찜하기 시도...')
-          await marketAPI.like(postId)
-          console.log('찜하기 성공')
+          console.log("찜하기 시도...");
+          await marketAPI.likeMarket(postId);
+          console.log("찜하기 성공");
         }
-        
+
         // 상태 토글
-        post.value.isLiked = !isLiked
-        console.log('찜 상태 업데이트 완료:', post.value.isLiked)
-        
+        post.value.isLiked = !isLiked;
+        console.log("찜 상태 업데이트 완료:", post.value.isLiked);
+
         // 찜 개수 업데이트 (백엔드에서 받아온 데이터 사용)
         if (post.value.likeCount !== undefined) {
-          post.value.likeCount += isLiked ? -1 : 1
+          post.value.likeCount += isLiked ? -1 : 1;
         }
-        
       } catch (err) {
-        console.error('찜하기 토글 오류:', err)
-        alert('찜하기 처리 중 오류가 발생했습니다.')
+        console.error("찜하기 토글 오류:", err);
+        alert("찜하기 처리 중 오류가 발생했습니다.");
       }
-    }
-    
+    };
+
     // 이미지 네비게이션
     const previousImage = () => {
       if (currentImageIndex.value > 0) {
-        currentImageIndex.value--
+        currentImageIndex.value--;
       }
-    }
-    
-         const nextImage = () => {
-       if (post.value?.productImageList && currentImageIndex.value < post.value.productImageList.length - 1) {
-         currentImageIndex.value++
-       }
-     }
-    
-         const setCurrentImage = (index) => {
-       currentImageIndex.value = index
-     }
-     
-     // 수정 페이지로 이동
-     const goToEditPage = () => {
-       if (post.value && post.value.id) {
-         router.push(`/market/${post.value.id}/edit`)
-       }
-     }
-    
+    };
+
+    const nextImage = () => {
+      if (
+        post.value?.productImageList &&
+        currentImageIndex.value < post.value.productImageList.length - 1
+      ) {
+        currentImageIndex.value++;
+      }
+    };
+
+    const setCurrentImage = (index) => {
+      currentImageIndex.value = index;
+    };
+
+    // 이미지 모달 관련 함수들
+    const openImageModal = (imageUrl) => {
+      modalImage.value = imageUrl;
+      showImageModal.value = true;
+      // 모달이 열릴 때 body 스크롤 방지
+      document.body.style.overflow = "hidden";
+    };
+
+    const closeImageModal = () => {
+      showImageModal.value = false;
+      modalImage.value = "";
+      // 모달이 닫힐 때 body 스크롤 복원
+      document.body.style.overflow = "auto";
+    };
+
+    // 수정 페이지로 이동
+    const goToEditPage = () => {
+      if (post.value && post.value.id) {
+        router.push(`/market/${post.value.id}/edit`);
+      }
+    };
+
     // 유틸리티 함수
     const getCategoryLabel = (category) => {
-      return categoryLabels[category] || category
-    }
-    
+      return categoryLabels[category] || category;
+    };
+
     const getStatusLabel = (status) => {
-      return status === 'SALE' ? '판매중' : '판매완료'
-    }
-    
+      return status === "SALE" ? "판매중" : "판매완료";
+    };
+
     const formatPrice = (price) => {
-      return `₩${price.toLocaleString()}`
-    }
-    
+      return `₩${price.toLocaleString()}`;
+    };
+
     const formatDate = (dateString) => {
-      return new Date(dateString).toLocaleDateString('ko-KR')
-    }
-    
-                   // 위치 정보 표시 함수
-          const getLocationDisplay = () => {
-            if (post.value?.latitude && post.value?.longitude) {
-              return locationAddress.value
-            }
-            return '위치 정보 없음'
-          }
-          
-          // 위도, 경도로부터 주소 가져오기
-          const getAddressFromCoordinates = async (latitude, longitude) => {
-            try {
-              // 카카오맵 API가 로드되지 않은 경우
-              if (typeof window.kakao === 'undefined' || !window.kakao.maps) {
-                locationAddress.value = '위치 정보를 불러올 수 없습니다'
-                return
-              }
-              
-              // 좌표-주소 변환 객체 생성
-              const geocoder = new window.kakao.maps.services.Geocoder()
-              
-                             // 좌표로 주소 검색
-               geocoder.coord2Address(longitude, latitude, (result, status) => {
-                 if (status === window.kakao.maps.services.Status.OK) {
-                   const address = result[0].address
-                   
-                   // 더 자세한 주소 형식으로 변환
-                   let detailedAddress = `${address.region_1depth_name} ${address.region_2depth_name}`
-                   
-                   // 동(읍/면) 정보가 있으면 추가
-                   if (address.region_3depth_name) {
-                     detailedAddress += ` ${address.region_3depth_name}`
-                   }
-                   
-                   // 도로명이 있으면 추가 (예: 테헤란로, 강남대로 등)
-                   if (address.road_name) {
-                     detailedAddress += ` ${address.road_name}`
-                   }
-                   
-                   // 건물 번호가 있으면 추가
-                   if (address.main_building_no) {
-                     detailedAddress += ` ${address.main_building_no}`
-                   }
-                   
-                   locationAddress.value = detailedAddress
-                   console.log('좌표로부터 자세한 주소 가져오기 성공:', detailedAddress)
-                   console.log('전체 주소 정보:', address)
-                 } else {
-                   console.error('좌표로 주소 검색 실패:', status)
-                   locationAddress.value = '주소 정보를 가져올 수 없습니다'
-                 }
-               })
-            } catch (error) {
-              console.error('주소 가져오기 오류:', error)
-              locationAddress.value = '주소 정보를 가져올 수 없습니다'
-            }
-          }
-    
-                   onMounted(() => {
-        console.log('MarketDetailView 마운트됨')
-        console.log('카카오맵 API 상태:', typeof window.kakao, window.kakao?.maps)
-        
-        // 현재 사용자 정보 설정
-        const token = getToken('accessToken')
-        if (token) {
-          try {
-            // JWT 토큰에서 사용자 정보 추출
-            const payload = JSON.parse(atob(token.split('.')[1]))
-            console.log('JWT Payload 전체:', payload)
-            
-            // 이메일 추출 (sub 또는 email 필드에서)
-            if (payload.email) {
-              currentUserEmail.value = payload.email
-              console.log('JWT에서 email 추출:', currentUserEmail.value)
-            } else if (payload.sub && typeof payload.sub === 'string' && payload.sub.includes('@')) {
-              currentUserEmail.value = payload.sub
-              console.log('JWT에서 sub(이메일) 추출:', currentUserEmail.value)
-            } else {
-              currentUserEmail.value = null
-              console.log('JWT에서 이메일을 찾을 수 없음')
-            }
-            
-            // userId도 추출 시도 (있으면 사용)
-            if (payload.userId) {
-              currentUserId.value = payload.userId
-              console.log('JWT에서 userId 추출:', currentUserId.value)
-            } else if (payload.sub && typeof payload.sub === 'number') {
-              currentUserId.value = payload.sub
-              console.log('JWT에서 sub(숫자) 추출:', currentUserId.value)
-            } else {
-              currentUserId.value = null
-              console.log('JWT에서 userId를 찾을 수 없음')
-            }
-          } catch (error) {
-            console.error('토큰에서 사용자 정보 추출 실패:', error)
-            currentUserId.value = null
-            currentUserEmail.value = null
-          }
+      return new Date(dateString).toLocaleDateString("ko-KR");
+    };
+
+    // 위치 정보 표시 함수
+    const getLocationDisplay = () => {
+      if (post.value?.latitude && post.value?.longitude) {
+        return locationAddress.value;
+      }
+      return "위치 정보 없음";
+    };
+
+    // 위도, 경도로부터 주소 가져오기
+    const getAddressFromCoordinates = async (latitude, longitude) => {
+      try {
+        // 카카오맵 API가 로드되지 않은 경우
+        if (typeof window.kakao === "undefined" || !window.kakao.maps) {
+          locationAddress.value = "위치 정보를 불러올 수 없습니다";
+          return;
         }
-        
-        fetchPostDetail()
-      })
-    
-                                                                                                                                                                                                                                                                                                                               return {
-           post,
-           loading,
-           error,
-           currentImageIndex,
-           currentImage,
-           mapContainer,
-           locationAddress,
-           currentUserId,
-           currentUserEmail,
-           fetchPostDetail,
-           toggleLike,
-           previousImage,
-           nextImage,
-           setCurrentImage,
-           getCategoryLabel,
-           getStatusLabel,
-           formatPrice,
-           formatDate,
-           getLocationDisplay,
-           initKakaoMap,
-           getProfileImage,
-           handleImageError,
-           goToEditPage
-         }
-  }
-}
+
+        // 좌표-주소 변환 객체 생성
+        const geocoder = new window.kakao.maps.services.Geocoder();
+
+        // 좌표로 주소 검색
+        geocoder.coord2Address(longitude, latitude, (result, status) => {
+          if (status === window.kakao.maps.services.Status.OK) {
+            const address = result[0].address;
+
+            // 더 자세한 주소 형식으로 변환
+            let detailedAddress = `${address.region_1depth_name} ${address.region_2depth_name}`;
+
+            // 동(읍/면) 정보가 있으면 추가
+            if (address.region_3depth_name) {
+              detailedAddress += ` ${address.region_3depth_name}`;
+            }
+
+            // 도로명이 있으면 추가 (예: 테헤란로, 강남대로 등)
+            if (address.road_name) {
+              detailedAddress += ` ${address.road_name}`;
+            }
+
+            // 건물 번호가 있으면 추가
+            if (address.main_building_no) {
+              detailedAddress += ` ${address.main_building_no}`;
+            }
+
+            locationAddress.value = detailedAddress;
+            console.log(
+              "좌표로부터 자세한 주소 가져오기 성공:",
+              detailedAddress
+            );
+            console.log("전체 주소 정보:", address);
+          } else {
+            console.error("좌표로 주소 검색 실패:", status);
+            locationAddress.value = "주소 정보를 가져올 수 없습니다";
+          }
+        });
+      } catch (error) {
+        console.error("주소 가져오기 오류:", error);
+        locationAddress.value = "주소 정보를 가져올 수 없습니다";
+      }
+    };
+
+    onMounted(() => {
+      console.log("MarketDetailView 마운트됨");
+      console.log(
+        "카카오맵 API 상태:",
+        typeof window.kakao,
+        window.kakao?.maps
+      );
+
+      // 현재 사용자 정보 설정
+      const token = getToken("accessToken");
+      if (token) {
+        try {
+          // JWT 토큰에서 사용자 정보 추출
+          const payload = JSON.parse(atob(token.split(".")[1]));
+          console.log("JWT Payload 전체:", payload);
+
+          // 이메일 추출 (sub 또는 email 필드에서)
+          if (payload.email) {
+            currentUserEmail.value = payload.email;
+            console.log("JWT에서 email 추출:", currentUserEmail.value);
+          } else if (
+            payload.sub &&
+            typeof payload.sub === "string" &&
+            payload.sub.includes("@")
+          ) {
+            currentUserEmail.value = payload.sub;
+            console.log("JWT에서 sub(이메일) 추출:", currentUserEmail.value);
+          } else {
+            currentUserEmail.value = null;
+            console.log("JWT에서 이메일을 찾을 수 없음");
+          }
+
+          // userId도 추출 시도 (있으면 사용)
+          if (payload.userId) {
+            currentUserId.value = payload.userId;
+            console.log("JWT에서 userId 추출:", currentUserId.value);
+          } else if (payload.sub && typeof payload.sub === "number") {
+            currentUserId.value = payload.sub;
+            console.log("JWT에서 sub(숫자) 추출:", currentUserId.value);
+          } else {
+            currentUserId.value = null;
+            console.log("JWT에서 userId를 찾을 수 없음");
+          }
+        } catch (error) {
+          console.error("토큰에서 사용자 정보 추출 실패:", error);
+          currentUserId.value = null;
+          currentUserEmail.value = null;
+        }
+      }
+
+      fetchPostDetail();
+    });
+
+    // 채팅 관련 상태
+    const chatLoading = ref(false);
+
+    // 채팅 시작 가능 여부 확인
+    const canStartChat = computed(() => {
+      // 로그인한 사용자이고, 본인이 작성한 글이 아닌 경우에만 채팅 가능
+      return (
+        currentUserEmail.value &&
+        post.value &&
+        post.value.sellerEmail !== currentUserEmail.value
+      );
+    });
+
+    // 채팅 버튼 텍스트 반환
+    const getChatButtonText = () => {
+      if (!currentUserEmail.value) {
+        return "로그인 후 채팅";
+      }
+      if (post.value && post.value.sellerEmail === currentUserEmail.value) {
+        return "본인 글입니다";
+      }
+      return "채팅하기";
+    };
+
+    // 채팅 시작 함수
+    const startChat = async () => {
+      if (!canStartChat.value) {
+        if (!currentUserEmail.value) {
+          // 로그인 페이지로 이동
+          router.push("/login");
+          return;
+        }
+        return;
+      }
+
+      try {
+        chatLoading.value = true;
+
+        // 채팅방 생성 또는 기존 채팅방으로 이동
+        const roomName = `[${post.value.title}] 거래문의`;
+        const participantEmails = [post.value.sellerEmail];
+
+        console.log("채팅 시작 데이터:", {
+          roomName,
+          participantEmails,
+          postId: post.value.id,
+        });
+
+        // 채팅방 생성
+        const roomId = await chatStore.createChatRoom(
+          roomName,
+          participantEmails
+        );
+
+        // 생성된 채팅방으로 이동
+        router.push(`/chat/${roomId}`);
+      } catch (error) {
+        console.error("채팅 시작 오류:", error);
+        alert("채팅을 시작할 수 없습니다. 다시 시도해주세요.");
+      } finally {
+        chatLoading.value = false;
+      }
+    };
+
+    return {
+      post,
+      loading,
+      error,
+      currentImageIndex,
+      currentImage,
+      mapContainer,
+      locationAddress,
+      currentUserId,
+      currentUserEmail,
+      fetchPostDetail,
+      toggleLike,
+      previousImage,
+      nextImage,
+      setCurrentImage,
+      getCategoryLabel,
+      getStatusLabel,
+      formatPrice,
+      formatDate,
+      getLocationDisplay,
+      initKakaoMap,
+      getProfileImage,
+      handleImageError,
+      goToEditPage,
+      chatLoading,
+      canStartChat,
+      getChatButtonText,
+      startChat,
+      // 이미지 모달 관련
+      showImageModal,
+      modalImage,
+      openImageModal,
+      closeImageModal,
+    };
+  },
+};
 </script>
 
 <style scoped>
 .market-detail-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #FFFDF6 0%, #FAF9F6 100%);
+  background: linear-gradient(135deg, #fffdf6 0%, #faf9f6 100%);
   padding: 20px 0;
 }
-
-
 
 .header-content {
   padding: 20px 30px;
@@ -668,7 +813,7 @@ export default {
 }
 
 .back-btn {
-  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
+  background: linear-gradient(135deg, #e87d7d, #ff6b6b);
   color: white;
   border: none;
   border-radius: 50px;
@@ -684,7 +829,7 @@ export default {
 
 .back-btn:hover {
   transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(232, 125, 125, 0.3);
+  box-shadow: 0 8px 25px rgba(232, 125, 125, 0.3);
 }
 
 .detail-content {
@@ -714,6 +859,12 @@ export default {
   height: 400px;
   object-fit: cover;
   display: block;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.main-image:hover {
+  transform: scale(1.02);
 }
 
 .status-badge {
@@ -758,14 +909,14 @@ export default {
 .like-btn:hover {
   background: white;
   transform: scale(1.1);
-  border-color: #E87D7D;
+  border-color: #e87d7d;
   box-shadow: 0 6px 20px rgba(232, 125, 125, 0.3);
 }
 
 .like-btn.liked {
-  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
+  background: linear-gradient(135deg, #e87d7d, #ff6b6b);
   color: white;
-  border-color: #E87D7D;
+  border-color: #e87d7d;
   box-shadow: 0 6px 20px rgba(232, 125, 125, 0.4);
 }
 
@@ -839,13 +990,19 @@ export default {
 }
 
 .thumbnail.active {
-  border-color: #E87D7D;
+  border-color: #e87d7d;
 }
 
 .thumbnail img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.thumbnail img:hover {
+  transform: scale(1.05);
 }
 
 .info-section {
@@ -877,7 +1034,7 @@ export default {
 }
 
 .category-badge {
-  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
+  background: linear-gradient(135deg, #e87d7d, #ff6b6b);
   color: white;
   padding: 8px 16px;
   border-radius: 20px;
@@ -888,16 +1045,16 @@ export default {
 }
 
 .back-btn-wrapper {
-  max-width: 1200px;   /* detail-content와 맞추기 */
+  max-width: 1200px; /* detail-content와 맞추기 */
   margin: 0 auto 20px; /* 가운데 정렬 + 아래 여백 */
-  padding: 0 20px;     /* 양 옆 여백 */
+  padding: 0 20px; /* 양 옆 여백 */
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
 .edit-btn {
-  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
+  background: linear-gradient(135deg, #e87d7d, #ff6b6b);
   color: white;
   border: none;
   border-radius: 50px;
@@ -956,7 +1113,7 @@ export default {
 .price {
   font-size: 2rem;
   font-weight: 700;
-  color: #E87D7D;
+  color: #e87d7d;
 }
 
 .status-badge-info {
@@ -997,69 +1154,69 @@ export default {
   gap: 18px;
 }
 
- .profile-image-container {
-   position: relative;
-   display: flex;
-   align-items: center;
-   justify-content: center;
- }
- 
- .profile-image-container::after {
-   content: '';
-   position: absolute;
-   top: -2px;
-   left: -2px;
-   right: -2px;
-   bottom: -2px;
-   background: linear-gradient(45deg, #E87D7D, #FF6B6B, #E87D7D);
-   border-radius: 50%;
-   z-index: -1;
-   opacity: 0;
-   transition: opacity 0.3s ease;
- }
- 
- .profile-image-container:hover::after {
-   opacity: 1;
- }
+.profile-image-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
- .profile-image {
-   width: 48px;
-   height: 48px;
-   border-radius: 50%;
-   object-fit: cover;
-   border: 3px solid white;
-   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-   transition: all 0.3s ease;
-   cursor: pointer;
- }
- 
- .profile-image:hover {
-   transform: scale(1.05);
-   box-shadow: 0 12px 35px rgba(232, 125, 125, 0.25);
-   border-color: #E87D7D;
- }
- 
- .default-profile-icon {
-   width: 48px;
-   height: 48px;
-   border-radius: 50%;
-   background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-   border: 3px solid white;
-   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-   display: flex;
-   align-items: center;
-   justify-content: center;
-   color: #E87D7D;
-   transition: all 0.3s ease;
-   cursor: pointer;
- }
- 
- .default-profile-icon:hover {
-   transform: scale(1.05);
-   background: linear-gradient(135deg, #E87D7D, #FF6B6B);
-   color: white;
-   box-shadow: 0 12px 35px rgba(232, 125, 125, 0.3);
- }
+.profile-image-container::after {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, #e87d7d, #ff6b6b, #e87d7d);
+  border-radius: 50%;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.profile-image-container:hover::after {
+  opacity: 1;
+}
+
+.profile-image {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid white;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.profile-image:hover {
+  transform: scale(1.05);
+  box-shadow: 0 12px 35px rgba(232, 125, 125, 0.25);
+  border-color: #e87d7d;
+}
+
+.default-profile-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  border: 3px solid white;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #e87d7d;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.default-profile-icon:hover {
+  transform: scale(1.05);
+  background: linear-gradient(135deg, #e87d7d, #ff6b6b);
+  color: white;
+  box-shadow: 0 12px 35px rgba(232, 125, 125, 0.3);
+}
 
 /* .online-indicator {
   position: absolute;
@@ -1196,26 +1353,26 @@ export default {
   padding: 6px 12px;
   border-radius: 8px;
   border: 1px solid #dee2e6;
-  font-family: 'Courier New', monospace;
+  font-family: "Courier New", monospace;
   font-size: 0.9rem;
   color: #495057;
   min-width: 120px;
   text-align: center;
 }
 
- .map-container {
-    height: 350px;
-    background: #f8f9fa;
-    border-radius: 20px;
-    border: 2px solid #dee2e6;
-    overflow: hidden;
-    position: relative;
-  }
+.map-container {
+  height: 350px;
+  background: #f8f9fa;
+  border-radius: 20px;
+  border: 2px solid #dee2e6;
+  overflow: hidden;
+  position: relative;
+}
 
- .map-container:hover {
-   border-color: #E87D7D;
-   background: #f1f3f4;
- }
+.map-container:hover {
+  border-color: #e87d7d;
+  background: #f1f3f4;
+}
 
 /* 지도 로딩 상태 스타일 */
 .map-loading {
@@ -1231,7 +1388,7 @@ export default {
   width: 40px;
   height: 40px;
   border: 3px solid #f3f3f3;
-  border-top: 3px solid #E87D7D;
+  border-top: 3px solid #e87d7d;
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 16px;
@@ -1265,38 +1422,27 @@ export default {
 }
 
 .chat-btn {
-  display: flex;              /* 아이콘 + 글자를 가로로 배치 */
-  align-items: center;        /* 세로 중앙 정렬 */
-  justify-content: center;    /* 가로 중앙 정렬 */
-  gap: 6px;                   /* 아이콘과 글자 사이 간격 */
+  display: flex; /* 아이콘 + 글자를 가로로 배치 */
+  align-items: center; /* 세로 중앙 정렬 */
+  justify-content: center; /* 가로 중앙 정렬 */
+  gap: 6px; /* 아이콘과 글자 사이 간격 */
   padding: 10px 18px;
   border-radius: 20px;
   font-weight: 600;
   cursor: pointer;
 }
 
-.chat-btn.primary {
-  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
-  color: white;
-  flex: 2;
-}
-
-.chat-btn.primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(232, 125, 125, 0.4);
-}
-
-.chat-btn.secondary {
+.chat-btn {
   background: white;
   color: #6c757d;
   border: 2px solid #e9ecef;
   flex: 1;
 }
 
-.chat-btn.secondary:hover {
+.chat-btn:hover {
   background: #f8f9fa;
-  border-color: #E87D7D;
-  color: #E87D7D;
+  border-color: #e87d7d;
+  color: #e87d7d;
   transform: translateY(-2px);
 }
 
@@ -1313,19 +1459,23 @@ export default {
   width: 60px;
   height: 60px;
   border: 4px solid #f3f3f3;
-  border-top: 4px solid #E87D7D;
+  border-top: 4px solid #e87d7d;
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 20px;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .retry-btn {
-  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
+  background: linear-gradient(135deg, #e87d7d, #ff6b6b);
   color: white;
   border: none;
   border-radius: 25px;
@@ -1372,6 +1522,37 @@ export default {
   min-height: 60px;
 }
 
+/* 채팅 버튼 스타일 */
+.chat-btn {
+  width: 100%;
+  padding: 16px 24px;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.chat-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #e9ecef;
+  color: #6c757d;
+  transform: none;
+  box-shadow: none;
+}
+
+.chat-btn:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
 /* 반응형 */
 @media (max-width: 768px) {
   .detail-content {
@@ -1379,20 +1560,160 @@ export default {
     gap: 20px;
     padding: 0 20px;
   }
-  
+
   .header-content {
     flex-direction: column;
     text-align: center;
     gap: 15px;
   }
-  
+
   .action-section {
     flex-direction: column;
   }
-  
-  .chat-btn.primary,
-  .chat-btn.secondary {
-    flex: 1;
+}
+
+/* 이미지 모달 스타일 */
+.image-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(3px);
+}
+
+.image-modal-content {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 25px 80px rgba(44, 62, 80, 0.3);
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(232, 125, 125, 0.2);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 10000;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 15px rgba(44, 62, 80, 0.15);
+  color: #e87d7d;
+}
+
+.modal-close-btn:hover {
+  background: #e87d7d;
+  color: white;
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(232, 125, 125, 0.3);
+  border-color: #e87d7d;
+}
+
+.modal-image {
+  max-width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+  display: block;
+}
+
+.chat-btn-inline {
+  background: linear-gradient(135deg, #e87d7d, #ff6b6b);
+  color: white;
+  border: none;
+  border-radius: 24px;
+  padding: 6px 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.chat-btn-inline:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(232, 125, 125, 0.3);
+}
+
+.seller-row {
+  display: flex;
+  align-items: center; /* 세로 가운데 정렬 */
+  justify-content: space-between; /* 이름은 왼쪽, 버튼은 오른쪽 */
+  gap: 12px;
+  width: 100%; /* 전체 가로폭 채우기 */
+}
+
+.seller-name {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #2c3e50;
+}
+
+.chat-btn-inline {
+  background: linear-gradient(135deg, #e87d7d, #ff6b6b);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.chat-btn-inline:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(232, 125, 125, 0.3);
+}
+
+/* 모바일 반응형 */
+@media (max-width: 768px) {
+  .image-modal-content {
+    max-width: 95vw;
+    max-height: 95vh;
+    margin: 10px;
+    border-radius: 15px;
+  }
+
+  .modal-image {
+    max-height: 70vh;
+  }
+
+  .modal-close-btn {
+    top: 10px;
+    right: 10px;
+    width: 35px;
+    height: 35px;
+  }
+
+  .seller-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* 이름 왼쪽, 버튼 오른쪽 */
+    gap: 10px;
   }
 }
 </style>

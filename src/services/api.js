@@ -11,6 +11,12 @@ import {
   RT_HEADER_LOWER       // 'x-refresh-token' (응답 헤더 읽을 때)
 } from '@/utils/auth'
 
+let router = null;
+
+export function setApiRouter(routerInstance) {
+  router = routerInstance;
+}
+
 // 환경변수 (네 프로젝트 규칙)
 const API_BASE_URL = process.env.VUE_APP_API_BASE_URL || 'http://localhost:8080'
 
@@ -108,7 +114,9 @@ apiClient.interceptors.response.use(
       } catch (e) {
         flushQueue(e, null)
         clearAllTokens()
-        if (window.location.pathname !== '/users/login') window.location.href = '/users/login'
+        
+        router.push({ path: '/', query: { showLogin: 'true' } })
+        
         return Promise.reject(e)
       } finally {
         isRefreshing = false
@@ -171,13 +179,13 @@ export const userAPI = {
     apiClient.post('/users/logout', null, { headers: { [RT_HEADER_RAW]: refreshToken } }),
 
   // 대표 동물 설정
-
   setMainPet: async (petId) => {
     try {
       console.log('🔄 petAPI.setMainPet 시작:', petId)
       console.log('🔍 API 호출 URL:', `/pets/main`)
       
-      const response = await apiClient.put(`users/main-pet/${petId}`)
+      const response = await apiClient.put(`/users/main-pet/${petId}`)
+      
       console.log('✅ petAPI.setMainPet 성공:', response)
       return response
     } catch (error) {
@@ -189,7 +197,6 @@ export const userAPI = {
     }
   },
 
-  
   // 마이페이지 정보 조회
   getMyPage: () => apiClient.get('/users/my-page'),
 
@@ -214,16 +221,22 @@ export const userAPI = {
   // 언팔로우
   unfollow: (userId) => apiClient.delete(`/users/follows/${userId}`),
 
-  // 팔로워 목록 조회
-  getFollowers: (pageable) => apiClient.get('/users/follows/followers', { params: pageable }),
+  // 내 팔로워 목록 조회(채팅만 사용)
+  getMyFollowers: (pageable) => apiClient.get('/users/follows/followers', { params: pageable }),
 
-  // 팔로잉 목록 조회
-  getFollowings: (pageable) => apiClient.get('/users/follows/followings', { params: pageable }),
+  // 내 팔로잉 목록 조회(채팅만 사용)
+  getMyFollowings: (pageable) => apiClient.get('/users/follows/followings', { params: pageable }),
 
-  // 팔로워 개수 조회 (프로필용)
+  // 특정 사용자의 팔로워 목록 조회
+  getFollowers: (userId, pageable = { page: 0, size: 20 }) => apiClient.get(`/users/${userId}/follows/followers`, { params: pageable }),
+
+  // 특정 사용자의 팔로잉 목록 조회
+  getFollowings: (userId, pageable = { page: 0, size: 20 }) => apiClient.get(`/users/${userId}/follows/followings`, { params: pageable }),
+
+  // 내 팔로워 개수 조회
   getFollowersCount: () => apiClient.get('/users/follows/followers', { params: { page: 0, size: 1 } }),
 
-  // 팔로잉 개수 조회 (프로필용)
+  // 내 팔로잉 개수 조회
   getFollowingsCount: () => apiClient.get('/users/follows/followings', { params: { page: 0, size: 1 } }),
 
   // 사용자 차단
@@ -247,12 +260,6 @@ export const userAPI = {
   // 다른 사용자의 팔로잉 개수 조회
   getUserFollowingsCount: (userId) => apiClient.get(`/users/${userId}/follows/followings`),
 
-  // 다른 사용자의 팔로워 목록 조회
-  getUserFollowers: (userId, pageable = { page: 0, size: 20 }) => apiClient.get(`/users/${userId}/follows/followers`, { params: pageable }),
-
-  // 다른 사용자의 팔로잉 목록 조회
-  getUserFollowings: (userId, pageable = { page: 0, size: 20 }) => apiClient.get(`/users/${userId}/follows/followings`, { params: pageable }),
-
   // 다른 사용자의 게시물 개수 조회
   getUserPostsCount: (userId) => apiClient.get('/posts', { params: { userId, page: 0, size: 1 } })
 }
@@ -261,7 +268,7 @@ export const userAPI = {
 export const postAPI = {
   // 전체 일기 목록 조회
   getAllPosts: (pageable = { page: 0, size: 9 }) => apiClient.get('/posts', { params: pageable }),
-  
+
   // 내 일기 목록 조회 (대시보드용)
   getMyPosts: (pageable = { page: 0, size: 1 }) => apiClient.get('/posts/me', { params: pageable }),
   // 내 게시물 개수 조회 (프로필용)
@@ -285,15 +292,16 @@ export const postAPI = {
 
   // 다른 사용자의 일기 목록 조회
   getUserPosts: (userId, pageable) => apiClient.get(`/posts/${userId}`, { params: pageable }),
-  
+
   // 일기 상세 조회
   getDetail: (postId) => apiClient.get(`/posts/detail/${postId}`),
-  
+
   // 좋아요
-  like: (postId) => apiClient.post(`/posts/${postId}/like`),
+  likePost: (postId) => apiClient.post(`/posts/${postId}/like`),
 
   // 좋아요 취소
-  unlike: (postId) => apiClient.delete(`/posts/${postId}/like`),
+
+  unlikePost: (postId) => apiClient.delete(`/posts/${postId}/like`),
 
   // 좋아요 목록 조회
   getLikes: (postId, pageable) => apiClient.get(`/posts/${postId}/like`, { params: pageable }),
@@ -346,16 +354,16 @@ export const marketAPI = {
   // 거래글 수정
   update: (postId, postData, imageFiles) => {
     const formData = new FormData()
-  
+
     formData.append(
       'post',
       new Blob([JSON.stringify(postData)], { type: 'application/json' })
     )
-  
+
     if (imageFiles && imageFiles.length > 0) {
       imageFiles.forEach(file => formData.append('imageFiles', file))
     }
-  
+
     return apiClient.patch(`/markets/${postId}`, formData)
   },
 
@@ -372,13 +380,13 @@ export const marketAPI = {
   getPurchases: (pageable) => apiClient.get('/markets/purchases', { params: pageable }),
 
   // 판매목록 조회
-  getSales: (pageable = { page: 0, size: 1 }) => apiClient.get('/markets/sales', { params: pageable }),
+  getSales: (pageable) => apiClient.get('/markets/sales', { params: pageable }),
 
   // 찜하기
-  like: (postId) => apiClient.post(`/markets/${postId}/like`),
+  likeMarket: (postId) => apiClient.post(`/markets/${postId}/like`),
 
   // 찜 취소
-  unlike: (postId) => apiClient.delete(`/markets/${postId}/like`),
+  unlikeMarket: (postId) => apiClient.delete(`/markets/${postId}/like`),
 
   // 찜 목록 조회
   getLikes: (pageable) => apiClient.get('/markets/like', { params: pageable }),
@@ -452,8 +460,6 @@ export const petAPI = {
   // 다른 사용자의 반려동물 목록 조회
   getOtherUserPets: (userId) => apiClient.get('/pets', { params: { userId } }),
   
-  // 대표 반려동물 설정 (다른 엔드포인트)
-  setMainPetAlt: () => apiClient.put(`/users/pets/main`),
 
   // 반려동물 단일 필드 수정 (텍스트 필드용)
   updateField: async (petId, fieldName, value, existingPetData) => {
