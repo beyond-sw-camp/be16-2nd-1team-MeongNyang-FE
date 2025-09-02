@@ -1,5 +1,5 @@
 <template>
-  <v-card class="no-inner-surface" variant="text" elevation="0" :class="{ 'edit-mode': isEditMode }">
+  <v-card class="no-inner-surface modal-container modal-gpu-accelerated" variant="text" elevation="0" :class="{ 'edit-mode': isEditMode }">
     <!-- 이미지 크롭 모달 -->
     <ImageCropper
       v-model="showCropper"
@@ -25,7 +25,8 @@
     </div>
 
     <!-- 1단계: 이미지 업로드 -->
-    <div v-if="currentStep === 1" class="step-content">
+    <Transition name="modal-scale" appear>
+      <div v-if="currentStep === 1" class="step-content modal-optimized">
       <div class="step-header">
         <h2>{{ isEditMode ? '프로필 사진 수정' : '프로필 사진 선택하기' }}</h2>
         <p>{{ isEditMode ? '기존 사진을 유지하거나 새로운 사진으로 변경하세요.' : '마음에 드는 반려동물 사진이 있나요? 지금 업로드하세요.' }}</p>
@@ -35,7 +36,7 @@
         <div class="image-container upload-surface">
           <v-avatar
             :size="240"
-            class="pet-avatar clickable-avatar"
+            class="pet-avatar clickable-avatar modal-gpu-accelerated"
             color="grey-lighten-4"
             @click="handleImageClick"
           >
@@ -53,9 +54,14 @@
               :alt="`${petData.name || '반려동물'} 사진`"
               cover
               :key="`preview-${previewImage}`"
-              class="clickable-image"
-              @dblclick="clearImage"
-            />
+              loading="lazy"
+            >
+              <template v-slot:placeholder>
+                <div class="image-loading-placeholder">
+                  <v-progress-circular indeterminate color="#E87D7D" size="40" />
+                </div>
+              </template>
+            </v-img>
           </v-avatar>
           
           <!-- 사진 변경 오버레이 (이미지가 있을 때만 표시) -->
@@ -106,15 +112,17 @@
         </v-btn>
       </div>
     </div>
+    </Transition>
     
     
 
     <!-- 2단계: 기본 정보 -->
-    <div v-if="currentStep === 2" class="step-content">
-      <div class="step-header">
-        <h2>{{ isEditMode ? '기본 정보 수정' : '기본 정보 입력' }}</h2>
-        <p>{{ isEditMode ? '반려동물의 기본 정보를 수정해주세요.' : '반려동물의 기본 정보를 입력해주세요.' }}</p>
-      </div>
+    <Transition name="modal-scale" appear>
+      <div v-if="currentStep === 2" class="step-content modal-optimized">
+        <div class="step-header">
+          <h2>{{ isEditMode ? '기본 정보 수정' : '기본 정보 입력' }}</h2>
+          <p>{{ isEditMode ? '반려동물의 기본 정보를 수정해주세요.' : '반려동물의 기본 정보를 입력해주세요.' }}</p>
+        </div>
       
       <v-form ref="form" v-model="isValid">
       <div class="form-fields-section compact-form-section">
@@ -273,17 +281,17 @@
         >
           다음
         </v-btn>
+        </div>
       </div>
-      
-
-    </div>
+      </Transition>
 
     <!-- 3단계: 소개글 -->
-    <div v-if="currentStep === 3" class="step-content">
-      <div class="step-header">
-        <h2>{{ isEditMode ? '소개글 수정' : '소개글 작성' }}</h2>
-        <p>{{ isEditMode ? '반려동물 소개글을 수정해주세요.' : '반려동물을 소개해주세요.' }}</p>
-      </div>
+    <Transition name="modal-scale" appear>
+      <div v-if="currentStep === 3" class="step-content modal-optimized">
+        <div class="step-header">
+          <h2>{{ isEditMode ? '소개글 수정' : '소개글 작성' }}</h2>
+          <p>{{ isEditMode ? '반려동물 소개글을 수정해주세요.' : '반려동물을 소개해주세요.' }}</p>
+        </div>
       
             <div class="form-fields-section compact-form-section">
         <div class="form-field full-width compact-form-field">
@@ -331,16 +339,18 @@
           {{ isEditMode ? '수정' : '등록' }}
         </v-btn>
       </div>
-  </div>
+    </div>
+    </Transition>
 
     <!-- 생일 선택기 모달 - PetList와 동일한 달력 -->
     <v-dialog 
       v-model="showBirthdayPicker" 
       max-width="400"
       @click:outside="showBirthdayPicker = false"
-      content-class="date-picker-dialog"
+      content-class="date-picker-dialog modal-optimized"
+      transition="modal-scale"
     >
-      <v-card class="date-picker-card">
+      <v-card class="date-picker-card modal-content modal-gpu-accelerated">
         <!-- 첫 화면: 일반 달력 -->
         <div v-if="!showYearPicker && !showMonthPicker" class="date-picker-main">
           <div class="date-picker-header">
@@ -518,7 +528,7 @@
 </template>
 
 <script>
-import { ref, reactive, computed, watch, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { usePetStore } from '@/stores/pet'
 import ImageCropper from '@/components/common/ImageCropper.vue'
 
@@ -1050,6 +1060,15 @@ export default {
       await petStore.fetchSpecies()
       console.log('✅ 종류 데이터 로드 완료')
       
+      // GPU 가속 활성화
+      nextTick(() => {
+        const formElement = document.querySelector('.no-inner-surface')
+        if (formElement) {
+          formElement.style.transform = 'translateZ(0)'
+          formElement.style.willChange = 'transform, opacity'
+        }
+      })
+      
       // 수정 모드이고 pet 데이터가 있으면 다시 데이터 로드
       if (isEditMode.value && petDataFromProps.value) {
         console.log('🔄 마운트 후 수정 모드 데이터 재로드')
@@ -1057,6 +1076,17 @@ export default {
         setTimeout(() => {
           console.log('⏰ 지연 후 데이터 로드 실행')
         }, 100)
+      }
+    })
+    
+    // 성능 최적화: 컴포넌트 언마운트 시 정리
+    onUnmounted(() => {
+      // 메모리 정리
+      if (cropperImageUrl.value) {
+        URL.revokeObjectURL(cropperImageUrl.value)
+      }
+      if (previewImage.value && previewImage.value.startsWith('blob:')) {
+        URL.revokeObjectURL(previewImage.value)
       }
     })
     
@@ -1307,6 +1337,7 @@ export default {
       openBirthdayPicker,
       confirmDateSelection
     }
+    
     } catch (error) {
       console.error('❌ PetForm setup 오류:', error)
       // 기본값 반환
@@ -1324,12 +1355,15 @@ export default {
 </script>
 
 <style scoped>
+@import '@/assets/styles/modal-animations.css';
+
 /* no-inner-surface 클래스 - 내부 카드 느낌 제거 */
 .no-inner-surface {
   background: transparent !important;
   box-shadow: none !important;
   border: none !important;
   border-radius: 0 !important;
+  contain: layout style paint;
 }
 
 .pet-form-container {
@@ -1479,7 +1513,8 @@ export default {
 .pet-avatar {
   border: none;
   box-shadow: none;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, box-shadow;
 }
 
 .clickable-avatar {
@@ -1543,8 +1578,18 @@ export default {
 
 
 .pet-avatar:hover {
-  transform: scale(1.02);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: scale(1.05) translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.image-loading-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3f4f6;
+  border-radius: 50%;
 }
 
 .image-actions {
@@ -1685,6 +1730,13 @@ export default {
 .action-btn {
   min-width: 100px;
   height: 40px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, box-shadow;
+}
+
+.action-btn:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
 /* 입력 필드 높이 조정 */

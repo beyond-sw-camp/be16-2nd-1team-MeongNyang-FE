@@ -1,19 +1,22 @@
 <template>
-  <div class="pet-detail-modal">
+  <div class="pet-detail-modal modal-container modal-gpu-accelerated">
     <!-- 로딩 상태 -->
-    <div v-if="loading" class="loading-container">
-      <v-progress-circular 
-        indeterminate 
-        size="80" 
-        color="#E87D7D"
-        class="loading-spinner"
-      ></v-progress-circular>
-      <p class="loading-text">반려동물 정보를 불러오는 중...</p>
-    </div>
+    <Transition name="modal-scale" appear>
+      <div v-if="loading" class="loading-container">
+        <v-progress-circular 
+          indeterminate 
+          size="80" 
+          color="#E87D7D"
+          class="loading-spinner"
+        ></v-progress-circular>
+        <p class="loading-text">반려동물 정보를 불러오는 중...</p>
+      </div>
+    </Transition>
 
     <!-- 펫 정보 표시 -->
-    <div v-else-if="pet" class="pet-detail-content">
-      <!-- 대표 반려동물 섹션 (펫 목록과 동일한 스타일) -->
+    <Transition name="modal-stagger" appear>
+      <div v-if="pet && !loading" class="pet-detail-content modal-optimized">
+        <!-- 대표 반려동물 섹션 (펫 목록과 동일한 스타일) -->
       <div class="representative-pet-section">
         <div class="representative-header">
           <h3 class="representative-title">반려동물 상세정보</h3>
@@ -30,11 +33,17 @@
               v-if="pet.url && pet.url.trim() !== ''"
               :src="pet.url"
               :alt="pet.name"
-              class="large-pet-image"
+              class="large-pet-image modal-gpu-accelerated"
               aspect-ratio="1"
               cover
+              loading="lazy"
               @click="startEditImage"
             >
+              <template v-slot:placeholder>
+                <div class="image-loading-placeholder">
+                  <v-progress-circular indeterminate color="#E87D7D" size="40" />
+                </div>
+              </template>
               <template v-slot:error>
                 <div class="large-image-placeholder" @click="startEditImage">
                   <v-icon :size="80" color="#E87D7D" :icon="getSpeciesIcon(pet.petOrder)" />
@@ -153,8 +162,14 @@
       />
 
       <!-- 수정 모달 -->
-      <v-dialog v-model="showEditModal" max-width="500" persistent>
-        <v-card rounded="xl">
+      <v-dialog 
+        v-model="showEditModal" 
+        max-width="500" 
+        persistent
+        transition="modal-scale"
+        class="modal-optimized"
+      >
+        <v-card rounded="xl" class="modal-content modal-gpu-accelerated">
           <v-card-title class="text-center pa-6">
             <v-icon color="#E87D7D" size="32" class="mb-2">mdi-pencil</v-icon>
             <h3>{{ getEditModalTitle() }}</h3>
@@ -284,8 +299,13 @@
       </v-dialog>
 
       <!-- 생일 선택기 -->
-      <v-dialog v-model="showBirthdayPicker" max-width="400">
-        <v-card rounded="xl">
+      <v-dialog 
+        v-model="showBirthdayPicker" 
+        max-width="400"
+        transition="modal-scale"
+        class="modal-optimized"
+      >
+        <v-card rounded="xl" class="modal-content modal-gpu-accelerated">
           <v-card-title class="text-center pa-4">생일 선택</v-card-title>
           <v-card-text class="pa-4">
             <v-date-picker
@@ -309,8 +329,14 @@
       </v-dialog>
 
       <!-- 이미지 변경 확인 모달 -->
-      <v-dialog v-model="showImageConfirm" max-width="400" persistent>
-        <v-card rounded="xl" elevation="8">
+      <v-dialog 
+        v-model="showImageConfirm" 
+        max-width="400" 
+        persistent
+        transition="modal-scale"
+        class="modal-optimized"
+      >
+        <v-card rounded="xl" elevation="8" class="modal-content modal-gpu-accelerated">
           <v-card-title class="text-center text-h6 font-weight-bold pa-4">
             프로필 사진 변경
           </v-card-title>
@@ -371,12 +397,13 @@
       <v-dialog
         v-model="showDeleteConfirm"
         width="600"
-        class="delete-dialog"
+        class="delete-dialog modal-optimized"
         @click:outside="showDeleteConfirm = false"
         :scrim="false"
         persistent
+        transition="modal-scale"
       >
-        <v-card class="delete-modal-card" rounded="xl">
+        <v-card class="delete-modal-card modal-content modal-gpu-accelerated" rounded="xl">
           <v-card-title class="delete-header">
             <div class="delete-title-section">
               <v-icon size="32" color="white">mdi-delete</v-icon>
@@ -442,12 +469,13 @@
           </v-card-actions>
         </v-card>
       </v-dialog>
-    </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue'
 import { usePetStore } from '@/stores/pet'
 
 // Vue 3 Composition API에서 defineProps와 defineEmits는 자동으로 사용 가능
@@ -790,11 +818,34 @@ const formatBirthday = (birthday) => {
     return '알 수 없음'
   }
 }
+
+// 성능 최적화: 모달 마운트 시 GPU 가속 활성화
+onMounted(() => {
+  nextTick(() => {
+    // GPU 가속 강제 활성화
+    const modalElement = document.querySelector('.pet-detail-modal')
+    if (modalElement) {
+      modalElement.style.transform = 'translateZ(0)'
+      modalElement.style.willChange = 'transform, opacity'
+    }
+  })
+})
+
+// 성능 최적화: 모달 언마운트 시 정리
+onUnmounted(() => {
+  // 메모리 정리
+  if (imagePreviewUrl.value) {
+    URL.revokeObjectURL(imagePreviewUrl.value)
+  }
+})
 </script>
 
 <style scoped>
+@import '@/assets/styles/modal-animations.css';
+
 .pet-detail-modal {
   width: 100%;
+  contain: layout style paint;
 }
 
 .loading-container {
@@ -880,6 +931,22 @@ const formatBirthday = (birthday) => {
   border-radius: 20px;
   overflow: hidden;
   cursor: pointer;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.large-pet-image:hover {
+  transform: scale(1.02);
+}
+
+.image-loading-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3f4f6;
+  border-radius: 20px;
 }
 
 .large-image-placeholder {
@@ -916,13 +983,14 @@ const formatBirthday = (birthday) => {
 
 .editable-chip {
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
+  will-change: transform, box-shadow;
 }
 
 .editable-chip:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(232, 125, 125, 0.3);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(232, 125, 125, 0.3);
 }
 
 .edit-icon {
@@ -950,12 +1018,14 @@ const formatBirthday = (birthday) => {
   cursor: pointer;
   padding: 8px;
   border-radius: 8px;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: background-color, color, transform;
 }
 
 .info-row:hover {
   background: rgba(232, 125, 125, 0.05);
   color: #E87D7D;
+  transform: translateX(4px);
 }
 
 .introduction-large {
@@ -964,11 +1034,14 @@ const formatBirthday = (birthday) => {
   border-radius: 12px;
   border-left: 4px solid #E87D7D;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: background-color, transform;
 }
 
 .introduction-large:hover {
   background: rgba(232, 125, 125, 0.05);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(232, 125, 125, 0.1);
 }
 
 .introduction-title {
@@ -1004,12 +1077,13 @@ const formatBirthday = (birthday) => {
   color: white !important;
   font-weight: 600;
   box-shadow: 0 4px 12px rgba(232, 125, 125, 0.3);
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, box-shadow;
 }
 
 .representative-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(232, 125, 125, 0.4);
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(232, 125, 125, 0.4);
 }
 
 .delete-btn {
@@ -1018,14 +1092,15 @@ const formatBirthday = (birthday) => {
   border: 2px solid #E87D7D !important;
   font-weight: 600;
   box-shadow: 0 4px 12px rgba(232, 125, 125, 0.3);
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, box-shadow, background-color, color;
 }
 
 .delete-btn:hover {
   background: #E87D7D !important;
   color: white !important;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(232, 125, 125, 0.4);
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(232, 125, 125, 0.4);
 }
 
 /* 수정 모달 스타일 */
