@@ -185,6 +185,7 @@ export const userAPI = {
       console.log('🔍 API 호출 URL:', `/pets/main`)
       
       const response = await apiClient.put(`/users/main-pet/${petId}`)
+      
       console.log('✅ petAPI.setMainPet 성공:', response)
       return response
     } catch (error) {
@@ -413,11 +414,11 @@ export const petAPI = {
     })
     formData.append('PetRegisterReq', petDataBlob)
     
-    // 이미지 파일 추가 (선택사항) - 다시 활성화
+    // 이미지 파일 추가 (선택사항)
     if (petImg) {
-      // 백엔드 Pet.java의 @RequestPart 어노테이션에 맞는 필드명 시도
-      formData.append('url', petImg)  // Pet.java에서 petProfileUrl = req.getUrl()이므로
+      formData.append('url', petImg)
       console.log('✅ 이미지 파일 추가됨 (url 필드):', petImg.name, petImg.size, 'bytes')
+    }
 
     // FormData 디버깅
     console.log('=== FormData 구조 ===')
@@ -434,28 +435,18 @@ export const petAPI = {
       }
     }
 
-    console.log('=== End FormData Debug ===')
-
     console.log('=== API 요청 시작 ===')
     console.log('요청 URL:', '/pets/register')
-    console.log('요청 헤더:', { 'Content-Type': undefined })
 
     try {
-      const response = await apiClient.post('/pets/register', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      })
-
+      const response = await apiClient.post('/pets/register', formData)
       console.log('✅ FormData 등록 성공:', response.data)
-      
       return response
     } catch (error) {
       console.log('❌ FormData 등록 실패:', error.response?.data)
       throw error
     }
-  }
-},
+  },
 
   // 반려동물 목록 조회
   getList: () => apiClient.get('/pets'),
@@ -469,6 +460,80 @@ export const petAPI = {
   // 다른 사용자의 반려동물 목록 조회
   getOtherUserPets: (userId) => apiClient.get('/pets', { params: { userId } }),
   
+
+  // 반려동물 단일 필드 수정 (텍스트 필드용)
+  updateField: async (petId, fieldName, value, existingPetData) => {
+    console.log('🔥🔥🔥 === 반려동물 필드 수정 API 호출 시작 === 🔥🔥🔥')
+    console.log('🔍 petId:', petId)
+    console.log('🔍 fieldName:', fieldName)
+    console.log('🔍 value:', value)
+    console.log('🔍 existingPetData:', existingPetData)
+    
+    try {
+      // 기존 데이터를 기반으로 수정할 필드만 업데이트
+      const updateData = {
+        ...existingPetData,
+        [fieldName]: value
+      }
+      
+      // 백엔드가 multipart/form-data만 받으므로 FormData 사용
+      const formData = new FormData()
+      
+      // PetRegisterReq를 JSON Blob으로 추가
+      const petDataBlob = new Blob([JSON.stringify(updateData)], {
+        type: 'application/json'
+      })
+      formData.append('PetRegisterReq', petDataBlob)
+      
+      // 기존 이미지 유지를 위한 빈 파일 추가
+      const emptyFile = new File([''], 'keep_existing.txt', { type: 'text/plain' })
+      formData.append('url', emptyFile)
+      
+      const response = await apiClient.put(`/pets/${petId}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+
+      console.log('✅ 필드 수정 성공:', response.data)
+      return response
+    } catch (error) {
+      console.log('❌ 필드 수정 실패:', error.response?.data)
+      throw error
+    }
+  },
+
+  // 반려동물 이미지만 업데이트
+  updatePetImage: async (petId, formData) => {
+    console.log('📷📷📷 === 반려동물 이미지 업데이트 API 호출 시작 === 📷📷📷')
+    console.log('🔍 petId:', petId)
+    console.log('🔍 formData:', formData)
+    
+    try {
+      // FormData 디버깅
+      console.log('📦📦📦 === FormData 구조 확인 === 📦📦📦')
+      for (let [key, value] of formData.entries()) {
+        console.log(`🔍 ${key}:`, value)
+        if (value instanceof File) {
+          console.log(`  - File name: ${value.name}`)
+          console.log(`  - File type: ${value.type}`)
+          console.log(`  - File size: ${value.size}`)
+        }
+      }
+      
+      const response = await apiClient.put(`/pets/${petId}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      
+      console.log('✅ 이미지 업데이트 성공:', response.data)
+      return response
+    } catch (error) {
+      console.log('❌ 이미지 업데이트 실패:', error.response?.data)
+      throw error
+    }
+  },
 
   // 반려동물 수정
   update: async (petId, petData, petImg) => {

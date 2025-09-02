@@ -3,6 +3,7 @@ import 'vuetify/styles';
 import * as components from 'vuetify/components';
 import * as directives from 'vuetify/directives';
 import { mdi } from 'vuetify/iconsets/mdi';
+import { ko } from 'vuetify/locale';
 
 // 커스텀 테마 설정
 const lightTheme = {
@@ -347,6 +348,11 @@ const transitions = {
 export default createVuetify({
   components,
   directives,
+  locale: {
+    locale: 'ko',
+    fallback: 'ko',
+    messages: { ko }
+  },
   icons: { 
     defaultSet: 'mdi', 
     sets: { mdi } 

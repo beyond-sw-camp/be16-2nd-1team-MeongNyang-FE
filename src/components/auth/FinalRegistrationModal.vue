@@ -1,80 +1,122 @@
 <template>
-  <v-dialog :model-value="show" @update:model-value="$emit('update:show', $event)" max-width="400" persistent>
-    <div class="final-registration-card">
+  <v-dialog
+    :model-value="show"
+    @update:model-value="$emit('update:show', $event)"
+    max-width="480"
+    persistent
+    class="final-registration-modal"
+    :retain-focus="false"
+  >
+    <v-card class="final-registration-card" elevation="24" rounded="xl">
       <!-- 헤더 -->
-      <div class="final-registration-header">
-        <button class="close-btn" @click="handleClose">
-          <v-icon>mdi-close</v-icon>
-        </button>
-      </div>
-      
-      <!-- 체크 아이콘 -->
-      <div class="final-registration-icon" :class="{ 'oauth': isOAuth }">
-        <v-icon size="48" color="white">
-          {{ isOAuth ? 'mdi-account-plus' : 'mdi-check-circle' }}
-        </v-icon>
-      </div>
-      
-      <!-- 제목 -->
-      <h2 class="final-registration-title">
-        {{ isOAuth ? '소셜 계정 추가정보' : '이메일 인증 완료!' }}
-      </h2>
-      
-      <!-- 설명 -->
-      <p class="final-registration-description">
-        {{ isOAuth ? '소셜 계정 연동을 위해 이름과 닉네임을 입력해주세요' : '마지막으로 기본 정보를 입력해주세요' }}
-      </p>
-      
-      <!-- 에러 메시지 -->
-      <div v-if="errorMessage" class="error-message">
-        {{ errorMessage }}
-      </div>
-      
-      <!-- 최종 정보 입력 폼 -->
-      <div class="final-registration-form">
-        <input
-          v-model="form.name"
-          type="text"
-          placeholder="이름을 입력하세요"
-          class="final-input-field"
-          :disabled="isBusy"
-        />
-        
-        <!-- 닉네임 입력 및 중복확인 -->
-        <div class="nickname-input-group">
-          <input
-            v-model="form.nickname"
-            type="text"
-            placeholder="닉네임을 입력하세요"
-            class="final-input-field"
-            :disabled="isBusy"
-            @input="handleNicknameInput"
-          />
-          <button
-            type="button"
-            class="duplicate-check-btn"
-            @click="checkNicknameDuplicate"
-            :disabled="isBusy || !form.nickname.trim() || nicknameChecked"
-          >
-            {{ nicknameChecked ? '확인됨' : '중복확인' }}
-          </button>
+      <div class="modal-header">
+        <div class="success-icon">
+          <v-icon size="24" color="white">
+            {{ isOAuth ? 'mdi-account-plus' : 'mdi-check-circle' }}
+          </v-icon>
         </div>
-        
-        <!-- 닉네임 중복확인 결과 메시지 -->
-        <div v-if="nicknameMessage" class="nickname-message" :class="nicknameMessageType">
-          {{ nicknameMessage }}
-        </div>
-        
-        <button
-          type="button"
-          class="final-submit-btn"
-          @click="handleSubmit"
-          :disabled="isBusy || !canSubmit"
+        <div class="spacer"></div>
+        <v-btn
+          icon
+          variant="text"
+          @click="handleClose"
+          class="modal-close-btn"
         >
-          {{ isBusy ? '처리 중...' : (isOAuth ? '소셜 계정 연동 완료' : '회원가입 완료') }}
-        </button>
+          <v-icon size="18">mdi-close</v-icon>
+        </v-btn>
       </div>
-    </div>
+
+      <!-- 컨텐츠 -->
+      <div class="modal-content">
+        <h3 class="modal-title">
+          {{ isOAuth ? '소셜 계정 추가정보' : '인증 완료' }}
+        </h3>
+        
+        <p class="modal-description">
+          {{ isOAuth ? '소셜 계정 연동을 위해 이름과 닉네임을 입력해주세요' : '마지막으로 기본 정보를 입력해주세요' }}
+        </p>
+
+        <!-- 에러 메시지 -->
+        <div v-if="errorMessage" class="error-message">
+          <v-icon size="16" color="#ef4444">mdi-alert-circle</v-icon>
+          <span>{{ errorMessage }}</span>
+        </div>
+
+        <!-- 입력 폼 -->
+        <div class="form-container">
+          <div class="input-group">
+            <div class="input-label">
+              <v-icon size="18" color="#FF8B8B">mdi-account</v-icon>
+              <span>이름</span>
+            </div>
+            <v-text-field
+              v-model="form.name"
+              placeholder="이름을 입력하세요"
+              variant="outlined"
+              density="comfortable"
+              hide-details
+              :disabled="isBusy"
+              class="input-field"
+            ></v-text-field>
+          </div>
+
+          <div class="input-group">
+            <div class="input-label">
+              <v-icon size="18" color="#FF8B8B">mdi-at</v-icon>
+              <span>닉네임</span>
+            </div>
+            <div class="duplicate-check-section">
+              <v-text-field
+                v-model="form.nickname"
+                placeholder="닉네임을 입력하세요"
+                variant="outlined"
+                density="comfortable"
+                hide-details
+                :disabled="isBusy"
+                @input="handleNicknameInput"
+                class="input-field"
+              ></v-text-field>
+              <v-btn
+                type="button"
+                class="duplicate-check-btn"
+                @click="checkNicknameDuplicate"
+                :disabled="isBusy || !form.nickname.trim() || nicknameChecked"
+                height="48"
+                rounded="lg"
+              >
+                {{ nicknameChecked ? '확인됨' : '중복확인' }}
+              </v-btn>
+            </div>
+          </div>
+
+          <!-- 닉네임 중복확인 결과 메시지 -->
+          <div v-if="nicknameMessage" class="nickname-message" :class="nicknameMessageType">
+            <v-icon size="16" :color="nicknameMessageType === 'success' ? '#10b981' : '#ef4444'">
+              {{ nicknameMessageType === 'success' ? 'mdi-check-circle' : 'mdi-alert-circle' }}
+            </v-icon>
+            <span>{{ nicknameMessage }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 액션 버튼 -->
+      <div class="modal-actions">
+        <v-btn
+          color="#FF8B8B"
+          block
+          size="large"
+          @click="handleSubmit"
+          height="56"
+          rounded="xl"
+          class="primary-btn"
+          elevation="0"
+          :disabled="isBusy || !isFormValid"
+        >
+          <v-icon start size="20">mdi-check</v-icon>
+          {{ isOAuth ? '계정 연동 완료' : '회원가입 완료' }}
+        </v-btn>
+      </div>
+    </v-card>
   </v-dialog>
 </template>
 
@@ -124,8 +166,8 @@ export default {
     const nicknameMessageType = ref('')
     
     // computed 속성들
-    const canSubmit = computed(() => {
-      console.log('canSubmit 계산 시작 - props.isOAuth:', props.isOAuth, '타입:', typeof props.isOAuth)
+    const isFormValid = computed(() => {
+      console.log('isFormValid 계산 시작 - props.isOAuth:', props.isOAuth, '타입:', typeof props.isOAuth)
       
       // OAuth 데이터가 있으면 OAuth로 인식 (임시 해결책)
       const isOAuthMode = props.isOAuth || (props.oauthData && props.oauthData.signupTicket)
@@ -136,7 +178,7 @@ export default {
         const result = form.value.name.trim().length >= 2 && 
                       form.value.nickname.trim().length >= 2
                       // && nicknameChecked.value  // 임시로 중복확인 우회
-        console.log('OAuth canSubmit 계산:', {
+        console.log('OAuth isFormValid 계산:', {
           nameLength: form.value.name.trim().length,
           nicknameLength: form.value.nickname.trim().length,
           nicknameChecked: nicknameChecked.value,
@@ -150,7 +192,7 @@ export default {
                     form.value.nickname.trim().length >= 2 &&
                     props.password.length >= 8 &&
                     nicknameChecked.value
-      console.log('일반 회원가입 canSubmit 계산:', {
+      console.log('일반 회원가입 isFormValid 계산:', {
         nameLength: form.value.name.trim().length,
         nicknameLength: form.value.nickname.trim().length,
         passwordLength: props.password.length,
@@ -254,14 +296,14 @@ export default {
         console.error('❌ 에러 응답:', error.response?.data)
         console.error('❌ 에러 상태:', error.response?.status)
         nicknameChecked.value = false
-        nicknameMessage.value = '중복확인 중 오류가 발생했습니다.'
+        nicknameMessage.value = '이미 사용 중인 닉네임입니다.'
         nicknameMessageType.value = 'error'
       }
     }
     
     // 제출 처리
     const handleSubmit = async () => {
-      if (!canSubmit.value || isBusy.value) return
+      if (!isFormValid.value || isBusy.value) return
       
       isBusy.value = true
       errorMessage.value = ''
@@ -269,20 +311,37 @@ export default {
       try {
         let result
         
-        // OAuth 데이터가 있으면 OAuth로 인식 (임시 해결책)
+        // OAuth 데이터가 있으면 OAuth로 인식
         const isOAuthMode = props.isOAuth || (props.oauthData && props.oauthData.signupTicket)
         
+        console.log('🔍 제출 시작 - 디버깅 정보:')
+        console.log('- props.isOAuth:', props.isOAuth)
+        console.log('- props.oauthData:', props.oauthData)
+        console.log('- props.oauthData?.signupTicket:', props.oauthData?.signupTicket)
+        console.log('- isOAuthMode:', isOAuthMode)
+        
         if (isOAuthMode) {
-          // OAuth 추가정보 처리 - 기존 API 사용
-          const response = await userAPI.signupExtra({
-            signupTicket: props.oauthData.signupTicket,
+          // OAuth 추가정보 처리
+          console.log('🔧 OAuth 모드 - signupExtra API 호출')
+          console.log('signupTicket:', props.oauthData?.signupTicket)
+          console.log('이름:', form.value.name.trim())
+          console.log('닉네임:', form.value.nickname.trim())
+          
+          const signupExtraPayload = {
+            signupTicket: props.oauthData?.signupTicket,
             name: form.value.name.trim(),
             nickname: form.value.nickname.trim()
-          })
+          }
+          
+          console.log('📤 signupExtra API 요청 데이터:', signupExtraPayload)
+          
+          const response = await userAPI.signupExtra(signupExtraPayload)
+          console.log('📡 signupExtra API 응답:', response)
           
           result = response.data
         } else {
           // 일반 회원가입 처리
+          console.log('🔧 일반 회원가입 모드')
           const response = await userAPI.signup({
             email: props.email,
             password: props.password,
@@ -300,17 +359,21 @@ export default {
           // 실패 시 에러 메시지 표시
           errorMessage.value = result.status?.message || '처리에 실패했습니다.'
         }
-              } catch (error) {
-          console.error('최종 등록 실패:', error)
-          if (props.isOAuth) {
-            errorMessage.value = '소셜 계정 연동 중 오류가 발생했습니다. 다시 시도해주세요.'
-          } else {
-            errorMessage.value = '회원가입 중 오류가 발생했습니다. 다시 시도해주세요.'
-          }
-        } finally {
-          isBusy.value = false
+      } catch (error) {
+        console.error('❌ 최종 등록 실패:', error)
+        console.error('❌ 에러 응답:', error.response?.data)
+        console.error('❌ 에러 상태:', error.response?.status)
+        console.error('❌ 에러 메시지:', error.message)
+        
+        if (props.isOAuth) {
+          errorMessage.value = '소셜 계정 연동 중 오류가 발생했습니다. 다시 시도해주세요.'
+        } else {
+          errorMessage.value = '회원가입 중 오류가 발생했습니다. 다시 시도해주세요.'
         }
+      } finally {
+        isBusy.value = false
       }
+    }
     
     // 모달 닫기
     const handleClose = () => {
@@ -351,7 +414,7 @@ export default {
       nicknameMessageType,
       
       // computed
-      canSubmit,
+      isFormValid,
       
       // 메서드
       handleSubmit,
@@ -364,185 +427,173 @@ export default {
 </script>
 
 <style scoped>
-.final-registration-card {
-  background: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
-  border: 1px solid #e9ecef;
-  overflow: hidden;
-  max-width: 400px;
-  width: 100%;
-  position: relative;
-}
+.final-registration-modal {
+  .v-card {
+    background: white !important;
+    border-radius: 16px !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+  }
 
-.final-registration-header {
-  background: #ffffff;
-  padding: 32px 32px 20px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  position: relative;
-}
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 24px 0 24px;
+    margin-bottom: 16px;
+  }
 
-.close-btn {
-  background: none;
-  border: none;
-  color: #94a3b8;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 50%;
-  transition: all 0.2s ease;
-}
+  .success-icon {
+    width: 48px;
+    height: 48px;
+    background: #10b981 !important;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2) !important;
+  }
 
-.close-btn:hover {
-  color: #64748b;
-  background: rgba(148, 163, 184, 0.1);
-}
+  .success-icon .v-icon {
+    color: white !important;
+    font-size: 24px !important;
+  }
 
-.final-registration-icon {
-  background: #10b981;
-  border-radius: 50%;
-  width: 80px;
-  height: 80px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 24px;
-}
+  .spacer {
+    flex: 1;
+  }
 
-.final-registration-icon.oauth {
-  background: #3b82f6;
-}
+  .modal-content {
+    padding: 0 24px 24px 24px;
+  }
 
-.final-registration-title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #111827;
-  text-align: center;
-  margin-bottom: 16px;
-}
+  .modal-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 8px 0;
+    text-align: center;
+  }
 
-.final-registration-description {
-  color: #6b7280;
-  line-height: 1.6;
-  font-size: 0.95rem;
-  text-align: center;
-  margin-bottom: 32px;
-  padding: 0 32px;
-}
+  .modal-description {
+    font-size: 16px;
+    color: #6b7280;
+    text-align: center;
+    margin: 0 0 24px 0;
+    line-height: 1.5;
+  }
 
-.error-message {
-  color: #dc2626;
-  font-size: 0.875rem;
-  text-align: center;
-  margin: 0 32px 24px;
-  padding: 12px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 8px;
-}
+  .form-container {
+    margin-bottom: 24px;
+  }
 
-.final-registration-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin: 0 32px 32px;
-}
+  .input-group {
+    margin-bottom: 20px;
+  }
 
-.final-input-field {
-  width: 100%;
-  padding: 12px 16px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 14px;
-  transition: border-color 0.2s;
-  outline: none;
-}
+  .input-label {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #374151;
+    gap: 8px;
+  }
 
-.final-input-field:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
+  .input-label .v-icon {
+    color: #FF8B8B;
+  }
 
-.final-input-field:disabled {
-  background: #f9fafb;
-  color: #6b7280;
-  cursor: not-allowed;
-}
+  .input-field {
+    width: 100%;
+  }
 
-.final-submit-btn {
-  width: 100%;
-  padding: 12px 24px;
-  background: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
+  .duplicate-check-section {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+  }
 
-.final-submit-btn:hover:not(:disabled) {
-  background: #2563eb;
-}
+  .duplicate-check-section .input-field {
+    flex: 1;
+  }
 
-.final-submit-btn:disabled {
-  background: #9ca3af;
-  cursor: not-allowed;
-}
+  .duplicate-check-btn {
+    height: 48px !important;
+    background: #6b7280 !important;
+    color: white !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    text-transform: none !important;
+    box-shadow: none !important;
+    padding: 0 16px !important;
+  }
 
-/* 닉네임 입력 그룹 */
-.nickname-input-group {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
+  .duplicate-check-btn:hover {
+    background: #4b5563 !important;
+    box-shadow: none !important;
+  }
 
-.nickname-input-group .final-input-field {
-  flex: 1;
-}
+  .duplicate-check-btn:disabled {
+    background: #d1d5db !important;
+    color: #9ca3af !important;
+  }
 
-.duplicate-check-btn {
-  padding: 12px 16px;
-  background: #6b7280;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  white-space: nowrap;
-  min-width: 80px;
-}
+  .nickname-message {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    font-size: 14px;
+    padding: 8px 12px;
+    border-radius: 8px;
+  }
 
-.duplicate-check-btn:hover:not(:disabled) {
-  background: #4b5563;
-}
+  .nickname-message.success {
+    background: rgba(16, 185, 129, 0.1);
+    color: #065f46;
+  }
 
-.duplicate-check-btn:disabled {
-  background: #d1d5db;
-  cursor: not-allowed;
-}
+  .nickname-message.error {
+    background: rgba(239, 68, 68, 0.1);
+    color: #991b1b;
+  }
 
-/* 닉네임 메시지 */
-.nickname-message {
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 14px;
-  text-align: center;
-}
+  .error-message {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #ef4444;
+    font-size: 14px;
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    background: rgba(239, 68, 68, 0.1);
+    border-radius: 8px;
+  }
 
-.nickname-message.success {
-  background: #d1fae5;
-  color: #065f46;
-  border: 1px solid #a7f3d0;
-}
+  .modal-actions {
+    padding: 0 24px 24px 24px;
+  }
 
-.nickname-message.error {
-  background: #fee2e2;
-  color: #991b1b;
-  border: 1px solid #fecaca;
+  .primary-btn {
+    width: 100%;
+    height: 56px !important;
+    background: #FF8B8B !important;
+    color: white !important;
+    border-radius: 12px !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    text-transform: none !important;
+    box-shadow: none !important;
+  }
+
+  .primary-btn:hover {
+    background: #E87D7D !important;
+    box-shadow: none !important;
+  }
+
+  .primary-btn:disabled {
+    background: #d1d5db !important;
+    color: #9ca3af !important;
+  }
 }
 </style>

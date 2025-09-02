@@ -1,0 +1,281 @@
+/* ===== 애플 수준 모달 애니메이션 시스템 ===== */
+
+/* GPU 가속을 위한 기본 설정 */
+.modal-container {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* ===== 모달 오버레이 애니메이션 ===== */
+.modal-overlay {
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  background: rgba(0, 0, 0, 0.4);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, backdrop-filter;
+}
+
+.modal-overlay-enter-active,
+.modal-overlay-leave-active {
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-overlay-enter-from,
+.modal-overlay-leave-to {
+  opacity: 0;
+  backdrop-filter: blur(0px) saturate(100%);
+  -webkit-backdrop-filter: blur(0px) saturate(100%);
+}
+
+/* ===== 모달 컨텐츠 애니메이션 ===== */
+.modal-content {
+  transform-origin: center center;
+  will-change: transform, opacity, scale;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 스케일 + 페이드 인 애니메이션 (애플 스타일) */
+.modal-scale-enter-active,
+.modal-scale-leave-active {
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-scale-enter-from {
+  opacity: 0;
+  transform: scale(0.85) translateY(20px);
+}
+
+.modal-scale-leave-to {
+  opacity: 0;
+  transform: scale(0.95) translateY(-10px);
+}
+
+/* 슬라이드 업 애니메이션 */
+.modal-slide-up-enter-active,
+.modal-slide-up-leave-active {
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-slide-up-enter-from {
+  opacity: 0;
+  transform: translateY(100%);
+}
+
+.modal-slide-up-leave-to {
+  opacity: 0;
+  transform: translateY(100%);
+}
+
+/* 슬라이드 다운 애니메이션 */
+.modal-slide-down-enter-active,
+.modal-slide-down-leave-active {
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-slide-down-enter-from {
+  opacity: 0;
+  transform: translateY(-100%);
+}
+
+.modal-slide-down-leave-to {
+  opacity: 0;
+  transform: translateY(-100%);
+}
+
+/* ===== 고급 모달 애니메이션 ===== */
+
+/* 스프링 애니메이션 (애플 iOS 스타일) */
+.modal-spring-enter-active {
+  transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modal-spring-leave-active {
+  transition: all 0.3s cubic-bezier(0.4, 0, 1, 1);
+}
+
+.modal-spring-enter-from {
+  opacity: 0;
+  transform: scale(0.8) translateY(30px);
+}
+
+.modal-spring-leave-to {
+  opacity: 0;
+  transform: scale(0.9) translateY(-20px);
+}
+
+/* 바운스 애니메이션 */
+.modal-bounce-enter-active {
+  transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.modal-bounce-leave-active {
+  transition: all 0.3s cubic-bezier(0.4, 0, 1, 1);
+}
+
+.modal-bounce-enter-from {
+  opacity: 0;
+  transform: scale(0.3);
+}
+
+.modal-bounce-leave-to {
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+/* ===== 모달 내부 요소 애니메이션 ===== */
+
+/* 스태거드 애니메이션 (순차적 등장) */
+.modal-stagger-enter-active {
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-stagger-enter-from {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.modal-stagger-enter-active:nth-child(1) { transition-delay: 0.1s; }
+.modal-stagger-enter-active:nth-child(2) { transition-delay: 0.2s; }
+.modal-stagger-enter-active:nth-child(3) { transition-delay: 0.3s; }
+.modal-stagger-enter-active:nth-child(4) { transition-delay: 0.4s; }
+.modal-stagger-enter-active:nth-child(5) { transition-delay: 0.5s; }
+
+/* ===== 성능 최적화 ===== */
+
+/* 하드웨어 가속 강제 */
+.modal-gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* 레이어 최적화 */
+.modal-optimized {
+  contain: layout style paint;
+  content-visibility: auto;
+}
+
+/* ===== 반응형 모달 애니메이션 ===== */
+
+/* 모바일에서 슬라이드 업 */
+@media (max-width: 768px) {
+  .modal-mobile-slide-enter-active,
+  .modal-mobile-slide-leave-active {
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  
+  .modal-mobile-slide-enter-from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  
+  .modal-mobile-slide-leave-to {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+}
+
+/* 데스크톱에서 스케일 */
+@media (min-width: 769px) {
+  .modal-desktop-scale-enter-active,
+  .modal-desktop-scale-leave-active {
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  
+  .modal-desktop-scale-enter-from {
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+  }
+  
+  .modal-desktop-scale-leave-to {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+}
+
+/* ===== 특수 효과 ===== */
+
+/* 글래스모피즘 효과 */
+.modal-glass {
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+}
+
+/* 네온 글로우 효과 */
+.modal-glow {
+  box-shadow: 
+    0 0 20px rgba(232, 125, 125, 0.3),
+    0 0 40px rgba(232, 125, 125, 0.2),
+    0 0 60px rgba(232, 125, 125, 0.1);
+  animation: modalGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes modalGlow {
+  from {
+    box-shadow: 
+      0 0 20px rgba(232, 125, 125, 0.3),
+      0 0 40px rgba(232, 125, 125, 0.2),
+      0 0 60px rgba(232, 125, 125, 0.1);
+  }
+  to {
+    box-shadow: 
+      0 0 30px rgba(232, 125, 125, 0.4),
+      0 0 50px rgba(232, 125, 125, 0.3),
+      0 0 70px rgba(232, 125, 125, 0.2);
+  }
+}
+
+/* ===== 접근성 고려 ===== */
+
+/* 모션 감소 설정 지원 */
+@media (prefers-reduced-motion: reduce) {
+  .modal-scale-enter-active,
+  .modal-scale-leave-active,
+  .modal-slide-up-enter-active,
+  .modal-slide-up-leave-active,
+  .modal-slide-down-enter-active,
+  .modal-slide-down-leave-active,
+  .modal-spring-enter-active,
+  .modal-spring-leave-active,
+  .modal-bounce-enter-active,
+  .modal-bounce-leave-active {
+    transition: opacity 0.2s ease;
+  }
+  
+  .modal-scale-enter-from,
+  .modal-scale-leave-to,
+  .modal-slide-up-enter-from,
+  .modal-slide-up-leave-to,
+  .modal-slide-down-enter-from,
+  .modal-slide-down-leave-to,
+  .modal-spring-enter-from,
+  .modal-spring-leave-to,
+  .modal-bounce-enter-from,
+  .modal-bounce-leave-to {
+    transform: none;
+  }
+}
+
+/* ===== 디버깅용 ===== */
+.modal-debug {
+  outline: 2px solid red;
+  outline-offset: 2px;
+}
+
+.modal-debug::before {
+  content: 'MODAL';
+  position: absolute;
+  top: -20px;
+  left: 0;
+  background: red;
+  color: white;
+  padding: 2px 6px;
+  font-size: 10px;
+  z-index: 9999;
+}

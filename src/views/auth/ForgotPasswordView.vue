@@ -4,7 +4,7 @@
       <v-col cols="12" sm="8" md="6" lg="4">
         <v-card class="pa-6">
           <v-card-title class="text-h4 text-center mb-6">
-            비밀번호 찾기
+            임시비밀번호 발급
           </v-card-title>
           
           <v-card-text class="text-center mb-4">

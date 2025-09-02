@@ -89,9 +89,14 @@
   --mm-shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   
   /* ===== 전환 효과 ===== */
-  --mm-transition-fast: 150ms ease-in-out;
-  --mm-transition-normal: 250ms ease-in-out;
-  --mm-transition-slow: 350ms ease-in-out;
+  --mm-transition-fast: 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  --mm-transition-normal: 250ms cubic-bezier(0.16, 1, 0.3, 1);
+  --mm-transition-slow: 350ms cubic-bezier(0.16, 1, 0.3, 1);
+  
+  /* ===== 모달 전환 효과 ===== */
+  --mm-modal-transition: 400ms cubic-bezier(0.16, 1, 0.3, 1);
+  --mm-modal-spring: 600ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  --mm-modal-bounce: 500ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
   
   /* ===== 브레이크포인트 ===== */
   --mm-breakpoint-sm: 640px;

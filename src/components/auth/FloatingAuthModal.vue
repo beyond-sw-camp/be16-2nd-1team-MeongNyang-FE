@@ -38,9 +38,9 @@
             icon
             variant="text"
             @click="closeModal"
-            class="close-btn"
+            class="modal-close-btn"
           >
-            <v-icon size="24">mdi-close</v-icon>
+            <v-icon size="20">mdi-close</v-icon>
           </v-btn>
         </div>
       </v-card-title>
@@ -110,7 +110,7 @@
                   class="forgot-password-btn"
                   density="compact"
                 >
-                  비밀번호를 잊으셨어요?
+                  임시비밀번호 받기
                 </v-btn>
                 <v-btn
                   variant="text"
@@ -162,7 +162,7 @@
                 variant="outlined"
                 block
                 size="large"
-                :disabled="busy"
+                :disabled="busy || socialLoginBusy.google"
                 class="social-btn google-btn mb-3"
                 height="48"
                 rounded="lg"
@@ -170,15 +170,18 @@
                 @mousedown.stop
                 @touchstart.stop
               >
-                <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" class="social-icon me-3" />
-                Google로 계속하기
+                <v-icon v-if="socialLoginBusy.google" start class="me-2">
+                  <v-progress-circular indeterminate size="16" color="primary"></v-progress-circular>
+                </v-icon>
+                <img v-else src="https://developers.google.com/identity/images/g-logo.png" alt="Google" class="social-icon me-3" />
+                {{ socialLoginBusy.google ? 'Google 로그인 중...' : 'Google로 계속하기' }}
               </v-btn>
 
               <v-btn
                 variant="outlined"
                 block
                 size="large"
-                :disabled="busy"
+                :disabled="busy || socialLoginBusy.kakao"
                 class="social-btn kakao-btn mb-3"
                 height="48"
                 rounded="lg"
@@ -186,8 +189,11 @@
                 @mousedown.stop
                 @touchstart.stop
               >
-                <img src="https://developers.kakao.com/assets/img/about/logos/kakaolink/kakaolink_btn_small.png" alt="Kakao" class="social-icon me-3" />
-                카카오로 계속하기
+                <v-icon v-if="socialLoginBusy.kakao" start class="me-2">
+                  <v-progress-circular indeterminate size="16" color="primary"></v-progress-circular>
+                </v-icon>
+                <img v-else src="https://developers.kakao.com/assets/img/about/logos/kakaolink/kakaolink_btn_small.png" alt="Kakao" class="social-icon me-3" />
+                {{ socialLoginBusy.kakao ? '카카오 로그인 중...' : '카카오로 계속하기' }}
               </v-btn>
 
               <!-- OAuth 연동 안내 메시지 -->
@@ -221,7 +227,7 @@
                 variant="outlined"
                 block
                 size="large"
-                :disabled="busy"
+                :disabled="busy || socialLoginBusy.google"
                 class="social-btn google-btn mb-3"
                 height="48"
                 rounded="lg"
@@ -229,15 +235,18 @@
                 @mousedown.stop
                 @touchstart.stop
               >
-                <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" class="social-icon me-3" />
-                Google로 계속하기
+                <v-icon v-if="socialLoginBusy.google" start class="me-2">
+                  <v-progress-circular indeterminate size="16" color="primary"></v-progress-circular>
+                </v-icon>
+                <img v-else src="https://developers.google.com/identity/images/g-logo.png" alt="Google" class="social-icon me-3" />
+                {{ socialLoginBusy.google ? 'Google 로그인 중...' : 'Google로 계속하기' }}
               </v-btn>
 
               <v-btn
                 variant="outlined"
                 block
                 size="large"
-                :disabled="busy"
+                :disabled="busy || socialLoginBusy.kakao"
                 class="social-btn kakao-btn mb-3"
                 height="48"
                 rounded="lg"
@@ -245,8 +254,11 @@
                 @mousedown.stop
                 @touchstart.stop
               >
-                <img src="https://developers.kakao.com/assets/img/about/logos/kakaolink/kakaolink_btn_small.png" alt="Kakao" class="social-icon me-3" />
-                카카오로 계속하기
+                <v-icon v-if="socialLoginBusy.kakao" start class="me-2">
+                  <v-progress-circular indeterminate size="16" color="primary"></v-progress-circular>
+                </v-icon>
+                <img v-else src="https://developers.kakao.com/assets/img/about/logos/kakaolink/kakaolink_btn_small.png" alt="Kakao" class="social-icon me-3" />
+                {{ socialLoginBusy.kakao ? '카카오 로그인 중...' : '카카오로 계속하기' }}
               </v-btn>
 
               <!-- OAuth 연동 안내 메시지 -->
@@ -355,9 +367,9 @@
                   icon
                   variant="text"
                   @click="closeModal"
-                  class="close-btn"
+                  class="modal-close-btn"
                 >
-                  <v-icon size="24">mdi-close</v-icon>
+                  <v-icon size="20">mdi-close</v-icon>
                 </v-btn>
               </div>
 
@@ -517,9 +529,9 @@
             icon
             variant="text"
             @click="closeForgotPasswordModal"
-            class="close-btn"
+            class="modal-close-btn"
           >
-            <v-icon size="24">mdi-close</v-icon>
+            <v-icon size="20">mdi-close</v-icon>
           </v-btn>
         </div>
       </v-card-title>
@@ -529,7 +541,7 @@
           <div class="forgot-password-icon mb-3">
             <v-icon size="32" color="white">mdi-lock-reset</v-icon>
           </div>
-          <h3 class="text-h6 font-weight-semibold mb-2 text-dark">비밀번호 찾기</h3>
+          <h3 class="text-h6 font-weight-semibold mb-2 text-dark">임시비밀번호 발급</h3>
           <p class="text-body-2 text-medium-emphasis">
             가입한 이름과 이메일을 입력하시면 임시 비밀번호를 발송해드립니다
           </p>
@@ -628,9 +640,9 @@
             icon
             variant="text"
             @click="closeUnlockAccountModal"
-            class="close-btn"
+            class="modal-close-btn"
           >
-            <v-icon size="24">mdi-close</v-icon>
+            <v-icon size="20">mdi-close</v-icon>
           </v-btn>
         </div>
       </v-card-title>
@@ -832,7 +844,7 @@
           variant="text"
           size="small"
           @click="closeOAuthExtraModal"
-          class="close-btn"
+          class="modal-close-btn"
         >
           <v-icon size="20">mdi-close</v-icon>
         </v-btn>
@@ -1349,12 +1361,13 @@ const handleLogin = async () => {
 
 const handleOAuthLogin = async (provider) => {
   // 이미 처리 중이면 중복 실행 방지
-  if (busy.value) {
-    console.log('⚠️ 이미 OAuth 처리 중입니다.')
+  if (busy.value || socialLoginBusy.value[provider]) {
+    console.log(`⚠️ 이미 ${provider} OAuth 처리 중입니다.`)
     return
   }
   
-  // busy 상태 설정
+  // 개별 소셜 로그인 버튼 busy 상태 설정
+  socialLoginBusy.value[provider] = true
   busy.value = true
   
   const origin = window.location.origin
@@ -1363,16 +1376,20 @@ const handleOAuthLogin = async (provider) => {
   const cbUrl = (p) => `${origin}/oauth/${p}/redirect`
   
   try {
+    // OAuth 상태 완전 초기화 (뒤로가기 후 재시도 시 문제 방지)
+    clearOAuthState()
+    
     // OAuth 연동 시작 메시지
     const providerName = provider === 'google' ? 'Google' : '카카오'
     console.log(`🔗 ${providerName} OAuth 연동 시작`)
+    console.log(`⏱️ 시작 시간: ${new Date().toISOString()}`)
     
     if (provider === 'google') {
       const client = process.env.VUE_APP_GOOGLE_CLIENT_ID
       if (!client) { 
         console.error('❌ VUE_APP_GOOGLE_CLIENT_ID 미설정')
         errorMsg.value = 'Google 로그인 설정이 완료되지 않았습니다.'
-        busy.value = false
+        resetBusyState(provider)
         return 
       }
 
@@ -1381,7 +1398,7 @@ const handleOAuthLogin = async (provider) => {
         redirect_uri: cbUrl('google'),
         response_type: 'code',
         scope: 'openid email profile',
-        state: 'google',
+        state: `google_${Date.now()}`, // 고유한 state 값으로 중복 방지
       })
       
       console.log('🔗 Google OAuth 리다이렉트 시작')
@@ -1394,7 +1411,7 @@ const handleOAuthLogin = async (provider) => {
       if (!client) { 
         console.error('❌ VUE_APP_KAKAO_CLIENT_ID 미설정')
         errorMsg.value = '카카오 로그인 설정이 완료되지 않았습니다.'
-        busy.value = false
+        resetBusyState(provider)
         return 
       }
 
@@ -1402,7 +1419,7 @@ const handleOAuthLogin = async (provider) => {
         client_id: client,
         redirect_uri: cbUrl('kakao'),
         response_type: 'code',
-        state: 'kakao', // state를 'google'에서 'kakao'로 수정
+        state: `kakao_${Date.now()}`, // 고유한 state 값으로 중복 방지
       })
       
       console.log('🔗 카카오 OAuth 리다이렉트 시작')
@@ -1413,8 +1430,38 @@ const handleOAuthLogin = async (provider) => {
   } catch (error) {
     console.error(`❌ ${provider} OAuth 로그인 실패:`, error)
     errorMsg.value = `${provider === 'google' ? 'Google' : '카카오'} 로그인에 실패했습니다.`
-    busy.value = false
+    resetBusyState(provider)
   }
+}
+
+// OAuth 상태 초기화 함수
+const clearOAuthState = () => {
+  console.log('🧹 OAuth 상태 초기화 시작')
+  
+  // URL 쿼리 파라미터에서 OAuth 관련 데이터 제거
+  if (route.query.openOAuthExtra || route.query.openOAuthLink || route.query.showSocialDuplicate) {
+    console.log('🔗 OAuth 관련 쿼리 파라미터 제거')
+    window.history.replaceState({}, document.title, route.path)
+  }
+  
+  // 로컬 스토리지에서 OAuth 관련 데이터 제거
+  try {
+    localStorage.removeItem('oauth_state')
+    localStorage.removeItem('oauth_provider')
+    localStorage.removeItem('oauth_timestamp')
+    console.log('🗑️ 로컬 스토리지 OAuth 데이터 제거 완료')
+  } catch (e) {
+    console.log('⚠️ 로컬 스토리지 접근 불가:', e)
+  }
+  
+  console.log('✅ OAuth 상태 초기화 완료')
+}
+
+// busy 상태 리셋 함수
+const resetBusyState = (provider) => {
+  socialLoginBusy.value[provider] = false
+  busy.value = false
+  console.log(`🔄 ${provider} busy 상태 리셋 완료`)
 }
 
 // 소셜 로그인 연동 확인 함수 (백엔드에서 필요시 호출)
@@ -1601,6 +1648,12 @@ watch(() => props.modelValue, (newValue) => {
     registerStep.value = 'basic'
   }
 }, { immediate: true })
+
+// 소셜 로그인 개별 busy 상태
+const socialLoginBusy = ref({
+  google: false,
+  kakao: false
+})
 </script>
 
 <style scoped>
@@ -1627,15 +1680,20 @@ watch(() => props.modelValue, (newValue) => {
 }
 
 .close-btn {
-  color: #94a3b8;
+  color: #9ca3af;
   transition: all 0.2s ease;
+  padding: 8px;
   background: transparent !important;
+  border: none !important;
   box-shadow: none !important;
+  outline: none !important;
+  border-radius: 8px;
 }
 
 .close-btn:hover {
-  color: #64748b;
-  transform: scale(1.1);
+  color: #6b7280;
+  background: rgba(156, 163, 175, 0.1) !important;
+  transform: scale(1.05);
 }
 
 .auth-tabs-container {
@@ -2285,5 +2343,126 @@ watch(() => props.modelValue, (newValue) => {
 .social-link-modal .v-btn {
   font-weight: 500;
   text-transform: none;
+}
+
+/* 모달 닫기 버튼 스타일 */
+.modal-close-btn {
+  color: #9ca3af !important;
+  transition: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  border-radius: 0 !important;
+  min-width: auto !important;
+  width: auto !important;
+  height: auto !important;
+  position: relative !important;
+  overflow: visible !important;
+}
+
+.modal-close-btn:hover {
+  color: #6b7280 !important;
+  background: transparent !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.modal-close-btn:active {
+  background: transparent !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.modal-close-btn:focus {
+  background: transparent !important;
+  transform: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.modal-close-btn::before {
+  display: none !important;
+  content: none !important;
+}
+
+.modal-close-btn::after {
+  display: none !important;
+  content: none !important;
+}
+
+.modal-close-btn .v-btn__content {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.modal-close-btn .v-btn__overlay {
+  display: none !important;
+  opacity: 0 !important;
+  background: transparent !important;
+}
+
+.modal-close-btn:hover .v-btn__overlay {
+  display: none !important;
+  opacity: 0 !important;
+  background: transparent !important;
+}
+
+.modal-close-btn:focus .v-btn__overlay {
+  display: none !important;
+  opacity: 0 !important;
+  background: transparent !important;
+}
+
+.modal-close-btn:active .v-btn__overlay {
+  display: none !important;
+  opacity: 0 !important;
+  background: transparent !important;
+}
+
+.modal-close-btn .v-btn__prepend,
+.modal-close-btn .v-btn__append {
+  display: none !important;
+}
+
+.modal-close-btn .v-btn__loader {
+  display: none !important;
+}
+
+/* Vuetify 기본 스타일 완전 덮어쓰기 */
+.modal-close-btn.v-btn {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.modal-close-btn.v-btn:hover {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.modal-close-btn.v-btn:focus {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.modal-close-btn.v-btn:active {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
 }
 </style>

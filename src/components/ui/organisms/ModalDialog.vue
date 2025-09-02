@@ -13,6 +13,7 @@
     :close-on-back="closeOnBack"
     :close-on-content-click="closeOnContentClick"
     :class="customClass"
+    content-class="modal-dialog-content"
     @update:model-value="handleUpdateModelValue"
     @click:outside="handleClickOutside"
     @keydown.esc="handleEscapeKey"
@@ -239,6 +240,15 @@ export default {
 </script>
 
 <style scoped>
+/* 모달 다이얼로그 z-index 설정 - 상세보기 위에 표시 */
+:deep(.modal-dialog-content) {
+  z-index: 2000 !important;
+}
+
+:deep(.modal-dialog-content .v-overlay__content) {
+  z-index: 2000 !important;
+}
+
 .modal-dialog__header {
   display: flex;
   align-items: center;

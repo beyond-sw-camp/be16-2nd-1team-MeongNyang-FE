@@ -99,7 +99,7 @@
                   class="utility-btn"
                   prepend-icon="mdi-key"
                 >
-                  비밀번호 찾기
+                  임시비밀번호 받기
                 </v-btn>
                 <v-btn
                   variant="outlined"
