@@ -540,7 +540,7 @@
                     </div>
                 </div>
                 
-                  <div class="date-picker-actions">
+                  <div class="year-picker-actions">
                     <v-btn
                       variant="outlined"
                       @click="backToMain"
@@ -3399,19 +3399,24 @@ export default {
 .year-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr); /* 4열로 복원 */
-  gap: 8px;
+  gap: 12px;
   margin-bottom: 20px;
+  justify-items: center; /* 가운데 정렬 */
 }
 
 .year-cell {
-  padding: 16px 12px; /* 12px 8px에서 16px 12px로 증가 */
+  padding: 12px 8px; /* 패딩 조정 */
   text-align: center;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
   font-weight: 500;
   border: 1px solid transparent;
-  font-size: 16px; /* 폰트 크기 추가 */
+  font-size: 14px; /* 폰트 크기 조정 */
+  min-width: 60px; /* 최소 너비 설정 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .year-cell:hover {
@@ -3425,6 +3430,15 @@ export default {
   color: #d32f2f !important;
   border-color: #f44336;
   font-weight: 600;
+}
+
+.year-picker-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #e0e0e0;
 }
 
 .month-picker {
@@ -4452,6 +4466,7 @@ export default {
   grid-template-columns: repeat(4, 1fr);
   gap: 12px;
   margin-bottom: 20px;
+  justify-items: center; /* 가운데 정렬 */
 }
 
 .year-cell {
@@ -4465,6 +4480,7 @@ export default {
   border-radius: 8px;
   transition: all 0.2s ease;
   border: 1px solid transparent;
+  min-width: 60px; /* 최소 너비 설정 */
   background: white;
 }
 
