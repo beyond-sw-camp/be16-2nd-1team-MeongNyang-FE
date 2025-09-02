@@ -1574,12 +1574,16 @@ export default {
       // 이전 동물의 미리보기 이미지 초기화
       imagePreviewUrl.value = null
       
-      // 달력을 오늘 날짜로 초기화 (상세보기 모드)
-      currentDate.value = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
+      // 달력을 오늘 날짜로 완전 초기화 (상세보기 모드)
+      const today = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
+      currentDate.value = today
       selectedDate.value = null
       showYearPicker.value = false
       showMonthPicker.value = false
-      console.log('📅 상세보기 진입 - 달력을 오늘 날짜로 초기화')
+      showDatePicker.value = false
+      // 추가 달력 상태 초기화 (혹시 모를 다른 상태들)
+      selectedMonth.value = null
+      console.log('📅 상세보기 진입 - 달력을 오늘 날짜로 완전 초기화:', today)
       
       selectedPet.value = pet
       showDetailModal.value = true
@@ -1593,10 +1597,15 @@ export default {
         // 수정 모드 취소
         isEditing.value = false
         
-        // 달력을 오늘 날짜로 초기화 (상세보기 모드)
-        currentDate.value = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
+        // 달력을 오늘 날짜로 완전 초기화 (상세보기 모드)
+        const today = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
+        currentDate.value = today
         selectedDate.value = null
-        console.log('📅 모달 닫기 - 달력을 오늘 날짜로 초기화')
+        showYearPicker.value = false
+        showMonthPicker.value = false
+        showDatePicker.value = false
+        selectedMonth.value = null
+        console.log('📅 모달 닫기 - 달력을 오늘 날짜로 완전 초기화:', today)
         
         // 임시 이미지 URL 정리
         if (selectedPet.value && selectedPet.value.tempImageUrl) {
@@ -1689,7 +1698,7 @@ export default {
     }
     
     // 수정 폼 닫기
-    const closeEditForm = () => {
+    const closeEditForm = async () => {
       // 수정 중인 데이터가 있으면 초기화
       if (editingPet.value) {
         editingPet.value = null
@@ -1698,7 +1707,20 @@ export default {
       // 미리보기 URL 정리
       imagePreviewUrl.value = null
       
+      // 수정 폼 모달 닫기 (저장 버튼과 동일한 순서)
       showEditForm.value = false
+      
+      // DOM 업데이트 보장
+      await nextTick()
+      
+      // 달력을 오늘 날짜로 초기화 (저장 버튼과 동일한 방식)
+      const today = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
+      currentDate.value = today
+      selectedDate.value = today
+      showYearPicker.value = false
+      showMonthPicker.value = false
+      selectedMonth.value = null
+      console.log('📅 수정 모달 닫기 - 달력을 오늘 날짜로 초기화:', today)
     }
     
     // 원본 데이터 백업용
@@ -1736,18 +1758,23 @@ export default {
           return
         }
         
-        // 달력을 DB에 저장된 생일 날짜로 초기화
+        // 달력을 생일 날짜로 초기화 (수정 모달에서는 생일 날짜 달력 표시)
         const pet = selectedPet.value
         if (pet.birthday) {
           const birthdayDate = new Date(pet.birthday)
           currentDate.value = birthdayDate
           selectedDate.value = birthdayDate
-          console.log('📅 달력을 생일 날짜로 초기화:', birthdayDate)
+          showYearPicker.value = false
+          showMonthPicker.value = false
+          console.log('📅 수정 모달 열기 - 달력을 생일 날짜로 초기화:', birthdayDate)
         } else {
-          // 생일이 없으면 현재 날짜로 초기화
-          currentDate.value = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
+          // 생일이 없으면 오늘 날짜로 초기화
+          const today = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
+          currentDate.value = today
           selectedDate.value = null
-          console.log('📅 생일이 없어서 현재 날짜로 초기화')
+          showYearPicker.value = false
+          showMonthPicker.value = false
+          console.log('📅 수정 모달 열기 - 생일이 없어서 오늘 날짜로 초기화:', today)
         }
         
         // 원본 데이터 백업
@@ -2005,6 +2032,15 @@ export default {
         // DOM 업데이트 보장
         await nextTick()
         
+        // 달력을 오늘 날짜로 초기화 (수정 후 상세보기에서 오늘 날짜 달력 표시)
+        const today = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
+        currentDate.value = today
+        selectedDate.value = today
+        showYearPicker.value = false
+        showMonthPicker.value = false
+        selectedMonth.value = null
+        console.log('📅 수정 완료 후 달력을 오늘 날짜로 초기화:', today)
+        
         showSnackbar('반려동물 정보가 성공적으로 수정되었습니다.', 'success')
         console.log('🎉 수정 완료 - 상세보기에 반영됨')
         
@@ -2172,7 +2208,24 @@ export default {
         editingPet.value.birthday = originalPetData.value.birthday
         editingPet.value.age = originalPetData.value.age
       }
-      selectedDate.value = null
+      
+      // 달력을 생일 날짜로 초기화 (수정 모달에서는 생일 날짜 달력 표시)
+      if (editingPet.value && editingPet.value.birthday) {
+        const birthdayDate = new Date(editingPet.value.birthday)
+        currentDate.value = birthdayDate
+        selectedDate.value = birthdayDate
+        showYearPicker.value = false
+        showMonthPicker.value = false
+        console.log('📅 달력 취소 - 생일 날짜로 초기화:', birthdayDate)
+      } else {
+        // 생일이 없으면 오늘 날짜로 초기화
+        const today = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
+        currentDate.value = today
+        selectedDate.value = null
+        showYearPicker.value = false
+        showMonthPicker.value = false
+        console.log('📅 달력 취소 - 생일이 없어서 오늘 날짜로 초기화:', today)
+      }
     }
     
     const confirmDateSelection = () => {
