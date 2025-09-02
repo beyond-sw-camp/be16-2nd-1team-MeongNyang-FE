@@ -1,5 +1,5 @@
 <template>
-  <v-dialog v-model="show" max-width="600" persistent content-class="image-cropper-dialog" :draggable="false">
+  <v-dialog v-model="show" width="600" persistent content-class="image-cropper-dialog" :draggable="false">
     <v-card class="image-cropper-card">
       <!-- 헤더 섹션 -->
       <div class="cropper-header">
@@ -423,6 +423,9 @@ watch(show, (newValue) => {
 .image-cropper-dialog {
   background: transparent !important;
   box-shadow: none !important;
+  width: 600px !important;
+  max-width: 600px !important;
+  min-width: 600px !important;
 }
 
 /* 드래그 비활성화 - 더 강력한 설정 */
@@ -457,7 +460,9 @@ watch(show, (newValue) => {
 
 /* 메인 카드 - 매우 둥글게 */
 .image-cropper-card {
+  width: 600px;
   max-width: 600px;
+  min-width: 600px;
   margin: 0 auto;
   background: #ffffff;
   border-radius: 50px !important;
@@ -603,11 +608,20 @@ watch(show, (newValue) => {
 
 /* 반응형 디자인 - 매우 둥글게 */
 @media (max-width: 768px) {
+  .image-cropper-dialog {
+    width: 90vw !important;
+    max-width: 90vw !important;
+    min-width: 90vw !important;
+  }
+  
   .image-cropper-dialog .v-card {
     border-radius: 40px !important;
   }
   
   .image-cropper-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
     margin: 16px;
     border-radius: 40px !important;
   }
@@ -632,11 +646,20 @@ watch(show, (newValue) => {
 }
 
 @media (max-width: 480px) {
+  .image-cropper-dialog {
+    width: 95vw !important;
+    max-width: 95vw !important;
+    min-width: 95vw !important;
+  }
+  
   .image-cropper-dialog .v-card {
     border-radius: 30px !important;
   }
   
   .image-cropper-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
     margin: 8px;
     border-radius: 30px !important;
   }
