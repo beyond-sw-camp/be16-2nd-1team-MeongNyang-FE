@@ -281,33 +281,60 @@
           </v-card>
         </v-dialog>
 
-    <!-- 삭제 확인 모달 -->
-    <ModalDialog
+    <!-- 삭제 확인 모달 - PetForm 스타일 적용 -->
+    <v-dialog
       v-model="showDeleteConfirm"
-      title="반려동물 삭제"
-      :max-width="500"
+      width="600"
+      class="delete-dialog"
+      @click:outside="showDeleteConfirm = false"
+      :scrim="false"
+      persistent
     >
-      <div class="delete-confirm-content">
-        <div class="delete-icon-container">
-          <div class="delete-icon-circle">
-            <v-icon size="48" color="white">mdi-delete</v-icon>
-        </div>
-        </div>
-        <h3 class="delete-title">반려동물 삭제</h3>
-        <p class="delete-message">
-          <strong>"{{ petToDelete?.name }}"</strong>을(를) 삭제하면 복구할 수 없습니다.
-        </p>
-        <div class="delete-warning">
-          <v-icon size="16" color="#FF9800" class="warning-icon">mdi-alert-circle</v-icon>
-          <span>이 작업은 되돌릴 수 없습니다.</span>
-        </div>
-      </div>
-      
-      <template #actions>
-        <div class="delete-actions">
+      <v-card class="delete-modal-card" rounded="xl">
+        <v-card-title class="delete-header">
+          <div class="delete-title-section">
+            <v-icon size="32" color="white">mdi-delete</v-icon>
+            <span class="text-h5">반려동물 삭제</span>
+          </div>
+          <v-btn
+            icon="mdi-close"
+            variant="text"
+            color="white"
+            @click="showDeleteConfirm = false"
+            class="close-btn"
+          />
+        </v-card-title>
+        
+        <v-card-text class="delete-content">
+          <div class="delete-icon-container">
+            <div class="delete-icon-circle">
+              <v-img
+                v-if="petToDelete?.url"
+                :src="petToDelete.url"
+                :alt="petToDelete.name"
+                class="delete-pet-image"
+                cover
+              />
+              <v-icon v-else size="48" color="white">mdi-delete</v-icon>
+            </div>
+          </div>
+          
+          <div class="delete-message-section">
+            <h3 class="delete-pet-name">{{ petToDelete?.name }}</h3>
+            <p class="delete-description">
+              이 반려동물을 삭제하면 복구할 수 없습니다.
+            </p>
+            <div class="delete-warning">
+              <v-icon size="20" color="#FF9800" class="warning-icon">mdi-alert-circle</v-icon>
+              <span>이 작업은 되돌릴 수 없습니다.</span>
+            </div>
+          </div>
+        </v-card-text>
+        
+        <v-card-actions class="delete-actions">
           <v-btn
             variant="outlined"
-              color="grey-darken-1"
+            color="grey-darken-1"
             @click="showDeleteConfirm = false"
             class="cancel-btn"
             size="large"
@@ -317,7 +344,7 @@
           </v-btn>
           <v-btn
             color="error"
-              variant="flat"
+            variant="flat"
             @click="deletePet"
             :loading="deleting"
             class="delete-btn"
@@ -326,9 +353,9 @@
           >
             삭제
           </v-btn>
-        </div>
-      </template>
-    </ModalDialog>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
       <!-- 반려동물 상세 모달 -->
       <v-dialog
@@ -1088,7 +1115,6 @@ import { usePetStore } from '@/stores/pet'
 import { useSnackbar } from '@/composables/useSnackbar'
 import PetCard from './PetCard.vue'
 import PetForm from './PetForm.vue'
-import ModalDialog from '@/components/ui/organisms/ModalDialog.vue'
 import ImageCropper from '@/components/common/ImageCropper.vue'
 
 export default {
@@ -1096,7 +1122,6 @@ export default {
   components: {
     PetCard,
     PetForm,
-    ModalDialog,
     ImageCropper
   },
   emits: ['set-representative', 'view-details', 'delete'],
@@ -2875,48 +2900,103 @@ export default {
   scrollbar-color: #E87D7D #f8f9fa !important;
 }
 
-/* 삭제 확인 모달 */
-.delete-confirm-content {
+/* 삭제 확인 모달 - PetForm 스타일 적용 */
+.delete-dialog {
+  z-index: 2000;
+}
+
+.delete-dialog .v-overlay__content {
+  width: 600px !important;
+  max-width: 600px !important;
+}
+
+.delete-modal-card {
+  width: 600px !important;
+  min-width: 600px !important;
+  max-width: 600px !important;
+  margin: 0 auto;
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+.delete-header {
+  background: linear-gradient(135deg, #E87D7D, #FF6B6B);
+  color: white;
+  padding: 24px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.delete-title-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.delete-title-section .text-h5 {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.close-btn {
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+.close-btn:hover {
+  opacity: 1;
+}
+
+.delete-content {
+  padding: 48px 60px;
   text-align: center;
-  padding: 32px 24px;
   background: white;
-  border-radius: 16px;
 }
 
 .delete-icon-container {
-  margin-bottom: 24px;
+  margin-bottom: 32px;
 }
 
 .delete-icon-circle {
-  width: 80px;
-  height: 80px;
+  width: 150px;
+  height: 150px;
   background: linear-gradient(135deg, #f44336, #d32f2f);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto;
-  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
+  box-shadow: 0 8px 24px rgba(244, 67, 54, 0.3);
+  overflow: hidden;
 }
 
-.delete-title {
-  font-size: 1.5rem;
+.delete-pet-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+.delete-message-section {
+  margin-bottom: 32px;
+}
+
+.delete-pet-name {
+  font-size: 28px;
   font-weight: 700;
-  color: #333;
+  color: #111827;
   margin-bottom: 16px;
   margin-top: 0;
 }
 
-.delete-message {
-  font-size: 1rem;
-  color: #666;
+.delete-description {
+  font-size: 16px;
+  color: #6b7280;
   line-height: 1.6;
-  margin-bottom: 20px;
-}
-
-.delete-message strong {
-  color: #333;
-  font-weight: 600;
+  margin-bottom: 24px;
 }
 
 .delete-warning {
@@ -2926,12 +3006,13 @@ export default {
   gap: 8px;
   background: #fff3e0;
   color: #e65100;
-  padding: 12px 16px;
-  border-radius: 12px;
-  margin-top: 20px;
+  padding: 16px 20px;
+  border-radius: 16px;
   border: 1px solid #ffcc02;
-  font-size: 0.9rem;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
+  max-width: 300px;
+  margin: 0 auto;
 }
 
 .warning-icon {
@@ -2939,35 +3020,93 @@ export default {
 }
 
 .delete-actions {
+  padding: 24px 32px 32px;
   display: flex;
   gap: 16px;
   justify-content: center;
-  margin-top: 24px;
+  background: #f8f9fa;
 }
 
 .cancel-btn {
-  min-width: 100px;
+  min-width: 120px;
   font-weight: 600;
-  border: 2px solid #e0e0e0;
-  transition: all 0.2s ease;
+  border: 2px solid #e5e7eb;
+  color: #374151;
 }
 
 .cancel-btn:hover {
-  border-color: #bdbdbd;
-  background: #f5f5f5;
+  background: #f9fafb;
+  border-color: #d1d5db;
 }
 
 .delete-btn {
-  min-width: 100px;
+  min-width: 120px;
   font-weight: 600;
   background: linear-gradient(135deg, #f44336, #d32f2f);
-  box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
-  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
 }
 
 .delete-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.4);
+  background: linear-gradient(135deg, #d32f2f, #b71c1c);
+  box-shadow: 0 6px 16px rgba(244, 67, 54, 0.4);
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .delete-modal-card {
+    margin: 16px;
+    border-radius: 16px;
+  }
+  
+  .delete-header {
+    padding: 20px 24px;
+  }
+  
+  .delete-title-section .text-h5 {
+    font-size: 20px;
+  }
+  
+  .delete-content {
+    padding: 32px 24px;
+  }
+  
+  .delete-pet-name {
+    font-size: 24px;
+  }
+  
+  .delete-actions {
+    padding: 20px 24px 24px;
+    flex-direction: column;
+  }
+  
+  .cancel-btn,
+  .delete-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .delete-modal-card {
+    margin: 8px;
+    border-radius: 12px;
+  }
+  
+  .delete-header {
+    padding: 16px 20px;
+  }
+  
+  .delete-content {
+    padding: 24px 20px;
+  }
+  
+  .delete-icon-circle {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .delete-pet-name {
+    font-size: 20px;
+  }
 }
 
 /* 반려동물 상세 모달 */

@@ -407,7 +407,7 @@
     <ModalDialog
       v-model="showDeleteConfirm"
       title="반려동물 삭제"
-      :max-width="500"
+      :max-width="1000"
     >
       <div class="delete-confirm-content">
         <div class="delete-icon-container">
