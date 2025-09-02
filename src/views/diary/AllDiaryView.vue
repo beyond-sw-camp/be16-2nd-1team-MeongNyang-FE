@@ -44,8 +44,22 @@
 
           <!-- 캡션 -->
           <div class="caption" v-if="post.content">
-            <span class="caption-username">{{ post.userName || post.petName }}</span>
-            <span class="caption-text">{{ removeHashtags(post.content) }}</span>
+            <div class="caption-content">
+              <span 
+                :ref="el => setCaptionRef(post.id, el)"
+                class="caption-text"
+                :class="{ 'expanded': post.isExpanded }"
+              >
+                {{ removeHashtags(post.content) }}
+              </span>
+              <button 
+                v-if="post.showMoreBtn"
+                @click="toggleExpansion(post.id)"
+                class="more-btn"
+              >
+                {{ post.isExpanded ? '접기' : '더보기' }}
+              </button>
+            </div>
           </div>
 
           <!-- 해시태그 -->
@@ -120,7 +134,7 @@
 </template>
 
 <script>
-import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { postAPI, userAPI } from '@/services/api'
@@ -1000,6 +1014,47 @@ export default {
       return dateString
     }
 
+    // 캡션 텍스트 요소 참조 저장
+    const captionRefs = ref(new Map())
+
+    // 캡션 참조 설정
+    const setCaptionRef = (postId, el) => {
+      if (el) {
+        captionRefs.value.set(postId, el)
+        // DOM 요소가 준비된 후 높이 확인
+        nextTick(() => {
+          checkTextOverflow(postId)
+        })
+      }
+    }
+
+    // 텍스트 오버플로우 확인 (실제 DOM 높이 기반)
+    const checkTextOverflow = (postId) => {
+      const post = posts.value.find(p => p.id === postId)
+      const element = captionRefs.value.get(postId)
+      
+      if (!post || !element) return
+
+      // 2줄 높이 계산 (line-height 1.5 * font-size * 2줄)
+      const computedStyle = window.getComputedStyle(element)
+      const lineHeight = parseFloat(computedStyle.lineHeight) || parseFloat(computedStyle.fontSize) * 1.5
+      const twoLineHeight = lineHeight * 2
+
+      // 실제 스크롤 높이와 비교
+      const actualHeight = element.scrollHeight
+      
+      // 실제 높이가 2줄 높이보다 크면 더보기 버튼 표시
+      post.showMoreBtn = actualHeight > twoLineHeight + 2 // 2px 여유
+    }
+
+    // 더보기/접기 토글
+    const toggleExpansion = (postId) => {
+      const post = posts.value.find(p => p.id === postId)
+      if (post) {
+        post.isExpanded = !post.isExpanded
+      }
+    }
+
     // 라우트 변경 감지
     watch(() => route.path, async (newPath, oldPath) => {
       if (newPath === '/diarys' && oldPath !== newPath) {
@@ -1107,7 +1162,10 @@ export default {
       fetchAllFollowStatus,
       fetchAllCommentsPreview,
       formatCommentText,
-      handleSearch
+      handleSearch,
+      setCaptionRef,
+      checkTextOverflow,
+      toggleExpansion
     }
   }
 }
@@ -1541,6 +1599,12 @@ export default {
   margin: 0;
 }
 
+.caption-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .caption-username {
   font-weight: 600;
   color: #1E293B;
@@ -1551,6 +1615,41 @@ export default {
   color: #374151;
   font-size: 0.9rem;
   margin: 0;
+  line-height: 1.5;
+  word-wrap: break-word;
+  word-break: break-word;
+  white-space: pre-wrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.caption-text.expanded {
+  display: block;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+  overflow: visible;
+}
+
+.more-btn {
+  background: none;
+  border: none;
+  color: #FF8B8B;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 0;
+  text-align: left;
+  transition: all 0.3s ease;
+  align-self: flex-start;
+}
+
+.more-btn:hover {
+  color: #FF6B6B;
+  text-decoration: underline;
 }
 
 /* 해시태그 */

@@ -38,8 +38,22 @@
 
         <!-- 캡션 -->
         <div class="caption" v-if="postData?.content">
-          <span class="caption-username">{{ postData?.userName || postData?.petName }}</span>
-          <span class="caption-text">{{ removeHashtags(postData?.content) }}</span>
+          <div class="caption-content">
+            <span 
+              ref="captionTextRef"
+              class="caption-text"
+              :class="{ 'expanded': isContentExpanded }"
+            >
+              {{ removeHashtags(postData?.content) }}
+            </span>
+            <button 
+              v-if="showMoreBtn"
+              @click="toggleContentExpansion"
+              class="more-btn"
+            >
+              {{ isContentExpanded ? '접기' : '더보기' }}
+            </button>
+          </div>
         </div>
 
         <!-- 해시태그 -->
@@ -127,7 +141,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { postAPI, userAPI } from '@/services/api';
 import LikesModal from '@/components/LikesModal.vue';
@@ -174,6 +188,9 @@ export default {
     const isLoadingComments = ref(false);
     const isLikeProcessing = ref(false); // 좋아요 처리 중 상태
     const followProcessing = ref(false); // 팔로우 처리 중 상태
+    const isContentExpanded = ref(false); // 컨텐츠 확장 상태
+    const showMoreBtn = ref(false); // 더보기 버튼 표시 여부
+    const captionTextRef = ref(null); // 캡션 텍스트 요소 참조
     
     // 현재 사용자 정보
     const currentUser = computed(() => authStore.user);
@@ -477,12 +494,12 @@ export default {
           postData.value.previewComments = allComments.slice(0, 5);
           console.log('댓글 미리보기 설정 완료:', postData.value.previewComments);
         } else {
-          postData.value.previewComments = [];
-        }
-      } catch (error) {
-        console.error('댓글 미리보기 조회 실패:', error);
-        postData.value.previewComments = [];
-      }
+                                postData.value.previewComments = [];
+                    }
+                  } catch (error) {
+                    console.error('댓글 미리보기 조회 실패:', error);
+                    postData.value.previewComments = [];
+                  }
     };
     
     // 댓글 추가
@@ -732,6 +749,10 @@ export default {
                     $router.push('/diarys');
                   } finally {
                     isLoading.value = false;
+                    // 텍스트 오버플로우 확인
+                    nextTick(() => {
+                      checkTextOverflow();
+                    });
                   }
                 };
 
@@ -842,6 +863,27 @@ export default {
                   }
                 };
 
+                // 텍스트 오버플로우 확인 (실제 DOM 높이 기반)
+                const checkTextOverflow = () => {
+                  if (!captionTextRef.value) return;
+
+                  // 2줄 높이 계산 (line-height 1.5 * font-size * 2줄)
+                  const computedStyle = window.getComputedStyle(captionTextRef.value);
+                  const lineHeight = parseFloat(computedStyle.lineHeight) || parseFloat(computedStyle.fontSize) * 1.5;
+                  const twoLineHeight = lineHeight * 2;
+
+                  // 실제 스크롤 높이와 비교
+                  const actualHeight = captionTextRef.value.scrollHeight;
+                  
+                  // 실제 높이가 2줄 높이보다 크면 더보기 버튼 표시
+                  showMoreBtn.value = actualHeight > twoLineHeight + 2; // 2px 여유
+                };
+
+                // 더보기/접기 토글
+                const toggleContentExpansion = () => {
+                  isContentExpanded.value = !isContentExpanded.value;
+                };
+
                     // 컴포넌트 마운트 시 데이터 가져오기
                 onMounted(() => {
                   fetchPostData();
@@ -892,6 +934,11 @@ export default {
                     searchByHashtag,
                     goToUserDiary,
                     isLoggedIn,
+                    isContentExpanded,
+                    showMoreBtn,
+                    captionTextRef,
+                    checkTextOverflow,
+                    toggleContentExpansion,
                   };
   }
 };
@@ -933,6 +980,12 @@ export default {
   margin: 0;
 }
 
+.caption-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .caption-username {
   font-weight: 600;
   color: #1E293B;
@@ -943,6 +996,41 @@ export default {
   color: #374151;
   font-size: 0.9rem;
   margin: 0;
+  line-height: 1.5;
+  word-wrap: break-word;
+  word-break: break-word;
+  white-space: pre-wrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.caption-text.expanded {
+  display: block;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+  overflow: visible;
+}
+
+.more-btn {
+  background: none;
+  border: none;
+  color: #FF8B8B;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 0;
+  text-align: left;
+  transition: all 0.3s ease;
+  align-self: flex-start;
+}
+
+.more-btn:hover {
+  color: #FF6B6B;
+  text-decoration: underline;
 }
 
 /* 삭제 확인 다이얼로그 스타일 */
