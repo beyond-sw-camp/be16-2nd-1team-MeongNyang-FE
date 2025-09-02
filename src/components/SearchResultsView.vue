@@ -157,7 +157,8 @@ export default {
       default: 'TITLE'
     }
   },
-  setup(props) {
+  emits: ['search'],
+  setup(props, { emit }) {
     const router = useRouter()
     const route = useRoute()
     const authStore = useAuthStore()
@@ -824,7 +825,8 @@ export default {
     // 검색 처리
     const handleSearch = (searchData) => {
       console.log('검색 데이터:', searchData)
-      router.push(`/search?searchType=${searchData.searchType}&keyword=${encodeURIComponent(searchData.keyword)}`)
+      // 부모 컴포넌트에 검색 이벤트 발생
+      emit('search', searchData)
     }
 
     // 게시글 수정
@@ -924,6 +926,25 @@ export default {
         // 라우트가 변경되고 댓글 모달이 열려있다면 닫기 이벤트 발생
         window.dispatchEvent(new Event('comments-modal-close'))
         showCommentsModal.value = false
+      }
+    })
+
+    // 검색 키워드나 타입이 변경될 때 새로운 검색 실행
+    watch([() => props.searchKeyword, () => props.searchType], async ([newKeyword, newType], [oldKeyword, oldType]) => {
+      if (newKeyword !== oldKeyword || newType !== oldType) {
+        console.log('검색 조건 변경 감지:', { oldKeyword, oldType, newKeyword, newType })
+        // 기존 데이터 초기화
+        posts.value = []
+        currentPage.value = 0
+        hasMore.value = true
+        // 새로운 검색 실행
+        await fetchSearchResults(0, false)
+        // 포스트 로딩 완료 후 댓글 수, 팔로우 상태, 댓글 미리보기 조회
+        await Promise.all([
+          fetchAllCommentsCount(),
+          fetchAllFollowStatus(),
+          fetchAllCommentsPreview()
+        ])
       }
     })
 

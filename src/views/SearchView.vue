@@ -12,13 +12,14 @@
       v-if="showSearchResults"
       :search-keyword="searchKeyword"
       :search-type="searchType"
+      @search="handleSearch"
     />
   </div>
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, onMounted, nextTick } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import SearchBar from '@/components/common/SearchBar.vue'
 import SearchResultsView from '@/components/SearchResultsView.vue'
 
@@ -30,6 +31,7 @@ export default {
   },
   setup() {
     const $route = useRoute()
+    const $router = useRouter()
     
     // 검색 상태
     const searchType = ref('CONTENT')
@@ -54,9 +56,22 @@ export default {
     // 검색 처리
     const handleSearch = (searchData) => {
       console.log('SearchView - 검색 데이터 수신:', searchData)
+      
+      // 기존 검색 결과 숨기기
+      showSearchResults.value = false
+      
+      // 검색 조건 업데이트
       searchType.value = searchData.searchType
       searchKeyword.value = searchData.keyword
-      showSearchResults.value = true
+      
+      // URL 업데이트
+      const query = { searchType: searchData.searchType, keyword: searchData.keyword }
+      $router.push({ path: '/search', query })
+      
+      // 다음 tick에서 검색 결과 표시 (props 업데이트를 위해)
+      nextTick(() => {
+        showSearchResults.value = true
+      })
     }
     
     return {
@@ -72,7 +87,7 @@ export default {
 <style scoped>
 .search-page {
   min-height: 100vh;
-  background: #F8FAFC;
+  background: #FFFAF0;
   padding-top: 32px;
   display: flex;
   flex-direction: column;
