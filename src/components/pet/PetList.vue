@@ -171,7 +171,7 @@
                         color="#E87D7D"
                         variant="flat"
                         prepend-icon="mdi-delete"
-                        @click="$emit('delete', representativePet)"
+                        @click="confirmDelete(representativePet)"
                         size="small"
                         rounded="lg"
                         class="action-btn"
