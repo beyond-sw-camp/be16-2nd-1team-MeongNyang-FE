@@ -394,59 +394,216 @@
                 style="display: none"
               />
               
-              <!-- 생일 정보 (사진 아래) -->
-              <div class="birthday-info">
-                <div class="birthday-item">
-                  <v-icon size="20" color="grey-darken-1">mdi-calendar</v-icon>
-                  <span class="info-label">생일</span>
-                  <div v-if="isEditing" class="edit-field">
-                    <v-text-field
-                      :model-value="formatBirthday(editingPet.birthday) || ''"
-                      placeholder="생일 선택"
-                      readonly
-                      variant="outlined"
-                      density="compact"
-                      hide-details="auto"
-                      class="edit-input rounded-input modern-input"
-                      prepend-inner-icon="mdi-calendar"
-                      @click="openDatePicker"
-                      style="cursor: pointer;"
+                          <!-- 생일 필드 (이미지 밑) -->
+            <div class="birthday-field-section">
+              <div class="birthday-field">
+                <label class="birthday-label">생일</label>
+                <div class="birthday-value">
+                  {{ isEditing ? (editingPet?.birthday ? formatBirthday(editingPet.birthday) : '생일을 선택하세요') : (selectedPet?.birthday ? formatBirthday(selectedPet.birthday) : '알 수 없음') }}
+                </div>
+              </div>
+            </div>
+
+
+
+                          <!-- 달력 섹션 - PetForm과 완전히 동일한 구조 -->
+            <div class="calendar-section">
+              <div class="date-picker-main">
+                <!-- 메인 달력 화면 -->
+                <div v-if="!showYearPicker && !showMonthPicker" class="main-calendar">
+                  <div class="date-picker-header">
+                    <v-btn
+                      icon="mdi-chevron-left"
+                      variant="text"
+                      @click="previousMonth"
+                      class="nav-btn"
+                    />
+                    <span class="current-month-year" @click="showYearPicker = true">{{ currentDate.getFullYear() }}년 {{ currentDate.getMonth() + 1 }}월</span>
+                    <v-btn
+                      icon="mdi-chevron-right"
+                      variant="text"
+                      @click="nextMonth"
+                      class="nav-btn"
                     />
                   </div>
-                  <span v-else class="info-value">{{ formatBirthday(selectedPet?.birthday) }}</span>
+
+                  <!-- 요일 헤더 -->
+                  <div class="weekdays">
+                    <div v-for="day in weekdays" :key="day" class="weekday">{{ day }}</div>
                 </div>
                 
-                <!-- 생일까지 남은 일수 (편집 모드가 아닐 때만 표시) -->
-                <div v-if="!isEditing && selectedPet?.birthday" class="birthday-countdown">
-                  <v-icon size="18" :color="getBirthdayCountdownColor(selectedPet.birthday)">{{ getBirthdayCountdownIcon(selectedPet.birthday) }}</v-icon>
-                  <span class="countdown-text" :style="{ color: getBirthdayCountdownColor(selectedPet.birthday) }">
-                    {{ getBirthdayCountdown(selectedPet.birthday) }}
-                  </span>
+                  <!-- 날짜 그리드 -->
+                  <div class="calendar-grid">
+                    <div
+                      v-for="date in calendarDates"
+                      :key="date.key"
+                      class="calendar-day"
+                      :class="{
+                        'other-month': !date.isCurrentMonth,
+                        'today': date.isToday,
+                        'selected': date.isSelected,
+                        'birthday': date.isBirthday,
+                        'disabled': date.isDisabled
+                      }"
+                      @click="!date.isDisabled ? selectDate(date) : null"
+                    >
+                      {{ date.date }}
+                    </div>
+                </div>
+                
+                <!-- 날짜 선택 후 액션 버튼들 (수정 모드에서만) -->
+                <div v-if="isEditing && !showYearPicker && !showMonthPicker" class="date-picker-actions">
+                  <v-btn
+                    v-show="selectedDate || editingPet?.birthday"
+                    variant="text"
+                    class="clear-btn"
+                    @click="clearBirthdayFromPicker"
+                  >
+                    초기화
+                  </v-btn>
+                  <div class="right-buttons">
+                    <v-btn
+                      variant="text"
+                      class="cancel-btn"
+                      @click="cancelDateSelection"
+                    >
+                      <v-icon start size="18">mdi-close</v-icon>
+                      취소
+                    </v-btn>
+                    <v-btn
+                      class="confirm-btn"
+                      color="#E87D7D"
+                      @click="confirmDateSelection"
+                    >
+                      확인
+                    </v-btn>
+                  </div>
+                </div>
+
+              </div>
+
+                <!-- 연도 선택 화면 -->
+                <div v-if="showYearPicker" class="year-picker">
+                  <div class="year-picker-header">
+                    <v-btn
+                      icon="mdi-chevron-left"
+                      variant="text"
+                      @click="previousYearRange"
+                      class="nav-btn"
+                    />
+                    <span class="year-range" @click="showYearPicker = false; showMonthPicker = true">{{ yearRangeStart }} - {{ yearRangeEnd }}</span>
+                    <v-btn
+                      icon="mdi-chevron-right"
+                      variant="text"
+                      @click="nextYearRange"
+                      class="nav-btn"
+                    />
+                  </div>
+                  
+                  <div class="year-grid">
+                    <div
+                      v-for="year in yearRange"
+                      :key="year"
+                      :class="['year-cell', {
+                        'selected': year === currentDate.getFullYear()
+                      }]"
+                      @click="selectYear(year)"
+                    >
+                      {{ year }}
+                    </div>
+                </div>
+                
+                  <div class="date-picker-actions">
+                    <v-btn
+                      variant="outlined"
+                      @click="backToMain"
+                      class="cancel-btn"
+                    >
+                      뒤로
+                    </v-btn>
+                    <v-btn
+                      color="#007bff"
+                      @click="confirmYearSelection"
+                      class="confirm-btn"
+                    >
+                      확인
+                    </v-btn>
+                  </div>
+                </div>
+                
+                <!-- 월 선택 화면 -->
+                <div v-if="showMonthPicker" class="month-picker">
+                  <div class="month-picker-header">
+                    <v-btn
+                      icon="mdi-chevron-left"
+                      variant="text"
+                      @click="previousYear"
+                      class="nav-btn"
+                    />
+                    <span class="current-year clickable-year" @click="goToYearPicker">{{ currentDate.getFullYear() }}년</span>
+                    <v-btn
+                      icon="mdi-chevron-right"
+                      variant="text"
+                      @click="nextYear"
+                      class="nav-btn"
+                    />
+                  </div>
+                  
+                  <div class="month-grid">
+                    <div
+                      v-for="month in [1,2,3,4,5,6,7,8,9,10,11,12]"
+                      :key="month"
+                      :class="['month-cell', {
+                        'selected': month === selectedMonth
+                      }]"
+                      @click="selectMonth(month)"
+                    >
+                      {{ month }}월
+              </div>
+                </div>
+                
+                  <div class="date-picker-actions">
+                    <v-btn
+                      variant="outlined"
+                      @click="backToMain"
+                      class="cancel-btn"
+                    >
+                      뒤로
+                    </v-btn>
+                    <v-btn
+                      color="#007bff"
+                      @click="confirmMonthSelection"
+                      class="confirm-btn"
+                    >
+                      확인
+                    </v-btn>
+                  </div>
                 </div>
                 
 
               </div>
+            </div>
+
               </div>
 
             <div class="pet-details-detail">
               <div class="detail-section">
                 <h4 class="section-title">기본 정보</h4>
-                <div class="info-grid compact-info-grid">
-                  <div class="info-item compact-info-item species-item">
-                    <v-icon size="18" color="grey-darken-1">mdi-paw</v-icon>
-                    <span class="info-label compact-label">종류</span>
-                    <div v-if="isEditing" class="edit-field compact-edit-field">
+                <div v-if="isEditing" class="form-fields-section compact-form-section">
+                  <!-- 종류 -->
+                  <div class="form-field compact-form-field">
+                    <label class="field-label compact-label">반려동물 종류 *</label>
                       <v-autocomplete
                         v-model="editingPet.speciesId"
                         :items="speciesOptions"
                         item-title="species"
                         item-value="speciesId"
+                      placeholder="종류를 검색하세요"
                         variant="outlined"
+                      rounded="lg"
+                      class="form-input modern-input"
+                      hide-details="auto"
                         density="compact"
-                        hide-details
-                        class="edit-input modern-input"
-                        placeholder="종류 선택"
-                        :model-value="editingPet.speciesId"
                         @update:model-value="(value) => {
                           console.log('🔍 종류 선택 변경:', {
                             newValue: value,
@@ -463,38 +620,36 @@
                         }"
                       />
                     </div>
-                    <span v-else class="info-value compact-value">{{ selectedPet?.species || '알 수 없음' }}</span>
-                  </div>
-                  <div class="info-item compact-info-item name-item">
-                    <v-icon size="18" color="grey-darken-1">mdi-account</v-icon>
-                    <span class="info-label compact-label">이름</span>
-                    <div v-if="isEditing" class="edit-field compact-edit-field">
+
+                  <!-- 이름 -->
+                  <div class="form-field compact-form-field">
+                    <label class="field-label compact-label">반려동물 이름 *</label>
                       <v-text-field
                         v-model="editingPet.name"
+                      placeholder="반려동물 이름을 입력하세요"
                         variant="outlined"
+                      rounded="lg"
+                      class="form-input modern-input"
+                      hide-details="auto"
                         density="compact"
-                        hide-details
-                        class="edit-input modern-input"
-                        placeholder="이름 입력"
                         maxlength="20"
                       />
                     </div>
-                    <span v-else class="info-value compact-value">{{ selectedPet?.name || '알 수 없음' }}</span>
-                  </div>
-                  <div class="info-item compact-info-item">
-                    <v-icon size="18" color="grey-darken-1">mdi-gender-male-female</v-icon>
-                    <span class="info-label compact-label">성별</span>
-                    <div v-if="isEditing" class="edit-field compact-edit-field">
+
+                  <!-- 성별 -->
+                  <div class="form-field compact-form-field">
+                    <label class="field-label compact-label">성별 *</label>
                       <v-select
                         v-model="editingPet.gender"
                         :items="genderOptions"
                         item-title="title"
                         item-value="value"
+                      placeholder="성별을 선택하세요"
                         variant="outlined"
+                      rounded="lg"
+                      class="form-input modern-input"
+                      hide-details="auto"
                         density="compact"
-                        hide-details
-                        class="edit-input modern-input"
-                        placeholder="성별 선택"
                         @update:model-value="(value) => {
                           console.log('🔍 성별 선택 변경:', {
                             newValue: value,
@@ -505,20 +660,19 @@
                         }"
                       />
                     </div>
-                    <span v-else class="info-value compact-value">{{ getGenderLabel(selectedPet?.gender) }}</span>
-                  </div>
-                  <div class="info-item compact-info-item">
-                    <v-icon size="18" color="grey-darken-1">mdi-cake-variant</v-icon>
-                    <span class="info-label compact-label">나이</span>
-                    <div v-if="isEditing" class="edit-field compact-edit-field">
+
+                  <!-- 나이 -->
+                  <div class="form-field compact-form-field">
+                    <label class="field-label compact-label">나이 *</label>
                       <v-text-field
                         v-model="editingPet.age"
                         type="number"
+                      :placeholder="editingPet.birthday ? '자동 계산됨' : '나이를 입력하세요'"
                         variant="outlined"
-                        density="compact"
+                      rounded="lg"
+                      class="form-input modern-input"
                         hide-details="auto"
-                        class="edit-input modern-input"
-                        :placeholder="editingPet.birthday ? '자동 계산됨' : '나이를 입력하세요'"
+                      density="compact"
                         min="0"
                         max="30"
                         :readonly="!!editingPet.birthday"
@@ -528,27 +682,102 @@
                         ref="ageInput"
                       />
                     </div>
-                    <span v-else class="info-value compact-value">{{ selectedPet?.age !== null && selectedPet?.age !== undefined ? selectedPet.age + '살' : '알 수 없음' }}</span>
-                  </div>
-                  <div class="info-item compact-info-item">
-                    <v-icon size="18" color="grey-darken-1">mdi-weight</v-icon>
-                    <span class="info-label compact-label">체중</span>
-                    <div v-if="isEditing" class="edit-field compact-edit-field">
+
+                  <!-- 몸무게 -->
+                  <div class="form-field compact-form-field">
+                    <label class="field-label compact-label">몸무게 (kg) *</label>
                       <v-text-field
                         v-model="editingPet.weight"
                         type="number"
+                      placeholder="몸무게를 입력하세요"
                         variant="outlined"
+                      rounded="lg"
+                      class="form-input modern-input"
+                      hide-details="auto"
                         density="compact"
-                        hide-details
-                        class="edit-input modern-input"
-                        placeholder="체중 입력"
                         min="0.1"
                         max="100"
                         step="0.1"
                       />
                     </div>
-                    <span v-else class="info-value compact-value">{{ selectedPet?.weight || '알 수 없음' }}kg</span>
+
+
                   </div>
+
+                <!-- 읽기 전용 모드 -->
+                <div v-else class="form-fields-section compact-form-section">
+                  <!-- 종류 -->
+                  <div class="form-field compact-form-field">
+                    <label class="field-label compact-label">반려동물 종류 *</label>
+                    <v-text-field
+                      :model-value="selectedPet?.species || '알 수 없음'"
+                      variant="outlined"
+                      rounded="lg"
+                      class="form-input modern-input"
+                      hide-details="auto"
+                      density="compact"
+                      readonly
+                    />
+                </div>
+
+                  <!-- 이름 -->
+                  <div class="form-field compact-form-field">
+                    <label class="field-label compact-label">반려동물 이름 *</label>
+                    <v-text-field
+                      :model-value="selectedPet?.name || '알 수 없음'"
+                      variant="outlined"
+                      rounded="lg"
+                      class="form-input modern-input"
+                      hide-details="auto"
+                      density="compact"
+                      readonly
+                    />
+              </div>
+
+                  <!-- 성별 -->
+                  <div class="form-field compact-form-field">
+                    <label class="field-label compact-label">성별 *</label>
+                    <v-text-field
+                      :model-value="getGenderLabel(selectedPet?.gender) || '알 수 없음'"
+                      variant="outlined"
+                      rounded="lg"
+                      class="form-input modern-input"
+                      hide-details="auto"
+                      density="compact"
+                      readonly
+                    />
+                  </div>
+
+                  <!-- 나이 -->
+                  <div class="form-field compact-form-field">
+                    <label class="field-label compact-label">나이 *</label>
+                    <v-text-field
+                      :model-value="selectedPet?.age !== null && selectedPet?.age !== undefined ? selectedPet.age + '살' : '알 수 없음'"
+                      variant="outlined"
+                      rounded="lg"
+                      class="form-input modern-input"
+                      hide-details="auto"
+                      density="compact"
+                      readonly
+                    />
+                  </div>
+
+                  <!-- 몸무게 -->
+                  <div class="form-field compact-form-field">
+                    <label class="field-label compact-label">몸무게 (kg) *</label>
+                    <v-text-field
+                      :model-value="selectedPet?.weight ? selectedPet.weight + 'kg' : '알 수 없음'"
+                      variant="outlined"
+                      rounded="lg"
+                      class="form-input modern-input"
+                      hide-details="auto"
+                      density="compact"
+                      readonly
+                    />
+                  </div>
+
+
+                  
 
                 </div>
               </div>
@@ -883,18 +1112,22 @@ export default {
     const selectedPet = shallowRef(null)
     const showEditForm = ref(false)
     const isEditing = ref(false)
-    const editingPet = ref(null)
-    const saving = ref(false)
-    const showDatePicker = ref(false)
     
-    // 달력 관련 변수들
+    // 달력 관련 상태 - PetForm과 동일
     const currentDate = ref(new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"})))
     const selectedDate = ref(null)
     const showYearPicker = ref(false)
     const showMonthPicker = ref(false)
     const selectedMonth = ref(null)
-    const yearRangeStart = ref(2017)
-    const yearRangeEnd = ref(2028)
+
+    const yearRangeStart = ref(2017) // 2017년부터
+    const yearRangeEnd = ref(2028)   // 2028년까지
+    const weekdays = ['일', '월', '화', '수', '목', '금', '토']
+    const editingPet = ref(null)
+    const saving = ref(false)
+    const showDatePicker = ref(false)
+    
+    // 달력 관련 변수들
     
     // 등록 화면과 동일한 옵션들
     const speciesOptions = computed(() => {
@@ -1033,6 +1266,152 @@ export default {
       if (countdown.includes('7일') || countdown.includes('일 남았어요')) return '#4ECDC4'
       return '#95A5A6'
     }
+    
+    // 달력 관련 함수들 - PetForm과 동일
+    const yearRange = computed(() => {
+      const years = []
+      // 10년 범위 내에서 모든 연도 표시 (예: 2017-2025)
+      for (let i = yearRangeStart.value; i <= yearRangeEnd.value; i++) {
+        years.push(i)
+      }
+      return years
+    })
+    
+    const previousYear = () => {
+      const newDate = new Date(currentDate.value)
+      newDate.setFullYear(newDate.getFullYear() - 1)
+      currentDate.value = newDate
+    }
+    
+    const nextYear = () => {
+      const newDate = new Date(currentDate.value)
+      newDate.setFullYear(newDate.getFullYear() + 1)
+      currentDate.value = newDate
+    }
+    
+    const previousMonth = () => {
+      const newDate = new Date(currentDate.value)
+      newDate.setMonth(newDate.getMonth() - 1)
+      currentDate.value = newDate
+    }
+    
+    const nextMonth = () => {
+      const newDate = new Date(currentDate.value)
+      newDate.setMonth(newDate.getMonth() + 1)
+      currentDate.value = newDate
+    }
+    
+    const selectDate = (dateObj) => {
+      if (!dateObj.isCurrentMonth || dateObj.isDisabled) return
+      
+      // 수정 모드가 아니면 selectedDate 설정하지 않음
+      if (!isEditing.value) {
+        console.log('📅 수정 모드가 아니므로 날짜 선택 무시')
+        return
+      }
+      
+      const year = currentDate.value.getFullYear()
+      const month = currentDate.value.getMonth()
+      const selected = new Date(year, month, dateObj.date)
+      
+      console.log('📅 날짜 선택 전:', {
+        selectedDateBefore: selectedDate.value,
+        isEditing: isEditing.value
+      })
+      
+      selectedDate.value = selected
+      
+      console.log('📅 날짜 선택 후:', {
+        selectedDate: selected,
+        selectedDateValue: selectedDate.value,
+        isEditing: isEditing.value,
+        dateObj: dateObj
+      })
+      
+      // 강제로 반응형 업데이트 트리거
+      nextTick(() => {
+        console.log('📅 nextTick 후:', {
+          selectedDate: selectedDate.value,
+          isEditing: isEditing.value
+        })
+        
+        // 강제로 DOM 업데이트 트리거
+        const actionsDiv = document.querySelector('.date-picker-actions')
+        if (actionsDiv) {
+          console.log('📅 액션 버튼 div 발견:', actionsDiv)
+        } else {
+          console.log('📅 액션 버튼 div 없음')
+          
+          // 강제로 반응형 업데이트 트리거
+          selectedDate.value = new Date(selected)
+          console.log('📅 강제 재설정 후:', selectedDate.value)
+        }
+      })
+    }
+    
+
+    
+    const calendarDates = computed(() => {
+      const year = currentDate.value.getFullYear()
+      const month = currentDate.value.getMonth()
+      const firstDay = new Date(year, month, 1)
+      const lastDay = new Date(year, month + 1, 0)
+      const firstDayOfWeek = firstDay.getDay()
+      const today = new Date()
+      
+      const dates = []
+      
+      // 이전 달의 마지막 날들
+      for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+        const date = new Date(year, month, -i)
+        dates.push({
+          date: date.getDate(),
+          isCurrentMonth: false,
+          isToday: false,
+          isSelected: false,
+          key: `prev-${date.getDate()}`
+        })
+      }
+      
+      // 현재 달의 날들
+      for (let day = 1; day <= lastDay.getDate(); day++) {
+        const date = new Date(year, month, day)
+        const isToday = date.toDateString() === today.toDateString()
+        const isSelected = selectedDate.value && date.toDateString() === selectedDate.value.toDateString()
+        const isDisabled = date > today // 오늘 이후 날짜는 비활성화
+        
+        // 생일 날짜 확인 (editingPet이 있을 때만)
+        let isBirthday = false
+        if (editingPet.value && editingPet.value.birthday) {
+          const birthdayDate = new Date(editingPet.value.birthday)
+          isBirthday = date.toDateString() === birthdayDate.toDateString()
+        }
+        
+        dates.push({
+          date: day,
+          isCurrentMonth: true,
+          isToday,
+          isSelected,
+          isDisabled,
+          isBirthday,
+          key: `current-${day}`
+        })
+      }
+      
+      // 다음 달의 첫 날들 (42개 셀을 채우기 위해)
+      const remainingCells = 42 - dates.length
+      for (let day = 1; day <= remainingCells; day++) {
+        dates.push({
+          date: day,
+          isCurrentMonth: false,
+          isToday: false,
+          isSelected: false,
+          key: `next-${day}`
+        })
+      }
+      
+      return dates
+    })
     
     // 나이 계산 함수 (더 정확한 계산)
     const calculateAge = (birthday) => {
@@ -1293,7 +1672,19 @@ export default {
           return
         }
         
+        // 달력을 DB에 저장된 생일 날짜로 초기화
         const pet = selectedPet.value
+        if (pet.birthday) {
+          const birthdayDate = new Date(pet.birthday)
+          currentDate.value = birthdayDate
+          selectedDate.value = birthdayDate
+          console.log('📅 달력을 생일 날짜로 초기화:', birthdayDate)
+        } else {
+          // 생일이 없으면 현재 날짜로 초기화
+          currentDate.value = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
+          selectedDate.value = null
+          console.log('📅 생일이 없어서 현재 날짜로 초기화')
+        }
         
         // 원본 데이터 백업
         originalPetData.value = {
@@ -1349,17 +1740,7 @@ export default {
       }
     }
     
-    // 날짜 선택 관련
-    const openDatePicker = () => {
-      // DB에 저장된 날짜가 있으면 해당 날짜로 달력 이동
-      if (editingPet.value?.birthday) {
-        const savedDate = new Date(editingPet.value.birthday)
-        currentDate.value = new Date(savedDate.getFullYear(), savedDate.getMonth(), 1)
-        selectedDate.value = savedDate
-        console.log('📅 달력 열기 - DB 날짜로 이동:', savedDate)
-      }
-      showDatePicker.value = true
-    }
+
     
     const handleDateSelection = (date) => {
       // 날짜가 선택되면 editingPet에 저장하고 모달 닫기
@@ -1645,85 +2026,7 @@ export default {
       console.log('🔄 PetList 컴포넌트 마운트 완료')
     })
     
-    // 달력 관련 함수들
-    const yearRange = computed(() => {
-      const years = []
-      for (let i = yearRangeStart.value; i <= yearRangeEnd.value; i++) {
-        years.push(i)
-      }
-      return years
-    })
-    
-    const previousYear = () => {
-      const newDate = new Date(currentDate.value)
-      newDate.setFullYear(newDate.getFullYear() - 1)
-      currentDate.value = newDate
-    }
-    
-    const nextYear = () => {
-      const newDate = new Date(currentDate.value)
-      newDate.setFullYear(newDate.getFullYear() + 1)
-      currentDate.value = newDate
-    }
-    
-    const previousMonth = () => {
-      const newDate = new Date(currentDate.value)
-      newDate.setMonth(newDate.getMonth() - 1)
-      currentDate.value = newDate
-    }
-    
-    const nextMonth = () => {
-      const newDate = new Date(currentDate.value)
-      newDate.setMonth(newDate.getMonth() + 1)
-      currentDate.value = newDate
-    }
-    
-    const calendarDates = computed(() => {
-      const year = currentDate.value.getFullYear()
-      const month = currentDate.value.getMonth()
-      const firstDay = new Date(year, month, 1)
-      const lastDay = new Date(year, month + 1, 0)
-      const startDate = new Date(firstDay)
-      startDate.setDate(startDate.getDate() - firstDay.getDay())
-      
-      const dates = []
-      const today = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
-      today.setHours(0, 0, 0, 0) // 시간을 00:00:00으로 설정
-      
-      // 6주(42일) 또는 마지막 날짜까지 표시
-      const totalDays = Math.max(42, startDate.getDate() + lastDay.getDate() + (6 - Math.ceil((startDate.getDate() + lastDay.getDate()) / 7)) * 7)
-      
-      for (let i = 0; i < totalDays; i++) {
-        const date = new Date(startDate.getTime() + (i * 24 * 60 * 60 * 1000))
-        date.setHours(0, 0, 0, 0) // 시간을 00:00:00으로 설정
-        
-        dates.push({
-          key: i,
-          day: date.getDate(),
-          date: date,
-          isCurrentMonth: date.getMonth() === month,
-          isSelected: selectedDate.value && date.toDateString() === selectedDate.value.toDateString(),
-          isToday: date.toDateString() === today.toDateString(),
-          isDisabled: date > today // 오늘 이후 날짜는 비활성화
-        })
-      }
-      
-      return dates
-    })
-    
-    const selectDate = (date) => {
-      selectedDate.value = date.date
-    }
-    
-    const previousYearRange = () => {
-      yearRangeStart.value -= 12
-      yearRangeEnd.value -= 12
-    }
-    
-    const nextYearRange = () => {
-      yearRangeStart.value += 12
-      yearRangeEnd.value += 12
-    }
+
     
     const selectMonth = (month) => {
       // 월을 선택하면 해당 월의 달력으로 이동
@@ -1756,28 +2059,7 @@ export default {
       showYearPicker.value = false
     }
     
-    const clearBirthdayFromPicker = () => {
-      if (editingPet.value) {
-        editingPet.value.birthday = null
-        editingPet.value.age = null  // 나이도 초기화
-      }
-      selectedDate.value = null
-      
-      // 초기화 후 자동으로 달력 닫기
-      showDatePicker.value = false
-      showYearPicker.value = false
-      showMonthPicker.value = false
-      
-      showSnackbar('생일이 초기화되었습니다. 나이를 직접 입력해주세요.', 'warning')
-      
-      // 나이 입력 필드에 포커스 (약간의 지연 후)
-      setTimeout(() => {
-        const ageInput = document.querySelector('.info-item .edit-field input[type="number"]')
-        if (ageInput) {
-          ageInput.focus()
-        }
-      }, 100)
-    }
+
     
     const confirmMonthSelection = () => {
       if (selectedMonth.value) {
@@ -1787,18 +2069,32 @@ export default {
       }
     }
     
+    const previousYearRange = () => {
+      yearRangeStart.value -= 10
+      yearRangeEnd.value -= 10
+    }
+    
+    const nextYearRange = () => {
+      yearRangeStart.value += 10
+      yearRangeEnd.value += 10
+    }
+    
+    const clearBirthdayFromPicker = () => {
+      if (editingPet.value) {
+        editingPet.value.birthday = null
+        editingPet.value.age = null  // 나이도 초기화
+      }
+      selectedDate.value = null
+      showSnackbar('생일이 초기화되었습니다. 나이를 직접 입력해주세요.', 'warning')
+    }
+    
     const cancelDateSelection = () => {
       // 원본 데이터로 롤백
       if (originalPetData.value && editingPet.value) {
         editingPet.value.birthday = originalPetData.value.birthday
         editingPet.value.age = originalPetData.value.age
       }
-      
-      showDatePicker.value = false
-      showYearPicker.value = false
-      showMonthPicker.value = false
       selectedDate.value = null
-      selectedMonth.value = null
     }
     
     const confirmDateSelection = () => {
@@ -1812,14 +2108,14 @@ export default {
           console.log('📅 생일 변경으로 나이 자동 계산:', { birthday: editingPet.value.birthday, age })
         }
         
-        showDatePicker.value = false
-        showYearPicker.value = false
-        showMonthPicker.value = false
         selectedDate.value = null
-        selectedMonth.value = null
         showSnackbar('생일이 선택되었습니다.', 'success')
       }
     }
+    
+
+    
+
     
     // 생일 삭제
     const clearBirthday = () => {
@@ -1890,8 +2186,6 @@ export default {
         saving,
         showDatePicker,
         // 달력 관련 변수들
-        currentDate,
-        selectedDate,
         showYearPicker,
         showMonthPicker,
         selectedMonth,
@@ -1911,6 +2205,15 @@ export default {
       getBirthdayCountdownIcon,
       getBirthdayCountdownColor,
         calculateAge,
+      // 달력 관련
+      currentDate,
+      selectedDate,
+      weekdays,
+      calendarDates,
+      previousMonth,
+      nextMonth,
+      selectDate,
+
       getSpeciesIcon,
       getSpeciesIconColor,
       getGenderColor,
@@ -1932,25 +2235,20 @@ export default {
         onImageFileChange,
         handleCrop,
         saveChanges,
-        openDatePicker,
         handleDateSelection,
         // 달력 관련 함수들
         yearRange,
         previousYear,
         nextYear,
-        previousMonth,
-        nextMonth,
-        calendarDates,
-        selectDate,
-        previousYearRange,
-        nextYearRange,
         selectMonth,
         selectYear,
         backToMain,
         goToYearPicker,
         confirmYearSelection,
-        clearBirthdayFromPicker,
         confirmMonthSelection,
+        previousYearRange,
+        nextYearRange,
+        clearBirthdayFromPicker,
         cancelDateSelection,
         confirmDateSelection,
         clearBirthday,
@@ -2726,13 +3024,428 @@ export default {
 .detail-layout {
   display: flex;
   gap: 24px;
-  align-items: flex-start;
+  align-items: stretch; /* flex-start에서 stretch로 변경하여 높이 맞춤 */
   margin-bottom: 24px;
 }
 
 .pet-image-detail {
   flex-shrink: 0;
-  width: 280px;
+  width: 350px; /* 280px에서 350px로 증가 */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start; /* center에서 flex-start로 변경 */
+  align-items: center;
+  min-height: 500px; /* 기본정보 영역과 높이 맞춤 */
+}
+
+/* 생일 카운트다운 섹션 */
+.birthday-countdown-section {
+  margin-top: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.birthday-countdown {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  width: 100%;
+  max-width: 200px;
+}
+
+.countdown-text {
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* 생일 필드 스타일 */
+.birthday-field-section {
+  margin-top: 16px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0 20px; /* 달력과 같은 패딩 */
+}
+
+.birthday-field {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  width: 100%;
+  max-width: none; /* 200px 제한 제거 */
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+
+
+.birthday-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+  margin: 0;
+}
+
+.birthday-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  text-align: center;
+}
+
+
+
+/* 달력 스타일 - PetForm과 완전히 동일 */
+.calendar-section {
+  margin-top: 16px;
+  width: 100%;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  max-height: 500px; /* 400px에서 500px로 증가 */
+}
+
+.current-month-year {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #333;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.current-month-year:hover {
+  background: #ffe6e6 !important;
+  color: #d32f2f;
+  border-color: #f44336;
+}
+
+.year-picker {
+  padding: 20px;
+}
+
+.year-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding: 0;
+}
+
+.year-range {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #333;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.year-range:hover {
+  background: #ffe6e6 !important;
+  color: #d32f2f;
+}
+
+.year-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* 4열로 복원 */
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.year-cell {
+  padding: 16px 12px; /* 12px 8px에서 16px 12px로 증가 */
+  text-align: center;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  border: 1px solid transparent;
+  font-size: 16px; /* 폰트 크기 추가 */
+}
+
+.year-cell:hover {
+  background: #ffe6e6 !important;
+  color: #d32f2f;
+  border-color: #f44336;
+}
+
+.year-cell.selected {
+  background: #ffe6e6 !important;
+  color: #d32f2f !important;
+  border-color: #f44336;
+  font-weight: 600;
+}
+
+.month-picker {
+  padding: 20px;
+}
+
+.month-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding: 0;
+}
+
+.current-year {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.clickable-year {
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.clickable-year:hover {
+  background: #ffe6e6 !important;
+  color: #d32f2f;
+}
+
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.month-cell {
+  padding: 16px 8px;
+  text-align: center;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  border: 1px solid transparent;
+}
+
+.month-cell:hover {
+  background: #ffe6e6 !important;
+  color: #d32f2f;
+  border-color: #f44336;
+}
+
+.month-cell.selected {
+  background: #ffe6e6 !important;
+  color: #d32f2f !important;
+  border-color: #f44336;
+  font-weight: 600;
+}
+
+.date-picker-actions {
+  padding: 16px 20px;
+  background: white !important;
+  border-top: 1px solid #e0e0e0;
+  display: flex !important;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  min-height: 60px;
+  z-index: 10;
+}
+
+.reset-link {
+  color: #E87D7D;
+  cursor: pointer;
+  font-weight: 600; /* 500에서 600으로 증가 */
+  font-size: 14px; /* 12px에서 14px로 증가 */
+  text-decoration: none;
+  transition: color 0.2s ease;
+  position: absolute;
+  left: 20px;
+  padding: 4px 8px;
+}
+
+.reset-link:hover {
+  color: #d32f2f;
+  text-decoration: underline;
+}
+
+.cancel-btn {
+  background: white !important;
+  border: 1px solid #e0e0e0 !important;
+  color: #666 !important;
+  border-radius: 6px !important;
+  padding: 6px 12px !important;
+  font-weight: 500 !important;
+  font-size: 14px !important; /* 13px에서 14px로 증가 */
+  box-shadow: none !important;
+  min-width: 60px !important;
+}
+
+.cancel-btn:hover {
+  background: #f5f5f5 !important;
+  border-color: #ccc !important;
+}
+
+.confirm-btn {
+  background: #E87D7D !important;
+  color: white !important;
+  border-radius: 6px !important;
+  padding: 6px 16px !important;
+  font-weight: 500 !important;
+  font-size: 14px !important; /* 13px에서 14px로 증가 */
+  box-shadow: none !important;
+  min-width: 70px !important;
+}
+
+.confirm-btn:hover {
+  background: #d32f2f !important;
+}
+
+.date-picker-main {
+  padding: 20px; /* 16px에서 20px로 증가 */
+}
+
+.date-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.date-picker-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.nav-btn {
+  color: #666 !important;
+  transition: all 0.2s ease;
+}
+
+.nav-btn:hover {
+  color: #E87D7D !important;
+  background: rgba(232, 125, 125, 0.1) !important;
+}
+
+.weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 8px;
+}
+
+.weekday {
+  text-align: center;
+  font-size: 13px; /* 12px에서 13px로 증가 */
+  font-weight: 600;
+  color: #666;
+  padding: 8px 2px; /* 6px에서 8px로 증가 */
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.calendar-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px; /* 12px에서 13px로 증가 */
+  font-weight: 500;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  position: relative;
+  border: 1px solid transparent;
+  background: white;
+  min-height: 32px; /* 28px에서 32px로 증가 */
+}
+
+.calendar-day:not(.other-month) {
+  cursor: pointer;
+}
+
+.calendar-day:hover {
+  background: #ffe6e6 !important;
+  border-color: #f44336;
+  color: #d32f2f;
+  transform: scale(1.05);
+}
+
+.calendar-day.other-month {
+  color: #ccc;
+}
+
+.calendar-day.today {
+  background: #e3f2fd;
+  border-color: #2196f3;
+  color: #1976d2;
+  font-weight: 600;
+}
+
+.calendar-day.birthday {
+  background: #fff3e0;
+  border-color: #ff9800;
+  color: #f57c00;
+  font-weight: 600;
+}
+
+.calendar-day.birthday::after {
+  content: '🎂';
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 10px;
+}
+
+.calendar-day.today.birthday {
+  background: linear-gradient(135deg, #e3f2fd, #fff3e0);
+  border-color: #2196f3;
+  color: #1976d2;
+}
+
+.calendar-day.selected {
+  background: #ffe6e6 !important;
+  color: #d32f2f !important;
+  box-shadow: 0 2px 8px rgba(211, 47, 47, 0.2);
+  border-color: #f44336;
+  font-weight: 600;
+}
+
+.calendar-day.disabled {
+  color: #ccc !important;
+  background: #f5f5f5 !important;
+  cursor: not-allowed !important;
+  opacity: 0.5;
+}
+
+.calendar-day.disabled:hover {
+  background: #f5f5f5 !important;
+  color: #ccc !important;
+  transform: none !important;
+  border-color: transparent !important;
 }
 
 .pet-details-detail {
@@ -2740,6 +3453,7 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  min-height: 500px; /* 달력 높이와 맞춤 */
 }
 
 .detail-pet-image {
@@ -2770,9 +3484,10 @@ export default {
 
 .detail-section {
   background: #f8fafc;
-  padding: 24px;
+  padding: 28px; /* 24px에서 28px로 증가 */
   border-radius: 16px;
   border: 1px solid #e2e8f0;
+  flex: 1; /* 남은 공간을 모두 차지 */
 }
 
 .section-title {
@@ -2906,6 +3621,7 @@ export default {
   border-radius: 16px;
   border: 1px solid #e2e8f0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  flex: 1; /* 남은 공간을 모두 차지 */
 }
 
 .introduction-title {
@@ -3134,8 +3850,81 @@ export default {
   max-width: 400px !important;
 }
 
+/* 1열 레이아웃 */
+.compact-info-grid.single-column {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  max-width: none !important;
+}
+
 .compact-info-item {
   padding: 8px 0 !important;
+}
+
+/* PetForm 스타일 적용 */
+.form-fields-section {
+  display: flex;
+  flex-direction: column;
+  gap: 28px; /* 24px에서 28px로 증가 */
+  padding: 0 0 28px; /* 24px에서 28px로 증가 */
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* 8px에서 10px로 증가 */
+}
+
+.field-label {
+  font-weight: 600;
+  color: #374151;
+  font-size: 14px;
+}
+
+.compact-form-field {
+  margin-bottom: 16px;
+}
+
+.compact-label {
+  font-size: 14px;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.compact-hint {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+/* 1열 레이아웃에서 각 항목 스타일 */
+.compact-info-grid.single-column .compact-info-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 12px 16px !important;
+  background: #f8fafc !important;
+  border-radius: 8px !important;
+  border: 1px solid #e2e8f0 !important;
+  margin-bottom: 4px !important;
+}
+
+.compact-info-grid.single-column .compact-info-item .info-label {
+  min-width: 60px !important;
+  font-weight: 500 !important;
+  color: #374151 !important;
+}
+
+.compact-info-grid.single-column .compact-info-item .info-value {
+  flex: 1 !important;
+  font-weight: 500 !important;
+  color: #111827 !important;
+}
+
+.compact-info-grid.single-column .compact-info-item .edit-field {
+  flex: 1 !important;
+  margin: 0 !important;
 }
 
 .compact-label {
