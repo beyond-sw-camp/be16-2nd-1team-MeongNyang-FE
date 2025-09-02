@@ -1,11 +1,14 @@
 <template>
-  <v-dialog v-model="show" max-width="600" persistent>
-    <v-card class="image-cropper-dialog">
-      <v-card-title class="text-h6">
-        이미지 크롭
-      </v-card-title>
+  <v-dialog v-model="show" max-width="600" persistent content-class="image-cropper-dialog" :draggable="false">
+    <v-card class="image-cropper-card">
+      <!-- 헤더 섹션 -->
+      <div class="cropper-header">
+        <h2>이미지 크롭</h2>
+        <p>원하는 영역을 선택하여 프로필 사진을 크롭하세요</p>
+      </div>
       
-      <v-card-text>
+      <!-- 크롭 영역 -->
+      <div class="cropper-content">
         <div class="cropper-container">
           <div 
             ref="imageWrapper"
@@ -33,8 +36,7 @@
               icon 
               @click="zoomOut" 
               :disabled="zoomLevel <= 0.5"
-              color="primary"
-              variant="outlined"
+              class="zoom-btn"
               size="small"
             >
               <v-icon>mdi-magnify-minus</v-icon>
@@ -47,49 +49,50 @@
               :step="0.1"
               class="zoom-slider"
               @update:model-value="updateZoom"
-              color="primary"
-              track-color="grey-lighten-2"
+              color="#E87D7D"
+              track-color="#e5e7eb"
             ></v-slider>
             
             <v-btn 
               icon 
               @click="zoomIn" 
               :disabled="zoomLevel >= 3"
-              color="primary"
-              variant="outlined"
+              class="zoom-btn"
               size="small"
             >
               <v-icon>mdi-magnify-plus</v-icon>
             </v-btn>
           </div>
         </div>
-      </v-card-text>
+      </div>
       
-      <v-card-actions>
-        <v-spacer></v-spacer>
+      <!-- 액션 버튼 -->
+      <div class="cropper-actions">
         <v-btn 
           @click="cancel" 
-          variant="outlined"
-          color="grey-darken-1"
+          class="cancel-btn action-btn"
+          rounded="lg"
+          size="large"
         >
           취소
         </v-btn>
         <v-btn 
           @click="crop" 
-          color="primary" 
           :loading="cropping"
           :disabled="cropping"
-          variant="elevated"
+          class="crop-btn action-btn"
+          rounded="lg"
+          size="large"
         >
           크롭
         </v-btn>
-      </v-card-actions>
+      </div>
     </v-card>
   </v-dialog>
 </template>
 
 <script setup>
-import { ref, computed, onUnmounted } from 'vue'
+import { ref, computed, onUnmounted, watch, nextTick } from 'vue'
 
 /* eslint-disable no-undef */
 const props = defineProps({
@@ -376,25 +379,124 @@ const cancel = () => {
   show.value = false
 }
 
+// 드래그 방지 함수
+const preventDrag = (event) => {
+  event.preventDefault()
+  event.stopPropagation()
+  return false
+}
+
 // 컴포넌트 언마운트 시 이벤트 리스너 정리
 onUnmounted(() => {
   document.removeEventListener('mousemove', onDrag)
   document.removeEventListener('mouseup', stopDrag)
   document.removeEventListener('touchmove', onDrag)
   document.removeEventListener('touchend', stopDrag)
+  
+  // 드래그 방지 이벤트 리스너 제거
+  const dialog = document.querySelector('.image-cropper-dialog')
+  if (dialog) {
+    dialog.removeEventListener('dragstart', preventDrag)
+    dialog.removeEventListener('drag', preventDrag)
+    dialog.removeEventListener('dragend', preventDrag)
+  }
+})
+
+// 모달이 열릴 때 드래그 방지 이벤트 추가
+watch(show, (newValue) => {
+  if (newValue) {
+    // 다음 틱에서 DOM이 업데이트된 후 실행
+    nextTick(() => {
+      const dialog = document.querySelector('.image-cropper-dialog')
+      if (dialog) {
+        dialog.addEventListener('dragstart', preventDrag)
+        dialog.addEventListener('drag', preventDrag)
+        dialog.addEventListener('dragend', preventDrag)
+      }
+    })
+  }
 })
 </script>
 
 <style scoped>
+/* 다이얼로그 배경 */
 .image-cropper-dialog {
-  border-radius: 12px;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* 드래그 비활성화 - 더 강력한 설정 */
+.image-cropper-dialog,
+.image-cropper-dialog *,
+.image-cropper-card,
+.image-cropper-card * {
+  user-select: none !important;
+  -webkit-user-drag: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  pointer-events: auto !important;
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  -khtml-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+}
+
+/* 모달 자체 드래그 방지 */
+.image-cropper-dialog .v-overlay__content {
+  pointer-events: auto !important;
+  user-select: none !important;
+  -webkit-user-drag: none !important;
+}
+
+/* Vuetify v-card 기본 스타일 오버라이드 */
+.image-cropper-dialog .v-card {
+  border-radius: 50px !important;
+}
+
+/* 메인 카드 - 매우 둥글게 */
+.image-cropper-card {
+  max-width: 600px;
+  margin: 0 auto;
+  background: #ffffff;
+  border-radius: 50px !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+  border: 1px solid #f1f5f9;
+  overflow: hidden;
+}
+
+/* 헤더 섹션 */
+.cropper-header {
+  text-align: center;
+  padding: 48px 60px 32px;
+  background: transparent;
+}
+
+.cropper-header h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 8px;
+}
+
+.cropper-header p {
+  font-size: 16px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+/* 콘텐츠 영역 */
+.cropper-content {
+  padding: 0 60px 32px;
 }
 
 .cropper-container {
   position: relative;
-  background: #f5f5f5;
-  border-radius: 8px;
+  background: #f8fafc;
+  border-radius: 40px;
   overflow: hidden;
+  border: 2px solid #e2e8f0;
 }
 
 .image-wrapper {
@@ -405,6 +507,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  background: #ffffff;
 }
 
 .cropper-image {
@@ -412,20 +515,147 @@ onUnmounted(() => {
   max-height: 100%;
   object-fit: contain;
   transition: transform 0.2s ease;
+  border-radius: 30px;
 }
 
 .zoom-controls {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 16px;
+  padding: 20px;
   background: white;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid #e2e8f0;
+  border-radius: 0 0 40px 40px;
+}
+
+.zoom-btn {
+  color: #E87D7D !important;
+  border: 2px solid #E87D7D !important;
+  background: white !important;
+  border-radius: 20px !important;
+  transition: all 0.2s ease;
+}
+
+.zoom-btn:hover {
+  background: #E87D7D !important;
+  color: white !important;
+}
+
+.zoom-btn:disabled {
+  color: #9ca3af !important;
+  border-color: #e5e7eb !important;
+  background: #f9fafb !important;
 }
 
 .zoom-slider {
   flex: 1;
   margin: 0 16px;
+}
+
+/* 액션 버튼 */
+.cropper-actions {
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+  padding: 32px 60px 48px;
+  border-top: 1px solid #f1f5f9;
+  background: white;
+}
+
+.action-btn {
+  min-width: 100px;
+  height: 48px;
+  font-weight: 600;
+  font-size: 16px;
+  transition: all 0.2s ease;
+}
+
+.cancel-btn {
+  border: 2px solid #cbd5e1 !important;
+  color: #334155 !important;
+  background: white !important;
+  border-radius: 30px !important;
+}
+
+.cancel-btn:hover {
+  border-color: #9ca3af !important;
+  background-color: #f9fafb !important;
+}
+
+.crop-btn {
+  background: #E87D7D !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 30px !important;
+}
+
+.crop-btn:hover {
+  background: #d65a5a !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(232, 125, 125, 0.3);
+}
+
+.crop-btn:disabled {
+  background: #9ca3af !important;
+  transform: none;
+  box-shadow: none;
+}
+
+/* 반응형 디자인 - 매우 둥글게 */
+@media (max-width: 768px) {
+  .image-cropper-dialog .v-card {
+    border-radius: 40px !important;
+  }
+  
+  .image-cropper-card {
+    margin: 16px;
+    border-radius: 40px !important;
+  }
+  
+  .cropper-header {
+    padding: 32px 24px 24px;
+  }
+  
+  .cropper-content {
+    padding: 0 24px 24px;
+  }
+  
+  .cropper-actions {
+    padding: 24px 24px 32px;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .image-wrapper {
+    height: 300px;
+  }
+}
+
+@media (max-width: 480px) {
+  .image-cropper-dialog .v-card {
+    border-radius: 30px !important;
+  }
+  
+  .image-cropper-card {
+    margin: 8px;
+    border-radius: 30px !important;
+  }
+  
+  .cropper-header {
+    padding: 24px 20px 20px;
+  }
+  
+  .cropper-content {
+    padding: 0 20px 20px;
+  }
+  
+  .cropper-actions {
+    padding: 20px 20px 24px;
+  }
+  
+  .image-wrapper {
+    height: 250px;
+  }
 }
 
 /* 스크롤바 스타일 */
@@ -435,13 +665,14 @@ onUnmounted(() => {
 }
 
 .image-cropper-dialog::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 5px;
+  background: #f8f9fa;
+  border-radius: 6px;
 }
 
 .image-cropper-dialog::-webkit-scrollbar-thumb {
   background: #E87D7D;
-  border-radius: 5px;
+  border-radius: 6px;
+  border: 1px solid #f8f9fa;
 }
 
 .image-cropper-dialog::-webkit-scrollbar-thumb:hover {
@@ -451,6 +682,6 @@ onUnmounted(() => {
 /* Firefox */
 .image-cropper-dialog {
   scrollbar-width: thin;
-  scrollbar-color: #E87D7D #f1f1f1;
+  scrollbar-color: #E87D7D #f8f9fa;
 }
 </style>
