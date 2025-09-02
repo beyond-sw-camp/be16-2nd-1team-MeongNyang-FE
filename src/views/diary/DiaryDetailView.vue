@@ -838,7 +838,7 @@ export default {
                 const removeHashtags = (text) => {
                   if (!text) return '';
                   // 해시태그와 그 뒤의 공백을 모두 제거
-                  return text.replace(/#\S+/g, '').replace(/\s+/g, ' ').trim();
+                  return text.replace(/#\S+/g, '').replace(/[ \t]+/g, ' ').trim();
                 };
                 
                 // 해시태그 검색 메서드

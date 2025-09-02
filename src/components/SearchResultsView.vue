@@ -769,7 +769,7 @@ export default {
     const removeHashtags = (content) => {
       if (!content) return ''
       // 해시태그와 그 뒤의 공백을 모두 제거
-      return content.replace(/#\S+/g, '').replace(/\s+/g, ' ').trim()
+      return content.replace(/#\S+/g, '').replace(/[ \t]+/g, ' ').trim()
     }
 
     // 좋아요 목록 가져오기
