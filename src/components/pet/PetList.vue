@@ -1531,6 +1531,13 @@ export default {
       // 이전 동물의 미리보기 이미지 초기화
       imagePreviewUrl.value = null
       
+      // 달력을 오늘 날짜로 초기화 (상세보기 모드)
+      currentDate.value = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
+      selectedDate.value = null
+      showYearPicker.value = false
+      showMonthPicker.value = false
+      console.log('📅 상세보기 진입 - 달력을 오늘 날짜로 초기화')
+      
       selectedPet.value = pet
       showDetailModal.value = true
       console.log('🔍 모달 상태:', { selectedPet: selectedPet.value, showDetailModal: showDetailModal.value })
@@ -1543,6 +1550,11 @@ export default {
         // 수정 모드 취소
         isEditing.value = false
         
+        // 달력을 오늘 날짜로 초기화 (상세보기 모드)
+        currentDate.value = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
+        selectedDate.value = null
+        console.log('📅 모달 닫기 - 달력을 오늘 날짜로 초기화')
+        
         // 임시 이미지 URL 정리
         if (selectedPet.value && selectedPet.value.tempImageUrl) {
           delete selectedPet.value.tempImageUrl
@@ -1554,8 +1566,12 @@ export default {
         editingPet.value = null
       }
       
+      // 모달 닫기 애니메이션을 위해 약간의 지연 후 상태 초기화
+      setTimeout(() => {
+        selectedPet.value = null
+      }, 300) // 300ms 지연 (CSS transition과 동일)
+      
       showDetailModal.value = false
-      selectedPet.value = null
     }
     
     // 펫 업데이트 처리
@@ -1650,6 +1666,11 @@ export default {
       if (isEditing.value) {
         // 수정 모드 취소
         isEditing.value = false
+        
+        // 달력을 오늘 날짜로 초기화 (상세보기 모드)
+        currentDate.value = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
+        selectedDate.value = null
+        console.log('📅 상세보기 모드 - 달력을 오늘 날짜로 초기화')
         
         // 임시 이미지 URL 정리
         if (selectedPet.value && selectedPet.value.tempImageUrl) {
@@ -2957,6 +2978,7 @@ export default {
 .pet-detail-dialog .v-dialog {
   max-height: 90vh;
   margin: 20px;
+  transition: all 0.3s ease-in-out; /* 모달 닫기 애니메이션 개선 */
 }
 
 .pet-detail-card {
@@ -2964,6 +2986,7 @@ export default {
   max-height: 90vh;
   display: flex;
   flex-direction: column;
+  transition: all 0.3s ease-in-out; /* 카드 닫기 애니메이션 개선 */
 }
 
 .detail-header {
@@ -3036,6 +3059,10 @@ export default {
   justify-content: flex-start; /* center에서 flex-start로 변경 */
   align-items: center;
   min-height: 500px; /* 기본정보 영역과 높이 맞춤 */
+  user-select: none; /* 텍스트 선택 비활성화 */
+  -webkit-user-select: none; /* Safari에서 텍스트 선택 비활성화 */
+  -moz-user-select: none; /* Firefox에서 텍스트 선택 비활성화 */
+  -ms-user-select: none; /* IE/Edge에서 텍스트 선택 비활성화 */
 }
 
 /* 생일 카운트다운 섹션 */
@@ -3074,7 +3101,7 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 0 20px; /* 달력과 같은 패딩 */
+  padding: 0; /* 패딩 제거하여 달력과 정확히 맞춤 */
 }
 
 .birthday-field {
@@ -3088,6 +3115,7 @@ export default {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(10px);
   width: 100%;
+  box-sizing: border-box; /* 패딩을 포함한 전체 너비 계산 */
   max-width: none; /* 200px 제한 제거 */
   transition: all 0.2s ease;
   position: relative;
@@ -3462,6 +3490,12 @@ export default {
   border-radius: 50%;
   overflow: hidden;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  user-select: none; /* 이미지 선택 비활성화 */
+  -webkit-user-select: none; /* Safari에서 이미지 선택 비활성화 */
+  -moz-user-select: none; /* Firefox에서 이미지 선택 비활성화 */
+  -ms-user-select: none; /* IE/Edge에서 이미지 선택 비활성화 */
+  pointer-events: none; /* 클릭 이벤트 비활성화 */
+  transition: opacity 0.3s ease-in-out; /* 이미지 페이드 아웃 애니메이션 */
 }
 
 .detail-image-placeholder {
@@ -3664,6 +3698,7 @@ export default {
 .image-container {
   position: relative;
   display: inline-block;
+  transition: all 0.3s ease-in-out; /* 이미지 컨테이너 애니메이션 */
 }
 
 .image-overlay {
