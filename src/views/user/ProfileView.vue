@@ -1,188 +1,215 @@
 <template>
-  <div class="profile-container">
-    <!-- 프로필 헤더 섹션 -->
-    <div class="profile-header">
-      <div class="profile-image-container">
-        <!-- 강제 이미지 표시 (문제 해결용) -->
-        <div v-if="forceImageUrl" class="force-image-display">
-          <img 
-            :src="forceImageUrl" 
-            alt="대표 반려동물 이미지" 
-            class="force-profile-image"
-            @error="handleImageError"
-            @load="handleImageLoad"
-          />
-        </div>
-        
-        <v-avatar 
-          :size="140" 
-          class="profile-avatar"
-          :image="profileImageUrl"
-        >
-          <!-- 기본 이미지: 동물을 등록하지 않았거나 이미지가 없을 때 -->
-          <v-icon 
-            v-if="!profileImageUrl" 
-            size="72" 
-            color="grey-lighten-2"
-            icon="mdi-account"
-          />
-        </v-avatar>
-      </div>
-      
-      <h1 class="username">@{{ userInfo?.nickname || '사용자' }}</h1>
-      <!-- 상태 표시 제거 -->
+  <div class="profile-page">
+    <!-- 페이지 헤더 -->
+    <div class="page-header">
+      <h1 class="page-title">프로필</h1>
+      <p class="page-subtitle">내 정보를 확인하고 관리하세요</p>
     </div>
 
-    <!-- 기본 정보 카드 -->
-    <div class="info-card">
-      <div class="card-header">
-        <div class="header-icon">
-          <v-icon size="28" color="primary" icon="mdi-account-details" />
-        </div>
-        <h2>기본 정보</h2>
-      </div>
-      
-      <div class="info-grid">
-        <div class="info-item">
-          <label>이름</label>
-          <span class="info-value" :class="{ 'empty-field': !userInfo?.name }">
-            {{ userInfo?.name || '정보 없음' }}
-          </span>
-        </div>
-        
-        <div class="info-item">
-          <label>닉네임</label>
-          <span class="info-value">{{ userInfo?.nickname || '-' }}</span>
-        </div>
-        
-        <div class="info-item">
-          <label>이메일</label>
-          <span class="info-value email">{{ userInfo?.email || '-' }}</span>
-        </div>
-        
-        <div class="info-item">
-          <label>가입일</label>
-          <span class="info-value">{{ formatJoinDate(userInfo?.createdAt) }}</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- 계정 정보 카드 -->
-    <div class="info-card">
-      <div class="card-header">
-        <div class="header-icon">
-          <v-icon size="28" color="info" icon="mdi-shield-account" />
-        </div>
-        <h2>계정 정보</h2>
-      </div>
-      
-      <div class="info-grid">
-        <div class="info-item">
-          <label>로그인 방식</label>
-          <div class="login-method">
-            <v-chip
-              :color="getSocialColor(userInfo?.socialType)"
-              size="small"
-              variant="elevated"
-              class="social-chip"
-            >
-              <v-icon 
-                :icon="getSocialIcon(userInfo?.socialType)" 
-                size="18"
-              />
-              {{ getSocialName(userInfo?.socialType) }}
-            </v-chip>
+    <!-- 프로필 컨테이너 -->
+    <div class="profile-container">
+      <!-- 프로필 헤더 섹션 -->
+      <div class="profile-header">
+        <div class="profile-image-container">
+          <!-- 강제 이미지 표시 (문제 해결용) -->
+          <div v-if="forceImageUrl" class="force-image-display">
+            <img 
+              :src="forceImageUrl" 
+              alt="대표 반려동물 이미지" 
+              class="force-profile-image"
+              @error="handleImageError"
+              @load="handleImageLoad"
+            />
           </div>
+          
+          <v-avatar 
+            :size="120" 
+            class="profile-avatar"
+            :image="profileImageUrl"
+          >
+            <!-- 기본 이미지: 동물을 등록하지 않았거나 이미지가 없을 때 -->
+            <v-icon 
+              v-if="!profileImageUrl" 
+              size="60" 
+              color="grey-lighten-2"
+              icon="mdi-account"
+            />
+          </v-avatar>
         </div>
         
-        <div class="info-item">
-          <label>계정 상태</label>
-          <div class="status-badge">
-            <v-chip
-              :color="getStatusColor(userInfo?.userStatus)"
-              size="small"
-              variant="tonal"
-            >
-              <v-icon size="16" :icon="getStatusIcon(userInfo?.userStatus)" />
-              {{ getStatusText(userInfo?.userStatus) }}
-            </v-chip>
+        <div class="profile-info">
+          <h1 class="username">@{{ userInfo?.nickname || '사용자' }}</h1>
+          <div class="profile-stats">
+            <div class="stat-item">
+              <div class="stat-icon">
+                <v-icon>mdi-calendar</v-icon>
+              </div>
+              <div class="stat-info">
+                <div class="stat-label">가입일</div>
+                <div class="stat-value">{{ formatJoinDate(userInfo?.createdAt) }}</div>
+              </div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-icon">
+                <v-icon>mdi-paw</v-icon>
+              </div>
+              <div class="stat-info">
+                <div class="stat-label">반려동물</div>
+                <div class="stat-value">{{ petStore.pets?.length || 0 }}마리</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- 액션 버튼들 -->
-    <div class="action-buttons">
-      <v-btn 
-        @click="editProfile" 
-        color="primary" 
-        size="large"
-        rounded="xl"
-        prepend-icon="mdi-pencil"
-        class="action-btn primary-btn"
-        elevation="4"
-        hover
-      >
-        프로필 수정
-      </v-btn>
-      
-      <v-btn 
-        v-if="userInfo?.socialType === 'COMMON'"
-        variant="outlined" 
-        size="large"
-        rounded="xl"
-        prepend-icon="mdi-lock"
-        class="action-btn secondary-btn"
-        @click="changePassword"
-        elevation="0"
-        hover
-      >
-        비밀번호 변경
-      </v-btn>
-      
-      <v-btn 
-        v-else
-        variant="outlined" 
-        size="large"
-        rounded="xl"
-        prepend-icon="mdi-lock"
-        class="action-btn secondary-btn"
-        disabled
-        elevation="0"
-      >
-        비밀번호 변경 (소셜 계정)
-      </v-btn>
-    </div>
-
-    <!-- 계정 관리 카드 -->
-    <div class="info-card danger-zone">
-      <div class="card-header">
-        <div class="header-icon danger">
-          <v-icon size="28" color="error" icon="mdi-alert-circle" />
+      <!-- 정보 카드들 -->
+      <div class="info-cards">
+        <!-- 기본 정보 카드 -->
+        <div class="info-card">
+          <div class="card-header">
+            <div class="header-icon">
+              <v-icon size="24" color="#E87D7D" icon="mdi-account-details" />
+            </div>
+            <h2>기본 정보</h2>
+          </div>
+          
+          <div class="info-grid">
+            <div class="info-item">
+              <label>이름</label>
+              <span class="info-value" :class="{ 'empty-field': !userInfo?.name }">
+                {{ userInfo?.name || '정보 없음' }}
+              </span>
+            </div>
+            
+            <div class="info-item">
+              <label>닉네임</label>
+              <span class="info-value">{{ userInfo?.nickname || '-' }}</span>
+            </div>
+            
+            <div class="info-item">
+              <label>이메일</label>
+              <span class="info-value email">{{ userInfo?.email || '-' }}</span>
+            </div>
+          </div>
         </div>
-        <h2>계정 관리</h2>
+
+        <!-- 계정 정보 카드 -->
+        <div class="info-card">
+          <div class="card-header">
+            <div class="header-icon">
+              <v-icon size="24" color="#E87D7D" icon="mdi-shield-account" />
+            </div>
+            <h2>계정 정보</h2>
+          </div>
+          
+          <div class="info-grid">
+            <div class="info-item">
+              <label>로그인 방식</label>
+              <div class="login-method">
+                <v-chip
+                  :color="getSocialColor(userInfo?.socialType)"
+                  size="small"
+                  variant="elevated"
+                  class="social-chip"
+                >
+                  <v-icon 
+                    :icon="getSocialIcon(userInfo?.socialType)" 
+                    size="18"
+                  />
+                  {{ getSocialName(userInfo?.socialType) }}
+                </v-chip>
+              </div>
+            </div>
+            
+            <div class="info-item">
+              <label>계정 상태</label>
+              <div class="status-badge">
+                <v-chip
+                  :color="getStatusColor(userInfo?.userStatus)"
+                  size="small"
+                  variant="tonal"
+                >
+                  <v-icon size="16" :icon="getStatusIcon(userInfo?.userStatus)" />
+                  {{ getStatusText(userInfo?.userStatus) }}
+                </v-chip>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      
-      <div class="danger-content">
-        <div class="warning-message">
-          <v-icon size="24" color="error" icon="mdi-alert" />
-          <p class="warning-text">
-            계정을 삭제하면 모든 데이터가 <strong>영구적으로 삭제</strong>되며 복구할 수 없습니다.
-          </p>
-        </div>
-        
+
+      <!-- 액션 버튼들 -->
+      <div class="action-buttons">
         <v-btn 
-          @click="deleteAccount" 
-          color="error" 
+          @click="editProfile" 
+          color="#E87D7D"
+          variant="flat"
           size="large"
           rounded="xl"
-          prepend-icon="mdi-delete"
-          class="delete-btn"
-          elevation="4"
-          hover
+          prepend-icon="mdi-pencil"
+          class="action-btn primary-btn"
+          elevation="2"
         >
-          계정 탈퇴
+          프로필 수정
         </v-btn>
+        
+        <v-btn 
+          v-if="userInfo?.socialType === 'COMMON'"
+          variant="outlined" 
+          size="large"
+          rounded="xl"
+          prepend-icon="mdi-lock"
+          class="action-btn secondary-btn"
+          @click="changePassword"
+          color="#E87D7D"
+        >
+          비밀번호 변경
+        </v-btn>
+        
+        <v-btn 
+          v-else
+          variant="outlined" 
+          size="large"
+          rounded="xl"
+          prepend-icon="mdi-lock"
+          class="action-btn secondary-btn"
+          disabled
+          color="#E87D7D"
+        >
+          비밀번호 변경 (소셜 계정)
+        </v-btn>
+      </div>
+
+      <!-- 계정 관리 카드 -->
+      <div class="info-card danger-zone">
+        <div class="card-header">
+          <div class="header-icon danger">
+            <v-icon size="24" color="error" icon="mdi-alert-circle" />
+          </div>
+          <h2>계정 관리</h2>
+        </div>
+        
+        <div class="danger-content">
+          <div class="warning-message">
+            <v-icon size="20" color="error" icon="mdi-alert" />
+            <p class="warning-text">
+              계정을 삭제하면 모든 데이터가 <strong>영구적으로 삭제</strong>되며 복구할 수 없습니다.
+            </p>
+          </div>
+          
+          <v-btn 
+            @click="deleteAccount" 
+            color="error" 
+            variant="flat"
+            size="large"
+            rounded="xl"
+            prepend-icon="mdi-delete"
+            class="delete-btn"
+            elevation="2"
+          >
+            계정 탈퇴
+          </v-btn>
+        </div>
       </div>
     </div>
   </div>
@@ -553,40 +580,57 @@ export default {
 </script>
 
 <style scoped>
+.profile-page {
+  min-height: 100vh;
+  background: var(--v-theme-surface-light);
+  padding: 2rem 0;
+}
+
+/* 페이지 헤더 */
+.page-header {
+  text-align: center;
+  margin-bottom: 3rem;
+  padding: 0 2rem;
+}
+
+.page-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+}
+
+.page-subtitle {
+  font-size: 1.1rem;
+  color: #64748b;
+  margin: 0;
+}
+
 .profile-container {
   max-width: 900px;
   margin: 0 auto;
-  padding: 2rem;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
-  min-height: 100vh;
+  padding: 0 2rem;
 }
 
 .profile-header {
-  text-align: center;
-  margin-bottom: 3rem;
-  padding: 3rem 2rem;
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  border-radius: 28px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  padding: 2rem;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e9ecef;
   position: relative;
   overflow: hidden;
 }
 
-.profile-header::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #3b82f6, #8b5cf6, #ec4899);
-}
+
 
 .profile-image-container {
   position: relative;
-  display: inline-block;
-  margin-bottom: 2rem;
+  flex-shrink: 0;
 }
 
 .force-image-display {
@@ -598,10 +642,10 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #f0f0f0; /* 이미지가 없을 때 배경색 */
-  border-radius: 50%; /* 원형 이미지 형태 */
+  background-color: #f0f0f0;
+  border-radius: 50%;
   overflow: hidden;
-  z-index: 1; /* 이미지 위에 표시 */
+  z-index: 1;
 }
 
 .force-profile-image {
@@ -612,8 +656,8 @@ export default {
 }
 
 .profile-avatar {
-  border: 6px solid white;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+  border: 4px solid white;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   transition: transform 0.3s ease;
 }
 
@@ -621,106 +665,131 @@ export default {
   transform: scale(1.05);
 }
 
+.profile-info {
+  flex: 1;
+}
+
 .username {
-  font-size: 2.5rem;
-  font-weight: 800;
-  background: linear-gradient(135deg, #1e293b, #475569);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1e293b;
   margin: 0 0 1rem 0;
-  letter-spacing: -0.5px;
 }
 
-.user-status {
-  margin-top: 1rem;
+/* 프로필 통계 */
+.profile-stats {
+  display: flex;
+  gap: 2rem;
 }
 
-.status-chip {
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.stat-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #E87D7D, #f8a5a5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin-bottom: 0.25rem;
+}
+
+.stat-value {
+  font-size: 1rem;
   font-weight: 600;
-  letter-spacing: 0.5px;
+  color: #1e293b;
+}
+
+/* 정보 카드들 */
+.info-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
 }
 
 .info-card {
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  border-radius: 24px;
-  padding: 2.5rem;
-  margin-bottom: 2rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  background: white;
+  border-radius: 20px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e9ecef;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .info-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
 .card-header {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin-bottom: 2rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 2px solid #f1f5f9;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .header-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #E87D7D, #f8a5a5);
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.header-icon.danger {
-  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  color: white;
 }
 
 .card-header h2 {
-  font-size: 1.75rem;
-  font-weight: 700;
+  font-size: 1.25rem;
+  font-weight: 600;
   color: #1e293b;
   margin: 0;
-  letter-spacing: -0.5px;
 }
 
 .info-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .info-item {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .info-item label {
   font-size: 0.875rem;
+  font-weight: 500;
   color: #64748b;
-  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.05em;
 }
 
 .info-value {
-  font-size: 1.25rem;
+  font-size: 1rem;
+  font-weight: 500;
   color: #1e293b;
-  font-weight: 600;
-  padding: 0.75rem 1rem;
-  background: #f8fafc;
-  border-radius: 12px;
-  border: 1px solid #e2e8f0;
-  transition: all 0.3s ease;
-}
-
-.info-value:hover {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
+  padding: 0.5rem 0;
 }
 
 .info-value.empty-field {
@@ -728,177 +797,134 @@ export default {
   font-style: italic;
 }
 
-.email {
-  color: #3b82f6;
-  word-break: break-all;
-  font-weight: 700;
+.info-value.email {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.9rem;
+}
+
+/* 소셜 로그인 칩 */
+.login-method {
+  display: flex;
+  align-items: center;
 }
 
 .social-chip {
-  font-weight: 600;
-  letter-spacing: 0.5px;
+  font-weight: 500;
 }
 
+/* 상태 배지 */
+.status-badge {
+  display: flex;
+  align-items: center;
+}
+
+/* 액션 버튼들 */
 .action-buttons {
   display: flex;
-  gap: 1.5rem;
-  margin-bottom: 2.5rem;
+  gap: 1rem;
+  margin-bottom: 2rem;
   flex-wrap: wrap;
 }
 
 .action-btn {
-  flex: 1;
-  min-width: 220px;
-  height: 64px;
-  font-weight: 700;
+  font-weight: 600;
   text-transform: none;
-  font-size: 1.125rem;
-  letter-spacing: 0.5px;
-  transition: all 0.3s ease;
+  letter-spacing: 0.025em;
 }
 
 .primary-btn {
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-  border: none;
-}
-
-.primary-btn:hover {
-  background: linear-gradient(135deg, #1d4ed8, #1e40af);
-  transform: translateY(-2px);
-  box-shadow: 0 12px 32px rgba(59, 130, 246, 0.4);
+  min-width: 160px;
 }
 
 .secondary-btn {
-  border: 2px solid #cbd5e1;
-  color: #64748b;
-  background: transparent;
+  min-width: 180px;
 }
 
-.secondary-btn:hover:not(:disabled) {
-  border-color: #94a3b8;
-  background: #f8fafc;
-}
-
+/* 위험 구역 */
 .danger-zone {
-  border: 2px solid #fecaca;
-  background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
+  border: 1px solid #fecaca;
+  background: white;
+}
+
+.danger-zone .header-icon {
+  background: linear-gradient(135deg, #ef4444, #f87171);
 }
 
 .danger-content {
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 .warning-message {
   display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 2rem;
-  padding: 1.5rem;
-  background: rgba(239, 68, 68, 0.1);
-  border-radius: 16px;
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: rgba(239, 68, 68, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(239, 68, 68, 0.1);
 }
 
 .warning-text {
+  font-size: 0.9rem;
   color: #dc2626;
-  font-size: 1.125rem;
   margin: 0;
-  line-height: 1.6;
-  font-weight: 600;
-  text-align: left;
+  line-height: 1.5;
 }
 
 .delete-btn {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-  color: white;
-  font-weight: 700;
-  text-transform: none;
-  font-size: 1.125rem;
-  height: 64px;
-  min-width: 240px;
-  letter-spacing: 0.5px;
-  transition: all 0.3s ease;
-}
-
-.delete-btn:hover {
-  background: linear-gradient(135deg, #dc2626, #b91c1c);
-  transform: translateY(-2px);
-  box-shadow: 0 12px 32px rgba(239, 68, 68, 0.4);
-}
-
-/* 애니메이션 */
-@keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+  align-self: flex-start;
+  font-weight: 600;
 }
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {
+  .profile-page {
+    padding: 1rem 0;
+  }
+  
+  .page-title {
+    font-size: 2rem;
+  }
+  
   .profile-container {
-    padding: 1rem;
+    padding: 0 1rem;
   }
   
   .profile-header {
-    padding: 2rem 1rem;
-    margin-bottom: 2rem;
+    flex-direction: column;
+    text-align: center;
+    gap: 1.5rem;
   }
   
-  .info-grid {
-    grid-template-columns: 1fr;
+  .profile-stats {
+    justify-content: center;
     gap: 1.5rem;
+  }
+  
+  .info-cards {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
   
   .action-buttons {
     flex-direction: column;
-    gap: 1rem;
   }
   
   .action-btn {
-    min-width: auto;
-    height: 56px;
-  }
-  
-  .username {
-    font-size: 2rem;
-  }
-  
-  .profile-avatar {
-    width: 100px !important;
-    height: 100px !important;
-  }
-  
-  .info-card {
-    padding: 2rem 1.5rem;
-  }
-  
-  .card-header {
-    flex-direction: column;
-    text-align: center;
-    gap: 0.75rem;
-  }
-  
-  .header-icon {
-    width: 48px;
-    height: 48px;
+    width: 100%;
   }
 }
 
 @media (max-width: 480px) {
-  .profile-header {
-    padding: 1.5rem 1rem;
+  .profile-stats {
+    flex-direction: column;
+    gap: 1rem;
   }
   
-  .username {
-    font-size: 1.75rem;
-  }
-  
-  .profile-avatar {
-    width: 80px !important;
-    height: 80px !important;
-  }
-  
-  .info-card {
-    padding: 1.5rem 1rem;
+  .stat-item {
+    justify-content: center;
   }
 }
 </style>
