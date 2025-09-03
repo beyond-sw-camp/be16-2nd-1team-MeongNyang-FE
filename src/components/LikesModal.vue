@@ -67,6 +67,7 @@
 <script>
 import { computed, ref } from 'vue';
 import { useAuthStore } from '@/stores/auth';
+import { useRouter } from 'vue-router';
 
 export default {
   name: 'LikesModal',
@@ -83,6 +84,7 @@ export default {
   emits: ['update:modelValue', 'follow-toggle'],
   setup(props, { emit }) {
     const authStore = useAuthStore();
+    const router = useRouter();
     const followLoadingMap = ref(new Map());
 
     const currentUserId = computed(() => authStore.user?.userId);
@@ -102,7 +104,11 @@ export default {
 
     const goToUserDiary = userId => {
       if (userId) {
-        console.log('Navigate to user diary:', userId);
+        if (userId === currentUserId.value) {
+          router.push(`/diarys`);
+        } else {
+          router.push(`/diarys/${userId}`);
+        }
         closeModal();
       }
     };
