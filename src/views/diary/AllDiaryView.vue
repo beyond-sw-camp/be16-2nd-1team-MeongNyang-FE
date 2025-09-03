@@ -106,6 +106,7 @@
       v-model="showLikesModal"
       :likes-list="likesList"
       @update:modelValue="handleLikesModalToggle"
+      @follow-toggle="handleFollowToggle"
     />
 
     <!-- 댓글 모달 -->
@@ -847,6 +848,41 @@ export default {
       showLikesModal.value = value
     }
 
+    // 좋아요 모달에서 팔로우 토글 처리
+    const handleFollowToggle = async ({ userId, isFollowing }) => {
+      if (followProcessingUsers.value.has(userId)) return;
+
+      console.log(`팔로우 토글 - 사용자 ID: ${userId}, 현재 상태: ${isFollowing}`);
+      followProcessingUsers.value.add(userId);
+
+      try {
+        if (isFollowing) {
+          await userAPI.unfollow(userId);
+        } else {
+          await userAPI.follow(userId);
+        }
+
+        // likesList에서 해당 유저의 팔로우 상태 업데이트
+        const likedUser = likesList.value.find(u => u.userId === userId);
+        if (likedUser) {
+          likedUser.isFollowing = !isFollowing;
+        }
+
+        // posts 리스트에서 해당 유저가 작성한 모든 포스트의 팔로우 상태 업데이트
+        posts.value.forEach(post => {
+          if (post.userId === userId) {
+            post.isFollowing = !isFollowing;
+          }
+        });
+
+      } catch (error) {
+        console.error('팔로우 토글 실패:', error);
+        alert('팔로우 상태 변경에 실패했습니다.');
+      } finally {
+        followProcessingUsers.value.delete(userId);
+      }
+    };
+
     // 댓글 텍스트 포맷팅 (태그 추출)
     const formatCommentText = (text, mentionUserId = null) => {
       if (!text) return []
@@ -1149,6 +1185,7 @@ export default {
       getLikeCountText,
       handleLikesTextClick,
       handleLikesModalToggle,
+      handleFollowToggle,
       handleAddComment,
       handleAddReply,
       handleEditComment,
