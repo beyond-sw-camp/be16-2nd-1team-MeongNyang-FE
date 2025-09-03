@@ -134,42 +134,69 @@
         <!-- 계정 정보 카드 -->
         <div class="info-card">
           <div class="card-header">
-            <div class="header-icon">
-              <v-icon size="24" color="#E87D7D" icon="mdi-shield-account" />
-            </div>
             <h2>계정 정보</h2>
           </div>
           
-          <div class="info-grid">
-            <div class="info-item">
-              <label>로그인 방식</label>
-              <div class="login-method">
-                <v-chip
-                  :color="getSocialColor(userInfo?.socialType)"
-                  size="small"
-                  variant="elevated"
-                  class="social-chip"
-                >
-                  <v-icon 
-                    :icon="getSocialIcon(userInfo?.socialType)" 
-                    size="18"
-                  />
-                  {{ getSocialName(userInfo?.socialType) }}
-                </v-chip>
+          <div class="info-list">
+            <div class="info-row">
+              <div class="info-label">
+                <v-icon size="16" color="#64748b" icon="mdi-shield-account" />
+                <span>로그인 방식</span>
+              </div>
+              <div class="info-content">
+                <div class="social-login-display">
+                  <div 
+                    v-if="userInfo?.socialType === 'GOOGLE'"
+                    class="social-logo-container google-logo"
+                  >
+                    <img 
+                      src="https://developers.google.com/identity/images/g-logo.png" 
+                      alt="Google" 
+                      class="social-logo"
+                    />
+                    <span class="social-text">Google</span>
+                  </div>
+                  <div 
+                    v-else-if="userInfo?.socialType === 'KAKAO'"
+                    class="social-logo-container kakao-logo"
+                  >
+                    <img 
+                      src="https://developers.kakao.com/assets/img/about/logos/kakaolink/kakaolink_btn_small.png" 
+                      alt="Kakao" 
+                      class="social-logo"
+                    />
+                    <span class="social-text">Kakao</span>
+                  </div>
+                  <v-chip
+                    v-else
+                    color="blue"
+                    size="small"
+                    variant="elevated"
+                    class="social-chip"
+                  >
+                    <v-icon icon="mdi-account" size="18" />
+                    일반
+                  </v-chip>
+                </div>
               </div>
             </div>
             
-            <div class="info-item">
-              <label>계정 상태</label>
-              <div class="status-badge">
-                <v-chip
-                  :color="getStatusColor(userInfo?.userStatus)"
-                  size="small"
-                  variant="tonal"
-                >
-                  <v-icon size="16" :icon="getStatusIcon(userInfo?.userStatus)" />
-                  {{ getStatusText(userInfo?.userStatus) }}
-                </v-chip>
+            <div class="info-row">
+              <div class="info-label">
+                <v-icon size="16" color="#64748b" icon="mdi-check-circle" />
+                <span>계정 상태</span>
+              </div>
+              <div class="info-content">
+                <div class="social-login-display">
+                  <div class="social-logo-container status-container">
+                    <v-icon 
+                      :color="getStatusColor(userInfo?.userStatus)" 
+                      :icon="getStatusIcon(userInfo?.userStatus)" 
+                      class="social-logo"
+                    />
+                    <span class="social-text">{{ getStatusText(userInfo?.userStatus) }}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -891,19 +918,72 @@ export default {
 }
 
 /* 소셜 로그인 칩 */
-.login-method {
-  display: flex;
-  align-items: center;
-}
-
 .social-chip {
   font-weight: 500;
 }
 
-/* 상태 배지 */
-.status-badge {
+/* 소셜 로그인 이미지 디스플레이 */
+.social-login-display {
+  display: flex;
+  justify-content: flex-end;
+  margin-right: 1rem;
+}
+
+.social-logo-container {
   display: flex;
   align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  background: #ffffff;
+  transition: all 0.2s ease;
+  width: 100px;
+  justify-content: center;
+}
+
+.google-logo {
+  border-color: #dadce0;
+  color: #5f6368;
+}
+
+.google-logo:hover {
+  border-color: #4285f4;
+  color: #4285f4;
+  box-shadow: 0 2px 8px rgba(66, 133, 244, 0.12);
+}
+
+.kakao-logo {
+  border-color: #e0e0e0;
+  color: #333333;
+}
+
+.kakao-logo:hover {
+  border-color: #d1d5db;
+  background: #f9fafb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.social-logo {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.social-text {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.status-container {
+  border-color: #e0e0e0;
+  color: #333333;
+}
+
+.status-container:hover {
+  border-color: #d1d5db;
+  background: #f9fafb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 
