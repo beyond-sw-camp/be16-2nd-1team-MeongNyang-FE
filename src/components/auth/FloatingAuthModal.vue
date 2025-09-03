@@ -978,7 +978,7 @@
 
 <script setup>
 /* eslint-disable no-undef */
-import { ref, reactive, computed, watch, inject, provide } from 'vue'
+import { ref, reactive, computed, watch, inject, provide, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { userAPI } from '@/services/api'
@@ -1376,6 +1376,10 @@ const handleOAuthLogin = async (provider) => {
   const cbUrl = (p) => `${origin}/oauth/${p}/redirect`
   
   try {
+    // OAuth 시작 시간 저장 (타임아웃 처리용)
+    localStorage.setItem('oauth_start_time', Date.now().toString())
+    localStorage.setItem('oauth_provider', provider)
+    
     // OAuth 상태 완전 초기화 (뒤로가기 후 재시도 시 문제 방지)
     clearOAuthState()
     
@@ -1430,6 +1434,11 @@ const handleOAuthLogin = async (provider) => {
   } catch (error) {
     console.error(`❌ ${provider} OAuth 로그인 실패:`, error)
     errorMsg.value = `${provider === 'google' ? 'Google' : '카카오'} 로그인에 실패했습니다.`
+    
+    // 에러 발생 시 localStorage 정리
+    localStorage.removeItem('oauth_start_time')
+    localStorage.removeItem('oauth_provider')
+    
     resetBusyState(provider)
   }
 }
@@ -1449,6 +1458,7 @@ const clearOAuthState = () => {
     localStorage.removeItem('oauth_state')
     localStorage.removeItem('oauth_provider')
     localStorage.removeItem('oauth_timestamp')
+    localStorage.removeItem('oauth_start_time')
     console.log('🗑️ 로컬 스토리지 OAuth 데이터 제거 완료')
   } catch (e) {
     console.log('⚠️ 로컬 스토리지 접근 불가:', e)
@@ -1653,6 +1663,57 @@ watch(() => props.modelValue, (newValue) => {
 const socialLoginBusy = ref({
   google: false,
   kakao: false
+})
+
+// OAuth 상태 초기화 함수
+const resetAllOAuthStates = () => {
+  socialLoginBusy.value = {
+    google: false,
+    kakao: false
+  }
+  busy.value = false
+  console.log('🔄 OAuth 상태 초기화 완료')
+}
+
+// 페이지 가시성 변경 감지 함수
+const handleVisibilityChange = () => {
+  if (!document.hidden) {
+    // 페이지가 다시 보일 때 OAuth 상태 초기화
+    console.log('👁️ 페이지 가시성 변경 감지 - OAuth 상태 초기화')
+    resetAllOAuthStates()
+  }
+}
+
+// 컴포넌트 마운트 시 OAuth 상태 초기화 및 이벤트 리스너 등록
+onMounted(() => {
+  console.log('🚀 FloatingAuthModal 마운트 - OAuth 상태 초기화')
+  
+  // 페이지 로드 시 OAuth 상태 초기화
+  resetAllOAuthStates()
+  
+  // OAuth 시작 시간 확인 (타임아웃 처리)
+  const startTime = localStorage.getItem('oauth_start_time')
+  const provider = localStorage.getItem('oauth_provider')
+  
+  if (startTime && provider) {
+    const elapsed = Date.now() - parseInt(startTime)
+    // 30초 이상 경과 시 상태 초기화
+    if (elapsed > 30000) {
+      console.log(`⏰ OAuth 타임아웃 감지 (${elapsed}ms 경과) - 상태 초기화`)
+      resetAllOAuthStates()
+      localStorage.removeItem('oauth_start_time')
+      localStorage.removeItem('oauth_provider')
+    }
+  }
+  
+  // 페이지 가시성 변경 감지 이벤트 리스너 등록
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+})
+
+// 컴포넌트 언마운트 시 이벤트 리스너 제거
+onBeforeUnmount(() => {
+  console.log('🧹 FloatingAuthModal 언마운트 - 이벤트 리스너 제거')
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
 </script>
 
