@@ -7,12 +7,21 @@
       />
     </div>
 
+    <!-- 검색 결과 헤더 -->
+    <div class="search-container" v-if="showSearchResults">
+      <SearchResultsHeader
+        :search-keyword="searchKeyword"
+        :result-count="searchResultsCount"
+      />
+    </div>
+
     <!-- 검색 결과 컴포넌트 -->
     <SearchResultsView
       v-if="showSearchResults"
       :search-keyword="searchKeyword"
       :search-type="searchType"
       @search="handleSearch"
+      @update:resultCount="searchResultsCount = $event"
     />
   </div>
 </template>
@@ -22,12 +31,14 @@ import { ref, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import SearchBar from '@/components/common/SearchBar.vue'
 import SearchResultsView from '@/components/SearchResultsView.vue'
+import SearchResultsHeader from '@/components/common/SearchResultsHeader.vue'
 
 export default {
   name: 'SearchView',
   components: {
     SearchBar,
-    SearchResultsView
+    SearchResultsView,
+    SearchResultsHeader
   },
   setup() {
     const $route = useRoute()
@@ -37,6 +48,7 @@ export default {
     const searchType = ref('CONTENT')
     const searchKeyword = ref('')
     const showSearchResults = ref(false)
+    const searchResultsCount = ref(0)
     
     // URL 쿼리 파라미터에서 초기 검색어 설정
     onMounted(() => {
@@ -78,6 +90,7 @@ export default {
       searchType,
       searchKeyword,
       showSearchResults,
+      searchResultsCount,
       handleSearch
     }
   }

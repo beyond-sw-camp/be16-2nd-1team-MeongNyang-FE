@@ -1,11 +1,6 @@
 <template>
   <div class="search-results-container" :class="{ 'modal-open': showCommentsModal }">
-    <!-- 검색 결과 헤더 -->
-    <div class="search-results-header">
-      <h2 class="search-results-title">
-        '{{ searchKeyword }}'에 대한 검색결과 <span class="result-count">{{ posts.length }}</span>건
-      </h2>
-    </div>
+
 
     <!-- 로딩 스피너 -->
     <div v-if="loading && posts.length === 0" class="loading-container">
@@ -84,9 +79,6 @@
 
       <!-- 오른쪽: 인기 해시태그 -->
       <div class="sidebar">
-        <div class="search-section">
-          <SearchBar @search="handleSearch" />
-        </div>
         <TrendingHashtags @search="handleSearch" />
       </div>
     </div>
@@ -146,7 +138,7 @@ import PostEngagementBar from '@/components/diary/PostEngagementBar.vue'
 import PostHashtags from '@/components/diary/PostHashtags.vue'
 import PostCommentsPreview from '@/components/diary/PostCommentsPreview.vue'
 import TrendingHashtags from '@/components/common/TrendingHashtags.vue'
-import SearchBar from '@/components/common/SearchBar.vue'
+
 
 export default {
   name: 'SearchResultsView',
@@ -159,7 +151,7 @@ export default {
     PostHashtags,
     PostCommentsPreview,
     TrendingHashtags,
-    SearchBar,
+
   },
   props: {
     searchKeyword: {
@@ -171,7 +163,7 @@ export default {
       default: 'TITLE'
     }
   },
-  emits: ['search'],
+  emits: ['search', 'update:resultCount'],
   setup(props, { emit }) {
     const router = useRouter()
     const route = useRoute()
@@ -473,6 +465,9 @@ export default {
             // 전체 포스트의 댓글 수 조회
             await fetchAllCommentsCount()
           }
+          
+          // 부모 컴포넌트에 검색 결과 개수 전달
+          emit('update:resultCount', posts.value.length)
           
           hasMore.value = !response.data.data.last
           currentPage.value = page
@@ -1083,27 +1078,7 @@ export default {
   padding-right: 400px; /* 댓글 모달의 대략적인 너비만큼 오른쪽 패딩 추가 */
 }
 
-.search-results-header {
-  text-align: center;
-  margin-bottom: 30px;
-  padding: 20px;
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  border: 1px solid #f0f0f0;
-}
 
-.search-results-title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #1E293B;
-  margin: 0;
-}
-
-.result-count {
-  color: #FF8B8B;
-  font-weight: 700;
-}
 
 .loading-container {
   display: flex;
@@ -1274,14 +1249,6 @@ export default {
   
   .post-section {
     padding: 12px 0;
-  }
-  
-  .search-results-header {
-    padding: 16px;
-  }
-  
-  .search-results-title {
-    font-size: 1.2rem;
   }
 }
 </style>
