@@ -39,9 +39,9 @@
                 v-if="like.userId !== currentUserId"
                 :color="like.isFollowing ? 'grey' : '#FF8B8B'"
                 :variant="like.isFollowing ? 'outlined' : 'elevated'"
-                
                 size="small"
                 class="follow-btn"
+                :class="{ 'follow-btn-active': !like.isFollowing }"
                 @click.stop="toggleFollow(like)"
                 :loading="isFollowLoading(like.userId)"
               >
@@ -184,6 +184,10 @@ export default {
 .follow-btn {
   min-width: 90px;
   border-radius: var(--v-border-radius-lg);
+}
+
+.follow-btn-active {
+  color: white !important;
 }
 
 .empty-likes {
