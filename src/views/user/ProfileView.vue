@@ -242,24 +242,26 @@
             </v-btn>
           </div>
           
-          <div class="warning-message">
-            <v-icon size="18" color="#ef4444" icon="mdi-alert" />
-            <p class="warning-text">
-              계정을 삭제하면 모든 데이터가 <strong>영구적으로 삭제</strong>되며 복구할 수 없습니다.
-            </p>
+          <div class="warning-container">
+            <div class="warning-message">
+              <v-icon size="18" color="#ef4444" icon="mdi-alert" />
+              <p class="warning-text">
+                계정을 삭제하면 모든 데이터가 <strong>영구적으로 삭제</strong>되며 복구할 수 없습니다.
+              </p>
+            </div>
+            
+            <v-btn 
+              @click="deleteAccount" 
+              variant="outlined"
+              size="large"
+              rounded="lg"
+              prepend-icon="mdi-delete"
+              class="management-btn delete-btn"
+              color="error"
+            >
+              계정 탈퇴
+            </v-btn>
           </div>
-          
-          <v-btn 
-            @click="deleteAccount" 
-            variant="outlined"
-            size="large"
-            rounded="lg"
-            prepend-icon="mdi-delete"
-            class="management-btn delete-btn"
-            color="error"
-          >
-            계정 탈퇴
-          </v-btn>
         </div>
       </div>
     </div>
@@ -1168,14 +1170,21 @@ export default {
   min-width: 200px;
 }
 
+.warning-container {
+  background: rgba(239, 68, 68, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
 .warning-message {
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
-  padding: 1rem;
-  background: rgba(239, 68, 68, 0.05);
-  border-radius: 12px;
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  margin-bottom: 1rem;
 }
 
 .warning-text {
