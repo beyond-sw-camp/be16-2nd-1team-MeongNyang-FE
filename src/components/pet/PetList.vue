@@ -626,6 +626,7 @@
                   <div class="form-field compact-form-field">
                     <label class="field-label compact-label">반려동물 종류 *</label>
                       <v-autocomplete
+                        v-if="editingPet && editingPet.speciesId"
                         v-model="editingPet.speciesId"
                         :items="speciesOptions"
                         item-title="species"
@@ -636,18 +637,24 @@
                       class="form-input modern-input"
                       hide-details="auto"
                         density="compact"
-                        @update:model-value="(value) => {
-                          console.log('🔍 종류 선택 변경:', {
-                            newValue: value,
-                            newValueType: typeof value,
-                            selectedSpecies: speciesOptions.find(s => s.speciesId === value)
-                          })
-                          editingPet.speciesId = value
-                          // petOrder도 함께 업데이트
+                        @update:model-value="async (value) => {
+                          // editingPet.value가 존재하는지 확인
+                          if (!editingPet?.value) {
+                            // editingPet.value가 없으면 editingPet 자체를 사용
+                            if (!editingPet || typeof editingPet !== 'object') {
+                              return
+                            }
+                          }
+                          
                           const selectedSpecies = speciesOptions.find(s => s.speciesId === value)
                           if (selectedSpecies) {
-                            editingPet.petOrder = selectedSpecies.petOrder
-                            editingPet.species = selectedSpecies.species
+                            // editingPet.value가 있으면 .value 사용, 없으면 editingPet 자체 사용
+                            const petData = editingPet.value || editingPet
+                            
+                            petData.speciesId = value
+                            petData.petOrder = selectedSpecies.petOrder
+                            petData.species = selectedSpecies.species
+                            petData.type = selectedSpecies.species // type 필드도 업데이트
                           }
                         }"
                       />
@@ -881,12 +888,21 @@
                 >
                   취소
                 </v-btn>
+                <button
+                  @click="resetEditForm"
+                  :disabled="!hasChanges"
+                  class="reset-btn-text"
+                  :class="{ 'disabled': !hasChanges }"
+                >
+                  초기화
+                </button>
                 <v-btn
                   color="success"
                   variant="flat"
                   prepend-icon="mdi-content-save"
                   @click="saveChanges"
                   :loading="saving"
+                  :disabled="!hasChanges"
                   size="small"
                   rounded="lg"
                   class="save-btn action-btn"
@@ -1574,12 +1590,16 @@ export default {
       // 이전 동물의 미리보기 이미지 초기화
       imagePreviewUrl.value = null
       
-      // 달력을 오늘 날짜로 초기화 (상세보기 모드)
-      currentDate.value = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
+      // 달력을 오늘 날짜로 완전 초기화 (상세보기 모드)
+      const today = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
+      currentDate.value = today
       selectedDate.value = null
       showYearPicker.value = false
       showMonthPicker.value = false
-      console.log('📅 상세보기 진입 - 달력을 오늘 날짜로 초기화')
+      showDatePicker.value = false
+      // 추가 달력 상태 초기화 (혹시 모를 다른 상태들)
+      selectedMonth.value = null
+      console.log('📅 상세보기 진입 - 달력을 오늘 날짜로 완전 초기화:', today)
       
       selectedPet.value = pet
       showDetailModal.value = true
@@ -1593,10 +1613,15 @@ export default {
         // 수정 모드 취소
         isEditing.value = false
         
-        // 달력을 오늘 날짜로 초기화 (상세보기 모드)
-        currentDate.value = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
+        // 달력을 오늘 날짜로 완전 초기화 (상세보기 모드)
+        const today = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
+        currentDate.value = today
         selectedDate.value = null
-        console.log('📅 모달 닫기 - 달력을 오늘 날짜로 초기화')
+        showYearPicker.value = false
+        showMonthPicker.value = false
+        showDatePicker.value = false
+        selectedMonth.value = null
+        console.log('📅 모달 닫기 - 달력을 오늘 날짜로 완전 초기화:', today)
         
         // 임시 이미지 URL 정리
         if (selectedPet.value && selectedPet.value.tempImageUrl) {
@@ -1689,7 +1714,7 @@ export default {
     }
     
     // 수정 폼 닫기
-    const closeEditForm = () => {
+    const closeEditForm = async () => {
       // 수정 중인 데이터가 있으면 초기화
       if (editingPet.value) {
         editingPet.value = null
@@ -1698,12 +1723,71 @@ export default {
       // 미리보기 URL 정리
       imagePreviewUrl.value = null
       
+      // 수정 폼 모달 닫기 (저장 버튼과 동일한 순서)
       showEditForm.value = false
+      
+      // DOM 업데이트 보장
+      await nextTick()
+      
+      // 달력을 오늘 날짜로 초기화 (저장 버튼과 동일한 방식)
+      const today = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
+      currentDate.value = today
+      selectedDate.value = today
+      showYearPicker.value = false
+      showMonthPicker.value = false
+      selectedMonth.value = null
+      console.log('📅 수정 모달 닫기 - 달력을 오늘 날짜로 초기화:', today)
     }
     
     // 원본 데이터 백업용
     const originalPetData = ref(null)
     
+    // 변경사항이 있는지 확인하는 computed
+    const hasChanges = computed(() => {
+      if (!editingPet.value || !originalPetData.value) {
+        return false
+      }
+      
+      const current = editingPet.value
+      const original = originalPetData.value
+      
+      // 필수 필드 검증 (값이 없으면 저장 버튼 비활성화)
+      const hasRequiredFields = current.name && 
+                               current.type && 
+                               current.gender && 
+                               current.age && 
+                               current.weight
+      
+      if (!hasRequiredFields) {
+        return false
+      }
+      
+      // 각 필드를 비교 (데이터 타입 통일)
+      const nameChanged = String(current.name || '') !== String(original.name || '')
+      const typeChanged = String(current.type || '') !== String(original.type || '')
+      const genderChanged = String(current.gender || '') !== String(original.gender || '')
+      const ageChanged = Number(current.age || 0) !== Number(original.age || 0)
+      const weightChanged = Number(current.weight || 0) !== Number(original.weight || 0)
+      const birthdayChanged = String(current.birthday || '') !== String(original.birthday || '')
+      // 이미지 파일 변경 체크 (새로운 이미지 파일이 선택되었는지 확인)
+      const imageChanged = current.imageFile !== null && current.imageFile !== original.imageFile
+      
+      return nameChanged || typeChanged || genderChanged || ageChanged || weightChanged || birthdayChanged || imageChanged
+    })
+    
+    // 수정 모드 초기화 (변경사항 되돌리기)
+    const resetEditForm = () => {
+      if (editingPet.value && originalPetData.value) {
+        // 원본 데이터로 되돌리기
+        editingPet.value = { ...originalPetData.value }
+        
+        // 이미지 미리보기 초기화
+        imagePreviewUrl.value = null
+        
+        showSnackbar('변경사항이 초기화되었습니다.', 'info')
+      }
+    }
+
     // 수정 모드 토글
     const toggleEditMode = () => {
       if (isEditing.value) {
@@ -1736,24 +1820,30 @@ export default {
           return
         }
         
-        // 달력을 DB에 저장된 생일 날짜로 초기화
+        // 달력을 생일 날짜로 초기화 (수정 모달에서는 생일 날짜 달력 표시)
         const pet = selectedPet.value
         if (pet.birthday) {
           const birthdayDate = new Date(pet.birthday)
           currentDate.value = birthdayDate
           selectedDate.value = birthdayDate
-          console.log('📅 달력을 생일 날짜로 초기화:', birthdayDate)
+          showYearPicker.value = false
+          showMonthPicker.value = false
+          console.log('📅 수정 모달 열기 - 달력을 생일 날짜로 초기화:', birthdayDate)
         } else {
-          // 생일이 없으면 현재 날짜로 초기화
-          currentDate.value = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
+          // 생일이 없으면 오늘 날짜로 초기화
+          const today = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
+          currentDate.value = today
           selectedDate.value = null
-          console.log('📅 생일이 없어서 현재 날짜로 초기화')
+          showYearPicker.value = false
+          showMonthPicker.value = false
+          console.log('📅 수정 모달 열기 - 생일이 없어서 오늘 날짜로 초기화:', today)
         }
         
         // 원본 데이터 백업
         originalPetData.value = {
           id: pet.id,
           name: pet.name || '',
+          type: pet.species || '', // type 필드 추가
           age: pet.age || 0,
           gender: pet.gender || 'FEMALE',
           weight: pet.weight || 1.0,
@@ -1762,6 +1852,7 @@ export default {
           introduce: pet.introduce || '',
           species: pet.species || '',
           petOrder: pet.petOrder || '',
+          imageFile: null, // 이미지 파일 필드 추가
           speciesId: (() => {
             if (pet.speciesId) {
               return pet.speciesId
@@ -1777,6 +1868,22 @@ export default {
         
         // DB에 저장된 실제 데이터를 정확히 매핑
         editingPet.value = { ...originalPetData.value }
+        console.log('🔍 editingPet.value 할당 완료:', {
+          editingPetValue: editingPet.value,
+          editingPetValueExists: !!editingPet.value
+        })
+        
+        // editingPet.value가 언제 undefined가 되는지 추적
+        const checkEditingPet = () => {
+          if (!editingPet.value) {
+            console.error('🚨 editingPet.value가 undefined로 변경됨!', {
+              stack: new Error().stack
+            })
+          }
+        }
+        
+        // 1초 후에 체크
+        setTimeout(checkEditingPet, 1000)
         
         // 생일이 있으면 나이를 다시 계산
         if (editingPet.value.birthday) {
@@ -1791,16 +1898,7 @@ export default {
           }
         }
         
-        console.log('🔍 수정 모드 시작 - DB 데이터 매핑:', {
-          original: pet,
-          editing: editingPet.value,
-          speciesId: editingPet.value.speciesId,
-          gender: editingPet.value.gender,
-          age: editingPet.value.age,
-          weight: editingPet.value.weight,
-          birthday: editingPet.value.birthday,
-          introduce: editingPet.value.introduce
-        })
+
       }
     }
     
@@ -2005,6 +2103,15 @@ export default {
         // DOM 업데이트 보장
         await nextTick()
         
+        // 달력을 오늘 날짜로 초기화 (수정 후 상세보기에서 오늘 날짜 달력 표시)
+        const today = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
+        currentDate.value = today
+        selectedDate.value = today
+        showYearPicker.value = false
+        showMonthPicker.value = false
+        selectedMonth.value = null
+        console.log('📅 수정 완료 후 달력을 오늘 날짜로 초기화:', today)
+        
         showSnackbar('반려동물 정보가 성공적으로 수정되었습니다.', 'success')
         console.log('🎉 수정 완료 - 상세보기에 반영됨')
         
@@ -2172,12 +2279,33 @@ export default {
         editingPet.value.birthday = originalPetData.value.birthday
         editingPet.value.age = originalPetData.value.age
       }
-      selectedDate.value = null
+      
+      // 달력을 생일 날짜로 초기화 (수정 모달에서는 생일 날짜 달력 표시)
+      if (editingPet.value && editingPet.value.birthday) {
+        const birthdayDate = new Date(editingPet.value.birthday)
+        currentDate.value = birthdayDate
+        selectedDate.value = birthdayDate
+        showYearPicker.value = false
+        showMonthPicker.value = false
+        console.log('📅 달력 취소 - 생일 날짜로 초기화:', birthdayDate)
+      } else {
+        // 생일이 없으면 오늘 날짜로 초기화
+        const today = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
+        currentDate.value = today
+        selectedDate.value = null
+        showYearPicker.value = false
+        showMonthPicker.value = false
+        console.log('📅 달력 취소 - 생일이 없어서 오늘 날짜로 초기화:', today)
+      }
     }
     
     const confirmDateSelection = () => {
       if (editingPet.value && selectedDate.value) {
-        editingPet.value.birthday = selectedDate.value.toISOString().substr(0, 10)
+        // 로컬 시간 기준으로 날짜 포맷 (UTC 변환 문제 해결)
+        const year = selectedDate.value.getFullYear()
+        const month = String(selectedDate.value.getMonth() + 1).padStart(2, '0')
+        const day = String(selectedDate.value.getDate()).padStart(2, '0')
+        editingPet.value.birthday = `${year}-${month}-${day}`
         
         // 생일 변경 시 나이 자동 계산
         if (editingPet.value.birthday) {
@@ -2268,6 +2396,7 @@ export default {
         isEditing,
         editingPet,
         originalPetData,
+        hasChanges,
         saving,
         showDatePicker,
         // 달력 관련 변수들
@@ -2316,6 +2445,7 @@ export default {
         handlePetDelete,
         closeEditForm,
         toggleEditMode,
+        resetEditForm,
         handleImageChange,
         onImageFileChange,
         handleCrop,
@@ -4676,10 +4806,27 @@ export default {
   background: transparent !important;
   box-shadow: none !important;
   padding: 8px 12px;
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
+}
+
+.reset-btn-text {
+  color: #E87D7D;
+  font-weight: 600;
+  background: transparent;
+  border: none;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: opacity 0.2s;
+}
+
+.reset-btn-text:hover:not(.disabled) {
+  opacity: 0.8;
+}
+
+.reset-btn-text.disabled {
+  color: #ccc;
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .cancel-btn {
