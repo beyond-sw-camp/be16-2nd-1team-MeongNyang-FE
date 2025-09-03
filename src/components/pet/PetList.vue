@@ -1410,11 +1410,23 @@ export default {
       // 이전 달의 마지막 날들
       for (let i = firstDayOfWeek - 1; i >= 0; i--) {
         const date = new Date(year, month, -i)
+        
+        // 생일 날짜 확인
+        let isBirthday = false
+        if (editingPet.value && editingPet.value.birthday) {
+          const birthdayDate = new Date(editingPet.value.birthday)
+          isBirthday = date.toDateString() === birthdayDate.toDateString()
+        } else if (selectedPet.value && selectedPet.value.birthday) {
+          const birthdayDate = new Date(selectedPet.value.birthday)
+          isBirthday = date.toDateString() === birthdayDate.toDateString()
+        }
+        
         dates.push({
           date: date.getDate(),
           isCurrentMonth: false,
           isToday: false,
           isSelected: false,
+          isBirthday,
           key: `prev-${date.getDate()}`
         })
       }
@@ -1426,10 +1438,15 @@ export default {
         const isSelected = selectedDate.value && date.toDateString() === selectedDate.value.toDateString()
         const isDisabled = date > today // 오늘 이후 날짜는 비활성화
         
-        // 생일 날짜 확인 (editingPet이 있을 때만)
+        // 생일 날짜 확인 (editingPet 또는 selectedPet의 생일)
         let isBirthday = false
         if (editingPet.value && editingPet.value.birthday) {
+          // 수정 모드일 때는 editingPet의 생일 확인
           const birthdayDate = new Date(editingPet.value.birthday)
+          isBirthday = date.toDateString() === birthdayDate.toDateString()
+        } else if (selectedPet.value && selectedPet.value.birthday) {
+          // 상세보기 모드일 때는 selectedPet의 생일 확인
+          const birthdayDate = new Date(selectedPet.value.birthday)
           isBirthday = date.toDateString() === birthdayDate.toDateString()
         }
         
@@ -1447,11 +1464,24 @@ export default {
       // 다음 달의 첫 날들 (42개 셀을 채우기 위해)
       const remainingCells = 42 - dates.length
       for (let day = 1; day <= remainingCells; day++) {
+        const date = new Date(year, month + 1, day)
+        
+        // 생일 날짜 확인
+        let isBirthday = false
+        if (editingPet.value && editingPet.value.birthday) {
+          const birthdayDate = new Date(editingPet.value.birthday)
+          isBirthday = date.toDateString() === birthdayDate.toDateString()
+        } else if (selectedPet.value && selectedPet.value.birthday) {
+          const birthdayDate = new Date(selectedPet.value.birthday)
+          isBirthday = date.toDateString() === birthdayDate.toDateString()
+        }
+        
         dates.push({
           date: day,
           isCurrentMonth: false,
           isToday: false,
           isSelected: false,
+          isBirthday,
           key: `next-${day}`
         })
       }
@@ -1591,15 +1621,16 @@ export default {
       imagePreviewUrl.value = null
       
       // 달력을 오늘 날짜로 완전 초기화 (상세보기 모드)
+      // 달력을 오늘 날짜로 초기화 (상세보기 모드)
       const today = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
       currentDate.value = today
       selectedDate.value = null
+      console.log('📅 상세보기 진입 - 달력을 오늘 날짜로 초기화:', today)
       showYearPicker.value = false
       showMonthPicker.value = false
       showDatePicker.value = false
       // 추가 달력 상태 초기화 (혹시 모를 다른 상태들)
       selectedMonth.value = null
-      console.log('📅 상세보기 진입 - 달력을 오늘 날짜로 완전 초기화:', today)
       
       selectedPet.value = pet
       showDetailModal.value = true
@@ -1804,9 +1835,10 @@ export default {
         isEditing.value = false
         
         // 달력을 오늘 날짜로 초기화 (상세보기 모드)
-        currentDate.value = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
+        const today = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
+        currentDate.value = today
         selectedDate.value = null
-        console.log('📅 상세보기 모드 - 달력을 오늘 날짜로 초기화')
+        console.log('📅 상세보기 모드 - 달력을 오늘 날짜로 초기화:', today)
         
         // 임시 이미지 URL 정리
         if (selectedPet.value && selectedPet.value.tempImageUrl) {
