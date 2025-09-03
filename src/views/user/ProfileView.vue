@@ -269,6 +269,12 @@
       v-model="showEditModal" 
       @success="handleProfileUpdateSuccess"
     />
+
+    <!-- 비밀번호 변경 모달 -->
+    <ChangePasswordModal 
+      v-model="showChangePasswordModal" 
+      @success="handlePasswordChangeSuccess"
+    />
   </div>
 </template>
 
@@ -279,12 +285,14 @@ import { useAuthStore } from '@/stores/auth'
 import { usePetStore } from '@/stores/pet'
 import { userAPI } from '@/services/api'
 import ProfileEditModal from '@/components/user/ProfileEditModal.vue'
+import ChangePasswordModal from '@/components/user/ChangePasswordModal.vue'
 
 export default {
   name: 'ProfileView',
   
   components: {
-    ProfileEditModal
+    ProfileEditModal,
+    ChangePasswordModal
   },
   
   setup() {
@@ -294,6 +302,7 @@ export default {
     
     const userInfo = computed(() => authStore.myPageInfo)
     const showEditModal = ref(false)
+    const showChangePasswordModal = ref(false)
     
     // 실시간 대표동물 변경 감지
     watch(
@@ -624,7 +633,12 @@ export default {
     
     // 비밀번호 변경 함수
     const changePassword = () => {
-      router.push('/profile/change-password')
+      showChangePasswordModal.value = true
+    }
+    
+    // 비밀번호 변경 성공 처리
+    const handlePasswordChangeSuccess = () => {
+      console.log('비밀번호 변경 성공')
     }
     
     return {
@@ -633,6 +647,7 @@ export default {
       forceImageUrl,
       petStore,
       showEditModal,
+      showChangePasswordModal,
       formatJoinDate,
       getSocialIcon,
       getSocialColor,
@@ -644,6 +659,7 @@ export default {
       handleProfileUpdateSuccess,
       deleteAccount,
       changePassword,
+      handlePasswordChangeSuccess,
       forceRefreshData,
       handleImageError,
       handleImageLoad
