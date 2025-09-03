@@ -1052,6 +1052,7 @@ const showForgotPasswordModal = ref(false)
 const showUnlockAccountModal = ref(false)
 const showSocialLinkModal = ref(false)
 const socialLinkData = ref(null)
+const showOAuthExtraModal = ref(false)
 
 const forgotPasswordFormRef = ref(null)
 const unlockAccountFormRef = ref(null)
@@ -1167,6 +1168,10 @@ const closeForgotPasswordModal = () => {
   forgotPasswordForm.email = ''
   forgotPasswordErrorMsg.value = ''
   forgotPasswordSuccessMsg.value = ''
+}
+
+const closeOAuthExtraModal = () => {
+  showOAuthExtraModal.value = false
 }
 
 const handleForgotPassword = async () => {
@@ -1675,16 +1680,25 @@ const resetAllOAuthStates = () => {
   console.log('🔄 OAuth 상태 초기화 완료')
 }
 
-// 페이지 가시성 변경 감지 함수
+// 페이지 가시성 변경 감지 함수 (디바운싱 적용)
+let visibilityChangeTimeout = null
 const handleVisibilityChange = () => {
   if (!document.hidden) {
-    // 페이지가 다시 보일 때 OAuth 상태 초기화
-    console.log('👁️ 페이지 가시성 변경 감지 - OAuth 상태 초기화')
-    resetAllOAuthStates()
+    // 기존 타이머가 있으면 취소
+    if (visibilityChangeTimeout) {
+      clearTimeout(visibilityChangeTimeout)
+    }
+    
+    // 500ms 후에 실행 (디바운싱)
+    visibilityChangeTimeout = setTimeout(() => {
+      console.log('👁️ 페이지 가시성 변경 감지 - OAuth 상태 초기화')
+      resetAllOAuthStates()
+      visibilityChangeTimeout = null
+    }, 500)
   }
 }
 
-// 컴포넌트 마운트 시 OAuth 상태 초기화 및 이벤트 리스너 등록
+// 컴포넌트 마운트 시 OAuth 상태 초기화
 onMounted(() => {
   console.log('🚀 FloatingAuthModal 마운트 - OAuth 상태 초기화')
   
@@ -1705,15 +1719,35 @@ onMounted(() => {
       localStorage.removeItem('oauth_provider')
     }
   }
-  
-  // 페이지 가시성 변경 감지 이벤트 리스너 등록
-  document.addEventListener('visibilitychange', handleVisibilityChange)
+})
+
+// 모달 상태 감시하여 이벤트 리스너 관리
+watch(dialog, (isOpen) => {
+  if (isOpen) {
+    console.log('🔍 모달 열림 - 이벤트 리스너 등록')
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+  } else {
+    console.log('🔍 모달 닫힘 - 이벤트 리스너 제거')
+    document.removeEventListener('visibilitychange', handleVisibilityChange)
+    
+    // 타이머 정리
+    if (visibilityChangeTimeout) {
+      clearTimeout(visibilityChangeTimeout)
+      visibilityChangeTimeout = null
+    }
+  }
 })
 
 // 컴포넌트 언마운트 시 이벤트 리스너 제거
 onBeforeUnmount(() => {
   console.log('🧹 FloatingAuthModal 언마운트 - 이벤트 리스너 제거')
   document.removeEventListener('visibilitychange', handleVisibilityChange)
+  
+  // 타이머 정리
+  if (visibilityChangeTimeout) {
+    clearTimeout(visibilityChangeTimeout)
+    visibilityChangeTimeout = null
+  }
 })
 </script>
 
