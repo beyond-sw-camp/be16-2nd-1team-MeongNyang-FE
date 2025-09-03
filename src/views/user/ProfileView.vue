@@ -167,16 +167,14 @@
                     />
                     <span class="social-text">Kakao</span>
                   </div>
-                  <v-chip
-                    v-else
-                    color="blue"
-                    size="small"
-                    variant="elevated"
-                    class="social-chip"
-                  >
-                    <v-icon icon="mdi-account" size="18" />
-                    일반
-                  </v-chip>
+                  <div class="social-logo-container">
+                    <v-icon 
+                      icon="mdi-account" 
+                      class="social-logo"
+                      color="#64748b"
+                    />
+                    <span class="social-text">일반</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -206,26 +204,23 @@
 
 
       <!-- 계정 관리 카드 -->
-      <div class="info-card danger-zone">
+      <div class="info-card account-management">
         <div class="card-header">
-          <div class="header-icon danger">
-            <v-icon size="24" color="error" icon="mdi-alert-circle" />
-          </div>
           <h2>계정 관리</h2>
         </div>
         
-        <div class="danger-content">
+        <div class="account-content">
           <!-- 비밀번호 변경 버튼 -->
           <div class="password-section">
             <v-btn 
               v-if="userInfo?.socialType === 'COMMON'"
               variant="outlined" 
               size="large"
-              rounded="xl"
+              rounded="lg"
               prepend-icon="mdi-lock"
-              class="password-btn"
+              class="management-btn password-btn"
               @click="changePassword"
-              color="#E87D7D"
+              color="#64748b"
             >
               비밀번호 변경
             </v-btn>
@@ -234,18 +229,18 @@
               v-else
               variant="outlined" 
               size="large"
-              rounded="xl"
+              rounded="lg"
               prepend-icon="mdi-lock"
-              class="password-btn"
+              class="management-btn password-btn"
               disabled
-              color="#E87D7D"
+              color="#94a3b8"
             >
               비밀번호 변경 (소셜 계정)
             </v-btn>
           </div>
           
           <div class="warning-message">
-            <v-icon size="20" color="error" icon="mdi-alert" />
+            <v-icon size="18" color="#ef4444" icon="mdi-alert" />
             <p class="warning-text">
               계정을 삭제하면 모든 데이터가 <strong>영구적으로 삭제</strong>되며 복구할 수 없습니다.
             </p>
@@ -253,13 +248,12 @@
           
           <v-btn 
             @click="deleteAccount" 
-            color="error" 
-            variant="flat"
+            variant="outlined"
             size="large"
-            rounded="xl"
+            rounded="lg"
             prepend-icon="mdi-delete"
-            class="delete-btn"
-            elevation="2"
+            class="management-btn delete-btn"
+            color="error"
           >
             계정 탈퇴
           </v-btn>
@@ -988,17 +982,13 @@ export default {
 
 
 
-/* 위험 구역 */
-.danger-zone {
-  border: 1px solid #fecaca;
+/* 계정 관리 섹션 */
+.account-management {
+  border: 1px solid #e9ecef;
   background: white;
 }
 
-.danger-zone .header-icon {
-  background: linear-gradient(135deg, #ef4444, #f87171);
-}
-
-.danger-content {
+.account-content {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
@@ -1007,13 +997,23 @@ export default {
 .password-section {
   display: flex;
   justify-content: flex-start;
-  margin-bottom: 0.5rem;
+}
+
+.management-btn {
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0.025em;
+  border-width: 1px;
+  transition: all 0.2s ease;
+}
+
+.management-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .password-btn {
-  font-weight: 600;
-  text-transform: none;
-  letter-spacing: 0.025em;
+  min-width: 200px;
 }
 
 .warning-message {
@@ -1023,7 +1023,7 @@ export default {
   padding: 1rem;
   background: rgba(239, 68, 68, 0.05);
   border-radius: 12px;
-  border: 1px solid rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
 .warning-text {
@@ -1035,7 +1035,15 @@ export default {
 
 .delete-btn {
   align-self: flex-start;
-  font-weight: 600;
+  min-width: 200px;
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.delete-btn:hover {
+  border-color: #dc2626;
+  background: rgba(239, 68, 68, 0.05);
+  color: #dc2626;
 }
 
 /* 반응형 디자인 */
