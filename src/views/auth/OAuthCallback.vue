@@ -25,7 +25,7 @@ onMounted(async () => {
 
   if (!provider || !code) {
     router.replace({ 
-      name: 'Home',
+      path: '/',
       query: { showLogin: 'true' }
     })
     return
@@ -45,9 +45,9 @@ onMounted(async () => {
       if (rt) auth.refreshToken = rt
       try { await auth.getCurrentUser() } catch(e) {void e}
       
-      // 로그인 성공 후 화면 새로고침하여 로그인된 상태로 표시
-      console.log('✅ OAuth 로그인 성공! 화면 새로고침 중...')
-      window.location.href = '/dashboard'
+      // 로그인 성공 후 홈화면으로 이동
+      console.log('✅ OAuth 로그인 성공! 홈화면으로 이동 중...')
+      router.replace({ name: 'Home' })
       return
     }
 
@@ -130,14 +130,12 @@ onMounted(async () => {
           msg.includes('탈퇴한 계정') ||
           msg.includes('존재하지 않는') ||
           msg.includes('비활성화된 계정')) {
-        console.log('삭제된 계정 감지:', msg)
-        
+        console.log('삭제된 계정 감지:', msg)   
         // 홈으로 이동하고 삭제된 계정 모달을 열기 위한 쿼리 파라미터 전달
         router.replace({
           name: 'Home',
           query: {
             showDeletedAccount: 'true',
-            deletedEmail: payload?.email || '알 수 없는 이메일',
           },
         })
         return
@@ -151,19 +149,12 @@ onMounted(async () => {
     }
     
     // EntityExistsException - 이미 다른 방식으로 연동된 계정
-    if (msg.includes('이미 다른 방식으로 연동') || msg.includes('이미 소셜 연동')) {
-      // 에러 메시지에서 기존 소셜 타입 추출
-      const existingType = 
-        msg.includes('구글') || msg.includes('Google') || msg.includes('GOOGLE') ? 'Google' :
-        msg.includes('카카오') || msg.includes('Kakao') || msg.includes('KAKAO') ? 'Kakao' : '다른 소셜'
-      
+    if (msg.includes('이미 다른 방식으로 연동') || msg.includes('이미 소셜 연동') || msg.includes('이미 소셜 연동된 계정')) {
       // 홈으로 이동하고 소셜 계정 중복 모달을 열기 위한 쿼리 파라미터 전달
       router.replace({
         name: 'Home',
         query: {
           showSocialDuplicate: 'true',
-          duplicateEmail: payload?.email || '알 수 없는 이메일',
-          duplicateProvider: existingType,
         },
       })
       return

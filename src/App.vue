@@ -85,9 +85,8 @@
           <!-- 컨텐츠 -->
           <div class="modal-content">
             <h3 class="modal-title">계정 중복 발견</h3>
-            <p class="modal-description">
-              <strong class="highlight-email">{{ socialDuplicateData?.email }}</strong>으로 가입된 계정이 이미 존재합니다.
-            </p>
+            
+            <div class="modal-spacer"></div>
             
             <div class="info-box">
               <div class="info-icon">
@@ -135,26 +134,50 @@
         <!-- 삭제된 계정 모달 -->
         <v-dialog
           v-model="showDeletedAccountModal"
-          max-width="500"
+          max-width="480"
           persistent
           class="deleted-account-modal"
           :retain-focus="false"
+          :transition="false"
+          :overlay="false"
         >
-          <v-card class="pa-6" rounded="lg">
-            <v-card-title class="text-h5 text-center mb-4">
-              <div class="d-flex align-center justify-center">
-                <v-icon size="32" color="error" class="me-3">
-                  mdi-account-remove
-                </v-icon>
-                계정 삭제됨
+          <v-card class="auth-modal-card" elevation="24" rounded="xl">
+            <v-card-title class="auth-modal-header pa-8 pb-4">
+              <div class="d-flex align-center justify-space-between w-100">
+                <div class="d-flex align-center">
+                  <!-- 헤더 제목 제거 -->
+                </div>
+                
+                <!-- 타이틀을 헤더 중앙에 배치 -->
+                <div class="auth-tabs-container">
+                  <div class="deleted-account-title">
+                    <v-icon size="24" color="error" class="me-2">mdi-account-remove</v-icon>
+                    <span>계정 삭제됨</span>
+                  </div>
+                </div>
+                
+                <v-btn
+                  icon
+                  variant="text"
+                  @click="handleDeletedAccountClose"
+                  class="modal-close-btn"
+                >
+                  <v-icon size="20">mdi-close</v-icon>
+                </v-btn>
               </div>
             </v-card-title>
 
-            <v-card-text class="text-center pa-0">
-              <div class="mb-6 px-4">
-                <p class="text-body-1 mb-3">
-                  <span class="text-error">😩</span>
-                  <strong class="text-error">{{ deletedAccountData?.email || '이 계정' }}</strong>은 삭제되었습니다.
+            <v-card-text class="pa-8 pt-6">
+              <div class="text-center mb-6">
+                <div class="deleted-account-icon mb-3">
+                  <v-icon size="32" color="white">mdi-account-remove</v-icon>
+                </div>
+                <h3 class="text-h6 font-weight-semibold mb-2 text-dark">계정이 삭제되었습니다</h3>
+                <p class="text-body-2 text-medium-emphasis mb-3">
+                  <strong>{{ deletedAccountData?.email || '이 계정' }}</strong>은 삭제되었습니다.
+                </p>
+                <p v-if="deletedAccountData?.attemptedProvider" class="text-body-2 text-medium-emphasis mb-3">
+                  <strong>{{ getProviderDisplayName(deletedAccountData.attemptedProvider) }}</strong>로 로그인을 시도하셨습니다.
                 </p>
                 <p class="text-body-2 text-medium-emphasis">
                   새로운 계정으로 가입해주세요!
@@ -166,7 +189,7 @@
                 variant="tonal"
                 density="compact"
                 rounded="lg"
-                class="mb-6 mx-4"
+                class="mb-6"
               >
                 <template #prepend>
                   <v-icon size="16" color="error">mdi-information</v-icon>
@@ -175,37 +198,37 @@
                   <strong>안내:</strong> 삭제된 계정은 복구할 수 없습니다. 새로운 계정으로 가입해주세요.
                 </span>
               </v-alert>
-            </v-card-text>
 
-            <v-card-actions class="pa-0 px-4 pb-4">
-              <div class="d-flex flex-column w-100">
+              <div class="deleted-account-actions">
                 <v-btn
                   color="primary"
                   block
                   size="large"
                   @click="handleDeletedAccountRegister"
-                  height="48"
-                  rounded="lg"
-                  class="font-weight-medium"
+                  rounded="xl"
+                  height="52"
+                  class="deleted-account-primary-btn mb-3"
+                  elevation="4"
+                  prepend-icon="mdi-account-plus"
                 >
                   새 계정 만들기
                 </v-btn>
                 
                 <v-btn
-                  variant="text"
+                  variant="outlined"
                   block
                   size="large"
                   @click="handleDeletedAccountClose"
-                  height="40"
-                  rounded="lg"
+                  rounded="xl"
+                  height="48"
                   color="grey-darken-1"
-                  class="text-caption"
-                  style="text-decoration: underline; font-weight: 500;"
+                  class="deleted-account-secondary-btn"
+                  elevation="0"
                 >
                   닫기
                 </v-btn>
               </div>
-            </v-card-actions>
+            </v-card-text>
           </v-card>
         </v-dialog>
         
@@ -568,6 +591,8 @@ export default {
       showDeletedAccountModal.value = true
     }
     
+
+    
     // OAuth 연동 모달 열기 (HomeView에서 호출)
     const openOAuthLinkModal = (data) => {
       console.log('OAuth 연동 모달 열기:', data)
@@ -804,6 +829,204 @@ export default {
 body {
   font-family: 'Noto Sans KR', sans-serif;
   background-color: #f5f5f5;
+}
+
+/* 계정 삭제 모달 스타일 */
+.deleted-account-modal {
+  backdrop-filter: blur(8px);
+}
+
+.deleted-account-modal .auth-modal-card {
+  background: #ffffff;
+  border: 1px solid #e9ecef;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+  max-width: 520px !important;
+  width: 100%;
+}
+
+.deleted-account-modal .auth-modal-header {
+  background: #ffffff;
+  border-bottom: none;
+  box-shadow: none;
+}
+
+.deleted-account-title {
+  display: flex;
+  align-items: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.deleted-account-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.deleted-account-modal .modal-close-btn {
+  color: #9ca3af !important;
+  transition: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  border-radius: 0 !important;
+  min-width: auto !important;
+  width: auto !important;
+  height: auto !important;
+  position: relative !important;
+  overflow: visible !important;
+}
+
+.deleted-account-modal .modal-close-btn:hover {
+  color: #6b7280 !important;
+  background: transparent !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.deleted-account-modal .modal-close-btn:active {
+  background: transparent !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.deleted-account-modal .modal-close-btn:focus {
+  background: transparent !important;
+  transform: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.deleted-account-modal .modal-close-btn::before {
+  display: none !important;
+  content: none !important;
+}
+
+.deleted-account-modal .modal-close-btn::after {
+  display: none !important;
+  content: none !important;
+}
+
+.deleted-account-modal .modal-close-btn .v-btn__content {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.deleted-account-modal .modal-close-btn .v-btn__overlay {
+  display: none !important;
+  opacity: 0 !important;
+  background: transparent !important;
+}
+
+.deleted-account-modal .modal-close-btn:hover .v-btn__overlay {
+  display: none !important;
+  opacity: 0 !important;
+  background: transparent !important;
+}
+
+.deleted-account-modal .modal-close-btn:focus .v-btn__overlay {
+  display: none !important;
+  opacity: 0 !important;
+  background: transparent !important;
+}
+
+.deleted-account-modal .modal-close-btn:active .v-btn__overlay {
+  display: none !important;
+  opacity: 0 !important;
+  background: transparent !important;
+}
+
+.deleted-account-modal .modal-close-btn .v-btn__prepend,
+.deleted-account-modal .modal-close-btn .v-btn__append {
+  display: none !important;
+}
+
+.deleted-account-modal .modal-close-btn .v-btn__loader {
+  display: none !important;
+}
+
+/* Vuetify 기본 스타일 완전 덮어쓰기 */
+.deleted-account-modal .modal-close-btn.v-btn {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.deleted-account-modal .modal-close-btn.v-btn:hover {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.deleted-account-modal .modal-close-btn.v-btn:focus {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.deleted-account-modal .modal-close-btn.v-btn:active {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* 계정 삭제 모달 버튼 스타일 */
+.deleted-account-actions {
+  margin-top: 8px;
+}
+
+.deleted-account-primary-btn {
+  background: #3b82f6 !important;
+  border: none !important;
+  color: white !important;
+  font-weight: 600 !important;
+  font-size: 0.95rem !important;
+  text-transform: none !important;
+  transition: background-color 0.2s ease !important;
+}
+
+.deleted-account-primary-btn:hover {
+  background: #2563eb !important;
+}
+
+.deleted-account-primary-btn .v-btn__prepend .v-icon {
+  margin-right: 8px !important;
+  font-size: 20px !important;
+}
+
+.deleted-account-secondary-btn {
+  background: #ffffff !important;
+  border: 1px solid #d1d5db !important;
+  color: #6b7280 !important;
+  font-weight: 500 !important;
+  font-size: 0.9rem !important;
+  text-transform: none !important;
+  transition: background-color 0.2s ease !important;
+}
+
+.deleted-account-secondary-btn:hover {
+  background: #f9fafb !important;
+  border-color: #9ca3af !important;
+  color: #374151 !important;
 }
 
 /* 맨 위로 버튼 스타일 */
@@ -1066,7 +1289,7 @@ body {
 }
 
 .modal-content {
-  padding: 0 24px 24px;
+  padding: 24px 32px 32px;
 }
 
 .modal-title {
@@ -1074,8 +1297,12 @@ body {
   font-weight: 700;
   color: #111827;
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 0;
   line-height: 1.3;
+}
+
+.modal-spacer {
+  height: 24px;
 }
 
 .provider-badge-top {
@@ -1139,6 +1366,15 @@ body {
   font-weight: 500;
 }
 
+.modal-sub-description {
+  color: #4b5563;
+  text-align: center;
+  line-height: 1.5;
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+  font-weight: 400;
+}
+
 .email-card {
   background: #f8fafc;
   border: 1px solid rgba(255, 139, 139, 0.1);
@@ -1185,8 +1421,8 @@ body {
   background: #fef7ff;
   border: 1px solid rgba(255, 139, 139, 0.15);
   border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 24px;
+  padding: 24px;
+  margin-bottom: 32px;
 }
 
 .info-header {

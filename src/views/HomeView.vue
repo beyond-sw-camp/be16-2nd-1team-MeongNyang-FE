@@ -234,27 +234,22 @@ export default {
       }
       
       // 소셜 계정 중복 모달
-      const { showSocialDuplicate, duplicateEmail, duplicateProvider } = route.query
-      if (showSocialDuplicate === 'true' && duplicateEmail && duplicateProvider) {
+      const { showSocialDuplicate } = route.query
+      if (showSocialDuplicate === 'true') {
         const openSocialDuplicateModal = inject('openSocialDuplicateModal')
         if (openSocialDuplicateModal) {
-          openSocialDuplicateModal({
-            email: duplicateEmail,
-            provider: duplicateProvider
-          })
+          openSocialDuplicateModal({})
         }
         // URL에서 쿼리 파라미터 제거
         window.history.replaceState({}, document.title, '/')
       }
       
       // 삭제된 계정 모달
-      const { showDeletedAccount, deletedEmail } = route.query
-      if (showDeletedAccount === 'true' && deletedEmail) {
+      const { showDeletedAccount } = route.query
+      if (showDeletedAccount === 'true') {
         const openDeletedAccountModal = inject('openDeletedAccountModal')
         if (openDeletedAccountModal) {
-          openDeletedAccountModal({
-            email: deletedEmail
-          })
+          openDeletedAccountModal({})
         }
         // URL에서 쿼리 파라미터 제거
         window.history.replaceState({}, document.title, '/')
