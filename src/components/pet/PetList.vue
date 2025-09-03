@@ -421,7 +421,7 @@
               <input
                 ref="fileInput"
                 type="file"
-                accept="image/*"
+                accept=".jpg,.jpeg,.png,.gif,.webp,image/jpeg,image/jpg,image/png,image/gif,image/webp"
                 @change="onImageFileChange"
                 style="display: none"
               />
@@ -1959,7 +1959,11 @@ export default {
     const fileInput = ref(null)
     
     const handleImageChange = () => {
-      fileInput.value?.click()
+      // 파일 입력 초기화 후 클릭
+      if (fileInput.value) {
+        fileInput.value.value = ''
+        fileInput.value.click()
+      }
     }
     
     const onImageFileChange = async (event) => {
@@ -1969,10 +1973,49 @@ export default {
       try {
         console.log('📸 이미지 변경 시작:', file.name, file.size)
         
+        // 이미지 파일 형식 체크 (MIME 타입과 확장자 모두 확인)
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+        const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp']
+        const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'))
+        
+        console.log('🔍 파일 형식 검증:', {
+          fileName: file.name,
+          fileType: file.type,
+          fileExtension: fileExtension,
+          isTypeAllowed: allowedTypes.includes(file.type),
+          isExtensionAllowed: allowedExtensions.includes(fileExtension)
+        })
+        
+        if (!allowedTypes.includes(file.type) || !allowedExtensions.includes(fileExtension)) {
+          console.log('❌ 파일 형식 검증 실패 - 크롭 모달 열기 차단')
+          showSnackbar('이미지 파일만 업로드 가능합니다. (JPG, PNG, GIF, WebP)', 'error')
+          // 파일 입력 강제 초기화
+          event.target.value = ''
+          // 추가로 파일 입력 요소도 초기화
+          if (fileInput.value) {
+            fileInput.value.value = ''
+          }
+          // 이벤트 전파 중지로 크롭 모달 열기 방지
+          event.stopPropagation()
+          event.preventDefault()
+          return false
+        }
+        
+        console.log('✅ 파일 형식 검증 통과')
+        
         // 파일 크기 체크 (5MB)
         if (file.size > 5 * 1024 * 1024) {
+          console.log('❌ 파일 크기 초과 - 크롭 모달 열기 차단')
           showSnackbar('파일 크기는 5MB 이하여야 합니다.', 'error')
-          return
+          // 파일 입력 강제 초기화
+          event.target.value = ''
+          if (fileInput.value) {
+            fileInput.value.value = ''
+          }
+          // 이벤트 전파 중지로 크롭 모달 열기 방지
+          event.stopPropagation()
+          event.preventDefault()
+          return false
         }
         
         // 수정 모드가 아닐 때는 바로 이미지 변경

@@ -807,8 +807,22 @@ export default {
     const handleImageChange = (event) => {
       const file = event.target.files[0]
       if (file) {
+        // 파일 형식 검증
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+        const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp']
+        const fileExtension = '.' + file.name.split('.').pop().toLowerCase()
+        
+        if (!allowedTypes.includes(file.type) || !allowedExtensions.includes(fileExtension)) {
+          alert('이미지 파일만 업로드 가능합니다. (JPG, PNG, GIF, WebP)')
+          // 파일 입력 초기화
+          event.target.value = ''
+          return
+        }
+        
         if (file.size > 5 * 1024 * 1024) {
           alert('이미지 크기는 5MB 이하로 선택해주세요.')
+          // 파일 입력 초기화
+          event.target.value = ''
           return
         }
         
