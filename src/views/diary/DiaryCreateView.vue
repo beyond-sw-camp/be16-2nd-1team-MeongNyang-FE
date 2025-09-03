@@ -22,7 +22,7 @@
       <div class="image-container" @click="addImage">
         <div v-if="mediaList.length === 0" class="empty-image-state">
           <v-icon size="64" color="#CBD5E1">mdi-image-plus</v-icon>
-          <p class="upload-text">드래그 또는 + 버튼을 눌러 미디어를 삽입하세요(최대 10장)</p>
+          <p class="upload-text">드래그 또는 + 버튼을 눌러 이미지를 삽입하세요(최대 10장)</p>
         </div>
         
         <div v-else class="media-gallery">
@@ -35,15 +35,6 @@
                 class="main-media"
                 cover
               ></v-img>
-              
-              <!-- 비디오 미리보기 -->
-              <video 
-                v-else-if="currentMedia.type === 'video'"
-                :src="currentMedia.url" 
-                class="main-media"
-                controls
-                preload="metadata"
-              ></video>
               
               <!-- 삭제 버튼 -->
               <v-btn 
@@ -118,7 +109,7 @@
       ref="fileInput"
       type="file"
       multiple
-      accept="image/*,video/*"
+      accept="image/*"
       @change="handleFileSelect"
       style="display: none"
     >
@@ -178,17 +169,18 @@ export default {
       }
       
       files.forEach(file => {
-        if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
+        if (file.type.startsWith('image/')) {
           const reader = new FileReader()
           reader.onload = (e) => {
-            const mediaType = file.type.startsWith('image/') ? 'image' : 'video'
             mediaList.value.push({
               url: e.target.result,
-              type: mediaType,
+              type: 'image',
               file: file
             })
           }
           reader.readAsDataURL(file)
+        } else {
+          alert('이미지 파일만 업로드할 수 있습니다.')
         }
       })
       
@@ -290,7 +282,7 @@ export default {
       }
       
       if (mediaList.value.length === 0) {
-        alert('최소 하나의 이미지나 비디오를 업로드해주세요.')
+        alert('최소 하나의 이미지를 업로드해주세요.')
         return
       }
       
@@ -312,8 +304,8 @@ export default {
             try {
               const response = await fetch(media.url)
               const blob = await response.blob()
-              const file = new File([blob], `existing_media_${index}.${media.type === 'video' ? 'mp4' : 'jpg'}`, {
-                type: media.type === 'video' ? 'video/mp4' : 'image/jpeg'
+              const file = new File([blob], `existing_media_${index}.jpg`, {
+                type: 'image/jpeg'
               })
               console.log(`기존 미디어 ${index} 변환 완료:`, file)
               return file
@@ -384,17 +376,18 @@ export default {
       }
       
       files.forEach(file => {
-        if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
+        if (file.type.startsWith('image/')) {
           const reader = new FileReader()
           reader.onload = (e) => {
-            const mediaType = file.type.startsWith('image/') ? 'image' : 'video'
             mediaList.value.push({
               url: e.target.result,
-              type: mediaType,
+              type: 'image',
               file: file
             })
           }
           reader.readAsDataURL(file)
+        } else {
+          alert('이미지 파일만 업로드할 수 있습니다.')
         }
       })
     }

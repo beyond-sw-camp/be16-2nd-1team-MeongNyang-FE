@@ -1683,7 +1683,7 @@ export default {
 .empty-state {
   text-align: center;
   padding: 80px 20px;
-  color: #6B7280;
+  color: #FFFAF0;
 }
 
 .empty-state h3 {

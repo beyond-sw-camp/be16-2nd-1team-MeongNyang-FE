@@ -27,7 +27,7 @@
       >
         <div v-if="mediaList.length === 0" class="empty-image-state">
           <v-icon size="64" color="#CBD5E1">mdi-image-plus</v-icon>
-          <p class="upload-text">드래그 또는 + 버튼을 눌러 미디어를 삽입하세요(최대 10장)</p>
+          <p class="upload-text">드래그 또는 + 버튼을 눌러 이미지를 삽입하세요(최대 10장)</p>
         </div>
         
         <div v-else class="media-gallery">
@@ -41,16 +41,6 @@
                 cover
                 @error="handleImageError(currentMediaIndex.value)"
               ></v-img>
-              
-              <!-- 비디오 미리보기 -->
-              <video 
-                v-else-if="currentMedia.type === 'video'"
-                :src="currentMedia.url" 
-                class="main-media"
-                controls
-                preload="metadata"
-                @error="handleImageError(currentMediaIndex.value)"
-              ></video>
               
               <!-- 삭제 버튼 -->
               <v-btn 
@@ -125,7 +115,7 @@
       ref="fileInput"
       type="file"
       multiple
-      accept="image/*,video/*"
+      accept="image/*"
       @change="handleFileSelect"
       style="display: none"
     >
@@ -200,7 +190,7 @@ export default {
               if (mediaUrl && mediaUrl.trim() !== '') {
                 try {
                   new URL(mediaUrl)
-                  const mediaType = mediaUrl.includes('.mp4') ? 'video' : 'image'
+                  const mediaType = 'image'
                   
                   console.log(`기존 미디어 ${i}:`, {
                     url: mediaUrl,
@@ -318,8 +308,8 @@ export default {
       
       // 파일 유효성 검사 및 처리
       const validFiles = files.filter(file => {
-        if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
-          alert(`${file.name}은(는) 지원하지 않는 파일 형식입니다. 이미지나 비디오 파일만 업로드 가능합니다.`)
+        if (!file.type.startsWith('image/')) {
+          alert(`${file.name}은(는) 지원하지 않는 파일 형식입니다. 이미지 파일만 업로드 가능합니다.`)
           return false
         }
         
@@ -338,14 +328,13 @@ export default {
       validFiles.forEach((file) => {
         const reader = new FileReader()
         reader.onload = (e) => {
-          const mediaType = file.type.startsWith('image/') ? 'image' : 'video'
-          const newMedia = {
-            url: e.target.result,
-            type: mediaType,
-            file: file,
-            isExisting: false,
-            name: file.name
-          }
+                  const newMedia = {
+          url: e.target.result,
+          type: 'image',
+          file: file,
+          isExisting: false,
+          name: file.name
+        }
           
           console.log(`새 미디어 추가:`, newMedia)
           mediaList.value.push(newMedia)
@@ -561,8 +550,8 @@ export default {
       
       // 파일 유효성 검사 및 처리
       const validFiles = files.filter(file => {
-        if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
-          alert(`${file.name}은(는) 지원하지 않는 파일 형식입니다. 이미지나 비디오 파일만 업로드 가능합니다.`)
+        if (!file.type.startsWith('image/')) {
+          alert(`${file.name}은(는) 지원하지 않는 파일 형식입니다. 이미지 파일만 업로드 가능합니다.`)
           return false
         }
         
@@ -581,14 +570,13 @@ export default {
       validFiles.forEach((file) => {
         const reader = new FileReader()
         reader.onload = (e) => {
-          const mediaType = file.type.startsWith('image/') ? 'image' : 'video'
-          const newMedia = {
-            url: e.target.result,
-            type: mediaType,
-            file: file,
-            isExisting: false,
-            name: file.name
-          }
+                  const newMedia = {
+          url: e.target.result,
+          type: 'image',
+          file: file,
+          isExisting: false,
+          name: file.name
+        }
           
           console.log(`드롭된 미디어 추가:`, newMedia)
           mediaList.value.push(newMedia)
