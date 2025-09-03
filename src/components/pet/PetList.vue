@@ -902,7 +902,7 @@
                   prepend-icon="mdi-content-save"
                   @click="saveChanges"
                   :loading="saving"
-                  :disabled="!hasChanges"
+                  :disabled="!canSave"
                   size="small"
                   rounded="lg"
                   class="save-btn action-btn"
@@ -1742,7 +1742,7 @@ export default {
     // 원본 데이터 백업용
     const originalPetData = ref(null)
     
-    // 변경사항이 있는지 확인하는 computed
+    // 변경사항이 있는지 확인하는 computed (초기화 버튼용)
     const hasChanges = computed(() => {
       if (!editingPet.value || !originalPetData.value) {
         return false
@@ -1750,18 +1750,6 @@ export default {
       
       const current = editingPet.value
       const original = originalPetData.value
-      
-      // 필수 필드 검증 (값이 없으면 저장 버튼 비활성화)
-      // age는 0도 유효한 값이므로 !== undefined && !== null 체크
-      const hasRequiredFields = current.name && 
-                               current.type && 
-                               current.gender && 
-                               (current.age !== undefined && current.age !== null) && 
-                               current.weight
-      
-      if (!hasRequiredFields) {
-        return false
-      }
       
       // 각 필드를 비교 (데이터 타입 통일)
       const nameChanged = String(current.name || '') !== String(original.name || '')
@@ -1774,6 +1762,26 @@ export default {
       const imageChanged = current.imageFile !== null && current.imageFile !== original.imageFile
       
       return nameChanged || typeChanged || genderChanged || ageChanged || weightChanged || birthdayChanged || imageChanged
+    })
+    
+    // 저장 가능한지 확인하는 computed (저장 버튼용)
+    const canSave = computed(() => {
+      if (!editingPet.value || !originalPetData.value) {
+        return false
+      }
+      
+      const current = editingPet.value
+      
+      // 필수 필드 검증 (값이 없으면 저장 버튼 비활성화)
+      // age는 0도 유효한 값이므로 !== undefined && !== null 체크
+      const hasRequiredFields = current.name && 
+                               current.type && 
+                               current.gender && 
+                               (current.age !== undefined && current.age !== null) && 
+                               current.weight
+      
+      // 필수 필드가 있고 변경사항이 있어야 저장 가능
+      return hasRequiredFields && hasChanges.value
     })
     
     // 수정 모드 초기화 (변경사항 되돌리기)
@@ -2398,6 +2406,7 @@ export default {
         editingPet,
         originalPetData,
         hasChanges,
+        canSave,
         saving,
         showDatePicker,
         // 달력 관련 변수들
