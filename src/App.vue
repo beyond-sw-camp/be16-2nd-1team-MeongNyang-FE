@@ -1008,4 +1008,12 @@ body {
 .deleted-account-modal .v-card-actions {
   margin-top: auto !important;
 }
+
+img {
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
+}
 </style>
