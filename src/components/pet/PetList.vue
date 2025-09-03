@@ -421,7 +421,7 @@
               <input
                 ref="fileInput"
                 type="file"
-                accept="image/*"
+                accept=".jpg,.jpeg,.png,.gif,.webp,image/jpeg,image/jpg,image/png,image/gif,image/webp"
                 @change="onImageFileChange"
                 style="display: none"
               />
@@ -902,7 +902,7 @@
                   prepend-icon="mdi-content-save"
                   @click="saveChanges"
                   :loading="saving"
-                  :disabled="!hasChanges"
+                  :disabled="!canSave"
                   size="small"
                   rounded="lg"
                   class="save-btn action-btn"
@@ -1410,11 +1410,23 @@ export default {
       // 이전 달의 마지막 날들
       for (let i = firstDayOfWeek - 1; i >= 0; i--) {
         const date = new Date(year, month, -i)
+        
+        // 생일 날짜 확인
+        let isBirthday = false
+        if (editingPet.value && editingPet.value.birthday) {
+          const birthdayDate = new Date(editingPet.value.birthday)
+          isBirthday = date.toDateString() === birthdayDate.toDateString()
+        } else if (selectedPet.value && selectedPet.value.birthday) {
+          const birthdayDate = new Date(selectedPet.value.birthday)
+          isBirthday = date.toDateString() === birthdayDate.toDateString()
+        }
+        
         dates.push({
           date: date.getDate(),
           isCurrentMonth: false,
           isToday: false,
           isSelected: false,
+          isBirthday,
           key: `prev-${date.getDate()}`
         })
       }
@@ -1426,10 +1438,15 @@ export default {
         const isSelected = selectedDate.value && date.toDateString() === selectedDate.value.toDateString()
         const isDisabled = date > today // 오늘 이후 날짜는 비활성화
         
-        // 생일 날짜 확인 (editingPet이 있을 때만)
+        // 생일 날짜 확인 (editingPet 또는 selectedPet의 생일)
         let isBirthday = false
         if (editingPet.value && editingPet.value.birthday) {
+          // 수정 모드일 때는 editingPet의 생일 확인
           const birthdayDate = new Date(editingPet.value.birthday)
+          isBirthday = date.toDateString() === birthdayDate.toDateString()
+        } else if (selectedPet.value && selectedPet.value.birthday) {
+          // 상세보기 모드일 때는 selectedPet의 생일 확인
+          const birthdayDate = new Date(selectedPet.value.birthday)
           isBirthday = date.toDateString() === birthdayDate.toDateString()
         }
         
@@ -1447,11 +1464,24 @@ export default {
       // 다음 달의 첫 날들 (42개 셀을 채우기 위해)
       const remainingCells = 42 - dates.length
       for (let day = 1; day <= remainingCells; day++) {
+        const date = new Date(year, month + 1, day)
+        
+        // 생일 날짜 확인
+        let isBirthday = false
+        if (editingPet.value && editingPet.value.birthday) {
+          const birthdayDate = new Date(editingPet.value.birthday)
+          isBirthday = date.toDateString() === birthdayDate.toDateString()
+        } else if (selectedPet.value && selectedPet.value.birthday) {
+          const birthdayDate = new Date(selectedPet.value.birthday)
+          isBirthday = date.toDateString() === birthdayDate.toDateString()
+        }
+        
         dates.push({
           date: day,
           isCurrentMonth: false,
           isToday: false,
           isSelected: false,
+          isBirthday,
           key: `next-${day}`
         })
       }
@@ -1591,15 +1621,16 @@ export default {
       imagePreviewUrl.value = null
       
       // 달력을 오늘 날짜로 완전 초기화 (상세보기 모드)
+      // 달력을 오늘 날짜로 초기화 (상세보기 모드)
       const today = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
       currentDate.value = today
       selectedDate.value = null
+      console.log('📅 상세보기 진입 - 달력을 오늘 날짜로 초기화:', today)
       showYearPicker.value = false
       showMonthPicker.value = false
       showDatePicker.value = false
       // 추가 달력 상태 초기화 (혹시 모를 다른 상태들)
       selectedMonth.value = null
-      console.log('📅 상세보기 진입 - 달력을 오늘 날짜로 완전 초기화:', today)
       
       selectedPet.value = pet
       showDetailModal.value = true
@@ -1742,7 +1773,7 @@ export default {
     // 원본 데이터 백업용
     const originalPetData = ref(null)
     
-    // 변경사항이 있는지 확인하는 computed
+    // 변경사항이 있는지 확인하는 computed (초기화 버튼용)
     const hasChanges = computed(() => {
       if (!editingPet.value || !originalPetData.value) {
         return false
@@ -1750,17 +1781,6 @@ export default {
       
       const current = editingPet.value
       const original = originalPetData.value
-      
-      // 필수 필드 검증 (값이 없으면 저장 버튼 비활성화)
-      const hasRequiredFields = current.name && 
-                               current.type && 
-                               current.gender && 
-                               current.age && 
-                               current.weight
-      
-      if (!hasRequiredFields) {
-        return false
-      }
       
       // 각 필드를 비교 (데이터 타입 통일)
       const nameChanged = String(current.name || '') !== String(original.name || '')
@@ -1773,6 +1793,26 @@ export default {
       const imageChanged = current.imageFile !== null && current.imageFile !== original.imageFile
       
       return nameChanged || typeChanged || genderChanged || ageChanged || weightChanged || birthdayChanged || imageChanged
+    })
+    
+    // 저장 가능한지 확인하는 computed (저장 버튼용)
+    const canSave = computed(() => {
+      if (!editingPet.value || !originalPetData.value) {
+        return false
+      }
+      
+      const current = editingPet.value
+      
+      // 필수 필드 검증 (값이 없으면 저장 버튼 비활성화)
+      // age는 0도 유효한 값이므로 !== undefined && !== null 체크
+      const hasRequiredFields = current.name && 
+                               current.type && 
+                               current.gender && 
+                               (current.age !== undefined && current.age !== null) && 
+                               current.weight
+      
+      // 필수 필드가 있고 변경사항이 있어야 저장 가능
+      return hasRequiredFields && hasChanges.value
     })
     
     // 수정 모드 초기화 (변경사항 되돌리기)
@@ -1795,9 +1835,10 @@ export default {
         isEditing.value = false
         
         // 달력을 오늘 날짜로 초기화 (상세보기 모드)
-        currentDate.value = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
+        const today = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}))
+        currentDate.value = today
         selectedDate.value = null
-        console.log('📅 상세보기 모드 - 달력을 오늘 날짜로 초기화')
+        console.log('📅 상세보기 모드 - 달력을 오늘 날짜로 초기화:', today)
         
         // 임시 이미지 URL 정리
         if (selectedPet.value && selectedPet.value.tempImageUrl) {
@@ -1918,7 +1959,11 @@ export default {
     const fileInput = ref(null)
     
     const handleImageChange = () => {
-      fileInput.value?.click()
+      // 파일 입력 초기화 후 클릭
+      if (fileInput.value) {
+        fileInput.value.value = ''
+        fileInput.value.click()
+      }
     }
     
     const onImageFileChange = async (event) => {
@@ -1928,10 +1973,49 @@ export default {
       try {
         console.log('📸 이미지 변경 시작:', file.name, file.size)
         
+        // 이미지 파일 형식 체크 (MIME 타입과 확장자 모두 확인)
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+        const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp']
+        const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'))
+        
+        console.log('🔍 파일 형식 검증:', {
+          fileName: file.name,
+          fileType: file.type,
+          fileExtension: fileExtension,
+          isTypeAllowed: allowedTypes.includes(file.type),
+          isExtensionAllowed: allowedExtensions.includes(fileExtension)
+        })
+        
+        if (!allowedTypes.includes(file.type) || !allowedExtensions.includes(fileExtension)) {
+          console.log('❌ 파일 형식 검증 실패 - 크롭 모달 열기 차단')
+          showSnackbar('이미지 파일만 업로드 가능합니다. (JPG, PNG, GIF, WebP)', 'error')
+          // 파일 입력 강제 초기화
+          event.target.value = ''
+          // 추가로 파일 입력 요소도 초기화
+          if (fileInput.value) {
+            fileInput.value.value = ''
+          }
+          // 이벤트 전파 중지로 크롭 모달 열기 방지
+          event.stopPropagation()
+          event.preventDefault()
+          return false
+        }
+        
+        console.log('✅ 파일 형식 검증 통과')
+        
         // 파일 크기 체크 (5MB)
         if (file.size > 5 * 1024 * 1024) {
+          console.log('❌ 파일 크기 초과 - 크롭 모달 열기 차단')
           showSnackbar('파일 크기는 5MB 이하여야 합니다.', 'error')
-          return
+          // 파일 입력 강제 초기화
+          event.target.value = ''
+          if (fileInput.value) {
+            fileInput.value.value = ''
+          }
+          // 이벤트 전파 중지로 크롭 모달 열기 방지
+          event.stopPropagation()
+          event.preventDefault()
+          return false
         }
         
         // 수정 모드가 아닐 때는 바로 이미지 변경
@@ -2397,6 +2481,7 @@ export default {
         editingPet,
         originalPetData,
         hasChanges,
+        canSave,
         saving,
         showDatePicker,
         // 달력 관련 변수들
