@@ -3,7 +3,8 @@
     <v-card class="likes-modal" rounded="xl">
       <!-- 모달 헤더 -->
       <v-toolbar color="surface" density="compact">
-        <v-btn icon="mdi-close" @click="closeModal" variant="text" />
+        <!-- <v-btn icon="mdi-close" @click="closeModal" variant="text" /> -->
+        <v-btn icon="mdi-close" @click="closeModal" variant="text" flat class="no-styles-btn" color="#FF8B8B" />
         <v-toolbar-title class="text-center font-weight-bold text-h6">
           좋아요
         </v-toolbar-title>
@@ -103,7 +104,7 @@ export default {
     };
 
     const goToUserDiary = userId => {
-      if (userId) {
+      if (userId && !isFollowLoading(userId)) {
         if (userId === currentUserId.value) {
           router.push(`/diarys`);
         } else {
@@ -146,6 +147,21 @@ export default {
 </script>
 
 <style scoped>
+.no-styles-btn {
+  background-color: transparent !important; /* 배경색을 투명하게 만듭니다. */
+  box-shadow: none !important; /* 그림자를 완전히 제거합니다. */
+  padding: 0 !important; /* 내부 패딩을 제거합니다. */
+  min-width: unset !important; /* 최소 너비를 제거하여 아이콘 크기에 맞춥니다. */
+  height: unset !important; /* 높이를 제거하여 아이콘 크기에 맞춥니다. */
+  border-radius: 0 !important; /* 테두리 둥글기를 제거합니다. */
+}
+
+/* 호버 시 배경색도 투명하게 유지하려면 다음을 추가할 수 있습니다. */
+.no-styles-btn:hover::before,
+.no-styles-btn:focus::before {
+  background-color: transparent !important;
+}
+
 .likes-modal {
   border: 1px solid var(--v-theme-outline-variant);
 }
