@@ -25,7 +25,7 @@ onMounted(async () => {
 
   if (!provider || !code) {
     router.replace({ 
-      name: 'Home',
+      path: '/',
       query: { showLogin: 'true' }
     })
     return
