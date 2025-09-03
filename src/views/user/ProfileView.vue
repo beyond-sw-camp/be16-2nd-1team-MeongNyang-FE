@@ -275,6 +275,89 @@
       v-model="showChangePasswordModal" 
       @success="handlePasswordChangeSuccess"
     />
+
+    <!-- 계정탈퇴 모달 -->
+    <DeleteAccountModal 
+      v-model="showDeleteAccountModal" 
+      @confirm="handleDeleteAccountConfirm"
+      @close="showDeleteAccountModal = false"
+    />
+
+    <!-- 계정 삭제 성공 모달 -->
+    <v-dialog
+      v-model="showSuccessModal"
+      max-width="400"
+      class="success-modal modal-coinmarketcap-overlay"
+      :retain-focus="false"
+      transition="dialog-transition"
+    >
+      <v-card 
+        class="success-card modal-container modal-gpu-accelerated modal-coinmarketcap-card"
+        elevation="24" 
+        rounded="xl"
+      >
+        <!-- 헤더 -->
+        <v-card-title class="success-header modal-coinmarketcap-header pa-6 pb-4">
+          <div class="d-flex align-center w-100 position-relative">
+            <!-- 성공 아이콘 -->
+            <div class="success-icon-container">
+              <svg 
+                width="48" 
+                height="48" 
+                viewBox="0 0 48 48" 
+                class="success-icon"
+              >
+                <circle 
+                  cx="24" 
+                  cy="24" 
+                  r="20" 
+                  fill="#10b981"
+                />
+                <path 
+                  d="M16 24l6 6 12-12" 
+                  stroke="white" 
+                  stroke-width="3" 
+                  stroke-linecap="round" 
+                  stroke-linejoin="round"
+                  fill="none"
+                />
+              </svg>
+            </div>
+            
+            <h1 class="modal-title text-center" style="font-size: 1.25rem; font-weight: 600; flex: 1;">
+              계정 삭제 완료
+            </h1>
+            
+            <!-- 균형을 위한 빈 공간 -->
+            <div class="success-icon-container" style="opacity: 0;"></div>
+          </div>
+        </v-card-title>
+
+        <!-- 콘텐츠 -->
+        <v-card-text class="pa-6 pt-2 pb-4">
+          <p class="text-center" style="font-size: 0.9rem; color: #64748b; margin: 0;">
+            계정이 성공적으로 삭제되었습니다
+          </p>
+        </v-card-text>
+
+        <!-- 액션 버튼 -->
+        <v-card-actions class="pa-6 pt-2">
+          <v-btn
+            variant="flat"
+            size="large"
+            rounded="xl"
+            color="success"
+            class="success-btn"
+            @click="handleSuccessConfirm"
+            block
+            style="height: 48px; font-size: 1rem; font-weight: 600;"
+          >
+            <v-icon start size="20">mdi-check</v-icon>
+            확인
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -286,13 +369,15 @@ import { usePetStore } from '@/stores/pet'
 import { userAPI } from '@/services/api'
 import ProfileEditModal from '@/components/user/ProfileEditModal.vue'
 import ChangePasswordModal from '@/components/user/ChangePasswordModal.vue'
+import DeleteAccountModal from '@/components/user/DeleteAccountModal.vue'
 
 export default {
   name: 'ProfileView',
   
   components: {
     ProfileEditModal,
-    ChangePasswordModal
+    ChangePasswordModal,
+    DeleteAccountModal
   },
   
   setup() {
@@ -303,6 +388,8 @@ export default {
     const userInfo = computed(() => authStore.myPageInfo)
     const showEditModal = ref(false)
     const showChangePasswordModal = ref(false)
+    const showDeleteAccountModal = ref(false)
+    const showSuccessModal = ref(false)
     
     // 실시간 대표동물 변경 감지
     watch(
@@ -536,12 +623,13 @@ export default {
       // 데이터가 이미 모달에서 새로고침되므로 추가 작업 불필요
     }
     
-    // 계정 삭제
-    const deleteAccount = async () => {
-      if (!confirm('정말로 계정을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-        return
-      }
+    // 계정 삭제 모달 열기
+    const deleteAccount = () => {
+      showDeleteAccountModal.value = true
+    }
 
+    // 계정 삭제 확인 처리
+    const handleDeleteAccountConfirm = async () => {
       try {
         console.log('계정 삭제 요청')
         
@@ -549,11 +637,11 @@ export default {
         const refreshToken = localStorage.getItem('refreshToken')
         await userAPI.delete(refreshToken)
         
-        alert('계정이 성공적으로 삭제되었습니다.')
+        // 모달 닫기
+        showDeleteAccountModal.value = false
         
-        // 로그아웃 처리
-        await authStore.logout()
-        router.push('/login')
+        // 성공 모달 표시
+        showSuccessModal.value = true
         
       } catch (error) {
         console.error('계정 삭제 실패:', error)
@@ -563,6 +651,15 @@ export default {
           alert('계정 삭제에 실패했습니다. 잠시 후 다시 시도해주세요.')
         }
       }
+    }
+
+    // 성공 모달 확인 처리
+    const handleSuccessConfirm = async () => {
+      showSuccessModal.value = false
+      
+      // 로그아웃 처리
+      await authStore.logout()
+      router.push('/login')
     }
 
     // 데이터 강제 새로고침
@@ -648,6 +745,9 @@ export default {
       petStore,
       showEditModal,
       showChangePasswordModal,
+      showDeleteAccountModal,
+      showSuccessModal,
+      handleSuccessConfirm,
       formatJoinDate,
       getSocialIcon,
       getSocialColor,
@@ -658,6 +758,7 @@ export default {
       openEditModal,
       handleProfileUpdateSuccess,
       deleteAccount,
+      handleDeleteAccountConfirm,
       changePassword,
       handlePasswordChangeSuccess,
       forceRefreshData,
@@ -1095,6 +1196,80 @@ export default {
   border-color: #dc2626;
   background: rgba(239, 68, 68, 0.05);
   color: #dc2626;
+}
+
+/* 성공 모달 스타일 - 코인마켓캡 스타일 */
+.success-modal :deep(.v-overlay__content) {
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+}
+
+.success-card {
+  max-width: 400px !important;
+  width: 100%;
+  min-height: 250px;
+  overflow: hidden;
+  background: linear-gradient(145deg, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%) !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+  box-shadow: 
+    0 32px 64px -12px rgba(16, 185, 129, 0.2),
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 8px 32px rgba(16, 185, 129, 0.15) !important;
+  border-radius: 24px !important;
+  position: relative;
+}
+
+.success-header {
+  position: relative;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%) !important;
+  border-bottom: 1px solid rgba(16, 185, 129, 0.2) !important;
+  border-radius: 24px 24px 0 0 !important;
+  flex-shrink: 0;
+}
+
+.success-icon-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  margin: 0;
+  box-shadow: none;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.success-icon svg {
+  stroke: none !important;
+  stroke-width: 0 !important;
+}
+
+.success-icon svg * {
+  stroke: none !important;
+  stroke-width: 0 !important;
+}
+
+.success-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: white !important;
+  font-weight: 600 !important;
+  border-radius: 12px !important;
+  padding: 16px 32px !important;
+  text-transform: none !important;
+  letter-spacing: 0.5px !important;
+  box-shadow: none !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.success-btn:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 /* 반응형 디자인 */
