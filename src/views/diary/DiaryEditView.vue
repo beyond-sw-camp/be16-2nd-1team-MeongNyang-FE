@@ -211,7 +211,8 @@ export default {
                     url: mediaUrl,
                     type: mediaType,
                     isExisting: true,
-                    originalUrl: mediaUrl // 원본 URL 보존
+                    originalUrl: mediaUrl, // 원본 URL 보존
+                    name: extractFileNameFromUrl(mediaUrl) // 파일명 추가
                   })
                 } catch (error) {
                   console.warn(`기존 미디어 ${i} (유효하지 않음):`, media)
@@ -221,6 +222,11 @@ export default {
             
             mediaList.value = validMedia
             console.log('설정된 유효한 기존 미디어:', mediaList.value)
+            
+            // 기존 미디어가 있으면 첫 번째 미디어를 현재 미디어로 설정
+            if (validMedia.length > 0) {
+              currentMediaIndex.value = 0
+            }
           }
           
           console.log('포스트 데이터 설정 완료')
@@ -237,7 +243,7 @@ export default {
       }
     }
     
-    // URL을 File 객체로 변환
+    // URL을 File 객체로 변환 (기존 이미지 유지를 위해 필요)
     const urlToFile = async (url, fileName) => {
       try {
         console.log('URL을 File로 변환 시작:', url)
@@ -470,7 +476,7 @@ export default {
             // 기존 파일: URL에서 실제 파일 데이터를 가져와서 File 객체 생성
             try {
               console.log(`기존 파일 ${i} 처리 시작:`, media.originalUrl)
-              const file = await urlToFile(media.originalUrl, extractFileNameFromUrl(media.originalUrl))
+              const file = await urlToFile(media.originalUrl, media.name || extractFileNameFromUrl(media.originalUrl))
               console.log(`기존 파일 ${i} 변환 완료:`, file.name, file.type, file.size)
               
               if (file.size > 0) {
@@ -480,7 +486,9 @@ export default {
               }
             } catch (error) {
               console.error(`기존 파일 ${i} 변환 실패:`, error)
-              // 변환 실패 시 해당 미디어 제외
+              // 변환 실패 시 사용자에게 알림하고 계속 진행
+              console.warn(`기존 파일 ${i} 변환 실패로 제외됨:`, media.originalUrl)
+              // 실패한 미디어는 건너뛰고 계속 진행
               continue
             }
           } else {
@@ -604,16 +612,26 @@ export default {
     const handleImageError = (index) => {
       console.warn(`이미지 로드 실패 (인덱스 ${index}):`, mediaList.value[index])
       
-      // 해당 미디어 제거
       if (index < mediaList.value.length) {
-        mediaList.value.splice(index, 1)
+        const media = mediaList.value[index]
         
-        // 현재 인덱스 조정
-        if (currentMediaIndex.value >= mediaList.value.length) {
-          currentMediaIndex.value = Math.max(0, mediaList.value.length - 1)
+        if (media.isExisting) {
+          // 기존 이미지 로드 실패 시 사용자에게 알림
+          console.warn(`기존 이미지 로드 실패: ${media.originalUrl}`)
+          // 기존 이미지는 제거하지 않고 유지 (제출 시 다시 시도)
+          console.log('기존 이미지 로드 실패 - 제거하지 않고 유지')
+        } else {
+          // 새로 추가된 이미지인 경우에만 제거
+          console.log('새 이미지 로드 실패 - 제거됨')
+          mediaList.value.splice(index, 1)
+          
+          // 현재 인덱스 조정
+          if (currentMediaIndex.value >= mediaList.value.length) {
+            currentMediaIndex.value = Math.max(0, mediaList.value.length - 1)
+          }
         }
         
-        console.log('이미지 로드 실패로 미디어 제거됨. 현재 미디어 개수:', mediaList.value.length)
+        console.log('이미지 처리 후 현재 미디어 개수:', mediaList.value.length)
       }
     }
 
