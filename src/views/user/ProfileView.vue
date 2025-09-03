@@ -95,28 +95,38 @@
         <!-- 기본 정보 카드 -->
         <div class="info-card">
           <div class="card-header">
-            <div class="header-icon">
-              <v-icon size="24" color="#E87D7D" icon="mdi-account-details" />
-            </div>
             <h2>기본 정보</h2>
           </div>
           
-          <div class="info-grid">
-            <div class="info-item">
-              <label>이름</label>
-              <span class="info-value" :class="{ 'empty-field': !userInfo?.name }">
+          <div class="info-list">
+            <div class="info-row">
+              <div class="info-label">
+                <v-icon size="16" color="#64748b" icon="mdi-account" />
+                <span>이름</span>
+              </div>
+              <div class="info-content" :class="{ 'empty-field': !userInfo?.name }">
                 {{ userInfo?.name || '정보 없음' }}
-              </span>
+              </div>
             </div>
             
-            <div class="info-item">
-              <label>닉네임</label>
-              <span class="info-value">{{ userInfo?.nickname || '-' }}</span>
+            <div class="info-row">
+              <div class="info-label">
+                <v-icon size="16" color="#64748b" icon="mdi-at" />
+                <span>닉네임</span>
+              </div>
+              <div class="info-content">
+                {{ userInfo?.nickname || '-' }}
+              </div>
             </div>
             
-            <div class="info-item">
-              <label>이메일</label>
-              <span class="info-value email">{{ userInfo?.email || '-' }}</span>
+            <div class="info-row">
+              <div class="info-label">
+                <v-icon size="16" color="#64748b" icon="mdi-email" />
+                <span>이메일</span>
+              </div>
+              <div class="info-content email">
+                {{ userInfo?.email || '-' }}
+              </div>
             </div>
           </div>
         </div>
@@ -391,6 +401,8 @@ export default {
         return '-'
       }
     }
+    
+
     
     // 소셜 로그인 아이콘
     const getSocialIcon = (socialType) => {
@@ -806,12 +818,9 @@ export default {
 }
 
 .card-header {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 2rem;
-  padding-bottom: 1.25rem;
-  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .header-icon {
@@ -833,41 +842,52 @@ export default {
   margin: 0;
 }
 
-.info-grid {
+.info-list {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 0;
 }
 
-.info-item {
+.info-row {
   display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 0;
+  border-bottom: 1px solid #f1f5f9;
 }
 
-.info-item label {
+.info-row:last-child {
+  border-bottom: none;
+}
+
+.info-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 120px;
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 500;
   color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
-.info-value {
-  font-size: 1.125rem;
+.info-content {
+  flex: 1;
+  text-align: right;
+  font-size: 0.95rem;
   font-weight: 500;
   color: #1e293b;
-  padding: 0.75rem 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-.info-value.empty-field {
+.info-content.empty-field {
   color: #94a3b8;
   font-style: italic;
 }
 
-.info-value.email {
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 0.9rem;
+.info-content.email {
+  font-family: 'SF Mono', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.85rem;
+  color: #475569;
 }
 
 /* 소셜 로그인 칩 */
@@ -966,6 +986,16 @@ export default {
   .info-cards {
     grid-template-columns: 1fr;
     gap: 1rem;
+  }
+  
+  .info-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .info-content {
+    text-align: left;
   }
   
   .action-buttons {
