@@ -45,9 +45,9 @@ onMounted(async () => {
       if (rt) auth.refreshToken = rt
       try { await auth.getCurrentUser() } catch(e) {void e}
       
-      // 로그인 성공 후 화면 새로고침하여 로그인된 상태로 표시
-      console.log('✅ OAuth 로그인 성공! 화면 새로고침 중...')
-      window.location.href = '/dashboard'
+      // 로그인 성공 후 홈화면으로 이동
+      console.log('✅ OAuth 로그인 성공! 홈화면으로 이동 중...')
+      router.replace({ name: 'Home' })
       return
     }
 
