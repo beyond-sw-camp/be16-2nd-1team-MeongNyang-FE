@@ -74,7 +74,7 @@
           <!-- 액션 버튼들 -->
           <div class="profile-actions">
             <v-btn 
-              @click="editProfile" 
+              @click="openEditModal" 
               color="#E87D7D"
               variant="flat"
               size="default"
@@ -143,40 +143,43 @@
                 <v-icon size="16" color="#64748b" icon="mdi-shield-account" />
                 <span>로그인 방식</span>
               </div>
-              <div class="info-content">
-                <div class="social-login-display">
-                  <div 
-                    v-if="userInfo?.socialType === 'GOOGLE'"
-                    class="social-logo-container google-logo"
-                  >
-                    <img 
-                      src="https://developers.google.com/identity/images/g-logo.png" 
-                      alt="Google" 
-                      class="social-logo"
-                    />
-                    <span class="social-text">Google</span>
-                  </div>
-                  <div 
-                    v-else-if="userInfo?.socialType === 'KAKAO'"
-                    class="social-logo-container kakao-logo"
-                  >
-                    <img 
-                      src="https://developers.kakao.com/assets/img/about/logos/kakaolink/kakaolink_btn_small.png" 
-                      alt="Kakao" 
-                      class="social-logo"
-                    />
-                    <span class="social-text">Kakao</span>
-                  </div>
-                  <div class="social-logo-container">
-                    <v-icon 
-                      icon="mdi-account" 
-                      class="social-logo"
-                      color="#64748b"
-                    />
-                    <span class="social-text">일반</span>
+                              <div class="info-content">
+                  <div class="social-login-display">
+                    <div 
+                      v-if="userInfo?.socialType === 'GOOGLE'"
+                      class="social-logo-container google-logo selected"
+                    >
+                      <img 
+                        src="https://developers.google.com/identity/images/g-logo.png" 
+                        alt="Google" 
+                        class="social-logo"
+                      />
+                      <span class="social-text">Google</span>
+                    </div>
+                    <div 
+                      v-else-if="userInfo?.socialType === 'KAKAO'"
+                      class="social-logo-container kakao-logo selected"
+                    >
+                      <img 
+                        src="https://developers.kakao.com/assets/img/about/logos/kakaolink/kakaolink_btn_small.png" 
+                        alt="Kakao" 
+                        class="social-logo"
+                      />
+                      <span class="social-text">Kakao</span>
+                    </div>
+                    <div 
+                      v-else
+                      class="social-logo-container selected"
+                    >
+                      <v-icon 
+                        icon="mdi-account" 
+                        class="social-logo"
+                        color="#64748b"
+                      />
+                      <span class="social-text">일반</span>
+                    </div>
                   </div>
                 </div>
-              </div>
             </div>
             
             <div class="info-row">
@@ -184,18 +187,18 @@
                 <v-icon size="16" color="#64748b" icon="mdi-check-circle" />
                 <span>계정 상태</span>
               </div>
-              <div class="info-content">
-                <div class="social-login-display">
-                  <div class="social-logo-container status-container">
-                    <v-icon 
-                      :color="getStatusColor(userInfo?.userStatus)" 
-                      :icon="getStatusIcon(userInfo?.userStatus)" 
-                      class="social-logo"
-                    />
-                    <span class="social-text">{{ getStatusText(userInfo?.userStatus) }}</span>
+                              <div class="info-content">
+                  <div class="social-login-display">
+                    <div class="social-logo-container status-container selected">
+                      <v-icon 
+                        :color="getStatusColor(userInfo?.userStatus)" 
+                        :icon="getStatusIcon(userInfo?.userStatus)" 
+                        class="social-logo"
+                      />
+                      <span class="social-text">{{ getStatusText(userInfo?.userStatus) }}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
             </div>
           </div>
         </div>
@@ -260,18 +263,29 @@
         </div>
       </div>
     </div>
+
+    <!-- 프로필 수정 모달 -->
+    <ProfileEditModal 
+      v-model="showEditModal" 
+      @success="handleProfileUpdateSuccess"
+    />
   </div>
 </template>
 
 <script>
-import { computed, onMounted, watch, nextTick } from 'vue'
+import { computed, onMounted, watch, nextTick, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { usePetStore } from '@/stores/pet'
 import { userAPI } from '@/services/api'
+import ProfileEditModal from '@/components/user/ProfileEditModal.vue'
 
 export default {
   name: 'ProfileView',
+  
+  components: {
+    ProfileEditModal
+  },
   
   setup() {
     const router = useRouter()
@@ -279,6 +293,7 @@ export default {
     const petStore = usePetStore()
     
     const userInfo = computed(() => authStore.myPageInfo)
+    const showEditModal = ref(false)
     
     // 실시간 대표동물 변경 감지
     watch(
@@ -500,10 +515,16 @@ export default {
       }
     }
     
-    // 프로필 수정
-    const editProfile = () => {
-      console.log('프로필 수정 페이지로 이동')
-      router.push('/profile/edit')
+    // 프로필 수정 모달 열기
+    const openEditModal = () => {
+      console.log('프로필 수정 모달 열기')
+      showEditModal.value = true
+    }
+    
+    // 프로필 수정 성공 처리
+    const handleProfileUpdateSuccess = () => {
+      console.log('프로필 수정 성공')
+      // 데이터가 이미 모달에서 새로고침되므로 추가 작업 불필요
     }
     
     // 계정 삭제
@@ -611,6 +632,7 @@ export default {
       profileImageUrl,
       forceImageUrl,
       petStore,
+      showEditModal,
       formatJoinDate,
       getSocialIcon,
       getSocialColor,
@@ -618,7 +640,8 @@ export default {
       getStatusIcon,
       getStatusColor,
       getStatusText,
-      editProfile,
+      openEditModal,
+      handleProfileUpdateSuccess,
       deleteAccount,
       changePassword,
       forceRefreshData,
@@ -936,20 +959,32 @@ export default {
   justify-content: center;
 }
 
+.social-logo-container.selected {
+  background: #F3F4F6;
+  border-color: #D1D5DB;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
 .google-logo {
   border-color: #dadce0;
   color: #5f6368;
 }
 
 .google-logo:hover {
-  border-color: #4285f4;
-  color: #4285f4;
-  box-shadow: 0 2px 8px rgba(66, 133, 244, 0.12);
+  border-color: #d1d5db;
+  background: #f9fafb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .kakao-logo {
   border-color: #e0e0e0;
   color: #333333;
+}
+
+.kakao-logo.selected {
+  background: #F3F4F6;
+  border-color: #D1D5DB;
+  color: #374151;
 }
 
 .kakao-logo:hover {
