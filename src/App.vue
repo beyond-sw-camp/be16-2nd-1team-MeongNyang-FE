@@ -85,9 +85,8 @@
           <!-- 컨텐츠 -->
           <div class="modal-content">
             <h3 class="modal-title">계정 중복 발견</h3>
-            <p class="modal-description">
-              <strong class="highlight-email">{{ socialDuplicateData?.email }}</strong>으로 가입된 계정이 이미 존재합니다.
-            </p>
+            
+            <div class="modal-spacer"></div>
             
             <div class="info-box">
               <div class="info-icon">
@@ -155,6 +154,9 @@
                 <p class="text-body-1 mb-3">
                   <span class="text-error">😩</span>
                   <strong class="text-error">{{ deletedAccountData?.email || '이 계정' }}</strong>은 삭제되었습니다.
+                </p>
+                <p v-if="deletedAccountData?.attemptedProvider" class="text-body-2 text-medium-emphasis mb-3">
+                  <strong>{{ getProviderDisplayName(deletedAccountData.attemptedProvider) }}</strong>로 로그인을 시도하셨습니다.
                 </p>
                 <p class="text-body-2 text-medium-emphasis">
                   새로운 계정으로 가입해주세요!
@@ -567,6 +569,8 @@ export default {
       deletedAccountData.value = data
       showDeletedAccountModal.value = true
     }
+    
+
     
     // OAuth 연동 모달 열기 (HomeView에서 호출)
     const openOAuthLinkModal = (data) => {
@@ -1066,7 +1070,7 @@ body {
 }
 
 .modal-content {
-  padding: 0 24px 24px;
+  padding: 24px 32px 32px;
 }
 
 .modal-title {
@@ -1074,8 +1078,12 @@ body {
   font-weight: 700;
   color: #111827;
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 0;
   line-height: 1.3;
+}
+
+.modal-spacer {
+  height: 24px;
 }
 
 .provider-badge-top {
@@ -1139,6 +1147,15 @@ body {
   font-weight: 500;
 }
 
+.modal-sub-description {
+  color: #4b5563;
+  text-align: center;
+  line-height: 1.5;
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+  font-weight: 400;
+}
+
 .email-card {
   background: #f8fafc;
   border: 1px solid rgba(255, 139, 139, 0.1);
@@ -1185,8 +1202,8 @@ body {
   background: #fef7ff;
   border: 1px solid rgba(255, 139, 139, 0.15);
   border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 24px;
+  padding: 24px;
+  margin-bottom: 32px;
 }
 
 .info-header {
