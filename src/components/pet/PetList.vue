@@ -1752,10 +1752,11 @@ export default {
       const original = originalPetData.value
       
       // 필수 필드 검증 (값이 없으면 저장 버튼 비활성화)
+      // age는 0도 유효한 값이므로 !== undefined && !== null 체크
       const hasRequiredFields = current.name && 
                                current.type && 
                                current.gender && 
-                               current.age && 
+                               (current.age !== undefined && current.age !== null) && 
                                current.weight
       
       if (!hasRequiredFields) {
