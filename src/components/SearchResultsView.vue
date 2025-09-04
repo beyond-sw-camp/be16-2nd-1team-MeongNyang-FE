@@ -1,9 +1,11 @@
 <template>
-  <div class="all-posts-container" :class="{ 'modal-open': showCommentsModal }">
+  <div class="search-results-container" :class="{ 'modal-open': showCommentsModal }">
+
+
     <!-- 로딩 스피너 -->
     <div v-if="loading && posts.length === 0" class="loading-container">
       <v-progress-circular indeterminate color="#FF8B8B" size="64"></v-progress-circular>
-      <p class="loading-text">일기를 불러오는 중...</p>
+      <p class="loading-text">검색 중...</p>
     </div>
 
     <!-- 메인 콘텐츠 영역 -->
@@ -75,27 +77,23 @@
         </div>
       </div>
 
-
       <!-- 오른쪽: 인기 해시태그 -->
       <div class="sidebar">
-        <div class="search-section">
-          <SearchBar @search="handleSearch" />
-        </div>
         <TrendingHashtags @search="handleSearch" />
       </div>
     </div>
 
     <!-- 빈 상태 -->
     <div v-else-if="!loading" class="empty-state">
-      <v-icon size="64" color="grey">mdi-book-open-variant</v-icon>
-      <h3>아직 작성된 일기가 없습니다</h3>
-      <p>첫 번째 일기를 작성해보세요!</p>
+      <v-icon size="64" color="grey">mdi-magnify</v-icon>
+      <h3>검색 결과가 없습니다</h3>
+      <p>다른 검색어를 시도해보세요!</p>
     </div>
 
     <!-- 더 로딩 스피너 -->
     <div v-if="loading && posts.length > 0" class="more-loading">
       <v-progress-circular indeterminate color="#FF8B8B" size="32"></v-progress-circular>
-      <span>더 많은 일기를 불러오는 중...</span>
+      <span>더 많은 검색 결과를 불러오는 중...</span>
     </div>
 
     <!-- 무한 스크롤 트리거 -->
@@ -123,15 +121,6 @@
       @refresh-comments="handleRefreshComments"
     />
   </div>
-
-  <div 
-      v-show="!showCommentsModal"
-      class="create-diary-btn"
-      :class="{ 'with-scroll-btn': showScrollToTop }"
-      @click="$router.push('/diarys/create')"
-    >
-      <v-icon size="24" color="white">mdi-plus</v-icon>
-    </div>
 </template>
 
 <script>
@@ -143,17 +132,17 @@ import LikesModal from '@/components/LikesModal.vue'
 import CommentsModal from '@/components/CommentsModal.vue'
 import { checkPetExist } from '@/utils/petValidation'
 
-// Import new components
+// Import AllDiaryView components
 import PostDetailHeader from '@/components/diary/PostDetailHeader.vue'
 import PostMediaDisplay from '@/components/diary/PostMediaDisplay.vue'
 import PostEngagementBar from '@/components/diary/PostEngagementBar.vue'
 import PostHashtags from '@/components/diary/PostHashtags.vue'
 import PostCommentsPreview from '@/components/diary/PostCommentsPreview.vue'
 import TrendingHashtags from '@/components/common/TrendingHashtags.vue'
-import SearchBar from '@/components/common/SearchBar.vue'
+
 
 export default {
-  name: 'AllPostsView',
+  name: 'SearchResultsView',
   components: {
     LikesModal,
     CommentsModal,
@@ -163,9 +152,20 @@ export default {
     PostHashtags,
     PostCommentsPreview,
     TrendingHashtags,
-    SearchBar,
+
   },
-  setup() {
+  props: {
+    searchKeyword: {
+      type: String,
+      required: true
+    },
+    searchType: {
+      type: String,
+      default: 'TITLE'
+    }
+  },
+  emits: ['search', 'update:resultCount'],
+  setup(props, { emit }) {
     const router = useRouter()
     const route = useRoute()
     const authStore = useAuthStore()
@@ -190,14 +190,17 @@ export default {
 
     // 현재 사용자 ID
     const currentUserId = computed(() => {
-      console.log('authStore.user:', authStore.user)
-      console.log('authStore.isLoggedIn:', authStore.isLoggedIn)
       return authStore.user?.userId || authStore.user?.id
     })
 
     // 좋아요 처리 중인지 확인하는 함수
     const isLikeProcessing = (postId) => {
       return likeProcessingPosts.value?.has(postId) || false
+    }
+
+    // 팔로우 처리 중인지 확인하는 함수
+    const isFollowProcessing = (userId) => {
+      return followProcessingUsers.value?.has(userId) || false
     }
 
     // 모든 포스트의 팔로우 상태 가져오기
@@ -408,18 +411,18 @@ export default {
       }
     }
 
-    // 일기 목록 가져오기
-    const fetchPosts = async (page = 0, append = false) => {
+    // 검색 결과 가져오기 (AllDiaryView의 fetchPosts와 동일하지만 검색 API 사용)
+    const fetchSearchResults = async (page = 0, append = false) => {
       if (loading.value || (!append && !hasMore.value)) return
 
       loading.value = true
       try {
-        const response = await postAPI.getAllPosts({ page, size: 9 })
+        const response = await postAPI.search(props.searchType, props.searchKeyword, { page, size: 9 })
         
         if (response.data && response.data.data) {
           const newPosts = response.data.data.content || []
           
-          console.log('가져온 포스트 목록:', newPosts)
+          console.log('가져온 검색 결과 목록:', newPosts)
           
           // 첫 번째 포스트의 전체 구조 확인
           if (newPosts.length > 0) {
@@ -433,7 +436,7 @@ export default {
             })
           }
           
-                    // 각 포스트의 미디어 리스트에서 빈 URL 필터링 (URL 배열 형태)
+          // 각 포스트의 미디어 리스트에서 빈 URL 필터링 (URL 배열 형태)
           newPosts.forEach(post => {
             if (post.mediaList && Array.isArray(post.mediaList)) {
               post.mediaList = post.mediaList.filter(url => {
@@ -464,11 +467,14 @@ export default {
             await fetchAllCommentsCount()
           }
           
+          // 부모 컴포넌트에 검색 결과 개수 전달
+          emit('update:resultCount', posts.value.length)
+          
           hasMore.value = !response.data.data.last
           currentPage.value = page
         }
       } catch (error) {
-        console.error('일기 목록 조회 실패:', error)
+        console.error('검색 결과 조회 실패:', error)
       } finally {
         loading.value = false
       }
@@ -480,13 +486,8 @@ export default {
 
       const rect = scrollTrigger.value.getBoundingClientRect()
       if (rect.top <= window.innerHeight + 100) {
-        fetchPosts(currentPage.value + 1, true)
+        fetchSearchResults(currentPage.value + 1, true)
       }
-    }
-
-    // 일기 상세 페이지로 이동
-    const goToPost = (postId) => {
-      router.push(`/diary/${postId}`)
     }
 
     // 댓글 모달 열기
@@ -505,11 +506,6 @@ export default {
       console.log('currentPostId:', currentPostId.value)
       console.log('showCommentsModal:', showCommentsModal.value)
       console.log('commentsList:', commentsList.value)
-    }
-
-    // 댓글창과 함께 일기 상세 페이지로 이동 (기존 함수 유지)
-    const goToPostWithComments = (postId) => {
-      router.push(`/diary/${postId}?showComments=true`)
     }
 
     // 댓글 목록 가져오기
@@ -765,29 +761,11 @@ export default {
       }
     }
 
-
-
-
-
     // 해시태그 제거
     const removeHashtags = (content) => {
       if (!content) return ''
       // 해시태그와 그 뒤의 공백을 모두 제거
       return content.replace(/#\S+/g, '').replace(/[ \t]+/g, ' ').trim()
-    }
-
-    // 좋아요 텍스트 생성
-    const getLikesText = (post) => {
-      const count = post.likeCount || 0
-      if (count === 0) return '좋아요를 눌러보세요'
-      if (count === 1) return '1명이 좋아합니다'
-      return `${count}명이 좋아합니다`
-    }
-
-    // 좋아요 수 텍스트 생성 (숫자만)
-    const getLikeCountText = (post) => {
-      const count = post.likeCount || 0
-      return count > 0 ? `좋아요 ${count}개` : '좋아요 0개'
     }
 
     // 좋아요 목록 가져오기
@@ -883,46 +861,6 @@ export default {
       }
     };
 
-    // 댓글 텍스트 포맷팅 (태그 추출)
-    const formatCommentText = (text, mentionUserId = null) => {
-      if (!text) return []
-      
-      const parts = []
-      // @username 패턴을 더 정확하게 매칭 (한글, 영문, 숫자, 언더스코어 포함)
-      const tagRegex = /@([a-zA-Z0-9가-힣_]+)/g
-      let lastIndex = 0
-      let match = null
-      
-      while ((match = tagRegex.exec(text)) !== null) {
-        // 태그 이전 텍스트
-        if (match.index > lastIndex) {
-          parts.push({
-            text: text.slice(lastIndex, match.index),
-            isTag: false
-          })
-        }
-        
-        // 태그 부분
-        parts.push({
-          text: match[0], // @username
-          isTag: true,
-          userId: mentionUserId || match[1] // mentionUserId가 있으면 사용, 없으면 username 사용
-        })
-        
-        lastIndex = match.index + match[0].length
-      }
-      
-      // 마지막 텍스트
-      if (lastIndex < text.length) {
-        parts.push({
-          text: text.slice(lastIndex),
-          isTag: false
-        })
-      }
-      
-      return parts
-    }
-
     // 해시태그 검색
     const searchByHashtag = (tag) => {
       console.log('해시태그 검색 호출:', tag, typeof tag)
@@ -932,7 +870,49 @@ export default {
     // 검색 처리
     const handleSearch = (searchData) => {
       console.log('검색 데이터:', searchData)
-      router.push(`/search?searchType=${searchData.searchType}&keyword=${encodeURIComponent(searchData.keyword)}`)
+      // 부모 컴포넌트에 검색 이벤트 발생
+      emit('search', searchData)
+    }
+
+    // 캡션 텍스트 요소 참조 저장
+    const captionRefs = ref(new Map())
+
+    // 캡션 참조 설정
+    const setCaptionRef = (postId, el) => {
+      if (el) {
+        captionRefs.value.set(postId, el)
+        // DOM 요소가 준비된 후 높이 확인
+        nextTick(() => {
+          checkTextOverflow(postId)
+        })
+      }
+    }
+
+    // 텍스트 오버플로우 확인 (실제 DOM 높이 기반)
+    const checkTextOverflow = (postId) => {
+      const post = posts.value.find(p => p.id === postId)
+      const element = captionRefs.value.get(postId)
+      
+      if (!post || !element) return
+
+      // 2줄 높이 계산 (line-height 1.5 * font-size * 2줄)
+      const computedStyle = window.getComputedStyle(element)
+      const lineHeight = parseFloat(computedStyle.lineHeight) || parseFloat(computedStyle.fontSize) * 1.5
+      const twoLineHeight = lineHeight * 2
+
+      // 실제 스크롤 높이와 비교
+      const actualHeight = element.scrollHeight
+      
+      // 실제 높이가 2줄 높이보다 크면 더보기 버튼 표시
+      post.showMoreBtn = actualHeight > twoLineHeight + 2 // 2px 여유
+    }
+
+    // 더보기/접기 토글
+    const toggleExpansion = (postId) => {
+      const post = posts.value.find(p => p.id === postId)
+      if (post) {
+        post.isExpanded = !post.isExpanded
+      }
     }
 
     // 게시글 수정
@@ -954,11 +934,6 @@ export default {
           alert('게시글 삭제에 실패했습니다.')
         }
       }
-    }
-
-    // 팔로우 처리 중인지 확인하는 함수
-    const isFollowProcessing = (userId) => {
-      return followProcessingUsers.value?.has(userId) || false
     }
 
     // 팔로우하기
@@ -1016,118 +991,12 @@ export default {
       }
     }
 
-    // 이미지 네비게이션 함수들
-    const previousImage = (postId) => {
-      const post = posts.value.find(p => p.id === postId)
-      if (post && (post.currentImageIndex || 0) > 0) {
-        post.currentImageIndex = (post.currentImageIndex || 0) - 1
-      }
-    }
-
-    const nextImage = (postId) => {
-      const post = posts.value.find(p => p.id === postId)
-      if (post && post.mediaList && (post.currentImageIndex || 0) < post.mediaList.length - 1) {
-        post.currentImageIndex = (post.currentImageIndex || 0) + 1
-      }
-    }
-
-    const setImageIndex = (postId, index) => {
-      const post = posts.value.find(p => p.id === postId)
-      if (post) {
-        post.currentImageIndex = index
-      }
-    }
-
-    // 날짜 필드 추출
-    const getDateField = (post) => {
-      // 백엔드에서 이미 포맷된 한국어 날짜를 보내므로 바로 반환
-      return post.date || null
-    }
-
-    // 날짜 포맷팅 (백엔드에서 이미 포맷된 날짜를 보내므로 그대로 반환)
-    const formatDate = (dateString) => {
-      if (!dateString) return ''
-      return dateString
-    }
-
-    // 캡션 텍스트 요소 참조 저장
-    const captionRefs = ref(new Map())
-
-    // 캡션 참조 설정
-    const setCaptionRef = (postId, el) => {
-      if (el) {
-        captionRefs.value.set(postId, el)
-        // DOM 요소가 준비된 후 높이 확인
-        nextTick(() => {
-          checkTextOverflow(postId)
-        })
-      }
-    }
-
-    // 텍스트 오버플로우 확인 (실제 DOM 높이 기반)
-    const checkTextOverflow = (postId) => {
-      const post = posts.value.find(p => p.id === postId)
-      const element = captionRefs.value.get(postId)
-      
-      if (!post || !element) return
-
-      // 2줄 높이 계산 (line-height 1.5 * font-size * 2줄)
-      const computedStyle = window.getComputedStyle(element)
-      const lineHeight = parseFloat(computedStyle.lineHeight) || parseFloat(computedStyle.fontSize) * 1.5
-      const twoLineHeight = lineHeight * 2
-
-      // 실제 스크롤 높이와 비교
-      const actualHeight = element.scrollHeight
-      
-      // 실제 높이가 2줄 높이보다 크면 더보기 버튼 표시
-      post.showMoreBtn = actualHeight > twoLineHeight + 2 // 2px 여유
-    }
-
-    // 더보기/접기 토글
-    const toggleExpansion = (postId) => {
-      const post = posts.value.find(p => p.id === postId)
-      if (post) {
-        post.isExpanded = !post.isExpanded
-      }
-    }
-
-    // 라우트 변경 감지
-    watch(() => route.path, async (newPath, oldPath) => {
-      if (newPath === '/diarys' && oldPath !== newPath) {
-        console.log('AllDiaryView로 이동 감지, 댓글 수와 팔로우 상태 새로고침')
-        await Promise.all([
-          fetchAllCommentsCount(),
-          fetchAllFollowStatus(),
-          fetchAllCommentsPreview()
-        ])
-      }
-    })
-
-    onMounted(async () => {
-      console.log('=== AllDiaryView onMounted ===')
-      console.log('authStore.user:', authStore.user)
-      console.log('authStore.isLoggedIn:', authStore.isLoggedIn)
-      
-      await fetchPosts(0, false)
-      // 포스트 로딩 완료 후 댓글 수, 팔로우 상태, 댓글 미리보기 조회
-      await Promise.all([
-        fetchAllCommentsCount(),
-        fetchAllFollowStatus(),
-        fetchAllCommentsPreview()
-      ])
-      window.addEventListener('scroll', handleScroll)
-    })
-
     // 스크롤 위치 감지 (scroll-to-top 버튼과 겹치지 않도록)
     const showScrollToTop = ref(false)
     
     const handleScrollForButton = () => {
       showScrollToTop.value = window.scrollY > 300
     }
-    
-    onMounted(() => {
-      window.addEventListener('scroll', handleScrollForButton)
-    })
     
     // 댓글 모달 상태 변화 감지
     watch(showCommentsModal, (newValue) => {
@@ -1144,6 +1013,43 @@ export default {
         window.dispatchEvent(new Event('comments-modal-close'))
         showCommentsModal.value = false
       }
+    })
+
+    // 검색 키워드나 타입이 변경될 때 새로운 검색 실행
+    watch([() => props.searchKeyword, () => props.searchType], async ([newKeyword, newType], [oldKeyword, oldType]) => {
+      if (newKeyword !== oldKeyword || newType !== oldType) {
+        console.log('검색 조건 변경 감지:', { oldKeyword, oldType, newKeyword, newType })
+        // 기존 데이터 초기화
+        posts.value = []
+        currentPage.value = 0
+        hasMore.value = true
+        // 새로운 검색 실행
+        await fetchSearchResults(0, false)
+        // 포스트 로딩 완료 후 댓글 수, 팔로우 상태, 댓글 미리보기 조회
+        await Promise.all([
+          fetchAllCommentsCount(),
+          fetchAllFollowStatus(),
+          fetchAllCommentsPreview()
+        ])
+      }
+    })
+
+    onMounted(async () => {
+      console.log('=== SearchResultsView onMounted ===')
+      console.log('authStore.user:', authStore.user)
+      console.log('authStore.isLoggedIn:', authStore.isLoggedIn)
+      console.log('검색 키워드:', props.searchKeyword)
+      console.log('검색 타입:', props.searchType)
+      
+      await fetchSearchResults(0, false)
+      // 포스트 로딩 완료 후 댓글 수, 팔로우 상태, 댓글 미리보기 조회
+      await Promise.all([
+        fetchAllCommentsCount(),
+        fetchAllFollowStatus(),
+        fetchAllCommentsPreview()
+      ])
+      window.addEventListener('scroll', handleScroll)
+      window.addEventListener('scroll', handleScrollForButton)
     })
     
     onUnmounted(() => {
@@ -1165,8 +1071,6 @@ export default {
       showCommentsModal,
       commentsList,
       isLoadingComments,
-      goToPost,
-      goToPostWithComments,
       openCommentsModal,
       goToUserDiary,
       toggleLike,
@@ -1178,11 +1082,6 @@ export default {
       followUser,
       unfollowUser,
       isFollowProcessing,
-      previousImage,
-      nextImage,
-      setImageIndex,
-      getLikesText,
-      getLikeCountText,
       handleLikesTextClick,
       handleLikesModalToggle,
       handleFollowToggle,
@@ -1193,12 +1092,9 @@ export default {
       handleEditReply,
       handleDeleteReply,
       handleRefreshComments,
-      getDateField,
-      formatDate,
       isLikeProcessing,
       fetchAllFollowStatus,
       fetchAllCommentsPreview,
-      formatCommentText,
       handleSearch,
       setCaptionRef,
       checkTextOverflow,
@@ -1209,15 +1105,17 @@ export default {
 </script>
 
 <style scoped>
-.all-posts-container {
+.search-results-container {
   padding: 20px;
   background: #FFFAF0;
   transition: padding 0.3s ease;
 }
 
-.all-posts-container.modal-open {
+.search-results-container.modal-open {
   padding-right: 400px; /* 댓글 모달의 대략적인 너비만큼 오른쪽 패딩 추가 */
 }
+
+
 
 .loading-container {
   display: flex;
@@ -1275,357 +1173,6 @@ export default {
 
 .search-section {
   margin-bottom: 20px;
-}
-
-/* 포스트 헤더 */
-.post-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 16px 12px 16px;
-}
-
-.options-btn {
-  color: #1E293B;
-  background: transparent !important;
-  box-shadow: none !important;
-  transition: all 0.3s ease;
-  padding: 4px;
-}
-
-.options-menu {
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-}
-
-.menu-item {
-  padding: 8px 16px;
-  text-align: center;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.menu-item:hover {
-  background-color: #f8f9fa;
-}
-
-.menu-text {
-  font-size: 0.9rem;
-  color: #1E293B;
-}
-
-.report-text {
-  color: #dc3545;
-}
-
-/* 다중 이미지 슬라이더 스타일 */
-.multi-image-slider {
-  position: relative;
-  width: 100%;
-}
-
-.image-slider {
-  position: relative;
-  width: 100%;
-}
-
-.image-navigation {
-  position: absolute;
-  top: 50%;
-  left: 0;
-  right: 0;
-  transform: translateY(-50%);
-  display: flex;
-  justify-content: space-between;
-  padding: 0 16px;
-  pointer-events: none;
-}
-
-.nav-btn {
-  background: rgba(0, 0, 0, 0.5) !important;
-  color: white !important;
-  pointer-events: auto;
-  transition: all 0.3s ease;
-}
-
-.nav-btn:hover {
-  background: rgba(0, 0, 0, 0.7) !important;
-  transform: scale(1.1);
-}
-
-.nav-btn:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-.image-indicators {
-  position: absolute;
-  bottom: 16px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 8px;
-}
-
-.indicator {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.5);
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.indicator.active {
-  background: white;
-}
-
-.indicator:hover {
-  background: rgba(255, 255, 255, 0.8);
-}
-
-.profile-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.profile-avatar {
-  border: 2px solid #E5E7EB;
-  cursor: pointer;
-}
-
-.follow-section {
-  margin-right: 4px;
-  margin-left: 450px;
-}
-
-.follow-btn {
-  font-size: 0.8rem;
-  font-weight: 500;
-  border-radius: 20px;
-  text-transform: none;
-  color: white !important;
-  background-color: #FF8B8B !important;
-}
-
-.follow-btn :deep(.v-btn__content) {
-  color: white !important;
-}
-
-.unfollow-btn {
-  font-size: 0.8rem;
-  font-weight: 500;
-  border-radius: 20px;
-  text-transform: none;
-}
-
-/* 댓글 미리보기 스타일 */
-.comments-preview {
-  padding: 12px 16px;
-  border-top: 1px solid #f0f0f0;
-}
-
-.comments-preview-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.comments-preview-title {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #1E293B;
-}
-
-.view-all-comments {
-  font-size: 0.8rem;
-  color: #6c757d;
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.view-all-comments:hover {
-  color: #FF8B8B;
-}
-
-.comments-preview-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.comment-preview-item {
-  display: flex;
-  gap: 6px;
-  font-size: 0.85rem;
-  line-height: 1.4;
-  align-items: flex-start;
-}
-
-.comment-author {
-  font-weight: 600;
-  color: #1E293B;
-  white-space: nowrap;
-}
-
-.comment-content {
-  color: #495057;
-  word-break: break-word;
-  margin-top: 2px;
-}
-
-.comment-user-info {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.comment-avatar {
-  cursor: pointer;
-  transition: opacity 0.2s ease;
-}
-
-.comment-avatar:hover {
-  opacity: 0.8;
-}
-
-.comment-author.clickable {
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.comment-author.clickable:hover {
-  color: #FF8B8B;
-}
-
-.tag-mention {
-  font-weight: 700;
-  color: #FF8B8B;
-}
-
-.tag-mention.clickable {
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.tag-mention.clickable:hover {
-  color: #e67e7e;
-  text-decoration: underline;
-}
-
-.user-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  align-items: flex-start;
-  text-align: left;
-}
-
-.username {
-  font-weight: 600;
-  font-size: 0.9rem;
-  color: #1E293B;
-  cursor: pointer;
-  text-align: left;
-}
-
-.date {
-  font-size: 0.8rem;
-  color: #6B7280;
-}
-
-.clickable:hover {
-  opacity: 0.7;
-}
-
-/* 이미지 컨테이너 */
-.post-image-container {
-  margin-bottom: 12px;
-}
-
-.single-image {
-  width: 100%;
-}
-
-.post-image {
-  width: 100%;
-  max-height: 600px;
-  object-fit: cover;
-}
-
-.multi-image-slider {
-  position: relative;
-}
-
-.image-slider {
-  position: relative;
-}
-
-/* 좋아요/댓글 바 */
-.engagement-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 16px 8px 16px;
-}
-
-.engagement-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.like-btn, .comment-btn {
-  background: transparent !important;
-  border: none;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 50%;
-  transition: all 0.3s ease;
-  box-shadow: none !important;
-}
-
-.like-btn:hover, .comment-btn:hover {
-  background: transparent !important;
-  transform: scale(1.05);
-  color: #FF8B8B;
-}
-
-.like-btn:focus, .comment-btn:focus {
-  background: transparent !important;
-  box-shadow: none !important;
-}
-
-.like-count, .comment-count {
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: #1E293B;
-}
-
-/* 좋아요 정보 */
-.likes-info {
-  padding: 0 16px 8px 16px;
-  text-align: left;
-}
-
-.likes-text {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #1E293B;
-  text-align: left;
-  margin: 0;
-}
-
-.clickable {
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.clickable:hover {
-  opacity: 0.8;
-  transform: scale(1.02);
 }
 
 /* 캡션 */
@@ -1689,38 +1236,10 @@ export default {
   text-decoration: underline;
 }
 
-/* 해시태그 */
-.hashtags {
-  padding: 0 16px 16px 16px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: flex-start;
-}
-
-.hashtag {
-  color: #FF8B8B;
-  font-size: 0.85rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  padding: 4px 8px;
-  border-radius: 8px;
-  background: rgba(255, 139, 139, 0.05);
-  border: 1px solid rgba(255, 139, 139, 0.1);
-}
-
-.hashtag:hover {
-  background: rgba(255, 139, 139, 0.1);
-  border-color: rgba(255, 139, 139, 0.3);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(255, 139, 139, 0.2);
-}
-
 .empty-state {
   text-align: center;
   padding: 80px 20px;
-  color: #FFFAF0;
+  color: #6B7280;
 }
 
 .empty-state h3 {
@@ -1761,82 +1280,12 @@ export default {
 }
 
 @media (max-width: 768px) {
-  .all-posts-container {
+  .search-results-container {
     max-width: 100%;
   }
   
   .post-section {
     padding: 12px 0;
   }
-  
-  .post-header {
-    padding: 0 12px 8px 12px;
-  }
-  
-  .engagement-bar {
-    padding: 0 12px 8px 12px;
-  }
-  
-  .likes-info {
-    padding: 0 12px 8px 12px;
-  }
-  
-  .caption {
-    padding: 0 12px 8px 12px;
-  }
-  
-  .hashtags {
-    padding: 0 12px 8px 12px;
-  }
 }
-
-.create-diary-btn {
-  position: fixed;
-  bottom: 30px;
-  right: 30px;
-  width: 56px;
-  height: 56px;
-  background: #FF8B8B;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 4px 16px rgba(255, 139, 139, 0.3);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 1000;
-  opacity: 0;
-  transform: translateY(20px);
-  animation: fadeInUp 0.3s ease forwards;
-}
-
-.create-diary-btn:hover {
-  background: #FF6B6B;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(255, 139, 139, 0.4);
-}
-
-.create-diary-btn:active {
-  transform: translateY(0);
-  box-shadow: 0 4px 12px rgba(255, 139, 139, 0.3);
-}
-
-/* scroll-to-top 버튼이 있을 때 create-diary-btn 위치 조정 */
-.create-diary-btn.with-scroll-btn {
-  bottom: 100px; /* scroll-to-top 버튼 위로 이동 */
-}
-
-/* 반응형 조정 */
-@media (max-width: 768px) {
-  .create-diary-btn.with-scroll-btn {
-    bottom: 90px; /* 모바일에서는 더 가깝게 */
-  }
-}
-
-@media (max-width: 480px) {
-  .create-diary-btn.with-scroll-btn {
-    bottom: 80px; /* 작은 화면에서는 더 가깝게 */
-  }
-}
-
 </style>

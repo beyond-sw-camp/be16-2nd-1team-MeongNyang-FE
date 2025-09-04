@@ -1,211 +1,243 @@
 <template>
-  <v-dialog v-model="show" max-width="400">
-    <v-card class="likes-modal">
-      <v-card-title class="modal-title">
-        좋아요
-      </v-card-title>
-      
-      <v-card-text class="modal-content">
-        <div class="likes-list">
-          <!-- 좋아요 목록이 있을 때 -->
-          <template v-if="likesList.length > 0">
-            <div 
-              v-for="(like, index) in likesList" 
-              :key="index" 
-              class="like-item"
-            >
-              <v-avatar 
-                size="32" 
-                class="like-avatar clickable"
-                @click="goToUserDiary(like.userId)"
+  <v-dialog v-model="show" max-width="450" persistent>
+    <v-card class="likes-modal" rounded="xl">
+      <!-- 모달 헤더 -->
+      <v-toolbar color="surface" density="compact">
+        <!-- <v-btn icon="mdi-close" @click="closeModal" variant="text" /> -->
+        <v-btn icon="mdi-close" @click="closeModal" variant="text" flat class="no-styles-btn" color="#FF8B8B" />
+        <v-toolbar-title class="text-center font-weight-bold text-h6">
+          좋아요
+        </v-toolbar-title>
+        <v-spacer />
+      </v-toolbar>
+
+      <!-- 모달 내용 -->
+      <v-card-text class="pa-0">
+        <v-list v-if="likesList.length > 0" lines="two" class="likes-list pa-0">
+          <v-list-item
+            v-for="(like, index) in likesList"
+            :key="like.userId || index"
+            class="like-item"
+            @click="goToUserDiary(like.userId)"
+          >
+            <template #prepend>
+              <v-avatar
+                size="48"
+                class="like-avatar"
+                :image="like.profileImage || 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=48&h=48&fit=crop&crop=center'"
+              />
+            </template>
+
+            <v-list-item-title class="font-weight-semibold like-username">
+              {{ like.userName || like.username || like.petName || '익명' }}
+            </v-list-item-title>
+            <v-list-item-subtitle class="text-caption">
+              {{ like.nickname || like.realName }}
+            </v-list-item-subtitle>
+
+            <template #append>
+              <v-btn
+                v-if="like.userId !== currentUserId"
+                :color="like.isFollowing ? 'grey' : '#FF8B8B'"
+                :variant="like.isFollowing ? 'outlined' : 'elevated'"
+                size="small"
+                class="follow-btn"
+                :class="{ 'follow-btn-active': !like.isFollowing }"
+                @click.stop="toggleFollow(like)"
+                :loading="isFollowLoading(like.userId)"
               >
-                <v-img :src="like.profileImage || 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=32&h=32&fit=crop&crop=center'"></v-img>
-              </v-avatar>
-              <div class="like-info">
-                <span class="like-username clickable" @click="goToUserDiary(like.userId)">{{ like.userName || like.username || like.petName || '익명' }}</span>
-                <span class="like-date">{{ like.date }}</span>
-              </div>
-            </div>
-          </template>
-          
-          <!-- 좋아요 목록이 없을 때 -->
-          <div v-else class="empty-likes">
-            <v-icon size="48" color="#CBD5E1">mdi-heart-outline</v-icon>
-            <p class="empty-text">아직 좋아요가 없습니다</p>
-            <p class="empty-subtext">첫 번째 좋아요를 눌러보세요!</p>
-          </div>
+                {{ like.isFollowing ? '팔로잉' : '팔로우' }}
+              </v-btn>
+            </template>
+          </v-list-item>
+        </v-list>
+
+        <!-- 좋아요 목록이 없을 때 -->
+        <div v-else class="empty-likes">
+          <v-icon size="64" color="grey-lighten-2">mdi-heart-outline</v-icon>
+          <p class="text-h6 font-weight-medium mt-6 mb-2">
+            아직 좋아요가 없습니다
+          </p>
+          <p class="text-body-2 text-grey">첫 번째 좋아요를 눌러보세요!</p>
         </div>
       </v-card-text>
-      
-      <v-card-actions class="modal-actions">
-        <v-btn 
-          variant="text"
-          @click="closeModal"
-          class="close-modal-btn"
-        >
-          닫기
-        </v-btn>
-      </v-card-actions>
     </v-card>
   </v-dialog>
 </template>
 
 <script>
+import { computed, ref } from 'vue';
+import { useAuthStore } from '@/stores/auth';
+import { useRouter } from 'vue-router';
+
 export default {
   name: 'LikesModal',
   props: {
     modelValue: {
       type: Boolean,
-      default: false
+      default: false,
     },
     likesList: {
       type: Array,
-      default: () => []
-    }
+      default: () => [],
+    },
   },
-  emits: ['update:modelValue'],
-  computed: {
-    show: {
+  emits: ['update:modelValue', 'follow-toggle'],
+  setup(props, { emit }) {
+    const authStore = useAuthStore();
+    const router = useRouter();
+    const followLoadingMap = ref(new Map());
+
+    const currentUserId = computed(() => authStore.user?.userId);
+
+    const show = computed({
       get() {
-        return this.modelValue
+        return props.modelValue;
       },
       set(value) {
-        this.$emit('update:modelValue', value)
+        emit('update:modelValue', value);
+      },
+    });
+
+    const closeModal = () => {
+      show.value = false;
+    };
+
+    const goToUserDiary = userId => {
+      if (userId && !isFollowLoading(userId)) {
+        if (userId === currentUserId.value) {
+          router.push(`/diarys`);
+        } else {
+          router.push(`/diarys/${userId}`);
+        }
+        closeModal();
       }
-    }
+    };
+
+    const toggleFollow = user => {
+      if (followLoadingMap.value.get(user.userId)) return;
+
+      followLoadingMap.value.set(user.userId, true);
+
+      emit('follow-toggle', {
+        userId: user.userId,
+        isFollowing: user.isFollowing,
+        user: user,
+      });
+
+      setTimeout(() => {
+        followLoadingMap.value.set(user.userId, false);
+      }, 1000);
+    };
+
+    const isFollowLoading = userId => {
+      return followLoadingMap.value.get(userId) || false;
+    };
+
+    return {
+      show,
+      closeModal,
+      goToUserDiary,
+      toggleFollow,
+      isFollowLoading,
+      currentUserId,
+    };
   },
-  methods: {
-    closeModal() {
-      this.show = false
-    },
-    
-    // 사용자 다이어리로 이동하는 메서드
-    goToUserDiary(userId) {
-      if (userId) {
-        this.$router.push(`/diarys/${userId}`)
-      }
-    }
-  }
-}
+};
 </script>
 
 <style scoped>
+.no-styles-btn {
+  background-color: transparent !important; /* 배경색을 투명하게 만듭니다. */
+  box-shadow: none !important; /* 그림자를 완전히 제거합니다. */
+  padding: 0 !important; /* 내부 패딩을 제거합니다. */
+  min-width: unset !important; /* 최소 너비를 제거하여 아이콘 크기에 맞춥니다. */
+  height: unset !important; /* 높이를 제거하여 아이콘 크기에 맞춥니다. */
+  border-radius: 0 !important; /* 테두리 둥글기를 제거합니다. */
+}
+
+/* 호버 시 배경색도 투명하게 유지하려면 다음을 추가할 수 있습니다. */
+.no-styles-btn:hover::before,
+.no-styles-btn:focus::before {
+  background-color: transparent !important;
+}
+
 .likes-modal {
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.98);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 8px 32px rgba(15, 23, 42, 0.12);
+  border: 1px solid var(--v-theme-outline-variant);
 }
 
-.modal-title {
-  font-size: 1.2rem;
-  font-weight: 700;
-  text-align: center;
-  padding: 24px 24px 0 24px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  background: linear-gradient(135deg, #1E293B 0%, #475569 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+.v-toolbar-title {
+  flex: 1 1 auto;
 }
 
-.modal-content {
-  padding: 0;
+.likes-list {
   max-height: 400px;
   overflow-y: auto;
 }
 
-.likes-list {
-  padding: 16px 0;
-}
-
 .like-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 24px;
-  transition: all 0.3s ease;
-  cursor: pointer;
+  padding: 12px 24px !important;
+  transition: background-color 0.2s ease;
 }
 
 .like-item:hover {
-  background: linear-gradient(135deg, rgba(255, 139, 139, 0.05) 0%, rgba(255, 193, 193, 0.05) 100%);
-  transform: translateX(4px);
+  background-color: rgba(var(--v-theme-on-surface), 0.04);
 }
 
 .like-avatar {
-  flex-shrink: 0;
-  border: 2px solid #FF8B8B;
-  box-shadow: 0 2px 8px rgba(255, 139, 139, 0.2);
+  border: 2px solid var(--v-theme-outline);
+  transition: all 0.2s ease;
 }
 
-.like-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.like-item:hover .like-avatar {
+  border-color: var(--v-theme-primary);
+  transform: scale(1.05);
 }
 
 .like-username {
-  font-weight: 600;
-  font-size: 0.9rem;
-  color: #1E293B;
-}
-
-.clickable {
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: color 0.2s ease;
 }
 
-.clickable:hover {
-  opacity: 0.8;
-  transform: scale(1.02);
+.like-item:hover .like-username {
+  color: var(--v-theme-primary);
 }
 
-.like-date {
-  font-size: 0.75rem;
-  color: #64748B;
+.follow-btn {
+  min-width: 90px;
+  border-radius: var(--v-border-radius-lg);
 }
 
-/* 빈 상태 스타일 */
+.follow-btn-active {
+  color: white !important;
+}
+
 .empty-likes {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px 24px;
+  padding: 64px 24px;
   text-align: center;
+  background-color: var(--v-theme-surface-variant);
 }
 
-.empty-text {
-  margin-top: 16px;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #64748B;
+/* 스크롤바 스타일 */
+.likes-list::-webkit-scrollbar {
+  width: 6px;
 }
 
-.empty-subtext {
-  margin-top: 8px;
-  font-size: 0.85rem;
-  color: #94A3B8;
+.likes-list::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.modal-actions {
-  padding: 20px 24px;
-  justify-content: center;
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
+.likes-list::-webkit-scrollbar-thumb {
+  background: var(--v-theme-outline-variant);
+  border-radius: 3px;
 }
 
-.close-modal-btn {
-  color: #FF8B8B !important;
-  background: transparent !important;
-  font-weight: 600;
-  transition: all 0.3s ease;
-}
-
-.close-modal-btn:hover {
-  color: #FF6B6B !important;
-  background: transparent !important;
-  transform: translateY(-1px);
+.likes-list::-webkit-scrollbar-thumb:hover {
+  background: var(--v-theme-secondary);
 }
 </style>
+

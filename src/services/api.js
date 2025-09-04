@@ -181,24 +181,20 @@ export const userAPI = {
   // 대표 동물 설정
   setMainPet: async (petId) => {
     try {
-      console.log('🔄 petAPI.setMainPet 시작:', petId)
-      console.log('🔍 API 호출 URL:', `/pets/main`)
-      
       const response = await apiClient.put(`/users/main-pet/${petId}`)
-      
       console.log('✅ petAPI.setMainPet 성공:', response)
       return response
     } catch (error) {
       console.error('❌ petAPI.setMainPet 에러:', error)
-      console.error('❌ 에러 상세:', error.response?.data)
-      console.error('❌ 에러 상태:', error.response?.status)
-      console.error('❌ 에러 메시지:', error.message)
       throw error
     }
   },
 
   // 마이페이지 정보 조회
   getMyPage: () => apiClient.get('/users/my-page'),
+
+  // 다른 사용자 프로필 조회
+  getUserPage: (userId) => apiClient.get(`/users/${userId}/page`),
 
   // 프로필 업데이트
   updateProfile: async (profileData) => {
@@ -248,8 +244,6 @@ export const userAPI = {
   // 차단 목록 조회
   getBlocks: (pageable, type) => apiClient.get('/users/blocks', { params: { ...pageable, type } }),
 
-  // 다른 사용자 프로필 조회
-  getUserProfile: (userId) => apiClient.get(`/users/${userId}/profile`),
 
   // 팔로우 상태 확인
   checkFollowStatus: (userId) => apiClient.get(`/users/follows/${userId}/status`),
@@ -328,7 +322,10 @@ export const postAPI = {
     apiClient.get('/posts/search', { params: { searchType, keyword, ...pageable } }),
 
   // 신고
-  report: (postId, reason) => apiClient.post(`/posts/${postId}/reports`, { reason })
+  report: (postId, reason) => apiClient.post(`/posts/${postId}/reports`, { reason }),
+
+  // 인기 해시태그 조회
+  getTrendingHashtags: () => apiClient.get('/posts/trend-hashtags')
 }
 
 
