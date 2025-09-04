@@ -99,9 +99,11 @@ export const usePetStore = defineStore('pet', () => {
             console.log('🔥 authStore.mainPetId 기반 대표 반려동물 설정:', representativePet.value)
           } else {
             console.warn('⚠️ mainPetId에 해당하는 펫을 찾을 수 없음:', mainPetId)
-            // fallback: 첫 번째 펫을 대표로 설정
-            representativePet.value = pets.value[0]
-            console.log('🔄 fallback: 첫 번째 펫을 대표로 설정:', representativePet.value)
+            // 삭제된 펫이 대표 반려동물이었을 경우, 첫 번째 펫을 대표로 설정
+            if (pets.value.length > 0) {
+              representativePet.value = pets.value[0]
+              console.log('🔄 삭제된 대표 반려동물 대신 첫 번째 펫을 대표로 설정:', representativePet.value)
+            }
           }
         } else if (pets.value.length > 0) {
           // mainPetId가 없거나 펫이 없는 경우 첫 번째 펫을 대표로 설정
@@ -262,6 +264,39 @@ export const usePetStore = defineStore('pet', () => {
 
 
 
+  const updateField = async (petId, fieldName, value, existingPetData) => {
+    try {
+      setLoading(true)
+      clearError()
+      
+      const response = await petAPI.updateField(petId, fieldName, value, existingPetData)
+
+      if (response.data.isSuccess) {
+        // 수정 후 목록 새로고침
+        await fetchPets()
+        return { success: true, message: response.data.data || '필드가 성공적으로 수정되었습니다.' }
+      } else {
+        setError(response.data.message || '필드 수정에 실패했습니다.')
+        return { success: false, message: response.data.message }
+      }
+    } catch (error) {
+      console.error('필드 수정 에러:', error)
+      
+      // 백엔드 에러 메시지 추출
+      let errorMessage = '필드 수정 중 오류가 발생했습니다.'
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message
+      } else if (error.response?.data?.status?.message) {
+        errorMessage = error.response.data.status.message
+      }
+      
+      setError(errorMessage)
+      return { success: false, message: errorMessage }
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const updatePet = async (petId, petData, petImage = null) => {
     try {
       setLoading(true)
@@ -365,12 +400,36 @@ export const usePetStore = defineStore('pet', () => {
       setLoading(true)
       clearError()
       
+      // 삭제 전에 현재 대표 반려동물이 삭제될 펫인지 확인
+      const isDeletingMainPet = representativePet.value?.id === petId
+      console.log('🗑️ 삭제할 펫 ID:', petId)
+      console.log('🗑️ 현재 대표 반려동물 ID:', representativePet.value?.id)
+      console.log('🗑️ 대표 반려동물 삭제 여부:', isDeletingMainPet)
+      
       const response = await petAPI.delete(petId)
       
-      // 백엔드 응답 구조: CommonRes<String> - isSuccess 필드 사용
+      // 백엔드 응답 구조: CommonRes<String> - isSuccess  필드 사용
       if (response.data.isSuccess) {
         // 삭제 후 목록 새로고침
         await fetchPets()
+        
+        // 🔥 중요: 대표 반려동물이 삭제된 경우, ID가 가장 작은 펫을 새로운 대표 반려동물로 설정
+        if (isDeletingMainPet && pets.value.length > 0) {
+          // ID가 가장 작은 펫 찾기 (가장 먼저 등록한 펫)
+          const newMainPet = pets.value.reduce((min, pet) => 
+            pet.id < min.id ? pet : min
+          )
+          console.log('🔄 삭제된 대표 반려동물 대신 ID가 가장 작은 펫을 새로운 대표로 설정:', newMainPet)
+          
+          try {
+            await setRepresentativePet(newMainPet)
+            console.log('✅ 새로운 대표 반려동물이 데이터베이스에 저장됨:', newMainPet.id)
+          } catch (error) {
+            console.error('❌ 새로운 대표 반려동물 저장 실패:', error)
+            // 에러가 발생해도 삭제는 성공했으므로 계속 진행
+          }
+        }
+        
         return { success: true, message: response.data.data || '반려동물이 성공적으로 삭제되었습니다.' }
       } else {
         setError(response.data.message || '반려동물 삭제에 실패했습니다.')
@@ -504,6 +563,34 @@ export const usePetStore = defineStore('pet', () => {
   }
   }
 
+  // 반려동물 이미지 업데이트
+  const updatePetImage = async (petId, formData) => {
+    try {
+      setLoading(true)
+      clearError()
+      console.log('📷 petStore.updatePetImage 시작')
+      console.log('🔍 petId:', petId)
+      console.log('🔍 formData:', formData)
+      
+      const response = await petAPI.updatePetImage(petId, formData)
+      console.log('✅ 이미지 업데이트 성공:', response.data)
+      
+      return { success: true, message: '프로필 사진이 성공적으로 변경되었습니다.' }
+    } catch (error) {
+      console.error('❌ petStore.updatePetImage 에러:', error)
+      console.error('❌ 에러 상세:', error.response?.data)
+      console.error('❌ 에러 상태:', error.response?.status)
+      console.error('❌ 에러 메시지:', error.message)
+      
+      const errorMessage = error.response?.data?.message || '프로필 사진 변경에 실패했습니다.'
+      setError(errorMessage)
+      return { success: false, message: errorMessage }
+    } finally {
+      setLoading(false)
+      console.log('🔄 petStore.updatePetImage 완료')
+    }
+  }
+
   // Utility Actions
   const getPetById = (petId) => {
     return pets.value.find(pet => pet.id === petId)
@@ -546,8 +633,10 @@ export const usePetStore = defineStore('pet', () => {
     clearError,
     fetchPets,
     registerPet,
+    updateField,
     updatePet,
     deletePet,
+    updatePetImage,
     fetchSpecies,
     searchSpecies,
     selectPet,

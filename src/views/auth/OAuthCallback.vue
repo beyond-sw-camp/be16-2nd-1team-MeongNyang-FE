@@ -24,7 +24,10 @@ onMounted(async () => {
   console.log('[OAUTH]', { provider, code, path: route.fullPath })
 
   if (!provider || !code) {
-    router.replace({ name: 'Login' })
+    router.replace({ 
+      path: '/',
+      query: { showLogin: 'true' }
+    })
     return
   }
 
@@ -42,9 +45,9 @@ onMounted(async () => {
       if (rt) auth.refreshToken = rt
       try { await auth.getCurrentUser() } catch(e) {void e}
       
-      // 로그인 성공 후 화면 새로고침하여 로그인된 상태로 표시
-      console.log('✅ OAuth 로그인 성공! 화면 새로고침 중...')
-      window.location.href = '/dashboard'
+      // 로그인 성공 후 홈화면으로 이동
+      console.log('✅ OAuth 로그인 성공! 홈화면으로 이동 중...')
+      router.replace({ name: 'Home' })
       return
     }
 
@@ -78,7 +81,10 @@ onMounted(async () => {
       return
     }
 
-    router.replace({ name: 'Login' })
+    router.replace({ 
+      name: 'Home',
+      query: { showLogin: 'true' }
+    })
   } catch (e) {
   // 서버 응답 정보 추출
   const status = e?.response?.status
@@ -124,14 +130,12 @@ onMounted(async () => {
           msg.includes('탈퇴한 계정') ||
           msg.includes('존재하지 않는') ||
           msg.includes('비활성화된 계정')) {
-        console.log('삭제된 계정 감지:', msg)
-        
+        console.log('삭제된 계정 감지:', msg)   
         // 홈으로 이동하고 삭제된 계정 모달을 열기 위한 쿼리 파라미터 전달
         router.replace({
           name: 'Home',
           query: {
             showDeletedAccount: 'true',
-            deletedEmail: payload?.email || '알 수 없는 이메일',
           },
         })
         return
@@ -145,19 +149,12 @@ onMounted(async () => {
     }
     
     // EntityExistsException - 이미 다른 방식으로 연동된 계정
-    if (msg.includes('이미 다른 방식으로 연동') || msg.includes('이미 소셜 연동')) {
-      // 에러 메시지에서 기존 소셜 타입 추출
-      const existingType = 
-        msg.includes('구글') || msg.includes('Google') || msg.includes('GOOGLE') ? 'Google' :
-        msg.includes('카카오') || msg.includes('Kakao') || msg.includes('KAKAO') ? 'Kakao' : '다른 소셜'
-      
+    if (msg.includes('이미 다른 방식으로 연동') || msg.includes('이미 소셜 연동') || msg.includes('이미 소셜 연동된 계정')) {
       // 홈으로 이동하고 소셜 계정 중복 모달을 열기 위한 쿼리 파라미터 전달
       router.replace({
         name: 'Home',
         query: {
           showSocialDuplicate: 'true',
-          duplicateEmail: payload?.email || '알 수 없는 이메일',
-          duplicateProvider: existingType,
         },
       })
       return
@@ -166,41 +163,59 @@ onMounted(async () => {
     // 기타 400 오류
     console.error('기타 400 오류 상세:', { msg, payload, status })
     alert(`⚠️ 소셜 로그인에 문제가 생겼어요.\n\n${msg || '잠시 후 다시 시도해주세요!'}\n\n문제가 계속되면 다른 로그인 방법을 이용해보세요.`)
-    router.replace({ name: 'Login' })
+    router.replace({ 
+      name: 'Home',
+      query: { showLogin: 'true' }
+    })
     return
   }
 
   // 401: 인증 오류
   if (status === 401) {
     alert('🔐 인증에 실패했습니다.\n\n소셜 로그인을 다시 시도해주세요.')
-    router.replace({ name: 'Login' })
+    router.replace({ 
+      name: 'Home',
+      query: { showLogin: 'true' }
+    })
     return
   }
 
   // 403: 권한 오류
   if (status === 403) {
     alert('🚫 접근 권한이 없습니다.\n\n관리자에게 문의해주세요.')
-    router.replace({ name: 'Login' })
+    router.replace({ 
+      name: 'Home',
+      query: { showLogin: 'true' }
+    })
     return
   }
 
   // 404: 찾을 수 없음
   if (status === 404) {
     alert('❓ 요청한 정보를 찾을 수 없습니다.\n\n다시 시도해주세요.')
-    router.replace({ name: 'Login' })
+    router.replace({ 
+      name: 'Home',
+      query: { showLogin: 'true' }
+    })
     return
   }
 
   // 500: 서버 오류
   if (status === 500) {
     alert('🛠️ 서버에 일시적인 문제가 발생했습니다.\n\n잠시 후 다시 시도해주세요.')
-    router.replace({ name: 'Login' })
+    router.replace({ 
+      name: 'Home',
+      query: { showLogin: 'true' }
+    })
     return
   }
 
   // 기타 오류
   alert(`💭 소셜 로그인에 문제가 생겼어요.\n\n${msg || '잠시 후 다시 시도해주세요!'}`)
-  router.replace({ name: 'Login' })
+  router.replace({ 
+    name: 'Home',
+    query: { showLogin: 'true' }
+  })
 }
 
 })
