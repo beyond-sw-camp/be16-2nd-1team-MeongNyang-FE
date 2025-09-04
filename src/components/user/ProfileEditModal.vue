@@ -137,7 +137,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, inject } from 'vue'
+import { ref, reactive, computed, watch, inject, defineProps, defineEmits } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { usePetStore } from '@/stores/pet'
 import { userAPI } from '@/services/api'
@@ -197,7 +197,9 @@ const nicknameRules = [
 
 // 닉네임 유효성
 const nicknameValid = computed(() => {
-  return form.nickname && nicknameRules.every(rule => rule(form.nickname) === true)
+  const isValid = form.nickname && nicknameRules.every(rule => rule(form.nickname) === true)
+  const isSameAsOriginal = profile.value?.nickname === form.nickname
+  return isValid && !isSameAsOriginal // 기존 닉네임과 다를 때만 true
 })
 
 // 대표동물 정보 (pet store에서 직접 가져오기)
@@ -274,18 +276,7 @@ const resetNicknameCheck = () => {
   nicknameAvailable.value = null
 }
 
-const getSocialTypeLabel = (socialType) => {
-  if (!socialType) return '일반'
-  
-  const normalizedType = String(socialType).toUpperCase().trim()
-  
-  switch (normalizedType) {
-    case 'GOOGLE': return 'Google'
-    case 'KAKAO': return 'Kakao'
-    case 'COMMON': return '일반'
-    default: return '일반'
-  }
-}
+
 
 const handleSubmit = async () => {
   const { valid } = await formRef.value?.validate()

@@ -199,7 +199,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, inject } from 'vue'
+import { ref, reactive, computed, watch, inject, defineProps, defineEmits } from 'vue'
 import { useRouter } from 'vue-router'
 import { userAPI } from '@/services/api'
 import '@/assets/styles/modal-animations.css'
@@ -266,7 +266,7 @@ const canSubmit = computed(() => {
 // 비밀번호 유효성 검사 규칙
 const oldPasswordRules = [
   v => !!v || '기존 비밀번호를 입력해주세요',
-  v => oldPasswordValid.value !== false || '기존 비밀번호가 올바르지 않습니다'
+  () => oldPasswordValid.value !== false || '기존 비밀번호가 올바르지 않습니다'
 ]
 
 const newPasswordRules = [
