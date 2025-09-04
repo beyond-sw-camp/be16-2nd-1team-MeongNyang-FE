@@ -158,8 +158,15 @@ export default {
     
     // 미디어 인덱스 범위 감시
     watch([currentMediaIndex, mediaList], ([index, list]) => {
-      if (list.length > 0 && index >= list.length) {
-        currentMediaIndex.value = Math.max(0, list.length - 1)
+      if (list.length === 0) {
+        // 미디어가 없으면 인덱스를 0으로 설정
+        currentMediaIndex.value = 0
+      } else if (index >= list.length) {
+        // 인덱스가 범위를 벗어나면 마지막 인덱스로 조정
+        currentMediaIndex.value = list.length - 1
+      } else if (index < 0) {
+        // 인덱스가 음수면 0으로 조정
+        currentMediaIndex.value = 0
       }
     })
     
@@ -295,11 +302,10 @@ export default {
       fileInput.value.click()
     }
     
-    // 파일 선택 처리
-    const handleFileSelect = (event) => {
-      console.log('=== 파일 선택 처리 시작 ===')
-      const files = Array.from(event.target.files)
-      console.log('선택된 파일들:', files)
+    // 파일 추가 공통 함수
+    const addFilesToMediaList = (files, source = 'file') => {
+      console.log(`=== ${source} 파일 추가 시작 ===`)
+      console.log('추가할 파일들:', files)
       
       if (mediaList.value.length + files.length > 10) {
         alert('최대 10개까지만 업로드할 수 있습니다.')
@@ -324,23 +330,32 @@ export default {
       
       console.log('유효한 파일들:', validFiles)
       
+      if (validFiles.length === 0) {
+        console.log('유효한 파일이 없음')
+        return
+      }
+      
       // 파일을 미디어 리스트에 추가
-      validFiles.forEach((file) => {
+      let addedCount = 0
+      validFiles.forEach((file, index) => {
         const reader = new FileReader()
         reader.onload = (e) => {
-                  const newMedia = {
-          url: e.target.result,
-          type: 'image',
-          file: file,
-          isExisting: false,
-          name: file.name
-        }
+          const newMedia = {
+            url: e.target.result,
+            type: 'image',
+            file: file,
+            isExisting: false,
+            name: file.name
+          }
           
-          console.log(`새 미디어 추가:`, newMedia)
+          console.log(`새 미디어 추가 (${index + 1}/${validFiles.length}):`, newMedia)
           mediaList.value.push(newMedia)
+          addedCount++
           
-          // 현재 미디어 인덱스를 새로 추가된 파일로 설정
-          currentMediaIndex.value = mediaList.value.length - 1
+          // 첫 번째 파일이 추가되면 해당 파일로 이동
+          if (addedCount === 1) {
+            currentMediaIndex.value = mediaList.value.length - 1
+          }
         }
         
         reader.onerror = (error) => {
@@ -351,18 +366,45 @@ export default {
         reader.readAsDataURL(file)
       })
       
+      console.log(`=== ${source} 파일 추가 완료 ===`)
+    }
+    
+    // 파일 선택 처리
+    const handleFileSelect = (event) => {
+      const files = Array.from(event.target.files)
+      addFilesToMediaList(files, '선택')
+      
       // 파일 입력 초기화
       event.target.value = ''
-      console.log('=== 파일 선택 처리 완료 ===')
     }
     
     // 현재 미디어 제거
     const removeCurrentMedia = () => {
       if (mediaList.value.length > 0) {
+        console.log('미디어 제거 전:', {
+          currentIndex: currentMediaIndex.value,
+          totalLength: mediaList.value.length,
+          mediaToRemove: mediaList.value[currentMediaIndex.value]
+        })
+        
         mediaList.value.splice(currentMediaIndex.value, 1)
-        if (currentMediaIndex.value >= mediaList.value.length) {
-          currentMediaIndex.value = Math.max(0, mediaList.value.length - 1)
+        
+        // 인덱스 조정: 삭제 후 배열이 비어있지 않다면 적절한 인덱스로 조정
+        if (mediaList.value.length > 0) {
+          // 현재 인덱스가 배열 길이보다 크거나 같으면 마지막 인덱스로 조정
+          if (currentMediaIndex.value >= mediaList.value.length) {
+            currentMediaIndex.value = mediaList.value.length - 1
+          }
+          // 현재 인덱스가 유효한 범위 내에 있으면 그대로 유지
+        } else {
+          // 배열이 비어있으면 인덱스를 0으로 설정
+          currentMediaIndex.value = 0
         }
+        
+        console.log('미디어 제거 후:', {
+          currentIndex: currentMediaIndex.value,
+          totalLength: mediaList.value.length
+        })
       }
     }
     
@@ -495,23 +537,19 @@ export default {
         console.log('전체 파일 목록:', allFiles.map(f => f.name))
         console.log('전체 파일 개수:', allFiles.length)
         
-        // 모든 파일을 FormData에 추가
+        // 모든 파일을 FormData에 추가 (백엔드에서 fileList로 받기 때문에 'fileList'로 키명 변경)
         allFiles.forEach((file, index) => {
           console.log(`파일 ${index} 추가:`, file.name, file.type, file.size)
-          formData.append('files', file)
+          formData.append('fileList', file)
         })
         
-        // JSON 데이터 구성 (기존 미디어 URL 정보는 제거)
-        const postEditReq = {
-          content: content.value.trim()
+        // content를 FormData에 직접 추가 (백엔드 @ModelAttribute 방식에 맞춤)
+        formData.append('content', content.value.trim())
+        
+        console.log('전송할 FormData 내용:')
+        for (let [key, value] of formData.entries()) {
+          console.log(`${key}:`, value)
         }
-        
-        console.log('전송할 데이터:', postEditReq)
-        
-        const jsonBlob = new Blob([JSON.stringify(postEditReq)], {
-          type: 'application/json'
-        })
-        formData.append('postEditReq', jsonBlob)
         
         const postId = $route.params.id
         const response = await postAPI.update(postId, formData)
@@ -538,62 +576,8 @@ export default {
     
     const handleDrop = (e) => {
       e.preventDefault()
-      console.log('=== 드래그 앤 드롭 처리 시작 ===')
-      
       const files = Array.from(e.dataTransfer.files)
-      console.log('드롭된 파일들:', files)
-      
-      if (mediaList.value.length + files.length > 10) {
-        alert('최대 10개까지만 업로드할 수 있습니다.')
-        return
-      }
-      
-      // 파일 유효성 검사 및 처리
-      const validFiles = files.filter(file => {
-        if (!file.type.startsWith('image/')) {
-          alert(`${file.name}은(는) 지원하지 않는 파일 형식입니다. 이미지 파일만 업로드 가능합니다.`)
-          return false
-        }
-        
-        // 파일 크기 제한 (10MB)
-        if (file.size > 10 * 1024 * 1024) {
-          alert(`${file.name}의 파일 크기가 너무 큽니다. 10MB 이하의 파일만 업로드 가능합니다.`)
-          return false
-        }
-        
-        return true
-      })
-      
-      console.log('유효한 드롭 파일들:', validFiles)
-      
-      // 파일을 미디어 리스트에 추가
-      validFiles.forEach((file) => {
-        const reader = new FileReader()
-        reader.onload = (e) => {
-                  const newMedia = {
-          url: e.target.result,
-          type: 'image',
-          file: file,
-          isExisting: false,
-          name: file.name
-        }
-          
-          console.log(`드롭된 미디어 추가:`, newMedia)
-          mediaList.value.push(newMedia)
-          
-          // 현재 미디어 인덱스를 새로 추가된 파일로 설정
-          currentMediaIndex.value = mediaList.value.length - 1
-        }
-        
-        reader.onerror = (error) => {
-          console.error(`드롭 파일 ${file.name} 로드 실패:`, error)
-          alert(`${file.name} 파일을 읽는 중 오류가 발생했습니다.`)
-        }
-        
-        reader.readAsDataURL(file)
-      })
-      
-      console.log('=== 드래그 앤 드롭 처리 완료 ===')
+      addFilesToMediaList(files, '드롭')
     }
     
     // 이미지 로드 실패 처리
@@ -614,8 +598,18 @@ export default {
           mediaList.value.splice(index, 1)
           
           // 현재 인덱스 조정
-          if (currentMediaIndex.value >= mediaList.value.length) {
-            currentMediaIndex.value = Math.max(0, mediaList.value.length - 1)
+          if (mediaList.value.length > 0) {
+            // 현재 인덱스가 배열 길이보다 크거나 같으면 마지막 인덱스로 조정
+            if (currentMediaIndex.value >= mediaList.value.length) {
+              currentMediaIndex.value = mediaList.value.length - 1
+            }
+            // 삭제된 인덱스가 현재 인덱스보다 작거나 같으면 현재 인덱스를 조정
+            else if (index <= currentMediaIndex.value) {
+              currentMediaIndex.value = Math.max(0, currentMediaIndex.value - 1)
+            }
+          } else {
+            // 배열이 비어있으면 인덱스를 0으로 설정
+            currentMediaIndex.value = 0
           }
         }
         
@@ -668,7 +662,8 @@ export default {
       handleContentInput,
       handleSubmit,
       handleImageError,
-      setCurrentMediaIndex
+      setCurrentMediaIndex,
+      addFilesToMediaList
     }
   }
 }
