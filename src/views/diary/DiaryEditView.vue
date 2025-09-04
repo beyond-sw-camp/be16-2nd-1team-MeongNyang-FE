@@ -11,8 +11,9 @@
           class="write-btn"
           @click="handleSubmit"
           :disabled="!canSubmit"
+          :loading="isSubmitting"
         >
-          수정
+          {{ isSubmitting ? '수정 중...' : '수정' }}
         </v-btn>
       </div>
     </div>
@@ -143,6 +144,7 @@ export default {
     const isDragging = ref(false)
     const dragStartX = ref(0)
     const isLoading = ref(true)
+    const isSubmitting = ref(false)
     
     // 현재 미디어
     const currentMedia = computed(() => {
@@ -153,7 +155,7 @@ export default {
     
     // 제출 가능 여부 - 미디어가 있고 내용이 있으면 제출 가능
     const canSubmit = computed(() => {
-      return content.value.trim() && mediaList.value.length > 0
+      return content.value.trim() && mediaList.value.length > 0 && !isSubmitting.value
     })
     
     // 미디어 인덱스 범위 감시
@@ -245,9 +247,25 @@ export default {
       try {
         console.log('URL을 File로 변환 시작:', url)
         
-        const response = await fetch(url)
+        // URL 유효성 검사
+        if (!url || typeof url !== 'string') {
+          throw new Error('유효하지 않은 URL입니다')
+        }
+        
+        // fetch 타임아웃 설정 (10초)
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 10000)
+        
+        const response = await fetch(url, {
+          signal: controller.signal,
+          mode: 'cors',
+          cache: 'no-cache'
+        })
+        
+        clearTimeout(timeoutId)
+        
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
+          throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`)
         }
         
         const blob = await response.blob()
@@ -256,7 +274,17 @@ export default {
           throw new Error('빈 파일입니다')
         }
         
-        const file = new File([blob], fileName, { type: blob.type || 'image/jpeg' })
+        // 파일 크기 제한 (10MB)
+        if (blob.size > 10 * 1024 * 1024) {
+          throw new Error('파일 크기가 너무 큽니다 (10MB 초과)')
+        }
+        
+        // MIME 타입 검사
+        if (!blob.type.startsWith('image/')) {
+          throw new Error('이미지 파일이 아닙니다')
+        }
+        
+        const file = new File([blob], fileName, { type: blob.type })
         
         console.log('File 객체 생성 완료:', {
           name: file.name,
@@ -267,7 +295,17 @@ export default {
         return file
       } catch (error) {
         console.error('URL을 File로 변환 실패:', error)
-        throw error
+        
+        // 구체적인 에러 메시지 제공
+        if (error.name === 'AbortError') {
+          throw new Error('파일 다운로드 시간이 초과되었습니다')
+        } else if (error.message.includes('CORS')) {
+          throw new Error('파일 접근 권한이 없습니다')
+        } else if (error.message.includes('HTTP error')) {
+          throw new Error(`파일을 가져올 수 없습니다: ${error.message}`)
+        } else {
+          throw new Error(`파일 처리 중 오류가 발생했습니다: ${error.message}`)
+        }
       }
     }
     
@@ -480,6 +518,11 @@ export default {
     
     // 제출 처리 - 모든 미디어를 파일로 변환하여 전송
     const handleSubmit = async () => {
+      if (isSubmitting.value) {
+        console.log('이미 제출 중입니다.')
+        return
+      }
+      
       if (!content.value.trim()) {
         alert('내용을 입력해주세요.')
         return
@@ -491,6 +534,7 @@ export default {
       }
       
       try {
+        isSubmitting.value = true
         console.log('=== 다이어리 수정 시작 ===')
         console.log('내용:', content.value)
         console.log('미디어 개수:', mediaList.value.length)
@@ -514,13 +558,15 @@ export default {
                 allFiles.push(file)
               } else {
                 console.warn(`기존 파일 ${i} 크기가 0이므로 제외`)
+                // 크기가 0인 파일도 제출 실패를 방지하기 위해 사용자에게 알림
+                alert(`기존 이미지 "${media.name}"를 처리할 수 없습니다. 다시 시도해주세요.`)
+                return
               }
             } catch (error) {
               console.error(`기존 파일 ${i} 변환 실패:`, error)
-              // 변환 실패 시 사용자에게 알림하고 계속 진행
-              console.warn(`기존 파일 ${i} 변환 실패로 제외됨:`, media.originalUrl)
-              // 실패한 미디어는 건너뛰고 계속 진행
-              continue
+              // 변환 실패 시 사용자에게 알림하고 제출 중단
+              alert(`기존 이미지 "${media.name}"를 처리할 수 없습니다. 페이지를 새로고침 후 다시 시도해주세요.`)
+              return
             }
           } else {
             // 새 파일: 실제 파일 사용
@@ -530,6 +576,8 @@ export default {
               allFiles.push(media.file)
             } else {
               console.warn(`새 파일 ${i} 크기가 0이므로 제외`)
+              alert(`새 이미지 "${media.file.name}"를 처리할 수 없습니다.`)
+              return
             }
           }
         }
@@ -566,6 +614,8 @@ export default {
       } catch (error) {
         console.error('다이어리 수정 실패:', error)
         handleApiError(error, $router, '다이어리 수정에 실패했습니다.')
+      } finally {
+        isSubmitting.value = false
       }
     }
     
@@ -649,6 +699,7 @@ export default {
       currentMedia,
       canSubmit,
       isLoading,
+      isSubmitting,
       addImage,
       handleFileSelect,
       removeCurrentMedia,
