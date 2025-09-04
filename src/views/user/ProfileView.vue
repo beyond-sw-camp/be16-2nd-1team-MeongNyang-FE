@@ -8,86 +8,90 @@
 
     <!-- 프로필 컨테이너 -->
     <div class="profile-container">
-      <!-- 프로필 이미지와 닉네임 (중앙 정렬) -->
-      <div class="profile-center-section">
-            <div class="profile-image-container">
-              <!-- 강제 이미지 표시 (문제 해결용) -->
-              <div v-if="forceImageUrl" class="force-image-display">
-                <img 
-                  :src="forceImageUrl" 
-                  alt="대표 반려동물 이미지" 
-                  class="force-profile-image"
-                  @error="handleImageError"
-                  @load="handleImageLoad"
-                />
-              </div>
-              
-              <v-avatar 
-            :size="160" 
-                class="profile-avatar"
-          >
-            <!-- 메인펫 이미지가 있을 때 -->
-            <img 
-              v-if="profileImageUrl" 
-              :src="profileImageUrl" 
-              alt="메인펫 이미지" 
-              class="profile-image"
-            />
-                <!-- 기본 이미지: 동물을 등록하지 않았거나 이미지가 없을 때 -->
-                <v-icon 
-              v-else 
-                  size="60" 
-                  color="grey-lighten-2"
-                  icon="mdi-account"
-                />
-              </v-avatar>
-            </div>
-        
-        <!-- 닉네임 -->
-        <div class="username-section">
-          <h1 class="username">@{{ userInfo?.nickname || '사용자' }}</h1>
-        </div>
-          </div>
-          
       <!-- 통계 정보와 액션 버튼 -->
       <div class="profile-bottom-section">
-        <!-- 통계 정보 -->
-        <div class="profile-stats">
-          <div class="stat-item">
-            <div class="stat-icon">
-              <v-icon>mdi-calendar</v-icon>
+        <!-- 통합 프로필 카드 -->
+        <div class="unified-profile-card">
+          <!-- 좌측: 사진과 닉네임 -->
+          <div class="profile-left-section">
+            <div class="profile-image-container">
+              <v-avatar size="156" class="profile-avatar">
+                <v-img 
+                  v-if="profileImageUrl" 
+                  :src="profileImageUrl" 
+                  alt="대표 반려동물 이미지"
+                  cover
+                />
+                <v-icon v-else size="78" color="#64748b">mdi-paw</v-icon>
+              </v-avatar>
             </div>
-            <div class="stat-info">
-              <div class="stat-label">가입일</div>
-              <div class="stat-value">{{ formatJoinDate(userInfo?.createdAt) }}</div>
+            <div class="profile-nickname">
+              <h2 class="nickname-text">@{{ userInfo?.nickname || '닉네임 없음' }}</h2>
             </div>
           </div>
-          <div class="stat-item">
-            <div class="stat-icon">
-              <v-icon>mdi-paw</v-icon>
+          
+          <!-- 우측: 통계 정보 2x2 그리드 -->
+          <div class="profile-right-section">
+            <div class="stats-grid">
+            <div class="stat-item">
+              <div class="stat-icon">
+                <v-icon>mdi-calendar</v-icon>
+              </div>
+              <div class="stat-info">
+                <div class="stat-label">가입일</div>
+                <div class="stat-value">{{ formatJoinDate(userInfo?.createdAt) }}</div>
+              </div>
             </div>
-            <div class="stat-info">
-              <div class="stat-label">반려동물</div>
-              <div class="stat-value">{{ petStore.pets?.length || 0 }}마리</div>
+            <div class="stat-item">
+              <div class="stat-icon">
+                <v-icon>mdi-paw</v-icon>
+              </div>
+              <div class="stat-info">
+                <div class="stat-label">반려동물</div>
+                <div class="stat-value">{{ petStore.pets?.length || 0 }}마리</div>
+              </div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-icon">
+                <v-icon>mdi-shield-key</v-icon>
+              </div>
+              <div class="stat-info">
+                <div class="stat-label">로그인 방식</div>
+                <div class="stat-value">
+                  <div class="social-container">
+                    <img 
+                      v-if="userInfo?.socialType === 'KAKAO'"
+                      src="https://developers.kakao.com/assets/img/about/logos/kakaolink/kakaolink_btn_small.png" 
+                      alt="Kakao" 
+                      class="social-logo"
+                    />
+                    <img 
+                      v-else-if="userInfo?.socialType === 'GOOGLE'"
+                      src="https://developers.google.com/identity/images/g-logo.png" 
+                      alt="Google" 
+                      class="social-logo"
+                    />
+                    <span class="social-text">{{ getSocialTypeLabel(userInfo?.socialType) }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-icon">
+                <v-icon>mdi-check-circle</v-icon>
+              </div>
+              <div class="stat-info">
+                <div class="stat-label">계정 상태</div>
+                <div class="stat-value">
+                  <div class="status-container">
+                    <div class="status-indicator" :class="getStatusClass(userInfo?.userStatus)"></div>
+                    <span class="status-text">{{ getStatusText(userInfo?.userStatus) }}</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-        
-        <!-- 액션 버튼들 -->
-        <div class="profile-actions">
-          <v-btn 
-            @click="openEditModal" 
-            color="#E87D7D"
-            variant="flat"
-            size="default"
-            rounded="xl"
-            prepend-icon="mdi-pencil"
-            class="action-btn primary-btn"
-            elevation="4"
-            hover
-          >
-            프로필 수정
-          </v-btn>
+          </div>
         </div>
       </div>
 
@@ -115,43 +119,6 @@
           </div>
         </div>
         
-        <!-- 로그인 방식 박스 -->
-        <div class="info-box">
-          <div class="info-label">
-            <v-icon size="16" color="#64748b" icon="mdi-shield-key" />
-            <span>로그인 방식</span>
-          </div>
-          <div class="info-field">
-            <div class="social-info">
-              <img 
-                v-if="userInfo?.socialType === 'KAKAO'"
-                src="@/assets/kakao_login.png" 
-                alt="Kakao" 
-                class="social-logo"
-              />
-              <span class="social-text">{{ getSocialTypeLabel(userInfo?.socialType) }}</span>
-            </div>
-          </div>
-        </div>
-        
-        <!-- 계정 상태 박스 -->
-        <div class="info-box">
-          <div class="info-label">
-            <v-icon size="16" color="#64748b" icon="mdi-check-circle" />
-            <span>계정 상태</span>
-          </div>
-          <div class="info-field">
-            <div class="social-info">
-              <img 
-                v-if="userInfo?.userStatus === 'ACTIVE'"
-                src="@/assets/google_login.png" 
-                alt="Active"
-                class="social-logo"
-              />
-              <span class="social-text">{{ getStatusText(userInfo?.userStatus) }}</span>
-            </div>
-          </div>
-        </div>
         
         <!-- 이메일 박스 -->
         <div class="info-box">
@@ -162,6 +129,23 @@
           <div class="info-field">
             {{ userInfo?.email || '-' }}
           </div>
+        </div>
+        
+        <!-- 프로필 수정 버튼 -->
+        <div class="profile-edit-button-container">
+          <v-btn 
+            @click="openEditModal" 
+            color="#E87D7D"
+            variant="flat"
+            size="default"
+            rounded="xl"
+            prepend-icon="mdi-pencil"
+            class="action-btn primary-btn"
+            elevation="4"
+            hover
+          >
+            프로필 수정
+          </v-btn>
         </div>
       </div>
     </div>
@@ -437,19 +421,32 @@ export default {
 
     const getStatusText = (status) => {
       const statusTexts = {
-        'ACTIVE': '계정 상태',
+        'ACTIVE': '활성',
         'INACTIVE': '비활성',
         'SUSPENDED': '정지됨'
       }
       return statusTexts[status] || '알 수 없음'
     }
 
+    const getStatusClass = (status) => {
+      const statusClasses = {
+        'ACTIVE': 'status-active',
+        'INACTIVE': 'status-inactive',
+        'SUSPENDED': 'status-suspended'
+      }
+      return statusClasses[status] || 'status-unknown'
+    }
+
     // 라이프사이클
     onMounted(async () => {
       try {
-          await petStore.fetchPets()
+        // 사용자 정보와 펫 정보를 동시에 로드
+        await Promise.all([
+          authStore.getCurrentUser(),
+          petStore.fetchPets()
+        ])
       } catch (error) {
-        console.error('펫 정보 로드 오류:', error)
+        console.error('정보 로드 오류:', error)
       }
     })
     
@@ -479,6 +476,7 @@ export default {
       formatJoinDate,
       getSocialTypeLabel,
       getStatusText,
+      getStatusClass,
       
       // 스토어
       authStore,
@@ -586,12 +584,24 @@ export default {
 .profile-bottom-section {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 2rem;
+  justify-content: center;
   margin-top: 1.2rem;
   padding: 1.2rem 0;
-  border-top: 1px solid #e2e8f0;
-  min-height: 80px;
+  min-height: 120px;
+}
+
+/* 통합 프로필 카드 */
+.unified-profile-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 2.5rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 3rem;
+  width: 100%;
+  max-width: 900px;
 }
 
 /* 닉네임 섹션 */
@@ -606,22 +616,77 @@ export default {
   margin: 0;
 }
 
-/* 통계 섹션 */
-.stat-item {
+
+/* 좌측 섹션 (사진과 닉네임) */
+.profile-left-section {
   display: flex;
-  gap: 0.75rem;
-  flex-direction: row;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 1.5rem;
+  flex: 0 0 auto;
+}
+
+.profile-nickname {
+  text-align: center;
+}
+
+.nickname-text {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0;
+}
+
+/* 우측 섹션 (통계 그리드와 액션 버튼) */
+.profile-right-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  flex: 1;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+
+/* 통계 그리드 */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  width: 100%;
+  align-items: start;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1rem;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 16px;
+  padding: 1.5rem 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+}
+
+.stat-item:hover {
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
 }
 
 /* 프로필 통계 */
 .profile-stats {
   display: flex;
   flex-direction: row;
-  gap: 3rem;
+  gap: 1.5rem;
   align-items: center;
   margin-left: 2rem;
+  flex-wrap: wrap;
 }
 
 .action-btn {
@@ -646,8 +711,8 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 50px;
-  height: 50px;
+  width: 60px;
+  height: 60px;
   background: linear-gradient(135deg, #E87D7D, #d16b6b);
   border-radius: 12px;
   flex-shrink: 0;
@@ -658,27 +723,33 @@ export default {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: center;
+  text-align: center;
 }
 
 .stat-label {
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   color: #64748b;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-bottom: 0.25rem;
+  text-align: center;
 }
 
 .stat-value {
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   font-weight: 600;
   color: #374151;
+  text-align: center;
 }
 
 .profile-actions {
   display: flex;
   gap: 0.5rem;
   align-items: center;
+  justify-content: flex-start;
+  width: 100%;
 }
 
 /* 정보 박스 섹션 */
@@ -688,7 +759,14 @@ export default {
   gap: 1rem;
   margin-top: 1.2rem;
   padding: 1.2rem 0;
-  border-top: 1px solid #e2e8f0;
+}
+
+/* 프로필 수정 버튼 컨테이너 */
+.profile-edit-button-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+  padding-top: 1rem;
 }
 
 .info-box {
@@ -728,20 +806,59 @@ export default {
   font-style: italic;
 }
 
-.social-info {
+.social-container {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
 }
 
 .social-logo {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   object-fit: contain;
 }
 
 .social-text {
-  font-size: 0.9rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.status-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.status-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-active {
+  background: #10b981;
+}
+
+.status-inactive {
+  background: #f59e0b;
+}
+
+.status-suspended {
+  background: #ef4444;
+}
+
+.status-unknown {
+  background: #6b7280;
+}
+
+.status-text {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
 }
 
 /* 계정관리 카드 (기존 구조 그대로) */
@@ -902,6 +1019,16 @@ export default {
     flex-direction: column;
     gap: 1.5rem;
     align-items: center;
+  }
+  
+  .profile-right-section {
+    align-items: center;
+    width: 100%;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+    max-width: 100%;
   }
   
   .profile-actions {

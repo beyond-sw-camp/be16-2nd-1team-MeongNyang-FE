@@ -1,7 +1,7 @@
 <template>
   <v-dialog
     v-model="isOpen"
-    max-width="500"
+    max-width="600"
     class="profile-edit-modal"
     transition="modal-scale"
   >
@@ -58,33 +58,32 @@
           <!-- 닉네임 필드 -->
           <div class="form-field compact-form-field">
             <label class="field-label compact-label">닉네임 *</label>
-            <v-text-field
-              v-model="form.nickname"
-              :rules="nicknameRules"
-              required
-              variant="outlined"
-              rounded="lg"
-              class="form-input modern-input"
-              hide-details="false"
-              density="compact"
-              @input="resetNicknameCheck"
-            >
-              <template #append>
-                <v-btn
-                  :color="nicknameAvailable === true ? 'success' : 'info'"
-                  :disabled="!nicknameValid || checkingNickname"
-                  :loading="checkingNickname"
-                  @click="checkNicknameDup"
-                  class="check-button-append"
-                  size="small"
-                  variant="flat"
-                  rounded="lg"
-                >
-                  <template v-if="nicknameAvailable === true">사용가능</template>
-                  <template v-else>중복확인</template>
-                </v-btn>
-              </template>
-            </v-text-field>
+            <div class="nickname-field-container">
+              <v-text-field
+                v-model="form.nickname"
+                :rules="nicknameRules"
+                required
+                variant="outlined"
+                rounded="lg"
+                class="form-input modern-input nickname-input"
+                hide-details="false"
+                density="compact"
+                @input="resetNicknameCheck"
+              />
+              <v-btn
+                :color="nicknameAvailable === true ? 'success' : 'info'"
+                :disabled="!nicknameValid || checkingNickname"
+                :loading="checkingNickname"
+                @click="checkNicknameDup"
+                class="check-button-separate"
+                size="small"
+                variant="flat"
+                rounded="lg"
+              >
+                <template v-if="nicknameAvailable === true">사용가능</template>
+                <template v-else>중복확인</template>
+              </v-btn>
+            </div>
           </div>
 
 
@@ -459,15 +458,28 @@ watch(isOpen, (newValue) => {
   width: 100%;
 }
 
-/* 이름 인풋박스 크기를 닉네임과 맞추기 */
-.name-input :deep(.v-field) {
-  width: 318px !important;
-  max-width: 318px !important;
+/* 닉네임 필드 컨테이너 */
+.nickname-field-container {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
 }
 
+.nickname-input {
+  flex: 1;
+}
+
+.check-button-separate {
+  flex-shrink: 0;
+  min-width: 80px;
+  height: 40px;
+  margin-top: 0;
+}
+
+/* 이름 인풋박스 크기를 닉네임과 맞추기 */
 .name-input {
-  width: 318px !important;
-  max-width: 318px !important;
+  max-width: 100%;
 }
 
 .check-button-append {
