@@ -1823,7 +1823,7 @@ img {
   -moz-user-drag: none;
   -o-user-drag: none;
   user-drag: none;
-
+}
 /* FinalRegistrationModal 스타일 */
 .final-registration-modal {
   .v-card {
