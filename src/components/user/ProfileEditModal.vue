@@ -71,7 +71,7 @@
                 @input="resetNicknameCheck"
               />
               <v-btn
-                :color="nicknameAvailable === true ? 'success' : 'info'"
+                :color="nicknameAvailable === true ? 'success' : nicknameAvailable === false ? 'error' : 'info'"
                 :disabled="!nicknameValid || checkingNickname"
                 :loading="checkingNickname"
                 @click="checkNicknameDup"
@@ -81,6 +81,7 @@
                 rounded="lg"
               >
                 <template v-if="nicknameAvailable === true">사용가능</template>
+                <template v-else-if="nicknameAvailable === false">중복됨</template>
                 <template v-else>중복확인</template>
               </v-btn>
             </div>

@@ -71,6 +71,14 @@
                       alt="Google" 
                       class="social-logo"
                     />
+                    <v-icon 
+                      v-else-if="userInfo?.socialType === 'COMMON'"
+                      size="24" 
+                      color="#6B7280"
+                      class="social-icon"
+                    >
+                      mdi-email
+                    </v-icon>
                     <span class="social-text">{{ getSocialTypeLabel(userInfo?.socialType) }}</span>
                   </div>
                 </div>
@@ -380,6 +388,8 @@ export default {
         await userAPI.delete()
         showDeleteModal.value = false
         showSuccessModal.value = true
+        await authStore.logout()
+        router.push('/')
       } catch (error) {
         console.error('계정 삭제 오류:', error)
       }
@@ -412,7 +422,7 @@ export default {
 
     const getSocialTypeLabel = (socialType) => {
       const labels = {
-        'COMMON': '로그인 방식',
+        'COMMON': '이메일',
         'KAKAO': 'Kakao',
         'GOOGLE': 'Google'
       }
@@ -817,6 +827,14 @@ export default {
   width: 24px;
   height: 24px;
   object-fit: contain;
+}
+
+.social-icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .social-text {
