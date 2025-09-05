@@ -104,7 +104,9 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const currentRefreshToken = getToken('refreshToken')
       if (!currentRefreshToken) {
-        throw new Error('리프레시 토큰이 없습니다.')
+        console.log('리프레시 토큰이 없습니다. 로그아웃 처리')
+        logout()
+        return null
       }
       
       const response = await userAPI.refreshAT(currentRefreshToken)
@@ -129,7 +131,16 @@ export const useAuthStore = defineStore('auth', () => {
       
       return at
     } catch (error) {
-      logout()
+      console.error('토큰 자동 갱신 실패:', error)
+      
+      // 401 에러인 경우 (refresh token 만료) 조용히 로그아웃
+      if (error.response?.status === 401) {
+        console.log('리프레시 토큰이 만료되었습니다. 자동 로그아웃')
+        logout()
+        return null
+      }
+      
+      // 다른 에러인 경우에만 throw
       throw error
     }
   }
