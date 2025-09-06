@@ -680,7 +680,7 @@
       </div>
 
       <!-- 푸터 -->
-      <div class="dialog-footer">
+      <div class="dialog-footer" v-if="!isMarketChat">
         <v-btn
           color="primary"
           variant="outlined"
