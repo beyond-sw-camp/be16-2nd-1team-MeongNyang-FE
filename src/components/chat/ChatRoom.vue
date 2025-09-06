@@ -209,11 +209,25 @@
       <div v-else-if="marketPostInfo">
       <v-card class="market-post-card" elevation="2">
         <v-card-title class="market-post-title">
-          <v-icon left color="primary">mdi-store</v-icon>
-          거래 상품 정보
+          <div class="market-post-header">
+            <div class="market-post-title-content">
+              <v-icon left color="primary">mdi-store</v-icon>
+              거래 상품 정보
+            </div>
+            <v-btn
+              icon
+              size="small"
+              variant="text"
+              @click="toggleMarketPost"
+              class="toggle-btn"
+            >
+              <v-icon>{{ isMarketPostExpanded ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
+            </v-btn>
+          </div>
         </v-card-title>
-        <v-card-text class="market-post-content">
-          <div class="post-info-grid">
+        <v-expand-transition>
+          <v-card-text v-show="isMarketPostExpanded" class="market-post-content">
+            <div class="post-info-grid">
             <!-- 상품 이미지 -->
             <div class="post-image-section">
               <v-img
@@ -283,6 +297,7 @@
             상품 상세보기
           </v-btn>
         </v-card-actions>
+        </v-expand-transition>
       </v-card>
       </div>
     </div>
@@ -796,6 +811,7 @@ export default {
     const marketPostInfo = ref(null)
     const marketPostLoading = ref(false)
     const marketPostError = ref(false)
+    const isMarketPostExpanded = ref(true) // 상품 정보 펼침/접힘 상태
     
     // 빠른 메시지 옵션
     const quickMessages = ref([
@@ -922,6 +938,11 @@ export default {
         zIndex: 9999
       }
     })
+    
+    // 상품 정보 토글
+    const toggleMarketPost = () => {
+      isMarketPostExpanded.value = !isMarketPostExpanded.value
+    }
     
     // 메서드들
     const retryLoad = async () => {
@@ -2043,6 +2064,7 @@ export default {
       marketPostInfo,
       marketPostLoading,
       marketPostError,
+      isMarketPostExpanded,
       retryLoad,
       connectWebsocket,
       disconnectWebsocket,
@@ -2085,6 +2107,7 @@ export default {
       getStatusText,
       handleImageError,
       viewMarketPost,
+      toggleMarketPost,
       confirmLeaveRoom,
       leaveRoom,
       // 스크롤 관련
@@ -4632,6 +4655,31 @@ export default {
   border-bottom: 1px solid rgba(232, 125, 125, 0.1);
 }
 
+.market-post-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.market-post-title-content {
+  display: flex;
+  align-items: center;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.toggle-btn {
+  color: #666 !important;
+  transition: all 0.3s ease;
+}
+
+.toggle-btn:hover {
+  color: #e87d7d !important;
+  background-color: rgba(232, 125, 125, 0.1) !important;
+}
+
 .market-post-card {
   border-radius: 16px !important;
   border: 1px solid rgba(232, 125, 125, 0.2) !important;
@@ -4841,6 +4889,19 @@ export default {
 @media (max-width: 768px) {
   .market-post-info {
     padding: 12px 16px;
+  }
+  
+  .market-post-header {
+    margin-bottom: 8px;
+  }
+  
+  .market-post-title-content {
+    font-size: 14px;
+  }
+  
+  .toggle-btn {
+    min-width: 32px !important;
+    height: 32px !important;
   }
   
   .post-info-grid {
