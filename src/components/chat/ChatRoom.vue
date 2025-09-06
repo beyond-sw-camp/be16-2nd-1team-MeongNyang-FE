@@ -30,7 +30,9 @@
             <v-icon size="24">mdi-account-group</v-icon>
           </v-btn>
           
+          <!-- 중고거래 채팅방이 아닌 경우에만 초대 버튼 표시 -->
           <v-btn 
+            v-if="!isMarketChat"
             icon 
             variant="outlined"
             @click="inviteParticipants"
@@ -65,7 +67,8 @@
                 <v-list-item-subtitle class="menu-subtitle">{{ participants.length }}명 참여</v-list-item-subtitle>
               </v-list-item>
               
-              <v-list-item @click="inviteParticipants" class="menu-item">
+              <!-- 중고거래 채팅방이 아닌 경우에만 초대 메뉴 표시 -->
+              <v-list-item v-if="!isMarketChat" @click="inviteParticipants" class="menu-item">
                 <template v-slot:prepend>
                   <v-icon color="info" size="22" class="menu-icon">mdi-account-plus</v-icon>
                 </template>
@@ -326,6 +329,60 @@
                 <v-icon size="18">mdi-close</v-icon>
               </v-btn>
             </div>
+          </div>
+        </div>
+        
+        <!-- 거래 관련 버튼 영역 (중고거래 채팅방인 경우에만 표시) -->
+        <div v-if="isMarketChat" class="market-actions-area">
+          <!-- 구매자인 경우 -->
+          <div v-if="isBuyer" class="buyer-actions">
+            <v-btn
+              v-if="currentRoom?.isPurchaseApproved"
+              color="success"
+              variant="elevated"
+              size="large"
+              @click="proceedToPayment"
+              class="payment-btn"
+            >
+              <v-icon left>mdi-credit-card</v-icon>
+              결제하기
+            </v-btn>
+            <v-chip
+              v-else
+              color="warning"
+              variant="outlined"
+              size="large"
+              class="status-chip"
+            >
+              <v-icon left>mdi-clock-outline</v-icon>
+              구매승인 대기중
+            </v-chip>
+          </div>
+          
+          <!-- 판매자인 경우 -->
+          <div v-else-if="isSeller" class="seller-actions">
+            <v-btn
+              v-if="!currentRoom?.isPurchaseApproved"
+              color="primary"
+              variant="elevated"
+              size="large"
+              @click="approvePurchase"
+              class="approve-btn"
+            >
+              <v-icon left>mdi-check</v-icon>
+              구매 요청
+            </v-btn>
+            <v-btn
+              v-else
+              color="success"
+              variant="elevated"
+              size="large"
+              @click="completeSale"
+              class="complete-btn"
+            >
+              <v-icon left>mdi-check-circle</v-icon>
+              판매완료
+            </v-btn>
           </div>
         </div>
         
@@ -662,6 +719,35 @@ export default {
       return messagesWithSeparators
     })
     
+    // 중고거래 채팅방 여부 확인
+    const isMarketChat = computed(() => {
+      console.log('currentRoom.value', currentRoom.value)
+      console.log('currentRoom.value?.marketPostId', currentRoom.value?.marketPostId)
+      return currentRoom.value?.marketPostId != null && currentRoom.value?.marketPostId != undefined
+    })
+    
+    // 현재 사용자가 구매자인지 판단 (참여자 중에서 판매자가 아닌 사람)
+    const isBuyer = computed(() => {
+      if (!isMarketChat.value || !participants.value.length) return false
+      
+      // 참여자 중에서 현재 사용자가 아닌 사람이 판매자라고 가정
+      // 실제로는 백엔드에서 판매자 정보를 제공해야 함
+      const currentUserEmail = senderEmail.value
+      const otherParticipants = participants.value.filter(p => p.email !== currentUserEmail)
+      
+      // 임시 로직: 참여자가 2명이고 현재 사용자가 아닌 다른 사람이 있으면 구매자
+      return otherParticipants.length > 0
+    })
+    
+    // 현재 사용자가 판매자인지 판단
+    const isSeller = computed(() => {
+      if (!isMarketChat.value) return false
+      
+      // 임시 로직: 구매자가 아니면 판매자
+      // 실제로는 백엔드에서 판매자 정보를 제공해야 함
+      return !isBuyer.value
+    })
+    
     // 드래그 오버레이 스타일 계산
     const dragOverlayStyle = computed(() => {
       if (!isDragOver.value || !chatBox.value) {
@@ -708,7 +794,9 @@ export default {
           currentRoom.value = {
             id: roomFromStore.id,
             roomName: roomFromStore.roomName,
-            createdAt: roomFromStore.lastMessageTime || new Date().toISOString()
+            createdAt: roomFromStore.lastMessageTime || new Date().toISOString(),
+            marketPostId: roomFromStore.marketPostId,
+            isPurchaseApproved: roomFromStore.isPurchaseApproved
           }
         } else {
           // 스토어에 없으면 기본값 설정
@@ -1568,6 +1656,90 @@ export default {
       }
     }
     
+    // 거래 관련 메서드들
+    const proceedToPayment = async () => {
+      try {
+        // 결제 페이지로 이동하는 로직
+        console.log('결제하기 버튼 클릭됨')
+        if (showMessage) {
+          showMessage({
+            type: 'info',
+            text: '결제 기능은 준비 중입니다.'
+          })
+        }
+      } catch (error) {
+        console.error('결제 처리 실패:', error)
+        if (showMessage) {
+          showMessage({
+            type: 'error',
+            text: '결제 처리 중 오류가 발생했습니다.'
+          })
+        }
+      }
+    }
+    
+    const approvePurchase = async () => {
+      try {
+        // 구매 요청 승인 API 호출
+        console.log('구매 요청 승인 버튼 클릭됨')
+        
+        // TODO: 백엔드 API 호출
+        // await axios.patch(`/chat-rooms/${props.roomId}/approve-purchase`, {}, {
+        //   headers: { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` }
+        // })
+        
+        if (showMessage) {
+          showMessage({
+            type: 'success',
+            text: '구매 요청이 승인되었습니다.'
+          })
+        }
+        
+        // 채팅방 정보 새로고침
+        await chatStore.fetchChatRoomList()
+        
+      } catch (error) {
+        console.error('구매 요청 승인 실패:', error)
+        if (showMessage) {
+          showMessage({
+            type: 'error',
+            text: '구매 요청 승인 중 오류가 발생했습니다.'
+          })
+        }
+      }
+    }
+    
+    const completeSale = async () => {
+      try {
+        // 판매 완료 처리 API 호출
+        console.log('판매완료 버튼 클릭됨')
+        
+        // TODO: 백엔드 API 호출 - 거래 완료 처리
+        // await axios.patch(`/chat-rooms/${props.roomId}/complete-sale`, {}, {
+        //   headers: { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` }
+        // })
+        
+        if (showMessage) {
+          showMessage({
+            type: 'success',
+            text: '거래가 완료되었습니다.'
+          })
+        }
+        
+        // 채팅방 정보 새로고침
+        await chatStore.fetchChatRoomList()
+        
+      } catch (error) {
+        console.error('거래 완료 처리 실패:', error)
+        if (showMessage) {
+          showMessage({
+            type: 'error',
+            text: '거래 완료 처리 중 오류가 발생했습니다.'
+          })
+        }
+      }
+    }
+    
     return {
       participants,
       onlineParticipants,
@@ -1584,6 +1756,9 @@ export default {
       isDragOver,
       displayedMessages,
       messagesWithDateSeparators,
+      isMarketChat,
+      isBuyer,
+      isSeller,
       retryLoad,
       connectWebsocket,
       disconnectWebsocket,
@@ -1618,6 +1793,9 @@ export default {
       inviteParticipants,
       inviteSelectedUsers,
       isAlreadyParticipant,
+      proceedToPayment,
+      approvePurchase,
+      completeSale,
       confirmLeaveRoom,
       leaveRoom,
       // 스크롤 관련
@@ -4077,5 +4255,153 @@ export default {
 .cancel-btn:hover .v-icon,
 .leave-btn:hover .v-icon {
   transform: scale(1.1);
+}
+
+/* ===== 거래 관련 버튼 스타일 ===== */
+
+/* 거래 액션 영역 */
+.market-actions-area {
+  padding: 16px 20px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border-top: 1px solid rgba(232, 125, 125, 0.1);
+  border-bottom: 1px solid rgba(232, 125, 125, 0.1);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80px;
+}
+
+.buyer-actions,
+.seller-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+/* 결제하기 버튼 */
+.payment-btn {
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 16px !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+  letter-spacing: 0.5px !important;
+  padding: 12px 24px !important;
+  min-width: 140px !important;
+  height: 48px !important;
+  box-shadow: 0 4px 16px rgba(76, 175, 80, 0.3) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.payment-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(76, 175, 80, 0.4) !important;
+  background: linear-gradient(135deg, #45a049 0%, #4CAF50 100%) !important;
+}
+
+.payment-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 16px rgba(76, 175, 80, 0.3) !important;
+}
+
+/* 구매 요청 버튼 */
+.approve-btn {
+  background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 16px !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+  letter-spacing: 0.5px !important;
+  padding: 12px 24px !important;
+  min-width: 140px !important;
+  height: 48px !important;
+  box-shadow: 0 4px 16px rgba(33, 150, 243, 0.3) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.approve-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(33, 150, 243, 0.4) !important;
+  background: linear-gradient(135deg, #1976D2 0%, #2196F3 100%) !important;
+}
+
+.approve-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 16px rgba(33, 150, 243, 0.3) !important;
+}
+
+/* 판매완료 버튼 */
+.complete-btn {
+  background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 16px !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+  letter-spacing: 0.5px !important;
+  padding: 12px 24px !important;
+  min-width: 140px !important;
+  height: 48px !important;
+  box-shadow: 0 4px 16px rgba(255, 152, 0, 0.3) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.complete-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(255, 152, 0, 0.4) !important;
+  background: linear-gradient(135deg, #F57C00 0%, #FF9800 100%) !important;
+}
+
+.complete-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 16px rgba(255, 152, 0, 0.3) !important;
+}
+
+/* 상태 칩 */
+.status-chip {
+  border-radius: 20px !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+  letter-spacing: 0.5px !important;
+  padding: 8px 16px !important;
+  min-width: 140px !important;
+  height: 48px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.status-chip .v-icon {
+  font-size: 18px !important;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .market-actions-area {
+    padding: 12px 16px;
+    min-height: 70px;
+  }
+  
+  .payment-btn,
+  .approve-btn,
+  .complete-btn {
+    min-width: 120px !important;
+    height: 44px !important;
+    padding: 10px 20px !important;
+    font-size: 14px !important;
+  }
+  
+  .status-chip {
+    min-width: 120px !important;
+    height: 44px !important;
+    padding: 6px 12px !important;
+    font-size: 14px !important;
+  }
 }
 </style>

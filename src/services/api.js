@@ -646,12 +646,13 @@ export const speciesAPI = {
 export const chatAPI = {
   // 채팅방 개설
   createRoom: (roomData) => {
-    const { roomName, participantEmails = [] } = roomData
+    const { roomName, participantEmails = [], marketPostId = null } = roomData
 
     // 백엔드 API 형식에 맞춰 요청 데이터 구성
     const requestData = {
       roomName,
-      userEmailList: participantEmails
+      userEmailList: participantEmails,
+      marketPostId
     }
 
     return apiClient.post('/chat-rooms', requestData)

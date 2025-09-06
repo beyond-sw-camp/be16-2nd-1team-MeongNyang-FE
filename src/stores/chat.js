@@ -41,7 +41,7 @@ export const useChatStore = defineStore('chat', {
       }
     },
 
-    async createChatRoom(roomName, participantEmails = []) {
+    async createChatRoom(roomName, participantEmails = [], marketPostId = null) {
       try {
         // 현재 로그인한 사용자의 이메일 가져오기
         const currentUserEmail = localStorage.getItem('email')
@@ -50,7 +50,8 @@ export const useChatStore = defineStore('chat', {
         const allParticipantEmails = [...new Set([currentUserEmail, ...participantEmails])]
         const roomData = { 
           roomName,
-          participantEmails: allParticipantEmails
+          participantEmails: allParticipantEmails,
+          marketPostId
         }
         const response = await chatAPI.createRoom(roomData)
         
@@ -81,7 +82,7 @@ export const useChatStore = defineStore('chat', {
           id: roomId,
           roomName: roomName,
           lastMessage: "메세지를 보내 채팅을 시작해보세요!",
-          newMessageCount: 0
+          marketPostId: marketPostId,
         }
         this.chatRoomList.unshift(newRoom)
         
@@ -229,7 +230,9 @@ export const useChatStore = defineStore('chat', {
           roomName: roomData.roomName,
           lastMessage: roomData.lastMessage || "메세지를 보내 채팅을 시작해보세요!",
           lastMessageTime: roomData.lastMessageTime,
-          newMessageCount: roomData.newMessageCount || 0
+          newMessageCount: roomData.newMessageCount || 0,
+          marketPostId: roomData.marketPostId || null,
+          isPurchaseApproved: roomData.isPurchaseApproved || false
         }
         this.chatRoomList.unshift(newRoom)
         console.log('새 채팅방이 SSE로 추가되었습니다:', newRoom)
@@ -247,6 +250,8 @@ export const useChatStore = defineStore('chat', {
         if (updateData.lastMessage) room.lastMessage = updateData.lastMessage
         if (updateData.lastMessageTime) room.lastMessageTime = updateData.lastMessageTime
         if (updateData.newMessageCount !== undefined) room.newMessageCount = updateData.newMessageCount
+        if (updateData.marketPostId !== undefined) room.marketPostId = updateData.marketPostId
+        if (updateData.isPurchaseApproved !== undefined) room.isPurchaseApproved = updateData.isPurchaseApproved
         
         console.log('채팅방 정보가 SSE로 업데이트되었습니다:', room)
       }
