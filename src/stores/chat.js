@@ -257,6 +257,21 @@ export const useChatStore = defineStore('chat', {
       }
     },
 
+    // SSE로 상품 정보 업데이트 (결제 완료 시 상품 상태 변경)
+    updateMarketPostStatus(roomId, marketPostData) {
+      const room = this.chatRoomList.find(r => r.id === roomId)
+      if (room && room.marketPostId) {
+        // 상품 정보 업데이트 이벤트 발생
+        console.log('상품 정보 업데이트 SSE 메시지 수신:', marketPostData)
+        
+        // 상품 정보가 변경되었음을 알리는 이벤트 발생
+        // ChatRoom 컴포넌트에서 이 이벤트를 감지하여 상품 정보를 새로고침할 수 있음
+        window.dispatchEvent(new CustomEvent('marketPostUpdated', {
+          detail: { roomId, marketPostData }
+        }))
+      }
+    },
+
     // 사용자 온라인/오프라인 상태 업데이트
     updateUserOnlineStatus(email, isOnline) {
       if (isOnline) {

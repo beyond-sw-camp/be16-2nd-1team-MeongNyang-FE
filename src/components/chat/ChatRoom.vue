@@ -15,6 +15,83 @@
           <h2 class="room-title">{{ currentRoom?.roomName || '채팅' }}</h2>
         </div>
         
+        <!-- 중고거래 채팅방인 경우 구매 관련 버튼들 -->
+        <div v-if="isMarketChat" class="header-market-actions">
+          <!-- 구매자인 경우 -->
+          <div v-if="isBuyer" class="buyer-actions">
+            <!-- 3단계: 판매완료 (상품이 실제로 판매됨) -->
+            <v-chip
+              v-if="marketPostInfo?.status === 'SOLD'"
+              color="success"
+              variant="outlined"
+              class="status-chip"
+            >
+              <v-icon left>mdi-check-all</v-icon>
+              거래완료
+            </v-chip>
+            <!-- 2단계: 구매요청완료 (판매자가 구매 승인) -->
+            <v-btn
+              v-else-if="isPurchaseApproved"
+              color="success"
+              variant="elevated"
+              size="small"
+              class="payment-btn"
+              @click="proceedToPayment"
+            >
+              <v-icon left>mdi-credit-card</v-icon>
+              결제하기
+            </v-btn>
+            <!-- 1단계: 구매요청 (초기 상태) -->
+            <v-chip
+              v-else
+              color="warning"
+              variant="outlined"
+              class="status-chip"
+            >
+              <v-icon left>mdi-clock-outline</v-icon>
+              구매요청
+            </v-chip>
+          </div>
+          
+          <!-- 판매자인 경우 -->
+          <div v-else-if="isSeller" class="seller-actions">
+            <!-- 3단계: 판매완료 (상품이 실제로 판매됨) -->
+            <v-chip
+              v-if="marketPostInfo?.status === 'SOLD'"
+              color="success"
+              variant="outlined"
+              class="status-chip"
+            >
+              <v-icon left>mdi-check-all</v-icon>
+              거래완료
+            </v-chip>
+            <!-- 2단계: 구매요청완료 (판매자가 구매 승인함) -->
+            <v-btn
+              v-else-if="isPurchaseApproved"
+              color="warning"
+              variant="elevated"
+              size="small"
+              class="approve-btn"
+              @click="approvePurchase"
+            >
+              <v-icon left>mdi-close-circle</v-icon>
+              승인 취소
+            </v-btn>
+            <!-- 1단계: 구매요청 (구매자 요청 대기) -->
+            <v-btn
+              v-else
+              color="primary"
+              variant="elevated"
+              size="small"
+              class="approve-btn"
+              @click="approvePurchase"
+            >
+              <v-icon left>mdi-check-circle</v-icon>
+              구매 승인
+            </v-btn>
+          </div>
+        </div>
+        
         <div class="header-spacer"></div>
         
         <div class="header-actions">
@@ -91,6 +168,126 @@
       </div>
     </div>
     <v-divider></v-divider>
+    
+    <!-- 상품 정보 영역 (중고거래 채팅방인 경우에만 표시) -->
+    <div v-if="isMarketChat" class="market-post-info">
+      <!-- 로딩 상태 -->
+      <div v-if="marketPostLoading" class="market-post-loading">
+        <v-card class="market-post-card" elevation="2">
+          <v-card-text class="loading-content">
+            <div class="loading-skeleton">
+              <v-skeleton-loader
+                type="image, article"
+                class="skeleton-loader"
+              ></v-skeleton-loader>
+            </div>
+          </v-card-text>
+        </v-card>
+      </div>
+      
+      <!-- 에러 상태 -->
+      <div v-else-if="marketPostError" class="market-post-error">
+        <v-card class="market-post-card" elevation="2">
+          <v-card-text class="error-content">
+            <v-icon class="error-icon">mdi-alert-circle</v-icon>
+            <div class="error-message">상품 정보를 불러올 수 없습니다</div>
+            <v-btn
+              color="primary"
+              variant="outlined"
+              size="small"
+              class="retry-btn"
+              @click="fetchMarketPostInfo(currentRoom?.marketPostId)"
+            >
+              <v-icon left>mdi-refresh</v-icon>
+              다시 시도
+            </v-btn>
+          </v-card-text>
+        </v-card>
+      </div>
+      
+      <!-- 상품 정보 -->
+      <div v-else-if="marketPostInfo">
+      <v-card class="market-post-card" elevation="2">
+        <v-card-title class="market-post-title">
+          <v-icon left color="primary">mdi-store</v-icon>
+          거래 상품 정보
+        </v-card-title>
+        <v-card-text class="market-post-content">
+          <div class="post-info-grid">
+            <!-- 상품 이미지 -->
+            <div class="post-image-section">
+              <v-img
+                v-if="marketPostInfo.thumbnailUrl || (marketPostInfo.images && marketPostInfo.images.length > 0)"
+                :src="marketPostInfo.thumbnailUrl || marketPostInfo.images[0]"
+                :alt="marketPostInfo.title"
+                class="post-image"
+                cover
+                @error="handleImageError"
+              ></v-img>
+              <div v-else class="post-image-placeholder">
+                <v-icon size="48" color="grey">mdi-image-off</v-icon>
+                <span>이미지 없음</span>
+              </div>
+            </div>
+            
+            <!-- 상품 정보 -->
+            <div class="post-details-section">
+              <h3 class="post-title">{{ marketPostInfo.title }}</h3>
+              <div class="post-meta">
+                <v-chip 
+                  color="primary" 
+                  variant="outlined" 
+                  size="small"
+                  class="category-chip"
+                >
+                  {{ marketPostInfo.category }}
+                </v-chip>
+                <v-chip 
+                  :color="getStatusColor(marketPostInfo.status)"
+                  variant="outlined"
+                  size="small"
+                  class="status-chip"
+                >
+                  {{ getStatusText(marketPostInfo.status) }}
+                </v-chip>
+              </div>
+              <div class="post-price">
+                <span class="price-label">가격:</span>
+                <span class="price-value">{{ formatPrice(marketPostInfo.price) }}원</span>
+              </div>
+              <div class="post-seller">
+                <v-avatar size="24" class="seller-avatar">
+                  <v-img 
+                    v-if="marketPostInfo.sellerProfileUrl" 
+                    :src="marketPostInfo.sellerProfileUrl"
+                    :alt="marketPostInfo.sellerNickname"
+                  ></v-img>
+                  <v-icon v-else>mdi-account</v-icon>
+                </v-avatar>
+                <span class="seller-name">{{ marketPostInfo.sellerNickname }}</span>
+              </div>
+              <div class="post-description">
+                <p>{{ marketPostInfo.description }}</p>
+              </div>
+            </div>
+          </div>
+        </v-card-text>
+        <v-card-actions class="market-post-actions">
+          <v-btn
+            color="primary"
+            variant="outlined"
+            size="small"
+            @click="viewMarketPost"
+          >
+            <v-icon left>mdi-eye</v-icon>
+            상품 상세보기
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+      </div>
+    </div>
+    
+    <v-divider v-if="isMarketChat && marketPostInfo"></v-divider>
     
         <v-card-text 
       class="chat-messages-container flex-grow-1 pa-4" 
@@ -332,59 +529,6 @@
           </div>
         </div>
         
-        <!-- 거래 관련 버튼 영역 (중고거래 채팅방인 경우에만 표시) -->
-        <div v-if="isMarketChat" class="market-actions-area">
-          <!-- 구매자인 경우 -->
-          <div v-if="isBuyer" class="buyer-actions">
-            <v-btn
-              v-if="currentRoom?.isPurchaseApproved"
-              color="success"
-              variant="elevated"
-              size="large"
-              @click="proceedToPayment"
-              class="payment-btn"
-            >
-              <v-icon left>mdi-credit-card</v-icon>
-              결제하기
-            </v-btn>
-            <v-chip
-              v-else
-              color="warning"
-              variant="outlined"
-              size="large"
-              class="status-chip"
-            >
-              <v-icon left>mdi-clock-outline</v-icon>
-              구매승인 대기중
-            </v-chip>
-          </div>
-          
-          <!-- 판매자인 경우 -->
-          <div v-else-if="isSeller" class="seller-actions">
-            <v-btn
-              v-if="!currentRoom?.isPurchaseApproved"
-              color="primary"
-              variant="elevated"
-              size="large"
-              @click="approvePurchase"
-              class="approve-btn"
-            >
-              <v-icon left>mdi-check</v-icon>
-              구매 요청
-            </v-btn>
-            <v-btn
-              v-else
-              color="success"
-              variant="elevated"
-              size="large"
-              @click="completeSale"
-              class="complete-btn"
-            >
-              <v-icon left>mdi-check-circle</v-icon>
-              판매완료
-            </v-btn>
-          </div>
-        </div>
         
         <!-- 입력 영역 -->
         <div class="input-area d-flex align-end">
@@ -618,6 +762,7 @@ import FileGrid from './FileGrid.vue'
 import UserSelectionModal from './UserSelectionModal.vue'
 import { useRouter } from 'vue-router'
 import { inject } from 'vue'
+import { marketAPI } from '@/services/api'
 
 export default {
   name: 'ChatRoom',
@@ -648,6 +793,9 @@ export default {
     const error = ref(null)
     const currentRoom = ref(null)
     const isSending = ref(false)
+    const marketPostInfo = ref(null)
+    const marketPostLoading = ref(false)
+    const marketPostError = ref(false)
     
     // 빠른 메시지 옵션
     const quickMessages = ref([
@@ -721,31 +869,39 @@ export default {
     
     // 중고거래 채팅방 여부 확인
     const isMarketChat = computed(() => {
-      console.log('currentRoom.value', currentRoom.value)
-      console.log('currentRoom.value?.marketPostId', currentRoom.value?.marketPostId)
       return currentRoom.value?.marketPostId != null && currentRoom.value?.marketPostId != undefined
     })
     
-    // 현재 사용자가 구매자인지 판단 (참여자 중에서 판매자가 아닌 사람)
+    // 현재 사용자가 구매자인지 판단
     const isBuyer = computed(() => {
-      if (!isMarketChat.value || !participants.value.length) return false
+      if (!isMarketChat.value || !marketPostInfo.value) return false
       
-      // 참여자 중에서 현재 사용자가 아닌 사람이 판매자라고 가정
-      // 실제로는 백엔드에서 판매자 정보를 제공해야 함
       const currentUserEmail = senderEmail.value
-      const otherParticipants = participants.value.filter(p => p.email !== currentUserEmail)
+      const sellerEmail = marketPostInfo.value.sellerEmail
       
-      // 임시 로직: 참여자가 2명이고 현재 사용자가 아닌 다른 사람이 있으면 구매자
-      return otherParticipants.length > 0
+      // 현재 사용자가 판매자가 아니면 구매자
+      return currentUserEmail !== sellerEmail
     })
     
     // 현재 사용자가 판매자인지 판단
     const isSeller = computed(() => {
-      if (!isMarketChat.value) return false
+      if (!isMarketChat.value || !marketPostInfo.value) return false
       
-      // 임시 로직: 구매자가 아니면 판매자
-      // 실제로는 백엔드에서 판매자 정보를 제공해야 함
-      return !isBuyer.value
+      const currentUserEmail = senderEmail.value
+      const sellerEmail = marketPostInfo.value.sellerEmail
+      
+      // 현재 사용자가 판매자이면 판매자
+      return currentUserEmail === sellerEmail
+    })
+    
+    // 스토어에서 현재 채팅방 정보 가져오기 (실시간 반영용)
+    const currentRoomFromStore = computed(() => {
+      return chatStore.getChatRoomById(props.roomId)
+    })
+    
+    // 구매 승인 상태 (실시간 반영용)
+    const isPurchaseApproved = computed(() => {
+      return currentRoomFromStore.value?.isPurchaseApproved || false
     })
     
     // 드래그 오버레이 스타일 계산
@@ -822,6 +978,11 @@ export default {
         // 스토어에서 데이터 가져오기
         messages.value = chatStore.messages
         participants.value = chatStore.participants
+        
+        // 중고거래 채팅방인 경우 상품 정보 조회
+        if (currentRoom.value?.marketPostId) {
+          await fetchMarketPostInfo(currentRoom.value.marketPostId)
+        }
         
         // 로딩 완료
         loading.value = false
@@ -1494,6 +1655,7 @@ export default {
       }
     }, { deep: true })
     
+    
     watch(showInviteDialog, (newValue) => {
       if (!newValue) {
         // 다이얼로그가 닫힐 때 초기화
@@ -1501,7 +1663,53 @@ export default {
       }
     })
     
+    // SSE로 상품 정보 업데이트 이벤트 감지
+    const handleMarketPostUpdate = (event) => {
+      const { roomId, marketPostData } = event.detail
+      
+      // 현재 채팅방의 상품 정보 업데이트인지 확인
+      if (roomId === props.roomId && isMarketChat.value && currentRoom.value?.marketPostId) {
+        console.log('현재 채팅방의 상품 정보 업데이트 감지:', marketPostData)
+        
+        // 상품 정보 새로고침
+        fetchMarketPostInfo(currentRoom.value.marketPostId)
+      }
+    }
+    
+    // 채팅방의 isPurchaseApproved 상태 변경 감지
+    watch(() => currentRoom.value?.isPurchaseApproved, (newValue, oldValue) => {
+      if (newValue !== oldValue && isMarketChat.value) {
+        console.log('구매 승인 상태 변경 감지:', { oldValue, newValue })
+        
+        // UI 업데이트를 위한 반응성 트리거
+        // computed 속성들이 자동으로 재계산됨
+      }
+    })
+    
+    // 스토어의 채팅방 정보 변경을 currentRoom에 반영
+    watch(() => chatStore.getChatRoomById(props.roomId), (roomFromStore) => {
+      if (roomFromStore && currentRoom.value) {
+        // isPurchaseApproved 상태 동기화
+        if (currentRoom.value.isPurchaseApproved !== roomFromStore.isPurchaseApproved) {
+          console.log('스토어에서 isPurchaseApproved 상태 동기화:', {
+            old: currentRoom.value.isPurchaseApproved,
+            new: roomFromStore.isPurchaseApproved
+          })
+          currentRoom.value.isPurchaseApproved = roomFromStore.isPurchaseApproved
+        }
+        
+        // 다른 필드들도 동기화
+        currentRoom.value.roomName = roomFromStore.roomName
+        currentRoom.value.lastMessage = roomFromStore.lastMessage
+        currentRoom.value.lastMessageTime = roomFromStore.lastMessageTime
+        currentRoom.value.newMessageCount = roomFromStore.newMessageCount
+        currentRoom.value.marketPostId = roomFromStore.marketPostId
+      }
+    }, { deep: true })
+    
     onMounted(async () => {
+      // SSE 상품 정보 업데이트 이벤트 리스너 등록
+      window.addEventListener('marketPostUpdated', handleMarketPostUpdate)
       senderEmail.value = localStorage.getItem('email')
       if (props.roomId) {
         // 초기 로딩 상태 설정
@@ -1560,6 +1768,9 @@ export default {
       
       // 채팅방을 나갈 때 currentRoom 초기화 (SSE 메시지 카운트 제어용)
       chatStore.setCurrentRoom(null)
+      
+      // SSE 상품 정보 업데이트 이벤트 리스너 정리
+      window.removeEventListener('marketPostUpdated', handleMarketPostUpdate)
     })
     
     // 미디어 로딩 상태 등록
@@ -1680,23 +1891,39 @@ export default {
     
     const approvePurchase = async () => {
       try {
-        // 구매 요청 승인 API 호출
         console.log('구매 요청 승인 버튼 클릭됨')
         
-        // TODO: 백엔드 API 호출
-        // await axios.patch(`/chat-rooms/${props.roomId}/approve-purchase`, {}, {
-        //   headers: { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` }
-        // })
+        // 백엔드 API 호출 - 구매 승인 상태 토글
+        const response = await axios.patch(`${process.env.VUE_APP_API_BASE_URL}/chat-rooms/${props.roomId}/approval-status`, {}, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          }
+        })
+        
+        console.log('구매 요청 승인 API 응답:', response.data)
+        
+        // 응답에서 업데이트된 상태 가져오기
+        const updatedStatus = response.data.data
+        
+        // 로컬 상태 업데이트
+        if (currentRoom.value) {
+          currentRoom.value.isPurchaseApproved = updatedStatus
+        }
+        
+        // 채팅 스토어의 채팅방 정보도 업데이트
+        const roomFromStore = chatStore.getChatRoomById(props.roomId)
+        if (roomFromStore) {
+          roomFromStore.isPurchaseApproved = updatedStatus
+        }
         
         if (showMessage) {
           showMessage({
             type: 'success',
-            text: '구매 요청이 승인되었습니다.'
+            text: updatedStatus ? '구매 요청이 승인되었습니다.' : '구매 요청 승인이 취소되었습니다.'
           })
         }
         
-        // 채팅방 정보 새로고침
-        await chatStore.fetchChatRoomList()
+        console.log('구매 요청 승인 완료, 상태:', updatedStatus)
         
       } catch (error) {
         console.error('구매 요청 승인 실패:', error)
@@ -1709,34 +1936,86 @@ export default {
       }
     }
     
-    const completeSale = async () => {
+    
+    // 상품 정보 관련 메서드들
+    const fetchMarketPostInfo = async (marketPostId) => {
+      if (!marketPostId) return
+      
       try {
-        // 판매 완료 처리 API 호출
-        console.log('판매완료 버튼 클릭됨')
+        marketPostLoading.value = true
+        marketPostError.value = false
+        marketPostInfo.value = null
+        console.log('상품 정보 조회 시작:', marketPostId)
         
-        // TODO: 백엔드 API 호출 - 거래 완료 처리
-        // await axios.patch(`/chat-rooms/${props.roomId}/complete-sale`, {}, {
-        //   headers: { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` }
-        // })
+        // 실제 API 호출
+        const response = await marketAPI.getDetail(marketPostId)
+        const postData = response.data.data
         
-        if (showMessage) {
-          showMessage({
-            type: 'success',
-            text: '거래가 완료되었습니다.'
-          })
+        // 백엔드 응답 구조에 맞게 데이터 매핑
+        marketPostInfo.value = {
+          id: postData.id,
+          title: postData.title,
+          price: postData.price,
+          description: postData.description,
+          status: postData.saleStatus, // SaleStatus enum 값
+          images: postData.productImageList || [],
+          thumbnailUrl: postData.thumbnailUrl,
+          category: postData.category,
+          sellerNickname: postData.sellerNickname,
+          sellerEmail: postData.sellerEmail,
+          sellerProfileUrl: postData.sellerProfileUrl,
+          createdAt: postData.createdAt,
+          latitude: postData.latitude,
+          longitude: postData.longitude,
+          isLiked: postData.isLiked
         }
         
-        // 채팅방 정보 새로고침
-        await chatStore.fetchChatRoomList()
-        
+        console.log('상품 정보 조회 완료:', marketPostInfo.value)
       } catch (error) {
-        console.error('거래 완료 처리 실패:', error)
+        console.error('상품 정보 조회 실패:', error)
+        marketPostError.value = true
         if (showMessage) {
           showMessage({
             type: 'error',
-            text: '거래 완료 처리 중 오류가 발생했습니다.'
+            text: '상품 정보를 불러오는데 실패했습니다.'
           })
         }
+      } finally {
+        marketPostLoading.value = false
+      }
+    }
+    
+    const formatPrice = (price) => {
+      if (!price) return '0'
+      return price.toLocaleString()
+    }
+    
+    const getStatusColor = (status) => {
+      switch (status) {
+        case 'SALE': return 'success'
+        case 'SOLD': return 'info'
+        case 'RESERVED': return 'warning'
+        default: return 'grey'
+      }
+    }
+    
+    const getStatusText = (status) => {
+      switch (status) {
+        case 'SALE': return '판매중'
+        case 'SOLD': return '판매완료'
+        case 'RESERVED': return '예약중'
+        default: return '알 수 없음'
+      }
+    }
+    
+    const handleImageError = () => {
+      console.log('상품 이미지 로드 실패')
+    }
+    
+    const viewMarketPost = () => {
+      if (currentRoom.value?.marketPostId) {
+        // 상품 상세 페이지로 이동
+        router.push({ name: 'MarketDetail', params: { id: currentRoom.value.marketPostId } })
       }
     }
     
@@ -1759,6 +2038,11 @@ export default {
       isMarketChat,
       isBuyer,
       isSeller,
+      currentRoomFromStore,
+      isPurchaseApproved,
+      marketPostInfo,
+      marketPostLoading,
+      marketPostError,
       retryLoad,
       connectWebsocket,
       disconnectWebsocket,
@@ -1795,7 +2079,12 @@ export default {
       isAlreadyParticipant,
       proceedToPayment,
       approvePurchase,
-      completeSale,
+      fetchMarketPostInfo,
+      formatPrice,
+      getStatusColor,
+      getStatusText,
+      handleImageError,
+      viewMarketPost,
       confirmLeaveRoom,
       leaveRoom,
       // 스크롤 관련
@@ -4257,151 +4546,332 @@ export default {
   transform: scale(1.1);
 }
 
-/* ===== 거래 관련 버튼 스타일 ===== */
 
-/* 거래 액션 영역 */
-.market-actions-area {
-  padding: 16px 20px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
-  border-top: 1px solid rgba(232, 125, 125, 0.1);
-  border-bottom: 1px solid rgba(232, 125, 125, 0.1);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 80px;
-}
 
-.buyer-actions,
-.seller-actions {
+
+/* ===== 헤더 구매 관련 버튼 스타일 ===== */
+
+.header-market-actions {
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
+  flex: 1;
   gap: 12px;
-  width: 100%;
 }
 
-/* 결제하기 버튼 */
-.payment-btn {
-  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%) !important;
-  color: white !important;
-  border: none !important;
-  border-radius: 16px !important;
+.header-market-actions .buyer-actions,
+.header-market-actions .seller-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-market-actions .payment-btn,
+.header-market-actions .approve-btn,
+.header-market-actions .complete-btn {
+  min-width: 120px !important;
+  height: 36px !important;
+  font-size: 14px !important;
   font-weight: 600 !important;
+  border-radius: 18px !important;
   text-transform: none !important;
-  letter-spacing: 0.5px !important;
-  padding: 12px 24px !important;
-  min-width: 140px !important;
-  height: 48px !important;
-  box-shadow: 0 4px 16px rgba(76, 175, 80, 0.3) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
-.payment-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(76, 175, 80, 0.4) !important;
-  background: linear-gradient(135deg, #45a049 0%, #4CAF50 100%) !important;
+.header-market-actions .payment-btn:hover,
+.header-market-actions .approve-btn:hover,
+.header-market-actions .complete-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
 }
 
-.payment-btn:active {
-  transform: translateY(0);
-  box-shadow: 0 4px 16px rgba(76, 175, 80, 0.3) !important;
-}
-
-/* 구매 요청 버튼 */
-.approve-btn {
-  background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%) !important;
-  color: white !important;
-  border: none !important;
-  border-radius: 16px !important;
-  font-weight: 600 !important;
-  text-transform: none !important;
-  letter-spacing: 0.5px !important;
-  padding: 12px 24px !important;
+.header-market-actions .status-chip {
   min-width: 140px !important;
-  height: 48px !important;
-  box-shadow: 0 4px 16px rgba(33, 150, 243, 0.3) !important;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  height: 36px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  border-radius: 18px !important;
+  border-width: 2px !important;
 }
 
-.approve-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(33, 150, 243, 0.4) !important;
-  background: linear-gradient(135deg, #1976D2 0%, #2196F3 100%) !important;
-}
-
-.approve-btn:active {
-  transform: translateY(0);
-  box-shadow: 0 4px 16px rgba(33, 150, 243, 0.3) !important;
-}
-
-/* 판매완료 버튼 */
-.complete-btn {
-  background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%) !important;
-  color: white !important;
-  border: none !important;
-  border-radius: 16px !important;
-  font-weight: 600 !important;
-  text-transform: none !important;
-  letter-spacing: 0.5px !important;
-  padding: 12px 24px !important;
-  min-width: 140px !important;
-  height: 48px !important;
-  box-shadow: 0 4px 16px rgba(255, 152, 0, 0.3) !important;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-}
-
-.complete-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(255, 152, 0, 0.4) !important;
-  background: linear-gradient(135deg, #F57C00 0%, #FF9800 100%) !important;
-}
-
-.complete-btn:active {
-  transform: translateY(0);
-  box-shadow: 0 4px 16px rgba(255, 152, 0, 0.3) !important;
-}
-
-/* 상태 칩 */
-.status-chip {
-  border-radius: 20px !important;
-  font-weight: 600 !important;
-  text-transform: none !important;
-  letter-spacing: 0.5px !important;
-  padding: 8px 16px !important;
-  min-width: 140px !important;
-  height: 48px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 8px !important;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-}
-
-.status-chip .v-icon {
+.header-market-actions .v-icon {
   font-size: 18px !important;
 }
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {
-  .market-actions-area {
+  .header-market-actions {
+    gap: 8px;
+  }
+  
+  .header-market-actions .payment-btn,
+  .header-market-actions .approve-btn,
+  .header-market-actions .complete-btn {
+    min-width: 100px !important;
+    height: 32px !important;
+    font-size: 13px !important;
+  }
+  
+  .header-market-actions .status-chip {
+    min-width: 120px !important;
+    height: 32px !important;
+    font-size: 13px !important;
+  }
+  
+  .header-market-actions .v-icon {
+    font-size: 16px !important;
+  }
+}
+
+/* ===== 상품 정보 카드 스타일 ===== */
+
+.market-post-info {
+  padding: 16px 20px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border-bottom: 1px solid rgba(232, 125, 125, 0.1);
+}
+
+.market-post-card {
+  border-radius: 16px !important;
+  border: 1px solid rgba(232, 125, 125, 0.2) !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.market-post-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+  border-color: rgba(232, 125, 125, 0.4) !important;
+}
+
+.market-post-title {
+  background: linear-gradient(135deg, rgba(232, 125, 125, 0.1) 0%, rgba(255, 107, 107, 0.1) 100%) !important;
+  color: #E87D7D !important;
+  font-weight: 600 !important;
+  font-size: 16px !important;
+  padding: 16px 20px !important;
+  border-bottom: 1px solid rgba(232, 125, 125, 0.2) !important;
+}
+
+.market-post-content {
+  padding: 20px !important;
+}
+
+.post-info-grid {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.post-image-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.post-image {
+  width: 120px;
+  height: 120px;
+  border-radius: 12px;
+  border: 2px solid rgba(232, 125, 125, 0.2);
+  transition: all 0.3s ease;
+}
+
+.post-image:hover {
+  transform: scale(1.05);
+  border-color: rgba(232, 125, 125, 0.4);
+}
+
+.post-image-placeholder {
+  width: 120px;
+  height: 120px;
+  border-radius: 12px;
+  border: 2px dashed rgba(232, 125, 125, 0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(232, 125, 125, 0.05);
+  color: rgba(232, 125, 125, 0.6);
+  font-size: 12px;
+  text-align: center;
+}
+
+.post-details-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.post-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.category-chip {
+  font-size: 12px !important;
+  height: 24px !important;
+}
+
+.status-chip {
+  font-size: 12px !important;
+  height: 24px !important;
+}
+
+.post-seller {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.seller-avatar {
+  border: 1px solid rgba(232, 125, 125, 0.2);
+}
+
+.seller-name {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+}
+
+.post-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.post-price {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.price-label {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+}
+
+.price-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #E87D7D;
+}
+
+.post-status {
+  display: flex;
+  align-items: center;
+}
+
+.post-description {
+  color: #555;
+  font-size: 14px;
+  line-height: 1.5;
+  max-height: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.market-post-actions {
+  padding: 16px 20px !important;
+  background: rgba(232, 125, 125, 0.02) !important;
+  border-top: 1px solid rgba(232, 125, 125, 0.1) !important;
+  justify-content: center;
+}
+
+/* 로딩 상태 스타일 */
+.market-post-loading {
+  padding: 16px 20px;
+}
+
+.loading-content {
+  padding: 20px !important;
+}
+
+.loading-skeleton {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.skeleton-loader {
+  border-radius: 12px;
+}
+
+/* 에러 상태 스타일 */
+.market-post-error {
+  padding: 16px 20px;
+}
+
+.error-content {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+}
+
+.error-icon {
+  font-size: 48px;
+  color: #ccc;
+  margin-bottom: 12px;
+}
+
+.error-message {
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.retry-btn {
+  margin-top: 8px;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .market-post-info {
     padding: 12px 16px;
-    min-height: 70px;
   }
   
-  .payment-btn,
-  .approve-btn,
-  .complete-btn {
-    min-width: 120px !important;
-    height: 44px !important;
-    padding: 10px 20px !important;
-    font-size: 14px !important;
+  .post-info-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    text-align: center;
   }
   
-  .status-chip {
-    min-width: 120px !important;
-    height: 44px !important;
-    padding: 6px 12px !important;
-    font-size: 14px !important;
+  .post-image-section {
+    align-items: center;
+  }
+  
+  .post-image,
+  .post-image-placeholder {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .post-title {
+    font-size: 16px;
+  }
+  
+  .price-value {
+    font-size: 18px;
+  }
+  
+  .post-description {
+    font-size: 13px;
+    max-height: 45px;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
   }
 }
 </style>
