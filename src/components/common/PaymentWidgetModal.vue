@@ -9,6 +9,7 @@
       <v-card-title class="d-flex align-center justify-space-between">
         <span class="text-h6">결제하기</span>
         <v-btn
+          class="close-btn"
           icon="mdi-close"
           variant="text"
           @click="closeModal"
@@ -562,5 +563,38 @@ export default {
 .payment-amount {
   color: #FF8B8B !important;
   text-shadow: 0 1px 2px rgba(255, 139, 139, 0.2);
+}
+
+/* 닫기 버튼 스타일 */
+.close-btn {
+  background: transparent !important;
+  color: #FF8B8B !important;
+  border: none !important;
+  box-shadow: none !important;
+  min-width: 32px !important;
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  transition: none !important;
+}
+
+.close-btn:hover {
+  background: transparent !important;
+  color: #FF6B6B !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.close-btn:focus {
+  background: transparent !important;
+  color: #FF6B6B !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.close-btn:active {
+  background: transparent !important;
+  color: #FF5252 !important;
+  transform: none !important;
 }
 </style>
