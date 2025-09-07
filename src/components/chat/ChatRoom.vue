@@ -148,7 +148,7 @@
                   v-if="marketPostInfo?.status === 'SOLD'"
                   color="success"
                   variant="outlined"
-                  class="status-chip"
+                  class="status-chip text-center"
                 >
                   <v-icon left>mdi-check-all</v-icon>
                   거래완료
@@ -170,7 +170,7 @@
                   v-else
                   color="warning"
                   variant="outlined"
-                  class="status-chip"
+                  class="status-chip text-center"
                 >
                   <v-icon left>mdi-clock-outline</v-icon>
                   결제요청 대기중
@@ -184,7 +184,7 @@
                   v-if="marketPostInfo?.status === 'SOLD'"
                   color="success"
                   variant="outlined"
-                  class="status-chip"
+                  class="status-chip text-center"
                 >
                   <v-icon left>mdi-check-all</v-icon>
                   거래 완료
@@ -274,7 +274,7 @@
                     :color="getStatusColor(marketPostInfo.status)"
                     variant="outlined"
                     size="small"
-                    class="status-chip"
+                    class="status-chip text-center"
                   >
                     {{ getStatusText(marketPostInfo.status) }}
                   </v-chip>
@@ -3493,6 +3493,9 @@ export default {
 .status-chip {
   font-size: 11px;
   font-weight: 500;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 .invite-tabs {
