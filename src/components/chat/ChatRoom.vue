@@ -250,6 +250,17 @@
             <div class="post-details-section">
               <h3 class="post-title">{{ marketPostInfo.title }}</h3>
               <div class="post-meta">
+                <div class="post-seller">
+                  <v-avatar size="20" class="seller-avatar">
+                    <v-img 
+                      v-if="marketPostInfo.sellerProfileUrl" 
+                      :src="marketPostInfo.sellerProfileUrl"
+                      :alt="marketPostInfo.sellerNickname"
+                    ></v-img>
+                    <v-icon v-else>mdi-account</v-icon>
+                  </v-avatar>
+                  <span class="seller-name">{{ marketPostInfo.sellerNickname }}</span>
+                </div>
                 <v-chip 
                   color="primary" 
                   variant="outlined" 
@@ -270,20 +281,6 @@
               <div class="post-price">
                 <span class="price-label">가격:</span>
                 <span class="price-value">{{ formatPrice(marketPostInfo.price) }}원</span>
-              </div>
-              <div class="post-seller">
-                <v-avatar size="24" class="seller-avatar">
-                  <v-img 
-                    v-if="marketPostInfo.sellerProfileUrl" 
-                    :src="marketPostInfo.sellerProfileUrl"
-                    :alt="marketPostInfo.sellerNickname"
-                  ></v-img>
-                  <v-icon v-else>mdi-account</v-icon>
-                </v-avatar>
-                <span class="seller-name">{{ marketPostInfo.sellerNickname }}</span>
-              </div>
-              <div class="post-description">
-                <p>{{ marketPostInfo.description }}</p>
               </div>
             </div>
           </div>
@@ -4755,33 +4752,51 @@ export default {
 .market-post-actions .payment-btn,
 .market-post-actions .approve-btn,
 .market-post-actions .complete-btn {
-  min-width: 120px !important;
-  height: 40px !important;
-  font-size: 14px !important;
-  font-weight: 600 !important;
-  border-radius: 12px !important;
+  min-width: 130px !important;
+  height: 44px !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  border-radius: 14px !important;
   text-transform: none !important;
-  letter-spacing: 0.025em !important;
-  /* box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important; */
-  transition: all 250ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+  letter-spacing: 0.02em !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative;
+  overflow: hidden;
 }
 
-.market-post-actions .payment-btn:hover,
-.market-post-actions .approve-btn:hover,
-.market-post-actions .complete-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+.market-post-actions .payment-btn::before,
+.market-post-actions .approve-btn::before,
+.market-post-actions .complete-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
 }
+
+.market-post-actions .payment-btn:hover::before,
+.market-post-actions .approve-btn:hover::before,
+.market-post-actions .complete-btn:hover::before {
+  left: 100%;
+}
+
 
 .market-post-actions .status-chip {
-  min-width: 140px !important;
-  height: 40px !important;
-  font-size: 14px !important;
-  font-weight: 600 !important;
-  border-radius: 12px !important;
+  min-width: 150px !important;
+  height: 44px !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  border-radius: 14px !important;
   border-width: 2px !important;
-  letter-spacing: 0.025em !important;
+  letter-spacing: 0.02em !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
+
 
 .market-post-actions .v-icon {
   font-size: 18px !important;
@@ -4789,48 +4804,181 @@ export default {
 
 /* 결제 버튼 특별 스타일 */
 .market-post-actions .payment-btn {
-  background: linear-gradient(135deg, #FF8B8B, #FF6B6B) !important;
+  background: linear-gradient(135deg, #FF8B8B 0%, #FF6B6B 50%, #FF5252 100%) !important;
   color: white !important;
   border: none !important;
-  box-shadow: 0 4px 16px rgba(255, 139, 139, 0.4) !important;
+  box-shadow: 0 6px 20px rgba(255, 139, 139, 0.4), 0 2px 8px rgba(255, 107, 107, 0.3) !important;
+  position: relative;
 }
 
-.market-post-actions .payment-btn:hover {
-  background: linear-gradient(135deg, #FF6B6B, #FF5252) !important;
-  box-shadow: 0 8px 24px rgba(255, 139, 139, 0.6) !important;
+.market-post-actions .payment-btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+  border-radius: 14px;
+  pointer-events: none;
 }
+
 
 /* 승인 버튼 스타일 */
 .market-post-actions .approve-btn {
-  background: linear-gradient(135deg, #FF8B8B, #FF6B6B) !important;
+  background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #9333EA 100%) !important;
   color: white !important;
   border: none !important;
-  box-shadow: 0 4px 16px rgba(255, 139, 139, 0.4) !important;
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4), 0 2px 8px rgba(124, 58, 237, 0.3) !important;
+  position: relative;
 }
 
-.market-post-actions .approve-btn:hover {
-  background: linear-gradient(135deg, #FF6B6B, #FF5252) !important;
-  box-shadow: 0 8px 24px rgba(255, 139, 139, 0.6) !important;
+.market-post-actions .approve-btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+  border-radius: 14px;
+  pointer-events: none;
 }
+
 
 /* 완료 버튼 스타일 */
 .market-post-actions .complete-btn {
-  background: linear-gradient(135deg, #10b981, #059669) !important;
+  background: linear-gradient(135deg, #10B981 0%, #059669 50%, #047857 100%) !important;
   color: white !important;
   border: none !important;
-  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4) !important;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4), 0 2px 8px rgba(5, 150, 105, 0.3) !important;
+  position: relative;
 }
 
-.market-post-actions .complete-btn:hover {
-  background: linear-gradient(135deg, #34d399, #10b981) !important;
-  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.6) !important;
+.market-post-actions .complete-btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+  border-radius: 14px;
+  pointer-events: none;
 }
+
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {
+  .market-post-info {
+    padding: 16px 20px;
+  }
+  
+  .market-post-header {
+    gap: 16px;
+  }
+  
+  .market-post-title-content {
+    font-size: 16px;
+  }
+  
+  .toggle-btn {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+  }
+  
+  .toggle-btn .v-icon {
+    font-size: 18px !important;
+  }
+  
+  .market-post-content {
+    padding: 20px !important;
+  }
+  
+  .post-info-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    text-align: center;
+  }
+  
+  .post-image-section {
+    align-items: center;
+  }
+  
+  .post-image,
+  .post-image-placeholder {
+    width: 120px;
+    height: 120px;
+  }
+  
+  .post-title {
+    font-size: 18px;
+  }
+  
+  .price-value {
+    font-size: 20px;
+  }
+  
+  
+  .market-post-actions {
+    gap: 10px;
+    margin: 0 12px;
+    padding: 12px 16px !important;
+  }
+  
+  .market-post-actions .payment-btn,
+  .market-post-actions .approve-btn,
+  .market-post-actions .complete-btn {
+    min-width: 110px !important;
+    height: 40px !important;
+    font-size: 14px !important;
+    border-radius: 12px !important;
+  }
+  
+  .market-post-actions .status-chip {
+    min-width: 130px !important;
+    height: 40px !important;
+    font-size: 14px !important;
+    border-radius: 12px !important;
+  }
+  
+  .market-post-actions .v-icon {
+    font-size: 16px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .market-post-info {
+    padding: 12px 16px;
+  }
+  
+  .market-post-title-content {
+    font-size: 15px;
+  }
+  
+  .post-info-grid {
+    gap: 16px;
+  }
+  
+  .post-image,
+  .post-image-placeholder {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .post-title {
+    font-size: 16px;
+  }
+  
+  .price-value {
+    font-size: 18px;
+  }
+  
   .market-post-actions {
     gap: 8px;
     margin: 0 8px;
+    padding: 10px 12px !important;
   }
   
   .market-post-actions .payment-btn,
@@ -4848,18 +4996,15 @@ export default {
     font-size: 13px !important;
     border-radius: 10px !important;
   }
-  
-  .market-post-actions .v-icon {
-    font-size: 16px !important;
-  }
 }
 
 /* ===== 상품 정보 카드 스타일 ===== */
 
 .market-post-info {
-  padding: 16px 20px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
-  border-bottom: 1px solid rgba(232, 125, 125, 0.1);
+  padding: 20px 24px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
+  border-bottom: 1px solid rgba(232, 125, 125, 0.12);
+  backdrop-filter: blur(20px);
 }
 
 .market-post-header {
@@ -4867,45 +5012,53 @@ export default {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  gap: 16px;
+  gap: 20px;
+  position: relative;
 }
 
 .market-post-title-content {
   display: flex;
   align-items: center;
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
+  font-size: 18px;
+  font-weight: 700;
+  color: #2D3748;
+  letter-spacing: -0.02em;
+}
+
+.market-post-title-content .v-icon {
+  margin-right: 8px;
+  color: #FF8B8B;
+  font-size: 20px;
 }
 
 .toggle-btn {
-  background: transparent !important;
+  background: rgba(255, 255, 255, 0.8) !important;
   color: #FF8B8B !important;
-  border: none !important;
-  box-shadow: none !important;
-  min-width: 32px !important;
-  width: 32px !important;
-  height: 32px !important;
-  border-radius: 50% !important;
-  transition: none !important;
+  border: 1px solid rgba(255, 139, 139, 0.2) !important;
+  box-shadow: 0 2px 8px rgba(255, 139, 139, 0.15) !important;
+  border-radius: 12px !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
 }
 
 .toggle-btn .v-icon {
-  font-size: 28px !important;
+  font-size: 20px !important;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .toggle-btn:hover {
-  background: transparent !important;
-  color: #FF6B6B !important;
-  transform: none !important;
-  box-shadow: none !important;
+  background: rgba(255, 139, 139, 0.1) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 139, 139, 0.25) !important;
+  border-color: rgba(255, 139, 139, 0.3) !important;
 }
 
 .toggle-btn:focus {
-  background: transparent !important;
-  color: #FF6B6B !important;
+  background: rgba(255, 139, 139, 0.1) !important;
   outline: none !important;
-  box-shadow: none !important;
+  box-shadow: 0 4px 12px rgba(255, 139, 139, 0.25) !important;
 }
 
 .toggle-btn:active {
@@ -4915,37 +5068,36 @@ export default {
 }
 
 .market-post-card {
-  border-radius: 16px !important;
-  border: 1px solid rgba(232, 125, 125, 0.2) !important;
-  background: rgba(255, 255, 255, 0.95) !important;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  border-radius: 20px !important;
+  border: 1px solid rgba(232, 125, 125, 0.15) !important;
+  background: rgba(255, 255, 255, 0.98) !important;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  overflow: hidden;
 }
 
-/* .market-post-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
-  border-color: rgba(232, 125, 125, 0.4) !important;
-} */
 
 .market-post-title {
-  background: linear-gradient(135deg, rgba(232, 125, 125, 0.1) 0%, rgba(255, 107, 107, 0.1) 100%) !important;
-  color: #E87D7D !important;
-  font-weight: 600 !important;
-  font-size: 16px !important;
-  padding: 16px 20px !important;
-  border-bottom: 1px solid rgba(232, 125, 125, 0.2) !important;
+  background: linear-gradient(135deg, rgba(255, 139, 139, 0.08) 0%, rgba(255, 107, 107, 0.05) 100%) !important;
+  color: #2D3748 !important;
+  font-weight: 700 !important;
+  font-size: 18px !important;
+  padding: 20px 24px !important;
+  border-bottom: 1px solid rgba(232, 125, 125, 0.15) !important;
+  position: relative;
 }
 
+
 .market-post-content {
-  padding: 20px !important;
+  padding: 24px !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(248, 250, 252, 0.8) 100%);
 }
 
 .post-info-grid {
   display: grid;
-  grid-template-columns: 120px 1fr;
-  gap: 20px;
+  grid-template-columns: 140px 1fr;
+  gap: 24px;
   align-items: start;
 }
 
@@ -4953,99 +5105,141 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
+  position: relative;
 }
 
 .post-image {
-  width: 120px;
-  height: 120px;
-  border-radius: 12px;
-  border: 2px solid rgba(232, 125, 125, 0.2);
-  transition: all 0.3s ease;
+  width: 140px;
+  height: 140px;
+  border-radius: 16px;
+  border: 3px solid rgba(255, 139, 139, 0.2);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
 }
 
-.post-image:hover {
-  transform: scale(1.05);
-  border-color: rgba(232, 125, 125, 0.4);
+.post-image::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 139, 139, 0.1) 0%, transparent 50%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 1;
 }
+
 
 .post-image-placeholder {
-  width: 120px;
-  height: 120px;
-  border-radius: 12px;
-  border: 2px dashed rgba(232, 125, 125, 0.3);
+  width: 140px;
+  height: 140px;
+  border-radius: 16px;
+  border: 3px dashed rgba(255, 139, 139, 0.3);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: rgba(232, 125, 125, 0.05);
-  color: rgba(232, 125, 125, 0.6);
-  font-size: 12px;
+  background: linear-gradient(135deg, rgba(255, 139, 139, 0.05) 0%, rgba(255, 107, 107, 0.02) 100%);
+  color: rgba(255, 139, 139, 0.7);
+  font-size: 13px;
+  font-weight: 500;
   text-align: center;
+  transition: all 0.3s ease;
 }
+
 
 .post-details-section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
 .post-meta {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   align-items: center;
   flex-wrap: wrap;
 }
 
 .category-chip {
-  font-size: 12px !important;
-  height: 24px !important;
+  font-size: 13px !important;
+  height: 28px !important;
+  border-radius: 14px !important;
+  font-weight: 600 !important;
+  background: linear-gradient(135deg, rgba(255, 139, 139, 0.1) 0%, rgba(255, 107, 107, 0.05) 100%) !important;
+  border: 1px solid rgba(255, 139, 139, 0.3) !important;
+  color: #FF8B8B !important;
 }
 
 .status-chip {
-  font-size: 12px !important;
-  height: 24px !important;
+  font-size: 13px !important;
+  height: 28px !important;
+  border-radius: 14px !important;
+  font-weight: 600 !important;
 }
 
 .post-seller {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 139, 139, 0.15);
 }
 
 .seller-avatar {
-  border: 1px solid rgba(232, 125, 125, 0.2);
+  border: 1px solid rgba(255, 139, 139, 0.3);
+  box-shadow: 0 1px 4px rgba(255, 139, 139, 0.2);
 }
 
 .seller-name {
-  font-size: 14px;
-  color: #666;
-  font-weight: 500;
+  font-size: 13px;
+  color: #4A5568;
+  font-weight: 600;
 }
 
 .post-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #2c3e50;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1A202C;
   margin: 0;
-  line-height: 1.4;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  background: linear-gradient(135deg, #2D3748 0%, #4A5568 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-align: left;
 }
 
 .post-price {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(255, 139, 139, 0.08) 0%, rgba(255, 107, 107, 0.04) 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 139, 139, 0.2);
 }
 
 .price-label {
-  font-size: 14px;
-  color: #666;
-  font-weight: 500;
+  font-size: 15px;
+  color: #4A5568;
+  font-weight: 600;
 }
 
 .price-value {
-  font-size: 20px;
-  font-weight: 700;
-  color: #E87D7D;
+  font-size: 22px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #FF8B8B 0%, #FF6B6B 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.02em;
 }
 
 .post-status {
@@ -5053,24 +5247,30 @@ export default {
   align-items: center;
 }
 
-.post-description {
-  color: #555;
-  font-size: 14px;
-  line-height: 1.5;
-  max-height: 60px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
-  -webkit-box-orient: vertical;
-}
 
 .market-post-actions {
-  padding: 16px 20px !important;
-  background: rgba(232, 125, 125, 0.02) !important;
-  border-top: 1px solid rgba(232, 125, 125, 0.1) !important;
+  padding: 20px 24px !important;
+  background: linear-gradient(135deg, rgba(255, 139, 139, 0.03) 0%, rgba(255, 107, 107, 0.01) 100%) !important;
+  border-top: 1px solid rgba(255, 139, 139, 0.12) !important;
   justify-content: center;
+}
+
+/* 상품 상세보기 버튼 스타일 */
+.market-post-actions .v-btn {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.8) 100%) !important;
+  border: 2px solid rgba(255, 139, 139, 0.3) !important;
+  color: #FF8B8B !important;
+  font-weight: 600 !important;
+  border-radius: 12px !important;
+  padding: 8px 16px !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: 0 2px 8px rgba(255, 139, 139, 0.15) !important;
+}
+
+
+.market-post-actions .v-btn .v-icon {
+  color: #FF8B8B !important;
+  font-size: 18px !important;
 }
 
 /* 로딩 상태 스타일 */
@@ -5168,11 +5368,5 @@ export default {
     font-size: 18px;
   }
   
-  .post-description {
-    font-size: 13px;
-    max-height: 45px;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-  }
 }
 </style>
