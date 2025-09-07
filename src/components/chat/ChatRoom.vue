@@ -15,82 +15,6 @@
           <h2 class="room-title">{{ currentRoom?.roomName || '채팅' }}</h2>
         </div>
         
-        <!-- 중고거래 채팅방인 경우 구매 관련 버튼들 -->
-        <div v-if="isMarketChat" class="header-market-actions">
-          <!-- 구매자인 경우 -->
-          <div v-if="isBuyer" class="buyer-actions">
-            <!-- 3단계: 판매완료 (상품이 실제로 판매됨) -->
-            <v-chip
-              v-if="marketPostInfo?.status === 'SOLD'"
-              color="success"
-              variant="outlined"
-              class="status-chip"
-            >
-              <v-icon left>mdi-check-all</v-icon>
-              거래완료
-            </v-chip>
-            <!-- 2단계: 구매요청완료 (판매자가 구매 승인) -->
-            <v-btn
-              v-else-if="isPurchaseApproved"
-              color="success"
-              variant="elevated"
-              size="small"
-              class="payment-btn"
-              @click="proceedToPayment"
-            >
-              <v-icon left>mdi-credit-card</v-icon>
-              결제하기
-            </v-btn>
-            <!-- 1단계: 구매요청 (초기 상태) -->
-            <v-chip
-              v-else
-              color="warning"
-              variant="outlined"
-              class="status-chip"
-            >
-              <v-icon left>mdi-clock-outline</v-icon>
-              구매요청
-            </v-chip>
-          </div>
-          
-          <!-- 판매자인 경우 -->
-          <div v-else-if="isSeller" class="seller-actions">
-            <!-- 3단계: 판매완료 (상품이 실제로 판매됨) -->
-            <v-chip
-              v-if="marketPostInfo?.status === 'SOLD'"
-              color="success"
-              variant="outlined"
-              class="status-chip"
-            >
-              <v-icon left>mdi-check-all</v-icon>
-              거래완료
-            </v-chip>
-            <!-- 2단계: 구매요청완료 (판매자가 구매 승인함) -->
-            <v-btn
-              v-else-if="isPurchaseApproved"
-              color="warning"
-              variant="elevated"
-              size="small"
-              class="approve-btn"
-              @click="approvePurchase"
-            >
-              <v-icon left>mdi-close-circle</v-icon>
-              승인 취소
-            </v-btn>
-            <!-- 1단계: 구매요청 (구매자 요청 대기) -->
-            <v-btn
-              v-else
-              color="primary"
-              variant="elevated"
-              size="small"
-              class="approve-btn"
-              @click="approvePurchase"
-            >
-              <v-icon left>mdi-check-circle</v-icon>
-              구매 승인
-            </v-btn>
-          </div>
-        </div>
         
         <div class="header-spacer"></div>
         
@@ -214,6 +138,84 @@
               <v-icon left color="primary">mdi-store</v-icon>
               거래 상품 정보
             </div>
+            
+            <!-- 중고거래 채팅방인 경우 구매 관련 버튼들 -->
+            <div v-if="isMarketChat" class="market-post-actions">
+              <!-- 구매자인 경우 -->
+              <div v-if="isBuyer" class="buyer-actions">
+                <!-- 3단계: 판매완료 (상품이 실제로 판매됨) -->
+                <v-chip
+                  v-if="marketPostInfo?.status === 'SOLD'"
+                  color="success"
+                  variant="outlined"
+                  class="status-chip"
+                >
+                  <v-icon left>mdi-check-all</v-icon>
+                  거래완료
+                </v-chip>
+                <!-- 2단계: 구매요청완료 (판매자가 구매 승인) -->
+                <v-btn
+                  v-else-if="isPurchaseApproved"
+                  color="success"
+                  variant="elevated"
+                  size="small"
+                  class="payment-btn"
+                  @click="proceedToPayment"
+                >
+                  <v-icon left>mdi-credit-card</v-icon>
+                  결제하기
+                </v-btn>
+                <!-- 1단계: 구매요청 (초기 상태) -->
+                <v-chip
+                  v-else
+                  color="warning"
+                  variant="outlined"
+                  class="status-chip"
+                >
+                  <v-icon left>mdi-clock-outline</v-icon>
+                  결제요청 대기중
+                </v-chip>
+              </div>
+              
+              <!-- 판매자인 경우 -->
+              <div v-else-if="isSeller" class="seller-actions">
+                <!-- 3단계: 판매완료 (상품이 실제로 판매됨) -->
+                <v-chip
+                  v-if="marketPostInfo?.status === 'SOLD'"
+                  color="success"
+                  variant="outlined"
+                  class="status-chip"
+                >
+                  <v-icon left>mdi-check-all</v-icon>
+                  거래 완료
+                </v-chip>
+                <!-- 2단계: 구매요청완료 (판매자가 구매 승인함) -->
+                <v-btn
+                  v-else-if="isPurchaseApproved"
+                  color="warning"
+                  variant="elevated"
+                  size="small"
+                  class="approve-btn"
+                  @click="approvePurchase"
+                >
+                  <v-icon left>mdi-close-circle</v-icon>
+                  요청 취소
+                </v-btn>
+                <!-- 1단계: 구매요청 (구매자 요청 대기) -->
+                <v-btn
+                  v-else
+                  color="primary"
+                  variant="elevated"
+                  size="small"
+                  class="approve-btn"
+                  @click="approvePurchase"
+                >
+                  <v-icon left>mdi-check-circle</v-icon>
+                  결제 요청
+                </v-btn>
+              </div>
+            </div>
+            
             <v-btn
               icon
               size="small"
@@ -221,7 +223,7 @@
               @click="toggleMarketPost"
               class="toggle-btn"
             >
-              <v-icon>{{ isMarketPostExpanded ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
+              <v-icon size="28">{{ isMarketPostExpanded ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
             </v-btn>
           </div>
         </v-card-title>
@@ -4649,77 +4651,120 @@ export default {
 
 
 
-/* ===== 헤더 구매 관련 버튼 스타일 ===== */
+/* ===== 상품 정보 카드 내 구매 관련 버튼 스타일 ===== */
 
-.header-market-actions {
+.market-post-actions {
   display: flex;
   align-items: center;
-  justify-content: center;
-  flex: 1;
   gap: 12px;
+  margin: 0 16px;
 }
 
-.header-market-actions .buyer-actions,
-.header-market-actions .seller-actions {
+.market-post-actions .buyer-actions,
+.market-post-actions .seller-actions {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.header-market-actions .payment-btn,
-.header-market-actions .approve-btn,
-.header-market-actions .complete-btn {
+.market-post-actions .payment-btn,
+.market-post-actions .approve-btn,
+.market-post-actions .complete-btn {
   min-width: 120px !important;
-  height: 36px !important;
+  height: 40px !important;
   font-size: 14px !important;
   font-weight: 600 !important;
-  border-radius: 18px !important;
+  border-radius: 12px !important;
   text-transform: none !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  letter-spacing: 0.025em !important;
+  /* box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important; */
+  transition: all 250ms cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
-.header-market-actions .payment-btn:hover,
-.header-market-actions .approve-btn:hover,
-.header-market-actions .complete-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+.market-post-actions .payment-btn:hover,
+.market-post-actions .approve-btn:hover,
+.market-post-actions .complete-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
 }
 
-.header-market-actions .status-chip {
+.market-post-actions .status-chip {
   min-width: 140px !important;
-  height: 36px !important;
+  height: 40px !important;
   font-size: 14px !important;
-  font-weight: 500 !important;
-  border-radius: 18px !important;
+  font-weight: 600 !important;
+  border-radius: 12px !important;
   border-width: 2px !important;
+  letter-spacing: 0.025em !important;
 }
 
-.header-market-actions .v-icon {
+.market-post-actions .v-icon {
   font-size: 18px !important;
+}
+
+/* 결제 버튼 특별 스타일 */
+.market-post-actions .payment-btn {
+  background: linear-gradient(135deg, #FF8B8B, #FF6B6B) !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: 0 4px 16px rgba(255, 139, 139, 0.4) !important;
+}
+
+.market-post-actions .payment-btn:hover {
+  background: linear-gradient(135deg, #FF6B6B, #FF5252) !important;
+  box-shadow: 0 8px 24px rgba(255, 139, 139, 0.6) !important;
+}
+
+/* 승인 버튼 스타일 */
+.market-post-actions .approve-btn {
+  background: linear-gradient(135deg, #FF8B8B, #FF6B6B) !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: 0 4px 16px rgba(255, 139, 139, 0.4) !important;
+}
+
+.market-post-actions .approve-btn:hover {
+  background: linear-gradient(135deg, #FF6B6B, #FF5252) !important;
+  box-shadow: 0 8px 24px rgba(255, 139, 139, 0.6) !important;
+}
+
+/* 완료 버튼 스타일 */
+.market-post-actions .complete-btn {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4) !important;
+}
+
+.market-post-actions .complete-btn:hover {
+  background: linear-gradient(135deg, #34d399, #10b981) !important;
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.6) !important;
 }
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {
-  .header-market-actions {
+  .market-post-actions {
     gap: 8px;
+    margin: 0 8px;
   }
   
-  .header-market-actions .payment-btn,
-  .header-market-actions .approve-btn,
-  .header-market-actions .complete-btn {
+  .market-post-actions .payment-btn,
+  .market-post-actions .approve-btn,
+  .market-post-actions .complete-btn {
     min-width: 100px !important;
-    height: 32px !important;
+    height: 36px !important;
     font-size: 13px !important;
+    border-radius: 10px !important;
   }
   
-  .header-market-actions .status-chip {
+  .market-post-actions .status-chip {
     min-width: 120px !important;
-    height: 32px !important;
+    height: 36px !important;
     font-size: 13px !important;
+    border-radius: 10px !important;
   }
   
-  .header-market-actions .v-icon {
+  .market-post-actions .v-icon {
     font-size: 16px !important;
   }
 }
@@ -4737,6 +4782,7 @@ export default {
   align-items: center;
   justify-content: space-between;
   width: 100%;
+  gap: 16px;
 }
 
 .market-post-title-content {
@@ -4748,13 +4794,39 @@ export default {
 }
 
 .toggle-btn {
-  color: #666 !important;
-  transition: all 0.3s ease;
+  background: transparent !important;
+  color: #FF8B8B !important;
+  border: none !important;
+  box-shadow: none !important;
+  min-width: 32px !important;
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  transition: none !important;
+}
+
+.toggle-btn .v-icon {
+  font-size: 28px !important;
 }
 
 .toggle-btn:hover {
-  color: #e87d7d !important;
-  background-color: rgba(232, 125, 125, 0.1) !important;
+  background: transparent !important;
+  color: #FF6B6B !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.toggle-btn:focus {
+  background: transparent !important;
+  color: #FF6B6B !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.toggle-btn:active {
+  background: transparent !important;
+  color: #FF5252 !important;
+  transform: none !important;
 }
 
 .market-post-card {
@@ -4970,6 +5042,7 @@ export default {
   
   .market-post-header {
     margin-bottom: 8px;
+    gap: 8px;
   }
   
   .market-post-title-content {
@@ -4977,8 +5050,13 @@ export default {
   }
   
   .toggle-btn {
-    min-width: 32px !important;
-    height: 32px !important;
+    min-width: 28px !important;
+    width: 28px !important;
+    height: 28px !important;
+  }
+  
+  .toggle-btn .v-icon {
+    font-size: 22px !important;
   }
   
   .post-info-grid {
