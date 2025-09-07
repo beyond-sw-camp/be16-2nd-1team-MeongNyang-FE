@@ -228,74 +228,76 @@
           </div>
         </v-card-title>
         <v-expand-transition>
-          <v-card-text v-show="isMarketPostExpanded" class="market-post-content">
-            <div class="post-info-grid">
-            <!-- 상품 이미지 -->
-            <div class="post-image-section">
-              <v-img
-                v-if="marketPostInfo.thumbnailUrl || (marketPostInfo.images && marketPostInfo.images.length > 0)"
-                :src="marketPostInfo.thumbnailUrl || marketPostInfo.images[0]"
-                :alt="marketPostInfo.title"
-                class="post-image"
-                cover
-                @error="handleImageError"
-              ></v-img>
-              <div v-else class="post-image-placeholder">
-                <v-icon size="48" color="grey">mdi-image-off</v-icon>
-                <span>이미지 없음</span>
-              </div>
-            </div>
-            
-            <!-- 상품 정보 -->
-            <div class="post-details-section">
-              <h3 class="post-title">{{ marketPostInfo.title }}</h3>
-              <div class="post-meta">
-                <div class="post-seller">
-                  <v-avatar size="20" class="seller-avatar">
-                    <v-img 
-                      v-if="marketPostInfo.sellerProfileUrl" 
-                      :src="marketPostInfo.sellerProfileUrl"
-                      :alt="marketPostInfo.sellerNickname"
-                    ></v-img>
-                    <v-icon v-else>mdi-account</v-icon>
-                  </v-avatar>
-                  <span class="seller-name">{{ marketPostInfo.sellerNickname }}</span>
+          <div v-show="isMarketPostExpanded">
+            <v-card-text class="market-post-content">
+              <div class="post-info-grid">
+              <!-- 상품 이미지 -->
+              <div class="post-image-section">
+                <v-img
+                  v-if="marketPostInfo.thumbnailUrl || (marketPostInfo.images && marketPostInfo.images.length > 0)"
+                  :src="marketPostInfo.thumbnailUrl || marketPostInfo.images[0]"
+                  :alt="marketPostInfo.title"
+                  class="post-image"
+                  cover
+                  @error="handleImageError"
+                ></v-img>
+                <div v-else class="post-image-placeholder">
+                  <v-icon size="48" color="grey">mdi-image-off</v-icon>
+                  <span>이미지 없음</span>
                 </div>
-                <v-chip 
-                  color="primary" 
-                  variant="outlined" 
-                  size="small"
-                  class="category-chip"
-                >
-                  {{ marketPostInfo.category }}
-                </v-chip>
-                <v-chip 
-                  :color="getStatusColor(marketPostInfo.status)"
-                  variant="outlined"
-                  size="small"
-                  class="status-chip"
-                >
-                  {{ getStatusText(marketPostInfo.status) }}
-                </v-chip>
               </div>
-              <div class="post-price">
-                <span class="price-label">가격:</span>
-                <span class="price-value">{{ formatPrice(marketPostInfo.price) }}원</span>
+              
+              <!-- 상품 정보 -->
+              <div class="post-details-section">
+                <h3 class="post-title">{{ marketPostInfo.title }}</h3>
+                <div class="post-meta">
+                  <div class="post-seller">
+                    <v-avatar size="20" class="seller-avatar">
+                      <v-img 
+                        v-if="marketPostInfo.sellerProfileUrl" 
+                        :src="marketPostInfo.sellerProfileUrl"
+                        :alt="marketPostInfo.sellerNickname"
+                      ></v-img>
+                      <v-icon v-else>mdi-account</v-icon>
+                    </v-avatar>
+                    <span class="seller-name">{{ marketPostInfo.sellerNickname }}</span>
+                  </div>
+                  <v-chip 
+                    color="primary" 
+                    variant="outlined" 
+                    size="small"
+                    class="category-chip"
+                  >
+                    {{ marketPostInfo.category }}
+                  </v-chip>
+                  <v-chip 
+                    :color="getStatusColor(marketPostInfo.status)"
+                    variant="outlined"
+                    size="small"
+                    class="status-chip"
+                  >
+                    {{ getStatusText(marketPostInfo.status) }}
+                  </v-chip>
+                </div>
+                <div class="post-price">
+                  <span class="price-label">가격:</span>
+                  <span class="price-value">{{ formatPrice(marketPostInfo.price) }}원</span>
+                </div>
               </div>
             </div>
+            </v-card-text>
+            <!-- <v-card-actions class="market-post-actions">
+              <v-btn
+                color="primary"
+                variant="outlined"
+                size="small"
+                @click="viewMarketPost"
+              >
+                <v-icon left>mdi-eye</v-icon>
+                상품 상세보기
+              </v-btn>
+            </v-card-actions> -->
           </div>
-        </v-card-text>
-        <v-card-actions class="market-post-actions">
-          <v-btn
-            color="primary"
-            variant="outlined"
-            size="small"
-            @click="viewMarketPost"
-          >
-            <v-icon left>mdi-eye</v-icon>
-            상품 상세보기
-          </v-btn>
-        </v-card-actions>
         </v-expand-transition>
       </v-card>
       </div>
@@ -957,9 +959,17 @@ export default {
       }
     })
     
-    // 상품 정보 토글
+    // 상품 정보 토글 (디바운싱 적용)
+    let toggleTimeout = null
     const toggleMarketPost = () => {
-      isMarketPostExpanded.value = !isMarketPostExpanded.value
+      if (toggleTimeout) {
+        clearTimeout(toggleTimeout)
+      }
+      
+      toggleTimeout = setTimeout(() => {
+        isMarketPostExpanded.value = !isMarketPostExpanded.value
+        toggleTimeout = null
+      }, 50) // 50ms 디바운싱
     }
     
     // 메서드들
@@ -1804,6 +1814,12 @@ export default {
       
       // ResizeObserver 정리
       cleanupResizeObserver()
+      
+      // 토글 타이머 정리
+      if (toggleTimeout) {
+        clearTimeout(toggleTimeout)
+        toggleTimeout = null
+      }
       
       // 채팅방을 나갈 때 currentRoom 초기화 (SSE 메시지 카운트 제어용)
       chatStore.setCurrentRoom(null)
@@ -5037,15 +5053,17 @@ export default {
   border: 1px solid rgba(255, 139, 139, 0.2) !important;
   box-shadow: 0 2px 8px rgba(255, 139, 139, 0.15) !important;
   border-radius: 12px !important;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: all 0.2s ease-out !important;
   width: 40px !important;
   height: 40px !important;
   min-width: 40px !important;
+  will-change: transform, box-shadow;
 }
 
 .toggle-btn .v-icon {
   font-size: 20px !important;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.2s ease-out;
+  will-change: transform;
 }
 
 .toggle-btn:hover {
@@ -5064,7 +5082,7 @@ export default {
 .toggle-btn:active {
   background: transparent !important;
   color: #FF5252 !important;
-  transform: none !important;
+  transform: scale(0.95) !important;
 }
 
 .market-post-card {
@@ -5338,10 +5356,12 @@ export default {
     min-width: 28px !important;
     width: 28px !important;
     height: 28px !important;
+    transition: all 0.15s ease-out !important;
   }
   
   .toggle-btn .v-icon {
     font-size: 22px !important;
+    transition: transform 0.15s ease-out;
   }
   
   .post-info-grid {
