@@ -4735,7 +4735,14 @@ export default {
   left: 50% !important;
   top: 50% !important;
   transform: translate(-50%, -50%) !important;
-  z-index: 1 !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+}
+
+/* market-post-actions 내부의 버튼들은 클릭 가능하도록 설정 */
+.market-post-card .market-post-header .market-post-actions button,
+.market-post-card .market-post-header .market-post-actions .v-btn {
+  pointer-events: auto !important;
 }
 
 .market-post-actions .buyer-actions,
@@ -4916,11 +4923,11 @@ export default {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
-.market-post-card:hover {
+/* .market-post-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
   border-color: rgba(232, 125, 125, 0.4) !important;
-}
+} */
 
 .market-post-title {
   background: linear-gradient(135deg, rgba(232, 125, 125, 0.1) 0%, rgba(255, 107, 107, 0.1) 100%) !important;
