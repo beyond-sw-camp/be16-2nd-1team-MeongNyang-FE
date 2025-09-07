@@ -765,6 +765,14 @@
       </div>
     </v-card>
   </v-dialog>
+
+  <!-- 결제 위젯 모달 -->
+  <PaymentWidgetModal
+    v-model="showPaymentModal"
+    :order-info="paymentOrderInfo"
+    @payment-success="handlePaymentSuccess"
+    @payment-fail="handlePaymentFail"
+  />
 </template>
 
 <script>
@@ -775,6 +783,7 @@ import Stomp from 'webstomp-client'
 import axios from 'axios'
 import FileGrid from './FileGrid.vue'
 import UserSelectionModal from './UserSelectionModal.vue'
+import PaymentWidgetModal from '@/components/common/PaymentWidgetModal.vue'
 import { useRouter } from 'vue-router'
 import { inject } from 'vue'
 import { marketAPI } from '@/services/api'
@@ -783,7 +792,8 @@ export default {
   name: 'ChatRoom',
   components: {
     FileGrid,
-    UserSelectionModal
+    UserSelectionModal,
+    PaymentWidgetModal
   },
   props: {
     roomId: {
@@ -835,6 +845,14 @@ export default {
     const showInviteDialog = ref(false)
     const showLeaveConfirmDialog = ref(false)
     const isLeaving = ref(false)
+    
+    // 결제 모달 상태
+    const showPaymentModal = ref(false)
+    const paymentOrderInfo = ref({
+      orderId: '',
+      orderName: '',
+      amount: 0
+    })
 
     // 스크롤 관련 상태
     const showScrollToBottomButton = ref(false)
@@ -1891,14 +1909,30 @@ export default {
     // 거래 관련 메서드들
     const proceedToPayment = async () => {
       try {
-        // 결제 페이지로 이동하는 로직
         console.log('결제하기 버튼 클릭됨')
-        if (showMessage) {
-          showMessage({
-            type: 'info',
-            text: '결제 기능은 준비 중입니다.'
-          })
+        
+        // 상품 정보가 있는지 확인
+        if (!marketPostInfo.value) {
+          if (showMessage) {
+            showMessage({
+              type: 'error',
+              text: '상품 정보를 불러올 수 없습니다.'
+            })
+          }
+          return
         }
+        
+        // 주문 정보 설정
+        paymentOrderInfo.value = {
+          orderId: `order_${Date.now()}_${props.roomId}`, // 고유한 주문 ID 생성
+          orderName: marketPostInfo.value.title || '상품 구매',
+          amount: marketPostInfo.value.price || 0,
+          roomId: props.roomId // 채팅방 ID 추가
+        }
+        
+        // 결제 모달 열기
+        showPaymentModal.value = true
+        
       } catch (error) {
         console.error('결제 처리 실패:', error)
         if (showMessage) {
@@ -1907,6 +1941,34 @@ export default {
             text: '결제 처리 중 오류가 발생했습니다.'
           })
         }
+      }
+    }
+    
+    // 결제 성공 처리
+    const handlePaymentSuccess = (paymentData) => {
+      console.log('결제 성공:', paymentData)
+      showPaymentModal.value = false
+      
+      if (showMessage) {
+        showMessage({
+          type: 'success',
+          text: '결제가 완료되었습니다.'
+        })
+      }
+      
+      // 여기에 결제 성공 후 처리 로직 추가 (예: 주문 상태 업데이트, 채팅 메시지 전송 등)
+    }
+    
+    // 결제 실패 처리
+    const handlePaymentFail = (error) => {
+      console.error('결제 실패:', error)
+      showPaymentModal.value = false
+      
+      if (showMessage) {
+        showMessage({
+          type: 'error',
+          text: '결제에 실패했습니다.'
+        })
       }
     }
     
@@ -2091,6 +2153,11 @@ export default {
       showInviteDialog,
       showLeaveConfirmDialog,
       isLeaving,
+      // 결제 모달 관련
+      showPaymentModal,
+      paymentOrderInfo,
+      handlePaymentSuccess,
+      handlePaymentFail,
       isOnline,
       getInitials,
       getParticipantProfileImage,

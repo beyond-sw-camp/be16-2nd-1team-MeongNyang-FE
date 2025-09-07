@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@mdi/font": "^7.4.47",
+    "@tosspayments/tosspayments-sdk": "^2.3.7",
     "axios": "^1.11.0",
     "core-js": "^3.8.3",
     "jwt-decode": "^4.0.0",
