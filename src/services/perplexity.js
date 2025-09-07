@@ -4,7 +4,7 @@
  */
 
 const PERPLEXITY_API_URL = 'https://api.perplexity.ai/chat/completions'
-const PERPLEXITY_MODEL = 'sonar-pro'
+const PERPLEXITY_MODEL = 'sonar'
 
 /**
  * Perplexity API를 통해 반려동물 관련 팁을 가져옵니다
@@ -17,7 +17,7 @@ const PERPLEXITY_MODEL = 'sonar-pro'
 export async function getAIPetTip(options = {}) {
   const apiKey = process.env.VUE_APP_PERPLEXITY_API_KEY
   
-  if (!apiKey || apiKey === 'YOUR_PERPLEXITY_API_KEY_HERE') {
+  if (!apiKey) {
     throw new Error('Perplexity API 키가 설정되지 않았습니다. .env 파일에 VUE_APP_PERPLEXITY_API_KEY를 설정해주세요.')
   }
 
@@ -48,10 +48,6 @@ export async function getAIPetTip(options = {}) {
       body: JSON.stringify({
         model: PERPLEXITY_MODEL,
         messages: [
-          {
-            role: 'system',
-            content: '당신은 반려동물 전문가입니다. 날씨와 상황에 맞는 실용적인 반려동물 돌봄 팁을 제공합니다. 참조 번호나 인용 표시 없이 자연스러운 문장으로만 답변해주세요.'
-          },
           {
             role: 'user',
             content: prompt

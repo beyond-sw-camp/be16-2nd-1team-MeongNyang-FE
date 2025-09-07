@@ -923,6 +923,7 @@ export default {
   color: #92400E;
   line-height: 1.5;
   margin-bottom: 8px;
+  white-space: pre-line;
 }
 
 .tip-source {
