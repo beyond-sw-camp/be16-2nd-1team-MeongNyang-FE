@@ -135,8 +135,8 @@
         <v-card-title class="market-post-title">
           <div class="market-post-header">
             <div class="market-post-title-content">
-              <v-icon left color="primary">mdi-store</v-icon>
-              거래 상품 정보
+              <v-icon left color="#FF8B8B">mdi-store</v-icon>
+              상품 정보
             </div>
             
             <!-- 중고거래 채팅방인 경우 구매 관련 버튼들 -->
