@@ -94,23 +94,55 @@
             
             <v-row>
               <v-col cols="12" md="6">
-                <v-card class="task-card">
-                  <div class="task-header">
-                    <v-icon color="#FF8B8B" size="24">mdi-checkbox-marked-circle</v-icon>
-                    <div class="task-title">반려동물 관리</div>
+                <v-card class="insight-card">
+                  <div class="insight-header">
+                    <v-icon color="#F59E0B" size="24">mdi-lightbulb</v-icon>
+                    <div class="insight-title">오늘의 팁</div>
+                    <v-spacer></v-spacer>
+                    <v-btn
+                      @click="refreshAITip"
+                      size="small"
+                      color="#F59E0B"
+                      variant="elevated"
+                      :loading="tipLoading"
+                      class="tip-action-btn"
+                      prepend-icon="mdi-refresh"
+                    >
+                      AI 새로고침
+                    </v-btn>
                   </div>
                   
-                  <div class="task-list">
-                    <div class="task-item" v-for="task in todayTasks" :key="task.id">
-                      <v-checkbox 
-                        v-model="task.completed" 
-                        :color="task.color"
-                        hide-details
-                      />
-                      <div class="task-text" :class="{ 'completed': task.completed }">
-                        {{ task.text }}
-                      </div>
-                      <div class="task-time">{{ task.time }}</div>
+                  <div v-if="tipLoading" class="tip-loading">
+                    <v-progress-circular indeterminate color="#F59E0B" size="24"></v-progress-circular>
+                    <span class="ml-2">AI가 새로운 팁을 생성하는 중...</span>
+                  </div>
+                  
+                  <div v-else-if="tipError" class="tip-error">
+                    <v-icon color="error" size="24">mdi-alert-circle</v-icon>
+                    <span class="ml-2">{{ tipError }}</span>
+                    <v-btn 
+                      @click="refreshAITip" 
+                      size="small" 
+                      color="#F59E0B" 
+                      variant="elevated" 
+                      class="ml-2 tip-action-btn"
+                      prepend-icon="mdi-refresh"
+                    >
+                      다시 시도
+                    </v-btn>
+                  </div>
+                  
+                  <div v-else class="tip-content">
+                    <div class="tip-text">{{ dailyTip.text }}</div>
+                    <div class="tip-source">- {{ dailyTip.source }}</div>
+                    <div v-if="lastTipUpdate" class="tip-timestamp">
+                      {{ aiTipStore.lastUpdateFormatted }}에 업데이트됨
+                    </div>
+                    <div v-if="aiTipStore.isAITip" class="tip-ai-badge">
+                      <v-chip size="x-small" color="primary" variant="outlined">
+                        <v-icon start size="12">mdi-robot</v-icon>
+                        AI 생성
+                      </v-chip>
                     </div>
                   </div>
                 </v-card>
@@ -200,64 +232,6 @@
                       </div>
                     </v-card>
                   </v-col>
-
-                  <!-- 활동 팁 섹션 -->
-                  <v-col cols="12">
-                    <v-card class="insight-card">
-                      <div class="insight-header">
-                        <v-icon color="#F59E0B" size="24">mdi-lightbulb</v-icon>
-                        <div class="insight-title">오늘의 팁</div>
-                        <v-spacer></v-spacer>
-                        <v-btn
-                          @click="refreshAITip"
-                          size="small"
-                          color="#F59E0B"
-                          variant="elevated"
-                          :loading="tipLoading"
-                          class="tip-action-btn"
-                          prepend-icon="mdi-refresh"
-                        >
-                          AI 새로고침
-                        </v-btn>
-                      </div>
-                      
-                      <div v-if="tipLoading" class="tip-loading">
-                        <v-progress-circular indeterminate color="#F59E0B" size="24"></v-progress-circular>
-                        <span class="ml-2">AI가 새로운 팁을 생성하는 중...</span>
-                      </div>
-                      
-                      <div v-else-if="tipError" class="tip-error">
-                        <v-icon color="error" size="24">mdi-alert-circle</v-icon>
-                        <span class="ml-2">{{ tipError }}</span>
-                        <v-btn 
-                          @click="refreshAITip" 
-                          size="small" 
-                          color="#F59E0B" 
-                          variant="elevated" 
-                          class="ml-2 tip-action-btn"
-                          prepend-icon="mdi-refresh"
-                        >
-                          다시 시도
-                        </v-btn>
-                      </div>
-                      
-                      <div v-else class="tip-content">
-                        <div class="tip-text">{{ dailyTip.text }}</div>
-                        <div class="tip-source">- {{ dailyTip.source }}</div>
-                        <div v-if="lastTipUpdate" class="tip-timestamp">
-                          {{ aiTipStore.lastUpdateFormatted }}에 업데이트됨
-                        </div>
-                        <div v-if="aiTipStore.isAITip" class="tip-ai-badge">
-                          <v-chip size="x-small" color="primary" variant="outlined">
-                            <v-icon start size="12">mdi-robot</v-icon>
-                            AI 생성
-                          </v-chip>
-                        </div>
-                      </div>
-                    </v-card>
-                  </v-col>
-
-
                 </v-row>
               </v-col>
             </v-row>
@@ -369,37 +343,6 @@ export default {
       router.push(`/search?searchType=${searchData.searchType}&keyword=${encodeURIComponent(searchData.keyword)}`)
     }
     
-    // 오늘의 할 일 데이터
-    const todayTasks = ref([
-      {
-        id: 1,
-        text: '강아지 산책하기',
-        completed: false,
-        color: '#4ADE80',
-        time: '오전 9시'
-      },
-      {
-        id: 2,
-        text: '사료 보충하기',
-        completed: true,
-        color: '#FF8B8B',
-        time: '오전 8시'
-      },
-      {
-        id: 3,
-        text: '목욕 시키기',
-        completed: false,
-        color: '#60A5FA',
-        time: '오후 3시'
-      },
-      {
-        id: 4,
-        text: '예방접종 일정 확인',
-        completed: false,
-        color: '#F59E0B',
-        time: '오후 6시'
-      }
-    ])
 
 
 
@@ -583,7 +526,6 @@ export default {
       marketCount,
       chatCount,
       representativePet,
-      todayTasks,
       dailyTip,
       goToRepresentativePet,
       handleSearch,
@@ -836,68 +778,9 @@ export default {
   font-weight: 500;
 }
 
-/* 오늘의 할 일 */
+/* 인사이트 섹션 */
 .today-tasks-section {
   margin-top: 32px;
-}
-
-.task-card {
-  border-radius: 16px;
-  padding: 24px;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  height: 100%;
-  min-height: 500px;
-}
-
-.task-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.task-title {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #1E293B;
-  margin-left: 12px;
-}
-
-.task-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.task-item {
-  display: flex;
-  align-items: center;
-  padding: 12px;
-  background: #F8FAFC;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-
-.task-item:hover {
-  background: #F1F5F9;
-}
-
-.task-text {
-  font-size: 0.875rem;
-  color: #374151;
-  margin-left: 12px;
-  flex: 1;
-  transition: all 0.2s ease;
-}
-
-.task-text.completed {
-  text-decoration: line-through;
-  color: #9CA3AF;
-}
-
-.task-time {
-  font-size: 0.75rem;
-  color: #6B7280;
-  font-weight: 500;
 }
 
 /* 인사이트 카드 */
@@ -1032,6 +915,7 @@ export default {
   background: #FEF3C7;
   border-radius: 8px;
   border-left: 3px solid #F59E0B;
+  text-align: left;
 }
 
 .tip-text {
@@ -1232,11 +1116,6 @@ export default {
   /* 모바일에서 인사이트 섹션 조정 */
   .today-tasks-section .v-row {
     flex-direction: column;
-  }
-
-  .task-card {
-    margin-bottom: 16px;
-    min-height: auto;
   }
 
   .insight-card {
