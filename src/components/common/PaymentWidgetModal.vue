@@ -28,7 +28,7 @@
             </div>
             <div class="d-flex justify-space-between align-center">
               <span class="text-body-1">결제 금액</span>
-              <span class="text-h6 font-weight-bold text-primary">
+              <span class="text-h6 font-weight-bold payment-amount">
                 {{ formatPrice(orderInfo.amount) }}원
               </span>
             </div>
@@ -120,6 +120,7 @@
 <script>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useSnackbar } from '@/composables/useSnackbar'
+import { useAuthStore } from '@/stores/auth'
 
 export default {
   name: 'PaymentWidgetModal',
@@ -141,6 +142,7 @@ export default {
   emits: ['update:modelValue', 'payment-success', 'payment-fail', 'payment-cancel'],
   setup(props, { emit }) {
     const { showMessage } = useSnackbar()
+    const authStore = useAuthStore()
     
     // 반응형 데이터
     const isOpen = computed({
@@ -352,9 +354,9 @@ export default {
         const paymentData = {
           orderId: props.orderInfo.orderId,
           orderName: props.orderInfo.orderName,
-          successUrl: `${window.location.origin}/payment/success?orderId=${props.orderInfo.orderId}&amount=${props.orderInfo.amount}&roomId=${props.orderInfo.roomId || ''}`,
-          failUrl: `${window.location.origin}/payment/fail?orderId=${props.orderInfo.orderId}&roomId=${props.orderInfo.roomId || ''}`,
-        //   customerEmail: customerInfo.value.customerEmail,
+        //   successUrl: `${window.location.origin}/payment/success?orderId=${props.orderInfo.orderId}&amount=${props.orderInfo.amount}&roomId=${props.orderInfo.roomId || ''}`,
+        //   failUrl: `${window.location.origin}/payment/fail?orderId=${props.orderInfo.orderId}&roomId=${props.orderInfo.roomId || ''}`,
+          customerEmail: authStore.user?.email || localStorage.getItem('email'),
         //   customerName: customerInfo.value.customerName,
         //   customerMobilePhone: customerInfo.value.customerMobilePhone
         }
@@ -554,5 +556,11 @@ export default {
   cursor: not-allowed;
   transform: none !important;
   box-shadow: none !important;
+}
+
+/* 결제 금액 핑크색 스타일 */
+.payment-amount {
+  color: #FF8B8B !important;
+  text-shadow: 0 1px 2px rgba(255, 139, 139, 0.2);
 }
 </style>
