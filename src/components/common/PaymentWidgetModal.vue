@@ -97,13 +97,14 @@
       <v-card-actions class="pa-4">
         <v-spacer />
         <v-btn
+          class="cancel-btn"
           variant="outlined"
           @click="closeModal"
         >
           취소
         </v-btn>
         <v-btn
-          color="primary"
+          class="payment-btn"
           variant="elevated"
           :loading="isProcessing"
           :disabled="!isPaymentButtonEnabled"
@@ -497,5 +498,61 @@ export default {
 
 :deep(.tosspayments-widget__agreement) {
   border-radius: 8px;
+}
+
+/* 프로젝트 표준 버튼 스타일 */
+.cancel-btn,
+.payment-btn {
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+  letter-spacing: 0.5px !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  min-width: 100px !important;
+  height: 40px !important;
+}
+
+.cancel-btn {
+  background: #F5F5F5 !important;
+  color: #666 !important;
+  border: 2px solid #E0E0E0 !important;
+  min-width: 80px !important;
+}
+
+.cancel-btn:hover:not(:disabled) {
+  background: #EEEEEE !important;
+  border-color: #BDBDBD !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.payment-btn {
+  background: linear-gradient(135deg, #FF8B8B, #FF6B6B) !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: 0 4px 16px rgba(255, 139, 139, 0.4);
+}
+
+.payment-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #FF6B6B, #FF5252) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(255, 139, 139, 0.6);
+}
+
+.payment-btn:active {
+  transform: translateY(0);
+}
+
+.cancel-btn:active,
+.payment-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.cancel-btn:disabled,
+.payment-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
 }
 </style>
