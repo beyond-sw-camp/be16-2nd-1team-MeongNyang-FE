@@ -5,9 +5,12 @@
     persistent
     scrollable
   >
-    <v-card>
-      <v-card-title class="d-flex align-center justify-space-between">
-        <span class="text-h6">결제하기</span>
+    <v-card class="payment-modal-card">
+      <v-card-title class="payment-modal-title d-flex align-center justify-space-between">
+        <div class="title-content">
+          <v-icon left size="24">mdi-credit-card</v-icon>
+          <span class="title-text">결제하기</span>
+        </div>
         <v-btn
           class="close-btn"
           icon="mdi-close"
@@ -456,17 +459,63 @@ export default {
 </script>
 
 <style scoped>
+/* 결제 모달 카드 스타일 */
+.payment-modal-card {
+  border-radius: 20px !important;
+  overflow: hidden;
+}
+
+/* 결제 모달 제목 스타일 */
+.payment-modal-title {
+  background: linear-gradient(135deg, #FF8B8B, #FF6B6B) !important;
+  color: white !important;
+  padding: 20px 24px !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.payment-modal-title::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  /* background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent); */
+  animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+.title-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.title-text {
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
 .payment-widget-container {
   min-height: 200px;
   border: 1px solid #e0e0e0;
-  border-radius: 8px;
+  border-radius: 16px;
   padding: 16px;
 }
 
 .agreement-container {
   min-height: 100px;
   border: 1px solid #e0e0e0;
-  border-radius: 8px;
+  border-radius: 16px;
   padding: 16px;
 }
 
@@ -476,17 +525,17 @@ export default {
 }
 
 :deep(.tosspayments-widget__payment-method) {
-  border-radius: 8px;
+  border-radius: 16px;
 }
 
 :deep(.tosspayments-widget__agreement) {
-  border-radius: 8px;
+  border-radius: 16px;
 }
 
 /* 프로젝트 표준 버튼 스타일 */
 .cancel-btn,
 .payment-btn {
-  border-radius: 12px !important;
+  border-radius: 16px !important;
   font-weight: 600 !important;
   text-transform: none !important;
   letter-spacing: 0.5px !important;
@@ -548,7 +597,7 @@ export default {
 /* 닫기 버튼 스타일 */
 .close-btn {
   background: transparent !important;
-  color: #FF8B8B !important;
+  color: white !important;
   border: none !important;
   box-shadow: none !important;
   min-width: 32px !important;
@@ -560,21 +609,21 @@ export default {
 
 .close-btn:hover {
   background: transparent !important;
-  color: #FF6B6B !important;
+  color: white !important;
   transform: none !important;
   box-shadow: none !important;
 }
 
 .close-btn:focus {
   background: transparent !important;
-  color: #FF6B6B !important;
+  color: white !important;
   outline: none !important;
   box-shadow: none !important;
 }
 
 .close-btn:active {
   background: transparent !important;
-  color: #FF5252 !important;
+  color: white !important;
   transform: none !important;
 }
 </style>
