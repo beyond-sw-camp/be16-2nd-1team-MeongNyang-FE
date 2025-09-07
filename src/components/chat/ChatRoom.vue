@@ -4656,11 +4656,13 @@ export default {
 .market-post-actions {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 12px;
   margin: 0 16px;
   background: transparent !important;
   border-top: none !important;
   padding: 8px 0 !important;
+  width: 100%;
 }
 
 /* v-card-actions에 특별히 적용되는 스타일 */
@@ -4699,7 +4701,16 @@ export default {
   border: none !important;
   box-shadow: none !important;
   padding: 8px 0 !important;
-  margin: 0 !important;
+  margin: 0 auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  max-width: none !important;
+  position: relative !important;
+  left: 0 !important;
+  right: 0 !important;
+  transform: translateX(0) !important;
 }
 
 /* market-post-info 클래스의 스타일도 제거 */
@@ -4707,6 +4718,24 @@ export default {
   background: transparent !important;
   background-color: transparent !important;
   border-bottom: none !important;
+}
+
+/* market-post-header 클래스의 스타일 수정 - market-post-actions만 중앙에 위치 */
+.market-post-card .market-post-header {
+  justify-content: space-between !important;
+  align-items: center !important;
+  display: flex !important;
+  width: 100% !important;
+  position: relative !important;
+}
+
+/* market-post-actions를 절대 위치로 중앙에 배치 */
+.market-post-card .market-post-header .market-post-actions {
+  position: absolute !important;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 1 !important;
 }
 
 .market-post-actions .buyer-actions,
