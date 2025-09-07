@@ -122,6 +122,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useSnackbar } from '@/composables/useSnackbar'
 import { useAuthStore } from '@/stores/auth'
+import { loadTossPayments } from '@tosspayments/tosspayments-sdk'
 
 export default {
   name: 'PaymentWidgetModal',
@@ -224,12 +225,8 @@ export default {
         // 실제 운영 환경에서는 환경변수로 설정하세요: process.env.VUE_APP_TOSS_CLIENT_KEY
         const clientKey = process.env.VUE_APP_TOSS_CLIENT_KEY
         
-        // 토스페이먼츠 SDK 로드 확인
-        if (typeof window.TossPayments === 'undefined') {
-          throw new Error('토스페이먼츠 SDK가 로드되지 않았습니다.')
-        }
-        
-        tossPayments.value = window.TossPayments(clientKey)
+        // v2 SDK의 loadTossPayments 함수 사용
+        tossPayments.value = await loadTossPayments(clientKey)
         
         // 결제위젯 인스턴스 생성
         paymentWidget.value = tossPayments.value.widgets({
@@ -421,26 +418,9 @@ export default {
       }
     })
     
-    // 컴포넌트 마운트 시 토스페이먼츠 SDK 로드
+    // 컴포넌트 마운트 시 (NPM 패키지 사용으로 SDK 로드 불필요)
     onMounted(() => {
-      // 토스페이먼츠 SDK가 이미 로드되어 있는지 확인
-      if (typeof window.TossPayments === 'undefined') {
-        // SDK 로드
-        const script = document.createElement('script')
-        script.src = 'https://js.tosspayments.com/v2/standard'
-        script.async = true
-        script.onload = () => {
-          console.log('토스페이먼츠 SDK 로드 완료')
-        }
-        script.onerror = () => {
-          console.error('토스페이먼츠 SDK 로드 실패')
-          showMessage({
-            type: 'error',
-            text: '결제 시스템을 불러올 수 없습니다.'
-          })
-        }
-        document.head.appendChild(script)
-      }
+      console.log('토스페이먼츠 NPM 패키지 사용 준비 완료')
     })
     
     // 컴포넌트 언마운트 시 정리
