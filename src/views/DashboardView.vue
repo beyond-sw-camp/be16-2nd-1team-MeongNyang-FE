@@ -207,10 +207,52 @@
                       <div class="insight-header">
                         <v-icon color="#F59E0B" size="24">mdi-lightbulb</v-icon>
                         <div class="insight-title">오늘의 팁</div>
+                        <v-spacer></v-spacer>
+                        <v-btn
+                          @click="refreshAITip"
+                          size="small"
+                          color="#F59E0B"
+                          variant="elevated"
+                          :loading="tipLoading"
+                          class="tip-action-btn"
+                          prepend-icon="mdi-refresh"
+                        >
+                          AI 새로고침
+                        </v-btn>
                       </div>
-                      <div class="tip-content">
+                      
+                      <div v-if="tipLoading" class="tip-loading">
+                        <v-progress-circular indeterminate color="#F59E0B" size="24"></v-progress-circular>
+                        <span class="ml-2">AI가 새로운 팁을 생성하는 중...</span>
+                      </div>
+                      
+                      <div v-else-if="tipError" class="tip-error">
+                        <v-icon color="error" size="24">mdi-alert-circle</v-icon>
+                        <span class="ml-2">{{ tipError }}</span>
+                        <v-btn 
+                          @click="refreshAITip" 
+                          size="small" 
+                          color="#F59E0B" 
+                          variant="elevated" 
+                          class="ml-2 tip-action-btn"
+                          prepend-icon="mdi-refresh"
+                        >
+                          다시 시도
+                        </v-btn>
+                      </div>
+                      
+                      <div v-else class="tip-content">
                         <div class="tip-text">{{ dailyTip.text }}</div>
                         <div class="tip-source">- {{ dailyTip.source }}</div>
+                        <div v-if="lastTipUpdate" class="tip-timestamp">
+                          {{ aiTipStore.lastUpdateFormatted }}에 업데이트됨
+                        </div>
+                        <div v-if="aiTipStore.isAITip" class="tip-ai-badge">
+                          <v-chip size="x-small" color="primary" variant="outlined">
+                            <v-icon start size="12">mdi-robot</v-icon>
+                            AI 생성
+                          </v-chip>
+                        </div>
                       </div>
                     </v-card>
                   </v-col>
@@ -233,6 +275,7 @@ import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { usePetStore } from '@/stores/pet'
+import { useAITipStore } from '@/stores/aiTip'
 import { postAPI, marketAPI, petAPI, chatAPI } from '@/services/api'
 import TrendingHashtags from '@/components/common/TrendingHashtags.vue'
 
@@ -245,6 +288,7 @@ export default {
     const router = useRouter()
     const authStore = useAuthStore()
     const petStore = usePetStore()
+    const aiTipStore = useAITipStore()
     
     const user = computed(() => authStore.user)
     const representativePet = computed(() => {
@@ -359,11 +403,11 @@ export default {
 
 
 
-    // 오늘의 팁 데이터
-    const dailyTip = ref({
-      text: '강아지와 산책할 때는 항상 목줄을 착용하고, 날씨가 더운 날에는 아침이나 저녁에 산책하는 것이 좋습니다. 오늘은 맑은 날씨라 산책하기 좋은 날이에요!',
-      source: '반려동물 전문가'
-    })
+    // AI 팁 store에서 상태 가져오기
+    const dailyTip = computed(() => aiTipStore.currentTip)
+    const tipLoading = computed(() => aiTipStore.loading)
+    const tipError = computed(() => aiTipStore.error)
+    const lastTipUpdate = computed(() => aiTipStore.currentTip.timestamp)
 
     // 날씨 관련 데이터
     const weatherData = ref(null)
@@ -457,8 +501,8 @@ export default {
         const data = await response.json()
         weatherData.value = data
         
-        // 날씨에 따른 팁 업데이트
-        updateDailyTip(data)
+        // AI를 통한 날씨에 따른 팁 업데이트
+        await updateDailyTipWithAI(data)
       } catch (error) {
         console.error('날씨 데이터 가져오기 실패:', error)
         weatherError.value = error.message || '날씨 정보를 가져오는 중 오류가 발생했습니다.'
@@ -475,31 +519,31 @@ export default {
       }
     }
 
-    // 날씨에 따른 일일 팁 업데이트
-    const updateDailyTip = (weather) => {
+    // AI를 통한 일일 팁 업데이트 (store 사용)
+    const updateDailyTipWithAI = async (weather) => {
       const temp = Math.round(weather.main.temp)
-      const description = weather.weather[0].description
+      const description = getWeatherDescription(weather.weather[0].description)
       
-      let tipText = ''
-      let tipSource = '반려동물 전문가'
+      await aiTipStore.fetchAITip({
+        weather: description,
+        temperature: temp.toString(),
+        petType: representativePet.value?.species || ''
+      })
+    }
 
-      if (temp > 30) {
-        tipText = '오늘은 매우 더운 날씨입니다. 반려동물과의 산책은 아침 일찍이나 저녁 늦게 하는 것이 좋습니다. 충분한 물을 준비하세요!'
-      } else if (temp > 25) {
-        tipText = '따뜻한 날씨입니다. 반려동물과 산책할 때는 그늘진 곳을 이용하고, 중간중간 휴식을 취해주세요.'
-      } else if (temp < 0) {
-        tipText = '추운 날씨입니다. 반려동물의 발가락과 귀를 보호하고, 실내 활동을 늘려주세요.'
-      } else if (description.includes('rain')) {
-        tipText = '비가 오는 날입니다. 실내에서 반려동물과 함께 놀아주거나, 비가 그친 후 산책하세요.'
-      } else if (description.includes('snow')) {
-        tipText = '눈이 오는 날입니다. 반려동물의 발에 눈이 달라붙지 않도록 주의하고, 따뜻한 옷을 입혀주세요.'
+
+    // AI 팁 새로고침 함수 (store 사용)
+    const refreshAITip = async () => {
+      // 캐시 강제 갱신
+      aiTipStore.forceRefresh()
+      
+      if (weatherData.value) {
+        await updateDailyTipWithAI(weatherData.value)
       } else {
-        tipText = '좋은 날씨입니다. 반려동물과 함께 산책하며 즐거운 시간을 보내세요!'
-      }
-
-      dailyTip.value = {
-        text: tipText,
-        source: tipSource
+        // 날씨 정보가 없어도 기본 팁으로 AI 요청
+        await aiTipStore.fetchAITip({
+          petType: representativePet.value?.species || ''
+        })
       }
     }
 
@@ -550,7 +594,13 @@ export default {
       locationLoading,
       getUserLocation,
       refreshWeather,
-      getWeatherDescription
+      getWeatherDescription,
+      // AI 팁 관련
+      tipLoading,
+      tipError,
+      lastTipUpdate,
+      refreshAITip,
+      aiTipStore
     }
   }
 }
@@ -995,6 +1045,64 @@ export default {
   font-size: 0.75rem;
   color: #B45309;
   font-style: italic;
+  margin-bottom: 4px;
+}
+
+.tip-timestamp {
+  font-size: 0.7rem;
+  color: #A78B5B;
+  font-style: italic;
+}
+
+.tip-ai-badge {
+  margin-top: 8px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* AI 팁 관련 스타일 */
+.tip-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  color: #6B7280;
+}
+
+.tip-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  color: #EF4444;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* 팁 액션 버튼 스타일 */
+.tip-action-btn {
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+  letter-spacing: 0.5px !important;
+  transition: all 0.3s ease !important;
+  color: white !important;
+}
+
+.tip-action-btn :deep(.v-btn__content) {
+  color: white !important;
+}
+
+.tip-action-btn:hover {
+  transform: translateY(-2px) !important;
+}
+
+.tip-action-btn:active {
+  transform: translateY(0) !important;
+}
+
+.tip-action-btn :deep(.v-btn__prepend) {
+  margin-inline-end: 6px !important;
 }
 
 /* 날씨 관련 스타일 */
