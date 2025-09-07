@@ -129,26 +129,74 @@
                       <div class="insight-header">
                         <v-icon color="#60A5FA" size="24">mdi-weather-sunny</v-icon>
                         <div class="insight-title">오늘의 날씨</div>
+                        <v-spacer></v-spacer>
+                        <v-btn
+                          v-if="!weatherData"
+                          @click="getUserLocation"
+                          size="small"
+                          color="#FF8B8B"
+                          variant="elevated"
+                          :loading="locationLoading"
+                          class="weather-action-btn"
+                          prepend-icon="mdi-map-marker"
+                        >
+                          위치 허용
+                        </v-btn>
+                        <v-btn
+                          v-else
+                          @click="refreshWeather"
+                          size="small"
+                          color="#FF8B8B"
+                          variant="elevated"
+                          :loading="weatherLoading"
+                          class="weather-action-btn"
+                          prepend-icon="mdi-refresh"
+                        >
+                          새로고침
+                        </v-btn>
                       </div>
-                      <div class="weather-detail">
+                      <div v-if="weatherLoading" class="weather-loading">
+                        <v-progress-circular indeterminate color="primary" size="24"></v-progress-circular>
+                        <span class="ml-2">날씨 정보를 가져오는 중...</span>
+                      </div>
+                      <div v-else-if="weatherError" class="weather-error">
+                        <v-icon color="error" size="24">mdi-alert-circle</v-icon>
+                        <span class="ml-2">{{ weatherError }}</span>
+                        <v-btn 
+                          @click="getUserLocation" 
+                          size="small" 
+                          color="#FF8B8B" 
+                          variant="elevated" 
+                          class="ml-2 weather-action-btn"
+                          prepend-icon="mdi-refresh"
+                        >
+                          다시 시도
+                        </v-btn>
+                      </div>
+                      <div v-else-if="weatherData" class="weather-detail">
                         <div class="weather-main-info">
-                          <div class="weather-temp-large">23°C</div>
-                          <div class="weather-desc">맑음</div>
+                          <div class="weather-temp-large">{{ Math.round(weatherData.main.temp) }}°C</div>
+                          <div class="weather-desc">{{ getWeatherDescription(weatherData.weather[0].description) }}</div>
+                          <div class="weather-location">{{ weatherData.name }}</div>
                         </div>
                         <div class="weather-details">
                           <div class="weather-detail-item">
                             <span class="detail-label">습도</span>
-                            <span class="detail-value">65%</span>
+                            <span class="detail-value">{{ weatherData.main.humidity }}%</span>
                           </div>
                           <div class="weather-detail-item">
                             <span class="detail-label">바람</span>
-                            <span class="detail-value">3m/s</span>
+                            <span class="detail-value">{{ Math.round(weatherData.wind.speed) }}m/s</span>
                           </div>
                           <div class="weather-detail-item">
                             <span class="detail-label">체감온도</span>
-                            <span class="detail-value">25°C</span>
+                            <span class="detail-value">{{ Math.round(weatherData.main.feels_like) }}°C</span>
                           </div>
                         </div>
+                      </div>
+                      <div v-else class="weather-placeholder">
+                        <v-icon color="grey" size="48">mdi-map-marker</v-icon>
+                        <p class="mt-2 text-grey">위치를 허용하면 날씨 정보를 확인할 수 있습니다</p>
                       </div>
                     </v-card>
                   </v-col>
@@ -317,6 +365,144 @@ export default {
       source: '반려동물 전문가'
     })
 
+    // 날씨 관련 데이터
+    const weatherData = ref(null)
+    const weatherLoading = ref(false)
+    const weatherError = ref('')
+    const locationLoading = ref(false)
+
+    // 날씨 설명을 한국어로 변환
+    const getWeatherDescription = (description) => {
+      const weatherMap = {
+        'clear sky': '맑음',
+        'few clouds': '구름 조금',
+        'scattered clouds': '구름 많음',
+        'broken clouds': '구름 많음',
+        'shower rain': '소나기',
+        'rain': '비',
+        'thunderstorm': '뇌우',
+        'snow': '눈',
+        'mist': '안개',
+        'fog': '안개',
+        'haze': '실안개',
+        'dust': '먼지',
+        'sand': '모래',
+        'ash': '재',
+        'squall': '돌풍',
+        'tornado': '토네이도'
+      }
+      return weatherMap[description] || description
+    }
+
+    // 사용자 위치 가져오기
+    const getUserLocation = () => {
+      if (!navigator.geolocation) {
+        weatherError.value = '이 브라우저는 위치 서비스를 지원하지 않습니다.'
+        return
+      }
+
+      locationLoading.value = true
+      weatherError.value = ''
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords
+          fetchWeatherData(latitude, longitude)
+        },
+        (error) => {
+          locationLoading.value = false
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              weatherError.value = '위치 접근이 거부되었습니다.'
+              break
+            case error.POSITION_UNAVAILABLE:
+              weatherError.value = '위치 정보를 사용할 수 없습니다.'
+              break
+            case error.TIMEOUT:
+              weatherError.value = '위치 요청이 시간 초과되었습니다.'
+              break
+            default:
+              weatherError.value = '위치를 가져오는 중 오류가 발생했습니다.'
+              break
+          }
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 300000 // 5분
+        }
+      )
+    }
+
+    // 날씨 데이터 가져오기
+    const fetchWeatherData = async (lat, lon) => {
+      weatherLoading.value = true
+      locationLoading.value = false
+      weatherError.value = ''
+
+      try {
+        const apiKey = process.env.VUE_APP_OPENWEATHER_API_KEY
+        if (!apiKey) {
+          throw new Error('OpenWeatherMap API 키가 설정되지 않았습니다.')
+        }
+
+        const response = await fetch(
+          `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=kr`
+        )
+
+        if (!response.ok) {
+          throw new Error(`날씨 API 요청 실패: ${response.status}`)
+        }
+
+        const data = await response.json()
+        weatherData.value = data
+        
+        // 날씨에 따른 팁 업데이트
+        updateDailyTip(data)
+      } catch (error) {
+        console.error('날씨 데이터 가져오기 실패:', error)
+        weatherError.value = error.message || '날씨 정보를 가져오는 중 오류가 발생했습니다.'
+      } finally {
+        weatherLoading.value = false
+      }
+    }
+
+    // 날씨 데이터 새로고침
+    const refreshWeather = () => {
+      if (weatherData.value) {
+        const { lat, lon } = weatherData.value.coord
+        fetchWeatherData(lat, lon)
+      }
+    }
+
+    // 날씨에 따른 일일 팁 업데이트
+    const updateDailyTip = (weather) => {
+      const temp = Math.round(weather.main.temp)
+      const description = weather.weather[0].description
+      
+      let tipText = ''
+      let tipSource = '반려동물 전문가'
+
+      if (temp > 30) {
+        tipText = '오늘은 매우 더운 날씨입니다. 반려동물과의 산책은 아침 일찍이나 저녁 늦게 하는 것이 좋습니다. 충분한 물을 준비하세요!'
+      } else if (temp > 25) {
+        tipText = '따뜻한 날씨입니다. 반려동물과 산책할 때는 그늘진 곳을 이용하고, 중간중간 휴식을 취해주세요.'
+      } else if (temp < 0) {
+        tipText = '추운 날씨입니다. 반려동물의 발가락과 귀를 보호하고, 실내 활동을 늘려주세요.'
+      } else if (description.includes('rain')) {
+        tipText = '비가 오는 날입니다. 실내에서 반려동물과 함께 놀아주거나, 비가 그친 후 산책하세요.'
+      } else if (description.includes('snow')) {
+        tipText = '눈이 오는 날입니다. 반려동물의 발에 눈이 달라붙지 않도록 주의하고, 따뜻한 옷을 입혀주세요.'
+      } else {
+        tipText = '좋은 날씨입니다. 반려동물과 함께 산책하며 즐거운 시간을 보내세요!'
+      }
+
+      dailyTip.value = {
+        text: tipText,
+        source: tipSource
+      }
+    }
+
 
 
 
@@ -356,7 +542,15 @@ export default {
       todayTasks,
       dailyTip,
       goToRepresentativePet,
-      handleSearch
+      handleSearch,
+      // 날씨 관련
+      weatherData,
+      weatherLoading,
+      weatherError,
+      locationLoading,
+      getUserLocation,
+      refreshWeather,
+      getWeatherDescription
     }
   }
 }
@@ -801,6 +995,67 @@ export default {
   font-size: 0.75rem;
   color: #B45309;
   font-style: italic;
+}
+
+/* 날씨 관련 스타일 */
+.weather-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  color: #6B7280;
+}
+
+.weather-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  color: #EF4444;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.weather-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: #9CA3AF;
+  text-align: center;
+}
+
+.weather-location {
+  font-size: 0.75rem;
+  color: #6B7280;
+  margin-top: 4px;
+}
+
+/* 날씨 액션 버튼 스타일 */
+.weather-action-btn {
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+  letter-spacing: 0.5px !important;
+  transition: all 0.3s ease !important;
+  color: white !important;
+}
+
+.weather-action-btn :deep(.v-btn__content) {
+  color: white !important;
+}
+
+.weather-action-btn:hover {
+  transform: translateY(-2px) !important;
+}
+
+.weather-action-btn:active {
+  transform: translateY(0) !important;
+}
+
+.weather-action-btn :deep(.v-btn__prepend) {
+  margin-inline-end: 6px !important;
 }
 
 
