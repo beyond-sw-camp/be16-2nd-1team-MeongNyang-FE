@@ -145,7 +145,7 @@
               <div v-if="isBuyer" class="buyer-actions">
                 <!-- 3단계: 판매완료 (상품이 실제로 판매됨) -->
                 <v-chip
-                  v-if="marketPostInfo?.status === 'SOLD'"
+                  v-if="marketPostInfo?.status === 'SOLD' || marketPostInfo?.delYN == 'Y'"
                   color="success"
                   variant="outlined"
                   class="status-chip text-center"
@@ -181,7 +181,7 @@
               <div v-else-if="isSeller" class="seller-actions">
                 <!-- 3단계: 판매완료 (상품이 실제로 판매됨) -->
                 <v-chip
-                  v-if="marketPostInfo?.status === 'SOLD'"
+                  v-if="marketPostInfo?.status === 'SOLD'|| marketPostInfo?.delYN == 'Y'"
                   color="success"
                   variant="outlined"
                   class="status-chip text-center"
@@ -2074,7 +2074,8 @@ export default {
           createdAt: postData.createdAt,
           latitude: postData.latitude,
           longitude: postData.longitude,
-          isLiked: postData.isLiked
+          isLiked: postData.isLiked,
+          delYN: postData.delYN
         }
         
         console.log('상품 정보 조회 완료:', marketPostInfo.value)
@@ -2098,6 +2099,7 @@ export default {
     }
     
     const getStatusColor = (status) => {
+      if (marketPostInfo.value?.delYN === 'Y') return 'error'
       switch (status) {
         case 'SALE': return 'success'
         case 'SOLD': return 'info'
@@ -2107,6 +2109,7 @@ export default {
     }
     
     const getStatusText = (status) => {
+      if (marketPostInfo.value?.delYN === 'Y') return '삭제됨'
       switch (status) {
         case 'SALE': return '판매중'
         case 'SOLD': return '판매완료'
@@ -2120,6 +2123,10 @@ export default {
     }
     
     const viewMarketPost = () => {
+      if (marketPostInfo.value?.delYN == 'Y') {
+        alert('상품이 삭제되었습니다.')
+        return
+      }
       if (currentRoom.value?.marketPostId) {
         // 상품 상세 페이지로 이동
         router.push({ name: 'MarketDetail', params: { id: currentRoom.value.marketPostId } })
