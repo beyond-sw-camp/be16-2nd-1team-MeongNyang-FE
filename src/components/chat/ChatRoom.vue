@@ -4658,6 +4658,55 @@ export default {
   align-items: center;
   gap: 12px;
   margin: 0 16px;
+  background: transparent !important;
+  border-top: none !important;
+  padding: 8px 0 !important;
+}
+
+/* v-card-actions에 특별히 적용되는 스타일 */
+.v-card-actions.market-post-actions {
+  background: transparent !important;
+  border-top: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 8px 0 !important;
+}
+
+/* 더 구체적인 선택자로 Vuetify 기본 스타일 완전 제거 */
+.market-post-card .v-card-actions.market-post-actions {
+  background: transparent !important;
+  border-top: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 8px 0 !important;
+  margin: 0 !important;
+}
+
+/* Vuetify v-card-actions의 기본 스타일 강제 제거 */
+.market-post-card .v-card-actions.market-post-actions::before {
+  display: none !important;
+}
+
+.market-post-card .v-card-actions.market-post-actions::after {
+  display: none !important;
+}
+
+/* 더 강력한 선택자로 모든 배경과 테두리 제거 */
+.market-post-card .market-post-actions {
+  background: transparent !important;
+  background-color: transparent !important;
+  border-top: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 8px 0 !important;
+  margin: 0 !important;
+}
+
+/* market-post-info 클래스의 스타일도 제거 */
+.market-post-card .market-post-info {
+  background: transparent !important;
+  background-color: transparent !important;
+  border-bottom: none !important;
 }
 
 .market-post-actions .buyer-actions,
