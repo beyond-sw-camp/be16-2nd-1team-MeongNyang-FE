@@ -232,7 +232,7 @@
             <v-card-text class="market-post-content">
               <div class="post-info-grid">
               <!-- 상품 이미지 -->
-              <div class="post-image-section">
+              <div @click="viewMarketPost" class="post-image-section">
                 <v-img
                   v-if="marketPostInfo.thumbnailUrl || (marketPostInfo.images && marketPostInfo.images.length > 0)"
                   :src="marketPostInfo.thumbnailUrl || marketPostInfo.images[0]"
@@ -4923,6 +4923,19 @@ export default {
   
   .post-image-section {
     align-items: center;
+    cursor: pointer;
+    transition: all 0.15s ease-out;
+    border-radius: 14px;
+    padding: 3px;
+  }
+  
+  .post-image-section:hover {
+    background: rgba(255, 139, 139, 0.05);
+    transform: scale(1.015);
+  }
+  
+  .post-image-section:active {
+    transform: scale(0.985);
   }
   
   .post-image,
@@ -5127,6 +5140,19 @@ export default {
   flex-direction: column;
   align-items: center;
   position: relative;
+  cursor: pointer;
+  transition: all 0.2s ease-out;
+  border-radius: 16px;
+  padding: 4px;
+}
+
+.post-image-section:hover {
+  background: rgba(255, 139, 139, 0.05);
+  transform: scale(1.02);
+}
+
+.post-image-section:active {
+  transform: scale(0.98);
 }
 
 .post-image {
@@ -5375,6 +5401,19 @@ export default {
   
   .post-image-section {
     align-items: center;
+    cursor: pointer;
+    transition: all 0.15s ease-out;
+    border-radius: 12px;
+    padding: 2px;
+  }
+  
+  .post-image-section:hover {
+    background: rgba(255, 139, 139, 0.05);
+    transform: scale(1.01);
+  }
+  
+  .post-image-section:active {
+    transform: scale(0.99);
   }
   
   .post-image,
