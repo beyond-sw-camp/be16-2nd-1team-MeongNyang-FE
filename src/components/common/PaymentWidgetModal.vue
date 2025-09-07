@@ -41,13 +41,23 @@
           <div id="payment-method" class="payment-widget-container"></div>
         </div>
 
-        <!-- 이용약관 -->
-        <div class="mb-6">
-          <div id="agreement" class="agreement-container"></div>
-        </div>
+          <!-- 이용약관 -->
+          <div class="mb-6">
+            <div class="d-flex align-center justify-space-between mb-2">
+              <h3 class="text-h6">이용약관</h3>
+              <v-chip
+                :color="agreementStatusColor"
+                size="small"
+                variant="flat"
+              >
+                {{ agreementStatusText }}
+              </v-chip>
+            </div>
+            <div id="agreement" class="agreement-container"></div>
+          </div>
 
         <!-- 고객 정보 -->
-        <div class="mb-6">
+        <!-- <div class="mb-6">
           <h3 class="text-h6 mb-3">고객 정보</h3>
           <v-row>
             <v-col cols="12" md="6">
@@ -79,7 +89,7 @@
               />
             </v-col>
           </v-row>
-        </div>
+        </div> -->
       </v-card-text>
 
       <v-divider />
@@ -96,7 +106,7 @@
           color="primary"
           variant="elevated"
           :loading="isProcessing"
-          :disabled="!isFormValid"
+          :disabled="!isPaymentButtonEnabled"
           @click="requestPayment"
         >
           {{ formatPrice(orderInfo.amount) }}원 결제하기
@@ -127,7 +137,7 @@ export default {
       })
     }
   },
-  emits: ['update:modelValue', 'payment-success', 'payment-fail'],
+  emits: ['update:modelValue', 'payment-success', 'payment-fail', 'payment-cancel'],
   setup(props, { emit }) {
     const { showMessage } = useSnackbar()
     
@@ -140,6 +150,8 @@ export default {
     const isProcessing = ref(false)
     const paymentWidget = ref(null)
     const tossPayments = ref(null)
+    const agreementWidget = ref(null)
+    const isAgreementValid = ref(false)
     
     // 고객 정보
     const customerInfo = ref({
@@ -168,6 +180,27 @@ export default {
              customerInfo.value.customerMobilePhone &&
              rules.email(customerInfo.value.customerEmail) === true &&
              rules.phone(customerInfo.value.customerMobilePhone) === true
+    })
+    
+    // 결제 버튼 활성화 조건
+    const isPaymentButtonEnabled = computed(() => {
+      return isAgreementValid.value && !isProcessing.value && paymentWidget.value !== null && agreementWidget.value !== null
+    })
+    
+    // 약관 상태 표시 텍스트
+    const agreementStatusText = computed(() => {
+      if (!paymentWidget.value || !agreementWidget.value) {
+        return '로딩 중...'
+      }
+      return isAgreementValid.value ? '모든 약관 동의 완료' : '약관 동의 필요'
+    })
+    
+    // 약관 상태 칩 색상
+    const agreementStatusColor = computed(() => {
+      if (!paymentWidget.value || !agreementWidget.value) {
+        return 'grey'
+      }
+      return isAgreementValid.value ? 'success' : 'warning'
     })
     
     // 가격 포맷팅
@@ -212,10 +245,37 @@ export default {
         })
         
         // 이용약관 UI 렌더링
-        await paymentWidget.value.renderAgreement({
+        agreementWidget.value = await paymentWidget.value.renderAgreement({
           selector: '#agreement',
           variantKey: 'DEFAULT'
         })
+        
+        // 약관 동의 상태 변경 이벤트 리스너 등록
+        agreementWidget.value.on('agreementStatusChange', (agreementStatus) => {
+          console.log('약관 동의 상태 변경:', agreementStatus)
+          isAgreementValid.value = agreementStatus.agreedRequiredTerms
+        })
+        
+        // 약관 위젯 렌더링 완료 후 초기 상태 확인
+        // 약간의 지연을 두고 초기 상태를 확인
+        setTimeout(async () => {
+          try {
+            // 약관 위젯이 완전히 렌더링된 후 초기 상태를 확인
+            if (agreementWidget.value && typeof agreementWidget.value.getAgreementStatus === 'function') {
+              const agreementStatus = await agreementWidget.value.getAgreementStatus()
+              console.log('약관 초기 상태 확인:', agreementStatus)
+              isAgreementValid.value = agreementStatus.agreedRequiredTerms
+            } else {
+              // getAgreementStatus 메서드가 없는 경우 기본값으로 true 설정 (기본 동의 상태)
+              isAgreementValid.value = true
+              console.log('약관 초기 상태를 true로 설정 (기본 동의 상태)')
+            }
+          } catch (error) {
+            console.warn('약관 초기 상태 확인 실패:', error)
+            // 오류 발생 시 기본값으로 true 설정 (기본 동의 상태)
+            isAgreementValid.value = true
+          }
+        }, 500) // 500ms 지연
         
       } catch (error) {
         console.error('토스페이먼츠 초기화 실패:', error)
@@ -226,7 +286,38 @@ export default {
       }
     }
     
-    // 결제 요청
+    // Promise 방식의 결제 요청 함수
+    const requestPaymentPromise = (paymentData) => {
+      return new Promise((resolve, reject) => {
+        if (!paymentWidget.value) {
+          const error = new Error('결제 시스템이 초기화되지 않았습니다.')
+          error.type = 'INIT_ERROR'
+          reject(error)
+          return
+        }
+
+        // 토스페이먼츠 requestPayment는 Promise를 반환하므로 직접 사용
+        paymentWidget.value.requestPayment(paymentData)
+          .then((result) => {
+            resolve(result)
+          })
+          .catch((error) => {
+            // 에러 타입 구분
+            if (error.code === 'USER_CANCEL' || error.message?.includes('cancel') || error.message?.includes('취소')) {
+              error.type = 'USER_CANCEL'
+            } else if (error.code === 'INVALID_CARD_COMPANY' || error.message?.includes('카드')) {
+              error.type = 'CARD_ERROR'
+            } else if (error.code === 'INSUFFICIENT_BALANCE' || error.message?.includes('잔액')) {
+              error.type = 'BALANCE_ERROR'
+            } else {
+              error.type = 'PAYMENT_ERROR'
+            }
+            reject(error)
+          })
+      })
+    }
+
+    // 결제 요청 (UI 처리 포함)
     const requestPayment = async () => {
       if (!paymentWidget.value) {
         showMessage({
@@ -236,10 +327,19 @@ export default {
         return
       }
       
-      if (!isFormValid.value) {
+    //   if (!isFormValid.value) {
+    //     showMessage({
+    //       type: 'error',
+    //       text: '고객 정보를 올바르게 입력해주세요.'
+    //     })
+    //     return
+    //   }
+      
+      // 약관 동의 상태 확인
+      if (!isAgreementValid.value) {
         showMessage({
           type: 'error',
-          text: '고객 정보를 올바르게 입력해주세요.'
+          text: '모든 필수 약관에 동의해주세요.'
         })
         return
       }
@@ -247,27 +347,55 @@ export default {
       isProcessing.value = true
       
       try {
-        // 결제 요청
-        await paymentWidget.value.requestPayment({
+        // 결제 데이터 구성
+        const paymentData = {
           orderId: props.orderInfo.orderId,
           orderName: props.orderInfo.orderName,
           successUrl: `${window.location.origin}/payment/success?orderId=${props.orderInfo.orderId}&amount=${props.orderInfo.amount}&roomId=${props.orderInfo.roomId || ''}`,
           failUrl: `${window.location.origin}/payment/fail?orderId=${props.orderInfo.orderId}&roomId=${props.orderInfo.roomId || ''}`,
-          customerEmail: customerInfo.value.customerEmail,
-          customerName: customerInfo.value.customerName,
-          customerMobilePhone: customerInfo.value.customerMobilePhone
-        })
+        //   customerEmail: customerInfo.value.customerEmail,
+        //   customerName: customerInfo.value.customerName,
+        //   customerMobilePhone: customerInfo.value.customerMobilePhone
+        }
+
+        // Promise 방식으로 결제 요청
+        const result = await requestPaymentPromise(paymentData)
+        
+        // 결제 성공 처리 (성공 URL로 리다이렉트되므로 여기까지 도달하지 않을 수 있음)
+        console.log('결제 요청 성공:', result)
         
       } catch (error) {
         console.error('결제 요청 실패:', error)
         isProcessing.value = false
         
-        // 결제 실패 처리
-        emit('payment-fail', error)
-        showMessage({
-          type: 'error',
-          text: '결제 요청에 실패했습니다.'
-        })
+        // 에러 타입에 따른 다른 처리
+        if (error.type === 'USER_CANCEL') {
+          // 사용자가 취소한 경우 - 오류 메시지 표시하지 않음
+          console.log('사용자가 결제를 취소했습니다.')
+          emit('payment-cancel', error)
+          // 모달만 닫고 별도 메시지 없음
+        } else if (error.type === 'CARD_ERROR') {
+          // 카드 관련 오류
+          emit('payment-fail', error)
+          showMessage({
+            type: 'error',
+            text: '카드 정보를 확인해주세요.'
+          })
+        } else if (error.type === 'BALANCE_ERROR') {
+          // 잔액 부족 오류
+          emit('payment-fail', error)
+          showMessage({
+            type: 'error',
+            text: '잔액이 부족합니다.'
+          })
+        } else {
+          // 기타 결제 오류
+          emit('payment-fail', error)
+          showMessage({
+            type: 'error',
+            text: '결제 요청에 실패했습니다.'
+          })
+        }
       }
     }
     
@@ -280,6 +408,9 @@ export default {
           customerEmail: '',
           customerMobilePhone: ''
         }
+        
+        // 약관 동의 상태 초기화 (기본적으로 동의된 상태로 시작)
+        isAgreementValid.value = true
         
         // 토스페이먼츠 초기화
         await initializeTossPayments()
@@ -310,6 +441,11 @@ export default {
     
     // 컴포넌트 언마운트 시 정리
     onUnmounted(() => {
+      if (agreementWidget.value) {
+        // 약관 위젯 정리
+        agreementWidget.value.destroy().catch(console.error)
+        agreementWidget.value = null
+      }
       if (paymentWidget.value) {
         // 위젯 정리 (필요한 경우)
         paymentWidget.value = null
@@ -322,9 +458,14 @@ export default {
       customerInfo,
       rules,
       isFormValid,
+      isAgreementValid,
+      isPaymentButtonEnabled,
+      agreementStatusText,
+      agreementStatusColor,
       formatPrice,
       closeModal,
-      requestPayment
+      requestPayment,
+      requestPaymentPromise
     }
   }
 }

@@ -772,6 +772,7 @@
     :order-info="paymentOrderInfo"
     @payment-success="handlePaymentSuccess"
     @payment-fail="handlePaymentFail"
+    @payment-cancel="handlePaymentCancel"
   />
 </template>
 
@@ -1972,6 +1973,14 @@ export default {
       }
     }
     
+    // 결제 취소 처리
+    const handlePaymentCancel = (error) => {
+      console.log('결제 취소:', error)
+      showPaymentModal.value = false
+      
+      // 사용자가 취소한 경우 별도 메시지 없음 (자연스러운 UX)
+    }
+    
     const approvePurchase = async () => {
       try {
         console.log('구매 요청 승인 버튼 클릭됨')
@@ -2158,6 +2167,7 @@ export default {
       paymentOrderInfo,
       handlePaymentSuccess,
       handlePaymentFail,
+      handlePaymentCancel,
       isOnline,
       getInitials,
       getParticipantProfileImage,
