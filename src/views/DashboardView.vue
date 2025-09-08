@@ -94,23 +94,55 @@
             
             <v-row>
               <v-col cols="12" md="6">
-                <v-card class="task-card">
-                  <div class="task-header">
-                    <v-icon color="#FF8B8B" size="24">mdi-checkbox-marked-circle</v-icon>
-                    <div class="task-title">반려동물 관리</div>
+                <v-card class="insight-card">
+                  <div class="insight-header">
+                    <v-icon color="#F59E0B" size="24">mdi-lightbulb</v-icon>
+                    <div class="insight-title">오늘의 팁</div>
+                    <v-spacer></v-spacer>
+                    <v-btn
+                      @click="refreshAITip"
+                      size="small"
+                      color="#F59E0B"
+                      variant="elevated"
+                      :loading="tipLoading"
+                      class="tip-action-btn"
+                      prepend-icon="mdi-refresh"
+                    >
+                      AI 새로고침
+                    </v-btn>
                   </div>
                   
-                  <div class="task-list">
-                    <div class="task-item" v-for="task in todayTasks" :key="task.id">
-                      <v-checkbox 
-                        v-model="task.completed" 
-                        :color="task.color"
-                        hide-details
-                      />
-                      <div class="task-text" :class="{ 'completed': task.completed }">
-                        {{ task.text }}
-                      </div>
-                      <div class="task-time">{{ task.time }}</div>
+                  <div v-if="tipLoading" class="tip-loading">
+                    <v-progress-circular indeterminate color="#F59E0B" size="24"></v-progress-circular>
+                    <span class="ml-2">AI가 새로운 팁을 생성하는 중...</span>
+                  </div>
+                  
+                  <div v-else-if="tipError" class="tip-error">
+                    <v-icon color="error" size="24">mdi-alert-circle</v-icon>
+                    <span class="ml-2">{{ tipError }}</span>
+                    <v-btn 
+                      @click="refreshAITip" 
+                      size="small" 
+                      color="#F59E0B" 
+                      variant="elevated" 
+                      class="ml-2 tip-action-btn"
+                      prepend-icon="mdi-refresh"
+                    >
+                      다시 시도
+                    </v-btn>
+                  </div>
+                  
+                  <div v-else class="tip-content">
+                    <div class="tip-text">{{ dailyTip.text }}</div>
+                    <div class="tip-source">- {{ dailyTip.source }}</div>
+                    <div v-if="lastTipUpdate" class="tip-timestamp">
+                      {{ aiTipStore.lastUpdateFormatted }}에 업데이트됨
+                    </div>
+                    <div v-if="aiTipStore.isAITip" class="tip-ai-badge">
+                      <v-chip size="x-small" color="primary" variant="outlined">
+                        <v-icon start size="12">mdi-robot</v-icon>
+                        AI 생성
+                      </v-chip>
                     </div>
                   </div>
                 </v-card>
@@ -129,45 +161,77 @@
                       <div class="insight-header">
                         <v-icon color="#60A5FA" size="24">mdi-weather-sunny</v-icon>
                         <div class="insight-title">오늘의 날씨</div>
+                        <v-spacer></v-spacer>
+                        <v-btn
+                          v-if="!weatherData"
+                          @click="getUserLocation"
+                          size="small"
+                          color="#FF8B8B"
+                          variant="elevated"
+                          :loading="locationLoading"
+                          class="weather-action-btn"
+                          prepend-icon="mdi-map-marker"
+                        >
+                          위치 허용
+                        </v-btn>
+                        <v-btn
+                          v-else
+                          @click="refreshWeather"
+                          size="small"
+                          color="#FF8B8B"
+                          variant="elevated"
+                          :loading="weatherLoading"
+                          class="weather-action-btn"
+                          prepend-icon="mdi-refresh"
+                        >
+                          새로고침
+                        </v-btn>
                       </div>
-                      <div class="weather-detail">
+                      <div v-if="weatherLoading" class="weather-loading">
+                        <v-progress-circular indeterminate color="primary" size="24"></v-progress-circular>
+                        <span class="ml-2">날씨 정보를 가져오는 중...</span>
+                      </div>
+                      <div v-else-if="weatherError" class="weather-error">
+                        <v-icon color="error" size="24">mdi-alert-circle</v-icon>
+                        <span class="ml-2">{{ weatherError }}</span>
+                        <v-btn 
+                          @click="getUserLocation" 
+                          size="small" 
+                          color="#FF8B8B" 
+                          variant="elevated" 
+                          class="ml-2 weather-action-btn"
+                          prepend-icon="mdi-refresh"
+                        >
+                          다시 시도
+                        </v-btn>
+                      </div>
+                      <div v-else-if="weatherData" class="weather-detail">
                         <div class="weather-main-info">
-                          <div class="weather-temp-large">23°C</div>
-                          <div class="weather-desc">맑음</div>
+                          <div class="weather-temp-large">{{ Math.round(weatherData.main.temp) }}°C</div>
+                          <div class="weather-desc">{{ getWeatherDescription(weatherData.weather[0].description) }}</div>
+                          <div class="weather-location">{{ weatherData.name }}</div>
                         </div>
                         <div class="weather-details">
                           <div class="weather-detail-item">
                             <span class="detail-label">습도</span>
-                            <span class="detail-value">65%</span>
+                            <span class="detail-value">{{ weatherData.main.humidity }}%</span>
                           </div>
                           <div class="weather-detail-item">
                             <span class="detail-label">바람</span>
-                            <span class="detail-value">3m/s</span>
+                            <span class="detail-value">{{ Math.round(weatherData.wind.speed) }}m/s</span>
                           </div>
                           <div class="weather-detail-item">
                             <span class="detail-label">체감온도</span>
-                            <span class="detail-value">25°C</span>
+                            <span class="detail-value">{{ Math.round(weatherData.main.feels_like) }}°C</span>
                           </div>
                         </div>
                       </div>
-                    </v-card>
-                  </v-col>
-
-                  <!-- 활동 팁 섹션 -->
-                  <v-col cols="12">
-                    <v-card class="insight-card">
-                      <div class="insight-header">
-                        <v-icon color="#F59E0B" size="24">mdi-lightbulb</v-icon>
-                        <div class="insight-title">오늘의 팁</div>
-                      </div>
-                      <div class="tip-content">
-                        <div class="tip-text">{{ dailyTip.text }}</div>
-                        <div class="tip-source">- {{ dailyTip.source }}</div>
+                      <div v-else class="weather-placeholder">
+                        <v-icon color="grey" size="48">mdi-map-marker</v-icon>
+                        <p class="mt-2 text-grey">위치를 허용하면 날씨 정보를 확인할 수 있습니다</p>
                       </div>
                     </v-card>
                   </v-col>
-
-
                 </v-row>
               </v-col>
             </v-row>
@@ -185,6 +249,7 @@ import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { usePetStore } from '@/stores/pet'
+import { useAITipStore } from '@/stores/aiTip'
 import { postAPI, marketAPI, petAPI, chatAPI } from '@/services/api'
 import TrendingHashtags from '@/components/common/TrendingHashtags.vue'
 
@@ -197,6 +262,7 @@ export default {
     const router = useRouter()
     const authStore = useAuthStore()
     const petStore = usePetStore()
+    const aiTipStore = useAITipStore()
     
     const user = computed(() => authStore.user)
     const representativePet = computed(() => {
@@ -277,45 +343,152 @@ export default {
       router.push(`/search?searchType=${searchData.searchType}&keyword=${encodeURIComponent(searchData.keyword)}`)
     }
     
-    // 오늘의 할 일 데이터
-    const todayTasks = ref([
-      {
-        id: 1,
-        text: '강아지 산책하기',
-        completed: false,
-        color: '#4ADE80',
-        time: '오전 9시'
-      },
-      {
-        id: 2,
-        text: '사료 보충하기',
-        completed: true,
-        color: '#FF8B8B',
-        time: '오전 8시'
-      },
-      {
-        id: 3,
-        text: '목욕 시키기',
-        completed: false,
-        color: '#60A5FA',
-        time: '오후 3시'
-      },
-      {
-        id: 4,
-        text: '예방접종 일정 확인',
-        completed: false,
-        color: '#F59E0B',
-        time: '오후 6시'
+
+
+
+    // AI 팁 store에서 상태 가져오기
+    const dailyTip = computed(() => aiTipStore.currentTip)
+    const tipLoading = computed(() => aiTipStore.loading)
+    const tipError = computed(() => aiTipStore.error)
+    const lastTipUpdate = computed(() => aiTipStore.currentTip.timestamp)
+
+    // 날씨 관련 데이터
+    const weatherData = ref(null)
+    const weatherLoading = ref(false)
+    const weatherError = ref('')
+    const locationLoading = ref(false)
+
+    // 날씨 설명을 한국어로 변환
+    const getWeatherDescription = (description) => {
+      const weatherMap = {
+        'clear sky': '맑음',
+        'few clouds': '구름 조금',
+        'scattered clouds': '구름 많음',
+        'broken clouds': '구름 많음',
+        'shower rain': '소나기',
+        'rain': '비',
+        'thunderstorm': '뇌우',
+        'snow': '눈',
+        'mist': '안개',
+        'fog': '안개',
+        'haze': '실안개',
+        'dust': '먼지',
+        'sand': '모래',
+        'ash': '재',
+        'squall': '돌풍',
+        'tornado': '토네이도'
       }
-    ])
+      return weatherMap[description] || description
+    }
+
+    // 사용자 위치 가져오기
+    const getUserLocation = () => {
+      if (!navigator.geolocation) {
+        weatherError.value = '이 브라우저는 위치 서비스를 지원하지 않습니다.'
+        return
+      }
+
+      locationLoading.value = true
+      weatherError.value = ''
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords
+          fetchWeatherData(latitude, longitude)
+        },
+        (error) => {
+          locationLoading.value = false
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              weatherError.value = '위치 접근이 거부되었습니다.'
+              break
+            case error.POSITION_UNAVAILABLE:
+              weatherError.value = '위치 정보를 사용할 수 없습니다.'
+              break
+            case error.TIMEOUT:
+              weatherError.value = '위치 요청이 시간 초과되었습니다.'
+              break
+            default:
+              weatherError.value = '위치를 가져오는 중 오류가 발생했습니다.'
+              break
+          }
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 300000 // 5분
+        }
+      )
+    }
+
+    // 날씨 데이터 가져오기
+    const fetchWeatherData = async (lat, lon) => {
+      weatherLoading.value = true
+      locationLoading.value = false
+      weatherError.value = ''
+
+      try {
+        const apiKey = process.env.VUE_APP_OPENWEATHER_API_KEY
+        if (!apiKey) {
+          throw new Error('OpenWeatherMap API 키가 설정되지 않았습니다.')
+        }
+
+        const response = await fetch(
+          `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=kr`
+        )
+
+        if (!response.ok) {
+          throw new Error(`날씨 API 요청 실패: ${response.status}`)
+        }
+
+        const data = await response.json()
+        weatherData.value = data
+        
+        // AI를 통한 날씨에 따른 팁 업데이트
+        await updateDailyTipWithAI(data)
+      } catch (error) {
+        console.error('날씨 데이터 가져오기 실패:', error)
+        weatherError.value = error.message || '날씨 정보를 가져오는 중 오류가 발생했습니다.'
+      } finally {
+        weatherLoading.value = false
+      }
+    }
+
+    // 날씨 데이터 새로고침
+    const refreshWeather = () => {
+      if (weatherData.value) {
+        const { lat, lon } = weatherData.value.coord
+        fetchWeatherData(lat, lon)
+      }
+    }
+
+    // AI를 통한 일일 팁 업데이트 (store 사용)
+    const updateDailyTipWithAI = async (weather) => {
+      const temp = Math.round(weather.main.temp)
+      const description = getWeatherDescription(weather.weather[0].description)
+      
+      await aiTipStore.fetchAITip({
+        weather: description,
+        temperature: temp.toString(),
+        petType: representativePet.value?.species || ''
+      })
+    }
 
 
-
-    // 오늘의 팁 데이터
-    const dailyTip = ref({
-      text: '강아지와 산책할 때는 항상 목줄을 착용하고, 날씨가 더운 날에는 아침이나 저녁에 산책하는 것이 좋습니다. 오늘은 맑은 날씨라 산책하기 좋은 날이에요!',
-      source: '반려동물 전문가'
-    })
+    // AI 팁 새로고침 함수 (store 사용)
+    const refreshAITip = async () => {
+      // 캐시 강제 갱신
+      aiTipStore.forceRefresh()
+      
+      if (weatherData.value) {
+        await updateDailyTipWithAI(weatherData.value)
+      } else {
+        // 날씨 정보가 없어도 기본 팁으로 AI 요청
+        await aiTipStore.fetchAITip({
+          petType: representativePet.value?.species || ''
+        })
+      }
+    }
 
 
 
@@ -353,10 +526,23 @@ export default {
       marketCount,
       chatCount,
       representativePet,
-      todayTasks,
       dailyTip,
       goToRepresentativePet,
-      handleSearch
+      handleSearch,
+      // 날씨 관련
+      weatherData,
+      weatherLoading,
+      weatherError,
+      locationLoading,
+      getUserLocation,
+      refreshWeather,
+      getWeatherDescription,
+      // AI 팁 관련
+      tipLoading,
+      tipError,
+      lastTipUpdate,
+      refreshAITip,
+      aiTipStore
     }
   }
 }
@@ -592,68 +778,9 @@ export default {
   font-weight: 500;
 }
 
-/* 오늘의 할 일 */
+/* 인사이트 섹션 */
 .today-tasks-section {
   margin-top: 32px;
-}
-
-.task-card {
-  border-radius: 16px;
-  padding: 24px;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  height: 100%;
-  min-height: 500px;
-}
-
-.task-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.task-title {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #1E293B;
-  margin-left: 12px;
-}
-
-.task-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.task-item {
-  display: flex;
-  align-items: center;
-  padding: 12px;
-  background: #F8FAFC;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-
-.task-item:hover {
-  background: #F1F5F9;
-}
-
-.task-text {
-  font-size: 0.875rem;
-  color: #374151;
-  margin-left: 12px;
-  flex: 1;
-  transition: all 0.2s ease;
-}
-
-.task-text.completed {
-  text-decoration: line-through;
-  color: #9CA3AF;
-}
-
-.task-time {
-  font-size: 0.75rem;
-  color: #6B7280;
-  font-weight: 500;
 }
 
 /* 인사이트 카드 */
@@ -788,6 +915,7 @@ export default {
   background: #FEF3C7;
   border-radius: 8px;
   border-left: 3px solid #F59E0B;
+  text-align: left;
 }
 
 .tip-text {
@@ -795,12 +923,132 @@ export default {
   color: #92400E;
   line-height: 1.5;
   margin-bottom: 8px;
+  white-space: pre-line;
 }
 
 .tip-source {
   font-size: 0.75rem;
   color: #B45309;
   font-style: italic;
+  margin-bottom: 4px;
+}
+
+.tip-timestamp {
+  font-size: 0.7rem;
+  color: #A78B5B;
+  font-style: italic;
+}
+
+.tip-ai-badge {
+  margin-top: 8px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* AI 팁 관련 스타일 */
+.tip-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  color: #6B7280;
+}
+
+.tip-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  color: #EF4444;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* 팁 액션 버튼 스타일 */
+.tip-action-btn {
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+  letter-spacing: 0.5px !important;
+  transition: all 0.3s ease !important;
+  color: white !important;
+}
+
+.tip-action-btn :deep(.v-btn__content) {
+  color: white !important;
+}
+
+.tip-action-btn:hover {
+  transform: translateY(-2px) !important;
+}
+
+.tip-action-btn:active {
+  transform: translateY(0) !important;
+}
+
+.tip-action-btn :deep(.v-btn__prepend) {
+  margin-inline-end: 6px !important;
+}
+
+/* 날씨 관련 스타일 */
+.weather-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  color: #6B7280;
+}
+
+.weather-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  color: #EF4444;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.weather-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: #9CA3AF;
+  text-align: center;
+}
+
+.weather-location {
+  font-size: 0.75rem;
+  color: #6B7280;
+  margin-top: 4px;
+}
+
+/* 날씨 액션 버튼 스타일 */
+.weather-action-btn {
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+  letter-spacing: 0.5px !important;
+  transition: all 0.3s ease !important;
+  color: white !important;
+}
+
+.weather-action-btn :deep(.v-btn__content) {
+  color: white !important;
+}
+
+.weather-action-btn:hover {
+  transform: translateY(-2px) !important;
+}
+
+.weather-action-btn:active {
+  transform: translateY(0) !important;
+}
+
+.weather-action-btn :deep(.v-btn__prepend) {
+  margin-inline-end: 6px !important;
 }
 
 
@@ -869,11 +1117,6 @@ export default {
   /* 모바일에서 인사이트 섹션 조정 */
   .today-tasks-section .v-row {
     flex-direction: column;
-  }
-
-  .task-card {
-    margin-bottom: 16px;
-    min-height: auto;
   }
 
   .insight-card {
