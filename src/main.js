@@ -16,17 +16,18 @@ window.axios = axios
 
 setApiRouter(router)
 
+// ❌ 중복된 axios 인터셉터 제거 - api.js에서 이미 설정됨
 // axios interceptor 설정
-axios.interceptors.request.use(
-  config => {
-    const accessToken = localStorage.getItem("accessToken")
-    if (accessToken) config.headers['Authorization'] = `Bearer ${accessToken}`
-    return config
-  },
-  error => {
-    return Promise.reject(error)
-  }
-)
+// axios.interceptors.request.use(
+//   config => {
+//     const accessToken = localStorage.getItem("accessToken")
+//     if (accessToken) config.headers['Authorization'] = `Bearer ${accessToken}`
+//     return config
+//   },
+//   error => {
+//     return Promise.reject(error)
+//   }
+// )
 
 
 
