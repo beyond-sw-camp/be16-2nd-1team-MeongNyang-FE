@@ -84,6 +84,11 @@ router.beforeEach(async (to, from, next) => {
    if (to.path.startsWith('/oauth/')) return next()
 
   const authStore = useAuthStore()
+  
+  // 초기화가 완료될 때까지 대기
+  if (!authStore.isInitialized) {
+    await authStore.initialize()
+  }
 
   // 인증이 필요한 페이지인지 확인
   if (to.meta.requiresAuth) {
