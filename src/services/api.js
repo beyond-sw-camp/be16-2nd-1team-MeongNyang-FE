@@ -391,6 +391,11 @@ export const marketAPI = {
   // 사용자의 찜한 게시글 목록 조회
   getUserLikedPosts() {
     return apiClient.get('/markets/likes/user')
+  },
+
+  // 결제 확인
+  confirmPayment: (paymentData) => {
+    return apiClient.post('/markets/payments/confirm', paymentData)
   }
 }
 

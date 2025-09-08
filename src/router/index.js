@@ -7,8 +7,6 @@ import HomeView from '@/views/HomeView.vue'
 import DashboardView from '@/views/DashboardView.vue'
 import ThemeDemoView from '@/views/ThemeDemoView.vue'
 import SearchView from '@/views/SearchView.vue'
-import PaymentSuccessView from '@/views/PaymentSuccessView.vue'
-import PaymentFailView from '@/views/PaymentFailView.vue'
 
 // 라우터 모듈들
 import authRoutes from './modules/auth'
@@ -47,18 +45,6 @@ const baseRoutes = [
     component: ThemeDemoView,
     meta: { requiresAuth: false }
   },
-  {
-    path: '/payment/success',
-    name: 'PaymentSuccess',
-    component: PaymentSuccessView,
-    meta: { requiresAuth: false }
-  },
-  {
-    path: '/payment/fail',
-    name: 'PaymentFail',
-    component: PaymentFailView,
-    meta: { requiresAuth: false }
-  }
 ]
 
 // 모든 라우트 통합

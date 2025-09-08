@@ -1528,8 +1528,6 @@ export default {
       }
     }
     
-
-    
     const formatTime = (dateTime) => {
       if (!dateTime) return ''
       const date = new Date(dateTime)
@@ -1963,14 +1961,16 @@ export default {
     // 결제 성공 처리
     const handlePaymentSuccess = (paymentData) => {
       console.log('결제 성공:', paymentData)
-      showPaymentModal.value = false
+      // 모달을 자동으로 닫지 않음 - 사용자가 직접 닫도록 함
+      // showPaymentModal.value = false
       
-      if (showMessage) {
-        showMessage({
-          type: 'success',
-          text: '결제가 완료되었습니다.'
-        })
-      }
+      // 스낵바 메시지도 제거 - 모달 내에서 성공 메시지 표시
+      // if (showMessage) {
+      //   showMessage({
+      //     type: 'success',
+      //     text: '결제가 완료되었습니다.'
+      //   })
+      // }
       
       // 여기에 결제 성공 후 처리 로직 추가 (예: 주문 상태 업데이트, 채팅 메시지 전송 등)
     }
@@ -1978,14 +1978,16 @@ export default {
     // 결제 실패 처리
     const handlePaymentFail = (error) => {
       console.error('결제 실패:', error)
-      showPaymentModal.value = false
+      // 모달을 자동으로 닫지 않음 - 사용자가 직접 닫도록 함
+      // showPaymentModal.value = false
       
-      if (showMessage) {
-        showMessage({
-          type: 'error',
-          text: '결제에 실패했습니다.'
-        })
-      }
+      // 스낵바 메시지도 제거 - 모달 내에서 실패 메시지 표시
+      // if (showMessage) {
+      //   showMessage({
+      //     type: 'error',
+      //     text: '결제에 실패했습니다.'
+      //   })
+      // }
     }
     
     // 결제 취소 처리

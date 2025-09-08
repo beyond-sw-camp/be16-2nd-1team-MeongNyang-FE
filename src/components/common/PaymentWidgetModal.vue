@@ -22,28 +22,191 @@
       <v-divider />
 
       <v-card-text class="pa-6">
-        <!-- 주문 정보 -->
-        <div class="mb-6">
-          <h3 class="text-h6 mb-3">주문 정보</h3>
-          <v-card variant="outlined" class="pa-4">
-            <div class="d-flex justify-space-between align-center mb-2">
-              <span class="text-body-1">상품명</span>
-              <span class="font-weight-medium">{{ orderInfo.orderName }}</span>
+        <!-- 결제 성공 상태 -->
+        <div v-if="paymentStatus === 'success'" class="payment-result-container">
+          <div class="text-center py-6">
+            <!-- 성공 아이콘과 애니메이션 -->
+            <div class="success-icon-container mb-6">
+              <v-icon size="100" color="success" class="success-icon">mdi-check-circle</v-icon>
             </div>
-            <div class="d-flex justify-space-between align-center">
-              <span class="text-body-1">결제 금액</span>
-              <span class="text-h6 font-weight-bold payment-amount">
-                {{ formatPrice(orderInfo.amount) }}원
-              </span>
+            
+            <!-- 성공 메시지 -->
+            <h2 class="text-h4 mb-3 text-success font-weight-bold">결제가 완료되었습니다</h2>
+            <p class="text-body-1 mb-6 text-grey-darken-1">안전하게 결제가 처리되었습니다.</p>
+            
+            <!-- 결제 정보 카드 -->
+            <v-card variant="outlined" class="payment-info-card pa-6 mb-6">
+              <div class="payment-info-header mb-4">
+                <h3 class="text-h6 font-weight-bold">결제 정보</h3>
+              </div>
+              
+              <div class="payment-info-item mb-3">
+                <div class="d-flex justify-space-between align-center">
+                  <span class="text-body-1 text-grey-darken-1">상품명</span>
+                  <span class="text-body-1 font-weight-medium">{{ orderInfo.orderName }}</span>
+                </div>
+              </div>
+              
+              <v-divider class="my-3" />
+              
+              <div class="payment-info-item mb-3">
+                <div class="d-flex justify-space-between align-center">
+                  <span class="text-body-1 text-grey-darken-1">결제 금액</span>
+                  <span class="text-h5 font-weight-bold payment-amount">
+                    {{ formatPrice(orderInfo.amount) }}원
+                  </span>
+                </div>
+              </div>
+              
+              <v-divider class="my-3" />
+              
+              <div v-if="paymentResult?.paymentKey" class="payment-info-item">
+                <div class="d-flex justify-space-between align-center">
+                  <span class="text-body-2 text-grey-darken-1">결제 키</span>
+                  <span class="text-caption font-weight-medium text-grey-darken-1">{{ paymentResult.paymentKey }}</span>
+                </div>
+              </div>
+              
+              <div v-if="paymentResult?.approvedAt" class="payment-info-item mt-3">
+                <div class="d-flex justify-space-between align-center">
+                  <span class="text-body-2 text-grey-darken-1">결제 일시</span>
+                  <span class="text-caption font-weight-medium text-grey-darken-1">
+                    {{ formatDateTime(paymentResult.approvedAt) }}
+                  </span>
+                </div>
+              </div>
+            </v-card>
+            
+            <!-- 안내 메시지 -->
+            <div class="success-notice">
+              <v-alert
+                type="success"
+                variant="tonal"
+                class="text-left"
+              >
+                <template v-slot:prepend>
+                  <v-icon>mdi-information</v-icon>
+                </template>
+                <div class="text-body-2">
+                  <strong>결제가 정상적으로 완료되었습니다.</strong><br>
+                  구매하신 상품에 대한 자세한 내용은 마이페이지에서 확인하실 수 있습니다.
+                </div>
+              </v-alert>
             </div>
-          </v-card>
+          </div>
         </div>
 
-        <!-- 결제 수단 선택 -->
-        <div class="mb-6">
-          <h3 class="text-h6 mb-3">결제 수단</h3>
-          <div id="payment-method" class="payment-widget-container"></div>
+        <!-- 결제 실패 상태 -->
+        <div v-else-if="paymentStatus === 'failed'" class="payment-result-container">
+          <div class="text-center py-6">
+            <!-- 실패 아이콘 -->
+            <div class="error-icon-container mb-6">
+              <v-icon size="100" color="error" class="error-icon">mdi-close-circle</v-icon>
+            </div>
+            
+            <!-- 실패 메시지 -->
+            <h2 class="text-h4 mb-3 text-error font-weight-bold">결제에 실패했습니다</h2>
+            <p class="text-body-1 mb-6 text-grey-darken-1">결제 처리 중 오류가 발생했습니다.</p>
+            
+            <!-- 결제 정보 카드 -->
+            <v-card variant="outlined" class="payment-info-card pa-6 mb-6">
+              <div class="payment-info-header mb-4">
+                <h3 class="text-h6 font-weight-bold">주문 정보</h3>
+              </div>
+              
+              <div class="payment-info-item mb-3">
+                <div class="d-flex justify-space-between align-center">
+                  <span class="text-body-1 text-grey-darken-1">상품명</span>
+                  <span class="text-body-1 font-weight-medium">{{ orderInfo.orderName }}</span>
+                </div>
+              </div>
+              
+              <v-divider class="my-3" />
+              
+              <div class="payment-info-item">
+                <div class="d-flex justify-space-between align-center">
+                  <span class="text-body-1 text-grey-darken-1">결제 금액</span>
+                  <span class="text-h5 font-weight-bold payment-amount">
+                    {{ formatPrice(orderInfo.amount) }}원
+                  </span>
+                </div>
+              </div>
+            </v-card>
+            
+            <!-- 오류 정보 (있는 경우) -->
+            <div v-if="paymentResult?.message || paymentResult?.code" class="error-details mb-6">
+              <v-alert
+                type="error"
+                variant="tonal"
+                class="text-left"
+              >
+                <template v-slot:prepend>
+                  <v-icon>mdi-alert-circle</v-icon>
+                </template>
+                <div class="text-body-2">
+                  <strong>오류 정보</strong><br>
+                  <span v-if="paymentResult?.code">오류 코드: {{ paymentResult.code }}<br></span>
+                  <span v-if="paymentResult?.message">{{ paymentResult.message }}</span>
+                </div>
+              </v-alert>
+            </div>
+            
+            <!-- 안내 메시지 -->
+            <div class="error-notice">
+              <v-alert
+                type="warning"
+                variant="tonal"
+                class="text-left"
+              >
+                <template v-slot:prepend>
+                  <v-icon>mdi-information</v-icon>
+                </template>
+                <div class="text-body-2">
+                  <strong>결제가 실패했습니다.</strong><br>
+                  카드 정보를 확인하시거나 다른 결제 수단을 이용해주세요.<br>
+                  문제가 지속되면 고객센터에 문의해주세요.
+                </div>
+              </v-alert>
+            </div>
+          </div>
         </div>
+
+        <!-- 결제 처리 중 상태 -->
+        <div v-else-if="paymentStatus === 'processing'" class="text-center py-8">
+          <v-progress-circular
+            indeterminate
+            size="80"
+            color="primary"
+            class="mb-4"
+          />
+          <h2 class="text-h5 mb-3">결제 확인 중...</h2>
+          <p class="text-body-1">결제를 확인하고 있습니다. 잠시만 기다려주세요.</p>
+        </div>
+
+        <!-- 기본 결제 폼 -->
+        <div v-else>
+          <!-- 주문 정보 -->
+          <div class="mb-6">
+            <h3 class="text-h6 mb-3">주문 정보</h3>
+            <v-card variant="outlined" class="pa-4">
+              <div class="d-flex justify-space-between align-center mb-2">
+                <span class="text-body-1">상품명</span>
+                <span class="font-weight-medium">{{ orderInfo.orderName }}</span>
+              </div>
+              <div class="d-flex justify-space-between align-center">
+                <span class="text-body-1">결제 금액</span>
+                <span class="text-h6 font-weight-bold payment-amount">
+                  {{ formatPrice(orderInfo.amount) }}원
+                </span>
+              </div>
+            </v-card>
+          </div>
+
+          <!-- 결제 수단 선택 -->
+          <div class="mb-6">
+            <h3 class="text-h6 mb-3">결제 수단</h3>
+            <div id="payment-method" class="payment-widget-container"></div>
+          </div>
 
           <!-- 이용약관 -->
           <div class="mb-6">
@@ -60,62 +223,107 @@
             <div id="agreement" class="agreement-container"></div>
           </div>
 
-        <!-- 고객 정보 -->
-        <!-- <div class="mb-6">
-          <h3 class="text-h6 mb-3">고객 정보</h3>
-          <v-row>
-            <v-col cols="12" md="6">
-              <v-text-field
-                v-model="customerInfo.customerName"
-                label="이름"
-                variant="outlined"
-                density="compact"
-                :rules="[rules.required]"
-              />
-            </v-col>
-            <v-col cols="12" md="6">
-              <v-text-field
-                v-model="customerInfo.customerEmail"
-                label="이메일"
-                variant="outlined"
-                density="compact"
-                :rules="[rules.required, rules.email]"
-              />
-            </v-col>
-            <v-col cols="12">
-              <v-text-field
-                v-model="customerInfo.customerMobilePhone"
-                label="휴대폰 번호"
-                variant="outlined"
-                density="compact"
-                placeholder="01012345678"
-                :rules="[rules.required, rules.phone]"
-              />
-            </v-col>
-          </v-row>
-        </div> -->
+          <!-- 고객 정보 -->
+          <!-- <div class="mb-6">
+            <h3 class="text-h6 mb-3">고객 정보</h3>
+            <v-row>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-model="customerInfo.customerName"
+                  label="이름"
+                  variant="outlined"
+                  density="compact"
+                  :rules="[rules.required]"
+                />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-model="customerInfo.customerEmail"
+                  label="이메일"
+                  variant="outlined"
+                  density="compact"
+                  :rules="[rules.required, rules.email]"
+                />
+              </v-col>
+              <v-col cols="12">
+                <v-text-field
+                  v-model="customerInfo.customerMobilePhone"
+                  label="휴대폰 번호"
+                  variant="outlined"
+                  density="compact"
+                  placeholder="01012345678"
+                  :rules="[rules.required, rules.phone]"
+                />
+              </v-col>
+            </v-row>
+          </div> -->
+        </div>
       </v-card-text>
 
       <v-divider />
 
       <v-card-actions class="pa-4">
         <v-spacer />
-        <v-btn
-          class="cancel-btn"
-          variant="outlined"
-          @click="closeModal"
-        >
-          취소
-        </v-btn>
-        <v-btn
-          class="payment-btn"
-          variant="elevated"
-          :loading="isProcessing"
-          :disabled="!isPaymentButtonEnabled"
-          @click="requestPayment"
-        >
-          {{ formatPrice(orderInfo.amount) }}원 결제하기
-        </v-btn>
+        
+        <!-- 결제 성공 상태 버튼 -->
+        <template v-if="paymentStatus === 'success'">
+          <v-btn
+            class="success-btn"
+            variant="elevated"
+            @click="closeModal"
+          >
+            완료
+          </v-btn>
+        </template>
+        
+        <!-- 결제 실패 상태 버튼 -->
+        <template v-else-if="paymentStatus === 'failed'">
+          <v-btn
+            class="cancel-btn"
+            variant="outlined"
+            @click="closeModal"
+          >
+            닫기
+          </v-btn>
+          <v-btn
+            class="retry-btn"
+            variant="elevated"
+            @click="retryPayment"
+          >
+            다시 시도
+          </v-btn>
+        </template>
+        
+        <!-- 결제 처리 중 상태 버튼 -->
+        <template v-else-if="paymentStatus === 'processing'">
+          <v-btn
+            class="cancel-btn"
+            variant="outlined"
+            disabled
+          >
+            취소
+          </v-btn>
+        </template>
+        
+        <!-- 기본 결제 폼 버튼 -->
+        <template v-else>
+          <v-btn
+            class="cancel-btn"
+            variant="outlined"
+            @click="closeModal"
+          >
+            취소
+          </v-btn>
+          <v-btn
+            class="payment-btn"
+            variant="elevated"
+            :loading="isProcessing"
+            :disabled="!isPaymentButtonEnabled"
+            @click="requestPayment"
+          >
+            {{ formatPrice(orderInfo.amount) }}원 결제하기
+          </v-btn>
+        </template>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -126,6 +334,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useSnackbar } from '@/composables/useSnackbar'
 import { useAuthStore } from '@/stores/auth'
 import { loadTossPayments } from '@tosspayments/tosspayments-sdk'
+import { marketAPI } from '@/services/api'
 
 export default {
   name: 'PaymentWidgetModal',
@@ -146,7 +355,7 @@ export default {
   },
   emits: ['update:modelValue', 'payment-success', 'payment-fail', 'payment-cancel'],
   setup(props, { emit }) {
-    const { showMessage } = useSnackbar()
+    const { showError } = useSnackbar()
     const authStore = useAuthStore()
     
     // 반응형 데이터
@@ -160,6 +369,10 @@ export default {
     const tossPayments = ref(null)
     const agreementWidget = ref(null)
     const isAgreementValid = ref(false)
+    
+    // 결제 상태 관리
+    const paymentStatus = ref('idle') // 'idle', 'processing', 'success', 'failed'
+    const paymentResult = ref(null)
     
     // 고객 정보
     const customerInfo = ref({
@@ -216,9 +429,31 @@ export default {
       return new Intl.NumberFormat('ko-KR').format(price)
     }
     
+    // 날짜/시간 포맷팅
+    const formatDateTime = (dateString) => {
+      if (!dateString) return ''
+      const date = new Date(dateString)
+      return date.toLocaleString('ko-KR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      })
+    }
+    
     // 모달 닫기
     const closeModal = () => {
       isOpen.value = false
+    }
+    
+    // 결제 다시 시도
+    const retryPayment = () => {
+      // 결제 상태를 초기 상태로 리셋
+      paymentStatus.value = 'idle'
+      paymentResult.value = null
+      isProcessing.value = false
     }
     
     // 토스페이먼츠 SDK 초기화
@@ -283,10 +518,7 @@ export default {
         
       } catch (error) {
         console.error('토스페이먼츠 초기화 실패:', error)
-        showMessage({
-          type: 'error',
-          text: '결제 시스템 초기화에 실패했습니다.'
-        })
+        showError('결제 시스템 초기화에 실패했습니다.')
       }
     }
     
@@ -321,13 +553,35 @@ export default {
       })
     }
 
+    // 결제 확인 함수
+    const confirmPayment = async (paymentResult) => {
+      try {
+        console.log('결제 확인 요청 시작:', paymentResult)
+        
+        // 토스페이먼츠 결제 결과에서 필요한 정보 추출
+        const confirmData = {
+          paymentKey: paymentResult.paymentKey,
+          orderId: paymentResult.orderId,
+          amount: paymentResult.amount?._value || paymentResult.amount || props.orderInfo.amount
+        }
+        
+        console.log('결제 확인 데이터:', confirmData)
+        
+        // 서버에 결제 확인 요청
+        const response = await marketAPI.confirmPayment(confirmData)
+        console.log('결제 확인 응답:', response.data)
+        
+        return response.data
+      } catch (error) {
+        console.error('결제 확인 실패:', error)
+        throw error
+      }
+    }
+
     // 결제 요청 (UI 처리 포함)
     const requestPayment = async () => {
       if (!paymentWidget.value) {
-        showMessage({
-          type: 'error',
-          text: '결제 시스템이 초기화되지 않았습니다.'
-        })
+        showError('결제 시스템이 초기화되지 않았습니다.')
         return
       }
       
@@ -341,10 +595,7 @@ export default {
       
       // 약관 동의 상태 확인
       if (!isAgreementValid.value) {
-        showMessage({
-          type: 'error',
-          text: '모든 필수 약관에 동의해주세요.'
-        })
+        showError('모든 필수 약관에 동의해주세요.')
         return
       }
       
@@ -365,8 +616,40 @@ export default {
         // Promise 방식으로 결제 요청
         const result = await requestPaymentPromise(paymentData)
         
-        // 결제 성공 처리 (성공 URL로 리다이렉트되므로 여기까지 도달하지 않을 수 있음)
+        // 결제 성공 처리
         console.log('결제 요청 성공:', result)
+        
+        // 결제 상태를 processing으로 변경
+        paymentStatus.value = 'processing'
+        
+        try {
+          // 서버에 결제 확인 요청
+          const confirmResult = await confirmPayment(result)
+          console.log('결제 확인 성공:', confirmResult)
+          
+          // 결제 성공 상태로 변경
+          paymentStatus.value = 'success'
+          paymentResult.value = confirmResult
+          isProcessing.value = false  // 결제 처리 완료
+          
+          // 성공 이벤트 발생
+          emit('payment-success', confirmResult)
+          
+          // 성공 메시지는 모달 내에서 표시되므로 스낵바 제거
+          
+        } catch (confirmError) {
+          console.error('결제 확인 실패:', confirmError)
+          
+          // 결제 실패 상태로 변경
+          paymentStatus.value = 'failed'
+          paymentResult.value = confirmError
+          isProcessing.value = false  // 결제 처리 완료
+          
+          // 실패 이벤트 발생
+          emit('payment-fail', confirmError)
+          
+          // 실패 메시지는 모달 내에서 표시되므로 스낵바 제거
+        }
         
       } catch (error) {
         console.error('결제 요청 실패:', error)
@@ -380,25 +663,25 @@ export default {
           // 모달만 닫고 별도 메시지 없음
         } else if (error.type === 'CARD_ERROR') {
           // 카드 관련 오류
+          paymentStatus.value = 'failed'
+          paymentResult.value = error
+          isProcessing.value = false  // 결제 처리 완료
           emit('payment-fail', error)
-          showMessage({
-            type: 'error',
-            text: '카드 정보를 확인해주세요.'
-          })
+          // 카드 오류는 모달 내에서 표시
         } else if (error.type === 'BALANCE_ERROR') {
           // 잔액 부족 오류
+          paymentStatus.value = 'failed'
+          paymentResult.value = error
+          isProcessing.value = false  // 결제 처리 완료
           emit('payment-fail', error)
-          showMessage({
-            type: 'error',
-            text: '잔액이 부족합니다.'
-          })
+          // 잔액 오류는 모달 내에서 표시
         } else {
           // 기타 결제 오류
+          paymentStatus.value = 'failed'
+          paymentResult.value = error
+          isProcessing.value = false  // 결제 처리 완료
           emit('payment-fail', error)
-          showMessage({
-            type: 'error',
-            text: '결제 요청에 실패했습니다.'
-          })
+          // 기타 오류는 모달 내에서 표시
         }
       }
     }
@@ -415,6 +698,10 @@ export default {
         
         // 약관 동의 상태 초기화 (기본적으로 동의된 상태로 시작)
         isAgreementValid.value = true
+        
+        // 결제 상태 초기화
+        paymentStatus.value = 'idle'
+        paymentResult.value = null
         
         // 토스페이먼츠 초기화
         await initializeTossPayments()
@@ -450,9 +737,13 @@ export default {
       agreementStatusText,
       agreementStatusColor,
       formatPrice,
+      formatDateTime,
       closeModal,
       requestPayment,
-      requestPaymentPromise
+      requestPaymentPromise,
+      paymentStatus,
+      paymentResult,
+      retryPayment
     }
   }
 }
@@ -534,7 +825,9 @@ export default {
 
 /* 프로젝트 표준 버튼 스타일 */
 .cancel-btn,
-.payment-btn {
+.payment-btn,
+.success-btn,
+.retry-btn {
   border-radius: 16px !important;
   font-weight: 600 !important;
   text-transform: none !important;
@@ -575,13 +868,43 @@ export default {
   transform: translateY(0);
 }
 
+.success-btn {
+  background: linear-gradient(135deg, #4CAF50, #45a049) !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: 0 4px 16px rgba(76, 175, 80, 0.4);
+}
+
+.success-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #45a049, #3d8b40) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(76, 175, 80, 0.6);
+}
+
+.retry-btn {
+  background: linear-gradient(135deg, #FF9800, #F57C00) !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: 0 4px 16px rgba(255, 152, 0, 0.4);
+}
+
+.retry-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #F57C00, #EF6C00) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(255, 152, 0, 0.6);
+}
+
 .cancel-btn:active,
-.payment-btn:active {
+.payment-btn:active,
+.success-btn:active,
+.retry-btn:active {
   transform: translateY(0) scale(0.98);
 }
 
 .cancel-btn:disabled,
-.payment-btn:disabled {
+.payment-btn:disabled,
+.success-btn:disabled,
+.retry-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none !important;
@@ -592,6 +915,107 @@ export default {
 .payment-amount {
   color: #FF8B8B !important;
   text-shadow: 0 1px 2px rgba(255, 139, 139, 0.2);
+}
+
+/* 결제 결과 컨테이너 */
+.payment-result-container {
+  min-height: 400px;
+}
+
+/* 성공 아이콘 애니메이션 */
+.success-icon-container {
+  position: relative;
+}
+
+.success-icon {
+  animation: successPulse 2s ease-in-out infinite;
+}
+
+@keyframes successPulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* 에러 아이콘 애니메이션 */
+.error-icon-container {
+  position: relative;
+}
+
+.error-icon {
+  animation: errorShake 0.5s ease-in-out;
+}
+
+@keyframes errorShake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+/* 결제 정보 카드 */
+.payment-info-card {
+  border-radius: 16px !important;
+  border: 2px solid #E3F2FD !important;
+  background: linear-gradient(135deg, #FAFAFA, #F5F5F5) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
+}
+
+.payment-info-header {
+  text-align: center;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #E0E0E0;
+}
+
+.payment-info-item {
+  transition: all 0.3s ease;
+}
+
+.payment-info-item:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+  border-radius: 8px;
+  padding: 8px;
+  margin: -8px;
+}
+
+/* 성공/실패 알림 스타일 */
+.success-notice .v-alert,
+.error-notice .v-alert {
+  border-radius: 12px !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.success-notice .v-alert {
+  background: linear-gradient(135deg, #E8F5E8, #F1F8E9) !important;
+  color: #2E7D32 !important;
+}
+
+.error-notice .v-alert {
+  background: linear-gradient(135deg, #FFF3E0, #FEF7E0) !important;
+  color: #F57C00 !important;
+}
+
+.error-details .v-alert {
+  background: linear-gradient(135deg, #FFEBEE, #FCE4EC) !important;
+  color: #C62828 !important;
+  border-radius: 12px !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
 }
 
 /* 닫기 버튼 스타일 */
