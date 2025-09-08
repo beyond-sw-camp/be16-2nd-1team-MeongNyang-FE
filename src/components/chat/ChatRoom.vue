@@ -1961,6 +1961,13 @@ export default {
     // 결제 성공 처리
     const handlePaymentSuccess = (paymentData) => {
       console.log('결제 성공:', paymentData)
+      
+      // 결제 완료 후 상품 상태를 SOLD로 변경
+      if (marketPostInfo.value) {
+        marketPostInfo.value.status = 'SOLD'
+        console.log('상품 상태를 SOLD로 변경:', marketPostInfo.value)
+      }
+      
       // 모달을 자동으로 닫지 않음 - 사용자가 직접 닫도록 함
       // showPaymentModal.value = false
       
