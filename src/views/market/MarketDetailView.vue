@@ -747,7 +747,8 @@ export default {
         // 채팅방 생성
         const roomId = await chatStore.createChatRoom(
           roomName,
-          participantEmails
+          participantEmails,
+          post.value.id
         );
 
         // 생성된 채팅방으로 이동

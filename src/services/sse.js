@@ -126,6 +126,10 @@ class SseService {
       else if (data.title && data.message && (data.type || data.type === 'info')) {
         eventName = 'notification';
       }
+      // 구매 승인 상태 변경인지 확인
+      else if (data.roomId && data.isPurchaseApproved !== undefined) {
+        eventName = 'approval-status';
+      }
     }
 
     switch (eventName) {
@@ -146,6 +150,9 @@ class SseService {
         break;
       case 'notification':
         this.handleNotification(data);
+        break;
+      case 'approval-status':
+        this.handleApprovalStatus(data);
         break;
       default:
         console.log('알 수 없는 SSE 이벤트 타입:', eventName, data);
@@ -260,6 +267,26 @@ class SseService {
       });
     } catch (error) {
       console.error('알림 처리 중 오류:', error);
+    }
+  }
+
+  // 구매 승인 상태 변경 처리
+  handleApprovalStatus(approvalData) {
+    try {
+      // 채팅 스토어 import
+      import('@/stores/chat').then(({ useChatStore }) => {
+        const chatStore = useChatStore();
+        
+        // 채팅방 정보 업데이트
+        chatStore.updateChatRoom({
+          id: approvalData.roomId,
+          isPurchaseApproved: approvalData.isPurchaseApproved
+        });
+        
+        console.log('구매 승인 상태가 SSE로 업데이트되었습니다:', approvalData);
+      });
+    } catch (error) {
+      console.error('구매 승인 상태 처리 중 오류:', error);
     }
   }
 
