@@ -673,10 +673,11 @@ export default {
           
         } catch (confirmError) {
           console.error('결제 확인 실패:', confirmError)
+          console.log('결제 확인 실패 로그!! :', confirmError.response.data.status.message)
 
           // 결제 실패 상태로 변경
           paymentStatus.value = 'failed'
-          paymentResult.value = confirmError
+          paymentResult.value = JSON.parse(confirmError.response.data.status.message)
           isProcessing.value = false  // 결제 처리 완료
           
           // 실패 이벤트 발생
