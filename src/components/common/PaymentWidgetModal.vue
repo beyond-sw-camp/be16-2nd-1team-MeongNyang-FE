@@ -89,7 +89,7 @@
                 </template>
                 <div class="text-body-2">
                   <strong>결제가 정상적으로 완료되었습니다.</strong><br>
-                  구매하신 상품에 대한 자세한 내용은 마이페이지에서 확인하실 수 있습니다.
+                  구매하신 상품에 대한 자세한 내용은 마켓 > 거래내역에서 확인하실 수 있습니다.
                 </div>
               </v-alert>
             </div>
@@ -146,7 +146,7 @@
                 <div class="text-body-2">
                   <strong>오류 정보</strong><br>
                   <span v-if="paymentResult?.code">오류 코드: {{ paymentResult.code }}<br></span>
-                  <span v-if="paymentResult?.message">{{ paymentResult.message }}</span>
+                  <span v-if="paymentResult?.message">{{ paymentResult }}</span>
                 </div>
               </v-alert>
             </div>
@@ -449,16 +449,55 @@ export default {
     }
     
     // 결제 다시 시도
-    const retryPayment = () => {
+    const retryPayment = async () => {
+      console.log('결제 다시 시도 시작')
+      
       // 결제 상태를 초기 상태로 리셋
       paymentStatus.value = 'idle'
       paymentResult.value = null
       isProcessing.value = false
+      
+      // 약관 동의 상태 초기화
+      isAgreementValid.value = true
+      
+      // 토스페이먼츠 위젯 다시 초기화 (내부에서 기존 위젯 정리 포함)
+      try {
+        await initializeTossPayments()
+        console.log('토스페이먼츠 위젯 재초기화 완료')
+      } catch (error) {
+        console.error('토스페이먼츠 위젯 재초기화 실패:', error)
+        showError('결제 시스템 재초기화에 실패했습니다.')
+      }
     }
     
     // 토스페이먼츠 SDK 초기화
     const initializeTossPayments = async () => {
       try {
+        // 기존 위젯들 정리 (재초기화 시)
+        if (agreementWidget.value) {
+          try {
+            await agreementWidget.value.destroy()
+          } catch (error) {
+            console.warn('기존 약관 위젯 정리 실패:', error)
+          }
+          agreementWidget.value = null
+        }
+        
+        if (paymentWidget.value) {
+          paymentWidget.value = null
+        }
+        
+        // DOM 요소들 정리
+        const paymentMethodElement = document.getElementById('payment-method')
+        const agreementElement = document.getElementById('agreement')
+        
+        if (paymentMethodElement) {
+          paymentMethodElement.innerHTML = ''
+        }
+        if (agreementElement) {
+          agreementElement.innerHTML = ''
+        }
+        
         // 토스페이먼츠 클라이언트 키 (테스트 키)
         // 실제 운영 환경에서는 환경변수로 설정하세요: process.env.VUE_APP_TOSS_CLIENT_KEY
         const clientKey = process.env.VUE_APP_TOSS_CLIENT_KEY
