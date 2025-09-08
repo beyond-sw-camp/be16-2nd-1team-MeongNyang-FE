@@ -912,7 +912,15 @@ export default {
               lat: lat,
               lng: lng,
             };
-            // validateForm() 호출 제거 - 이 줄을 삭제하거나 주석 처리
+
+            console.log("=== 위치 정보 업데이트 ===");
+            console.log(
+              "새로운 selectedLocation.value:",
+              selectedLocation.value
+            );
+            validateForm(); // 위치 정보 업데이트 후 폼 유효성 검사
+            console.log("위치 업데이트 후 valid.value:", valid.value);
+            console.log("========================");
           }
         }
       );
@@ -986,7 +994,12 @@ export default {
         map.value.setCenter(center);
         marker.value.setPosition(center);
         selectedLocation.value = null;
+
+        console.log("=== 위치 초기화 ===");
+        console.log("selectedLocation.value:", selectedLocation.value);
         validateForm();
+        console.log("초기화 후 valid.value:", valid.value);
+        console.log("==================");
 
         console.log("위치가 초기화되었습니다");
       }
