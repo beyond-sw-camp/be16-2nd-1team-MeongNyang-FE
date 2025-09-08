@@ -146,7 +146,7 @@
                 <div class="text-body-2">
                   <strong>오류 정보</strong><br>
                   <span v-if="paymentResult?.code">오류 코드: {{ paymentResult.code }}<br></span>
-                  <span v-if="paymentResult?.message">{{ paymentResult }}</span>
+                  <span v-if="paymentResult?.message">{{ paymentResult.message }}</span>
                 </div>
               </v-alert>
             </div>
@@ -594,27 +594,22 @@ export default {
 
     // 결제 확인 함수
     const confirmPayment = async (paymentResult) => {
-      try {
-        console.log('결제 확인 요청 시작:', paymentResult)
-        
-        // 토스페이먼츠 결제 결과에서 필요한 정보 추출
-        const confirmData = {
-          paymentKey: paymentResult.paymentKey,
-          orderId: paymentResult.orderId,
-          amount: paymentResult.amount?._value || paymentResult.amount || props.orderInfo.amount
-        }
-        
-        console.log('결제 확인 데이터:', confirmData)
-        
-        // 서버에 결제 확인 요청
-        const response = await marketAPI.confirmPayment(confirmData)
-        console.log('결제 확인 응답:', response.data)
-        
-        return response.data
-      } catch (error) {
-        console.error('결제 확인 실패:', error)
-        throw error
+      console.log('결제 확인 요청 시작:', paymentResult)
+      
+      // 토스페이먼츠 결제 결과에서 필요한 정보 추출
+      const confirmData = {
+        paymentKey: paymentResult.paymentKey,
+        orderId: paymentResult.orderId,
+        amount: paymentResult.amount?._value || paymentResult.amount || props.orderInfo.amount
       }
+      
+      console.log('결제 확인 데이터:', confirmData)
+      
+      // 서버에 결제 확인 요청
+      const response = await marketAPI.confirmPayment(confirmData)
+      console.log('결제 확인 응답:', response.data)
+      
+      return response.data
     }
 
     // 결제 요청 (UI 처리 포함)
@@ -678,7 +673,7 @@ export default {
           
         } catch (confirmError) {
           console.error('결제 확인 실패:', confirmError)
-          
+
           // 결제 실패 상태로 변경
           paymentStatus.value = 'failed'
           paymentResult.value = confirmError
