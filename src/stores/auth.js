@@ -259,9 +259,12 @@ export const useAuthStore = defineStore('auth', () => {
     
     try {
       const token = getToken('accessToken')
+      const refreshTokenValue = getToken('refreshToken')
+      
+      // accessToken이 유효한 경우
       if (token && isValidToken(token)) {
         accessToken.value = token
-        refreshToken.value = getToken('refreshToken')
+        refreshToken.value = refreshTokenValue
         
         // JWT에서 이메일 추출하여 저장
         const email = getEmailFromToken(token)
@@ -280,6 +283,22 @@ export const useAuthStore = defineStore('auth', () => {
         
         // 토큰 자동 갱신 설정
         setupTokenRefresh(refreshAccessToken)
+      } 
+      // accessToken이 없거나 만료되었지만 refreshToken이 있는 경우
+      else if (refreshTokenValue) {
+        console.log('accessToken이 없거나 만료됨, refreshToken으로 자동 갱신 시도')
+        refreshToken.value = refreshTokenValue
+        
+        // refresh token으로 access token 갱신 시도
+        const newAccessToken = await refreshAccessToken()
+        if (newAccessToken) {
+          console.log('토큰 자동 갱신 성공')
+          // 서버에서 최신 사용자 정보 가져오기
+          await getCurrentUser()
+        } else {
+          console.log('토큰 자동 갱신 실패, 로그아웃 처리')
+          logout()
+        }
       }
     } catch (error) {
       console.error('인증 초기화 실패:', error)
