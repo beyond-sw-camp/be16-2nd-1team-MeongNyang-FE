@@ -676,7 +676,12 @@ export default {
 
           // 결제 실패 상태로 변경
           paymentStatus.value = 'failed'
-          paymentResult.value = JSON.parse(confirmError.response.data.status.message)
+          try {
+            paymentResult.value = JSON.parse(confirmError.response.data.status.message)            
+          } catch {
+            paymentResult.value = confirmError.response.data.status
+          }
+
           isProcessing.value = false  // 결제 처리 완료
           
           // 실패 이벤트 발생
