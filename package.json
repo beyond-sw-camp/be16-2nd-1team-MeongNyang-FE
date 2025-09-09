@@ -3,13 +3,22 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "serve": "vue-cli-service serve",
+    "serve": "vue-cli-service serve --port=3000",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
+    "@mdi/font": "^7.4.47",
+    "@tosspayments/tosspayments-sdk": "^2.3.7",
+    "axios": "^1.11.0",
     "core-js": "^3.8.3",
-    "vue": "^3.2.13"
+    "jwt-decode": "^4.0.0",
+    "pinia": "^3.0.3",
+    "sockjs-client": "^1.6.1",
+    "vue": "^3.2.13",
+    "vue-router": "^4.5.1",
+    "vuetify": "^3.9.5",
+    "webstomp-client": "^1.2.6"
   },
   "devDependencies": {
     "@babel/core": "^7.12.16",
@@ -18,7 +27,8 @@
     "@vue/cli-plugin-eslint": "~5.0.0",
     "@vue/cli-service": "~5.0.0",
     "eslint": "^7.32.0",
-    "eslint-plugin-vue": "^8.0.3"
+    "eslint-plugin-vue": "^8.0.3",
+    "prettier": "^3.6.2"
   },
   "eslintConfig": {
     "root": true,
