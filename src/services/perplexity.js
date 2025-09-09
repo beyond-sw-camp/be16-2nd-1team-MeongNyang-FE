@@ -5,9 +5,6 @@
 
 import apiClient from "./api"
 
-// const PERPLEXITY_API_URL = 'https://api.perplexity.ai/chat/completions'
-// const PERPLEXITY_MODEL = 'sonar'
-
 /**
  * Perplexity API를 통해 반려동물 관련 팁을 가져옵니다
  * @param {Object} options - API 요청 옵션
@@ -17,37 +14,9 @@ import apiClient from "./api"
  * @returns {Promise<Object>} AI가 생성한 팁 정보
  */
 export async function getAIPetTip(options = {}) {
-  const apiKey = process.env.VUE_APP_PERPLEXITY_API_KEY
-  
-  if (!apiKey) {
-    throw new Error('Perplexity API 키가 설정되지 않았습니다. .env 파일에 VUE_APP_PERPLEXITY_API_KEY를 설정해주세요.')
-  }
 
   const { weather = '', temperature = '', petType = '' } = options
 
-  // 날씨와 온도에 따른 컨텍스트 생성
-  // let contextPrompt = ''
-  // if (weather && temperature) {
-  //   contextPrompt = `현재 날씨: ${weather}, 온도: ${temperature}°C. `
-  // }
-  
-  // if (petType) {
-  //   contextPrompt += `반려동물 종류: ${petType}. `
-  // }
-
-  // const prompt = `${contextPrompt}오늘 날씨와 상황에 맞는 반려동물 돌봄 팁을 한국어로 제공해주세요. 
-  
-  // 다음 조건을 만족하는 창의적이고 실용적인 조언을 해주세요:
-  // - 일반적인 상식이 아닌 전문적이고 구체적인 팁
-  // - 실제로 많은 사람들이 놓치기 쉬운 중요한 포인트
-  // - 날씨나 상황에 특화된 맞춤형 조언
-  // - 구체적인 방법이나 기법 제시
-  // - 반려동물의 행동이나 건강에 미치는 영향 설명
-  
-  // 예시: "물 많이 주세요" 같은 뻔한 조언 대신, "아스파라거스나 브로콜리 같은 수분이 많은 채소를 간식으로 주면 체온 조절에 도움이 됩니다" 같은 구체적이고 전문적인 조언을 해주세요.
-  
-  // 2-3문장으로 간결하게 작성하되, 뻔한 내용보다는 전문가만이 알 수 있는 실용적인 정보를 제공해주세요.
-  // 참조 번호나 인용 표시는 사용하지 말고, 자연스러운 문장으로 작성해주세요.`
   try {
     const response = await apiClient.post('/pplx/pet-tip', {
       weather,
@@ -89,73 +58,6 @@ export async function getAIPetTip(options = {}) {
     console.error('백엔드 호출 실패:', error)
     throw error
   }
-  
-  // try {
-  //   const response = await fetch(PERPLEXITY_API_URL, {
-  //     method: 'POST',
-  //     headers: {
-  //       'Authorization': `Bearer ${apiKey}`,
-  //       'Content-Type': 'application/json',
-  //     },
-  //     body: JSON.stringify({
-  //       model: PERPLEXITY_MODEL,
-  //       messages: [
-  //         {
-  //           role: 'system',
-  //           content: '당신은 20년 경력의 반려동물 전문가이자 수의사입니다. 일반적인 상식이 아닌 전문적이고 실용적인 조언을 제공합니다. 많은 사람들이 놓치기 쉬운 중요한 포인트나 전문가만이 알 수 있는 구체적인 방법을 제시해주세요. 참조 번호나 인용 표시 없이 자연스러운 문장으로만 답변해주세요.'
-  //         },
-  //         {
-  //           role: 'user',
-  //           content: prompt
-  //         }
-  //       ],
-  //       max_tokens: 250,
-  //       temperature: 0.8,
-  //       top_p: 0.9
-  //     })
-  //   })
-
-  //   if (!response.ok) {
-  //     const errorData = await response.json().catch(() => ({}))
-  //     throw new Error(`Perplexity API 요청 실패: ${response.status} - ${errorData.error?.message || response.statusText}`)
-  //   }
-
-  //   const data = await response.json()
-    
-  //   if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-  //     throw new Error('Perplexity API 응답 형식이 올바르지 않습니다.')
-  //   }
-
-  //   let tipText = data.choices[0].message.content.trim()
-    
-  //   // 참조 번호 제거 ([1], [2], [3] 등)
-  //   tipText = tipText.replace(/\[\d+\]/g, '')
-    
-  //   // 기타 불필요한 표시 제거
-  //   tipText = tipText.replace(/\[출처[^\]]*\]/g, '')
-  //   tipText = tipText.replace(/\[참고[^\]]*\]/g, '')
-  //   tipText = tipText.replace(/\[인용[^\]]*\]/g, '')
-    
-  //   // 연속된 공백 정리
-  //   tipText = tipText.replace(/\s+/g, ' ').trim()
-    
-  //   // 문장 끝 정리 (마침표가 없으면 추가)
-  //   if (tipText && !tipText.endsWith('.') && !tipText.endsWith('!') && !tipText.endsWith('?')) {
-  //     tipText += '.'
-  //   }
-    
-  //   return {
-  //     text: tipText,
-  //     source: 'AI 반려동물 전문가',
-  //     timestamp: new Date().toISOString(),
-  //     weather: weather,
-  //     temperature: temperature
-  //   }
-
-  // } catch (error) {
-  //   console.error('Perplexity API 호출 실패:', error)
-  //   throw error
-  // }
 }
 
 /**
