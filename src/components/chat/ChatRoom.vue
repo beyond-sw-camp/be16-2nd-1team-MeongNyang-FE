@@ -1093,11 +1093,19 @@ export default {
             })
           }, { Authorization: `Bearer ${accessToken}` })
           
+          const saleStatusSubscription = stompClient.value.subscribe(`/topic/chat-rooms/${props.roomId}/sale-status`, (message) => {
+            const parseMessage = JSON.parse(message.body)
+            console.log('sale-status stomp:', parseMessage)
+            if (marketPostInfo.value && parseMessage.saleStatus == 'SOLD')
+              marketPostInfo.value.status = 'SOLD'
+          }, { Authorization: `Bearer ${accessToken}` })
+
           // 구독 ID들을 저장 (해제 시 사용)
           stompClient.value.messageSubscription = messageSubscription
           stompClient.value.participantsSubscription = participantsSubscription
           stompClient.value.onlineParticipantsSubscription = onlineParticipantsSubscription
-          
+          stompClient.value.saleStatusSubscription = saleStatusSubscription
+
           // 온라인 상태 전송
           const onlineMessage = { email: senderEmail.value }
           stompClient.value.send(`/publish/chat-rooms/${props.roomId}/online`, JSON.stringify(onlineMessage))
@@ -1119,6 +1127,9 @@ export default {
         }
         if (stompClient.value.onlineParticipantsSubscription) {
           stompClient.value.onlineParticipantsSubscription.unsubscribe()
+        }
+        if (stompClient.value.saleStatusSubscription) {
+          stompClient.value.saleStatusSubscription.unsubscribe()
         }
         
         stompClient.value.disconnect()
