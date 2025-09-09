@@ -18,7 +18,7 @@ export function setApiRouter(routerInstance) {
 }
 
 // 환경변수 (네 프로젝트 규칙)
-const API_BASE_URL = process.env.VUE_APP_API_BASE_URL || 'http://localhost:8080'
+const API_BASE_URL = process.env.VUE_APP_API_BASE_URL
 
 // refresh 동시 처리 큐
 let isRefreshing = false
