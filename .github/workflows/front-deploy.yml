@@ -1,0 +1,53 @@
+name: deploy to s3, cloudfront
+# 이벤트 정의(트리거)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# 작업 정의
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    # uses: 재사용이 가능한 사전에 만들어진 작업절차
+      - uses: actions/checkout@v2
+      - name: setup node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '22'
+
+      # .env에 있던 환경변수들을 등록해주는 단계
+      - name: .env setting
+        run: |
+          echo "VUE_APP_API_BASE_URL=${{ secrets.VUE_APP_API_BASE_URL }}" >> .env
+          echo "VUE_APP_GOOGLE_CLIENT_ID=${{ secrets.VUE_APP_GOOGLE_CLIENT_ID }}" >> .env
+          echo "VUE_APP_KAKAO_CLIENT_ID=${{ secrets.VUE_APP_KAKAO_CLIENT_ID }}" >> .env
+          echo "VUE_APP_KAKAO_MAP_API_KEY=${{ secrets.VUE_APP_KAKAO_MAP_API_KEY }}" >> .env
+          echo "VUE_APP_OPENWEATHER_API_KEY=${{ secrets.VUE_APP_OPENWEATHER_API_KEY }}" >> .env
+          echo "VUE_APP_TOSS_CLIENT_KEY=${{ secrets.VUE_APP_TOSS_CLIENT_KEY }}" >> .env
+
+      - name: npm install
+        working-directory: .
+        run: npm install
+
+      - name: npm build
+        working-directory: .
+        run: npm run build
+        
+      - name: setup aws cli
+        uses : aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
+          aws-region: ap-northeast-2
+
+      - name: deploy to s3
+        run: aws s3 cp ./dist ${{ secrets.S3_BUCKET_URL }} --recursive
+
+      - name: invalidate cloudfront
+        run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+
+          
