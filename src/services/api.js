@@ -380,10 +380,10 @@ export const marketAPI = {
   getSales: (pageable) => apiClient.get('/markets/sales', { params: pageable }),
 
   // 찜하기
-  likeMarket: (postId) => apiClient.post(`/markets/${postId}/like`),
+  likeMarket: (postId) => apiClient.post(`/markets/${postId}/likes`),
 
   // 찜 취소
-  unlikeMarket: (postId) => apiClient.delete(`/markets/${postId}/like`),
+  unlikeMarket: (postId) => apiClient.delete(`/markets/${postId}/likes`),
 
   // 찜 목록 조회
   getLikes: (pageable) => apiClient.get('/markets/like', { params: pageable }),
