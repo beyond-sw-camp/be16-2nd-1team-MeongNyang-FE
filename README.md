@@ -38,6 +38,12 @@
 ![MariaDB](https://img.shields.io/badge/MariaDB-003545?style=for-the-badge&logo=mariadb&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)
 
+<<<<<<< HEAD
+### Customize configuration
+See [Configuration Reference](https://cli.vuejs.org/config/).
+
+# be16-2nd-1team-MeongNyang-FE
+=======
 ### 🔙 Backend
 ![Java 17](https://img.shields.io/badge/Java%2017-007396?style=for-the-badge&logo=openjdk&logoColor=white)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)
@@ -619,3 +625,4 @@ https://github.com/user-attachments/assets/2218d0a1-10af-4080-8f7b-78abaa612bc9
         <img width="1321" height="850" alt="대표동물 변경 후" src="https://github.com/user-attachments/assets/51c842eb-c946-44be-a80f-9e700c3770b1" />
     </details>
 </details>
+>>>>>>> develop
