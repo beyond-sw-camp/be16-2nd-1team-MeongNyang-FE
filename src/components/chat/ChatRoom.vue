@@ -1198,14 +1198,7 @@ export default {
           }
         } else {
           // 일반적인 메시지 전송 실패
-          if (showMessage) {
-            showMessage({
-              type: 'error',
-              text: '메시지 전송에 실패했습니다. 잠시 후 다시 시도해주세요.'
-            })
-          } else {
-            alert('메시지 전송에 실패했습니다. 잠시 후 다시 시도해주세요.')
-          }
+          console.error('메시지 전송 실패:', err)
         }
       } finally {
         isSending.value = false
@@ -1332,19 +1325,12 @@ export default {
       if (validFiles.length > 0) {
         selectedFiles.value = [...selectedFiles.value, ...validFiles]
         
-        // 성공 메시지 표시
-        if (showMessage && validFiles.length > 0) {
-          showMessage({
-            type: 'success',
-            text: `${validFiles.length}개 파일이 첨부되었습니다.`
-          })
-        }
       }
       
               // 크기 초과 파일이 있으면 경고 메시지 표시
         if (invalidFiles.length > 0) {
           const fileList = invalidFiles.join(', ')
-          const errorMessage = `파일 크기 초과로 제외됨: ${fileList}\n\n50MB 이하의 파일만 첨부 가능합니다.`
+          const errorMessage = `파일 크기 초과로 제외됨: ${fileList}\n50MB 이하의 파일만 첨부 가능합니다.`
           
           if (showMessage) {
             showMessage({
@@ -1470,19 +1456,12 @@ export default {
         if (validFiles.length > 0) {
           selectedFiles.value = [...selectedFiles.value, ...validFiles]
           
-          // 성공 메시지 표시
-          if (showMessage) {
-            showMessage({
-              type: 'success',
-              text: `${validFiles.length}개 파일이 첨부되었습니다.`
-            })
-          }
         }
         
               // 크기 초과 파일이 있으면 경고 메시지 표시
       if (invalidFiles.length > 0) {
         const fileList = invalidFiles.join(', ')
-        const errorMessage = `파일 크기 초과로 제외됨: ${fileList}\n\n50MB 이하의 파일만 첨부 가능합니다.`
+        const errorMessage = `파일 크기 초과로 제외됨: ${fileList}\n50MB 이하의 파일만 첨부 가능합니다.`
         
         if (showMessage) {
           showMessage({
@@ -1597,13 +1576,6 @@ export default {
         console.log(`${selectedUsersArray.length}명의 사용자에게 초대 메시지를 보냈습니다.`);
         showInviteDialog.value = false;
         
-        // 성공 메시지를 부모 컴포넌트로 전달
-        if (showMessage) {
-          showMessage({
-            type: 'success',
-            text: `${selectedUsersArray.length}명의 사용자를 초대했습니다.`
-          });
-        }
         
         // 참여자 목록 새로고침
         await chatStore.getParticipants(props.roomId);
@@ -1645,13 +1617,6 @@ export default {
         // 채팅방 목록 새로고침 (백엔드에서 최신 상태 가져오기)
         await chatStore.fetchChatRoomList();
         
-        // 성공 메시지를 부모 컴포넌트로 전달
-        if (showMessage) {
-          showMessage({
-            type: 'success',
-            text: '채팅방에서 나갔습니다.'
-          });
-        }
         
         // 채팅방 나가기 후 채팅방 목록으로 리다이렉트
         router.push({ name: 'Chat' });
@@ -1938,12 +1903,7 @@ export default {
         
         // 상품 정보가 있는지 확인
         if (!marketPostInfo.value) {
-          if (showMessage) {
-            showMessage({
-              type: 'error',
-              text: '상품 정보를 불러올 수 없습니다.'
-            })
-          }
+          console.error('상품 정보를 불러올 수 없습니다.')
           return
         }
         
@@ -1960,12 +1920,6 @@ export default {
         
       } catch (error) {
         console.error('결제 처리 실패:', error)
-        if (showMessage) {
-          showMessage({
-            type: 'error',
-            text: '결제 처리 중 오류가 발생했습니다.'
-          })
-        }
       }
     }
     
@@ -2043,23 +1997,11 @@ export default {
           roomFromStore.isPurchaseApproved = updatedStatus
         }
         
-        if (showMessage) {
-          showMessage({
-            type: 'success',
-            text: updatedStatus ? '구매 요청이 승인되었습니다.' : '구매 요청 승인이 취소되었습니다.'
-          })
-        }
         
         console.log('구매 요청 승인 완료, 상태:', updatedStatus)
         
       } catch (error) {
         console.error('구매 요청 승인 실패:', error)
-        if (showMessage) {
-          showMessage({
-            type: 'error',
-            text: '구매 요청 승인 중 오류가 발생했습니다.'
-          })
-        }
       }
     }
     
@@ -2102,12 +2044,6 @@ export default {
       } catch (error) {
         console.error('상품 정보 조회 실패:', error)
         marketPostError.value = true
-        if (showMessage) {
-          showMessage({
-            type: 'error',
-            text: '상품 정보를 불러오는데 실패했습니다.'
-          })
-        }
       } finally {
         marketPostLoading.value = false
       }

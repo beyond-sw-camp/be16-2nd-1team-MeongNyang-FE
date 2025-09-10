@@ -261,23 +261,12 @@ class SseService {
   // 알림 처리
   handleNotification(notificationData) {
     try {
-      // 알림 스토어와 UI 스토어 import
-      Promise.all([
-        import('@/stores/alarm'),
-        import('@/stores/ui')
-      ]).then(([{ useAlarmStore }, { useUIStore }]) => {
+      // 알림 스토어 import
+      import('@/stores/alarm').then(({ useAlarmStore }) => {
         const alarmStore = useAlarmStore();
-        const uiStore = useUIStore();
         
         // 알림 스토어에 새 알림 추가
         alarmStore.addAlarm(notificationData);
-        
-        // 스낵바로 알림 표시
-        uiStore.showSnackbar({
-          title: '새 알림',
-          message: notificationData.content || notificationData.message || notificationData.title || '새로운 알림이 있습니다',
-          type: 'info'
-        });
         
         console.log('SSE 알림이 처리되었습니다:', notificationData);
       });

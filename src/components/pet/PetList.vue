@@ -1133,7 +1133,6 @@
 <script>
 import { ref, computed, onMounted, nextTick, shallowRef } from 'vue'
 import { usePetStore } from '@/stores/pet'
-import { useSnackbar } from '@/composables/useSnackbar'
 import PetCard from './PetCard.vue'
 import PetForm from './PetForm.vue'
 import ImageCropper from '@/components/common/ImageCropper.vue'
@@ -1148,7 +1147,6 @@ export default {
   emits: ['set-representative', 'view-details', 'delete'],
   setup() {
     const petStore = usePetStore()
-    const { showSnackbar } = useSnackbar()
     
     const showAddForm = ref(false)
     const showDeleteConfirm = ref(false)
@@ -1592,9 +1590,8 @@ export default {
     const setAsRepresentative = async (pet) => {
       try {
         await petStore.setRepresentativePet(pet)
-        showSnackbar('대표 반려동물이 변경되었습니다.', 'success')
       } catch (error) {
-        showSnackbar('대표 반려동물 설정에 실패했습니다.', 'error')
+        console.error('대표 반려동물 설정 실패:', error)
       }
     }
     
@@ -1607,7 +1604,6 @@ export default {
       // 다른 모달이 열려있으면 상세보기 차단
       if (showAddForm.value || showEditForm.value || showDeleteConfirm.value) {
         console.log('⚠️ 다른 모달이 열려있어서 상세보기 차단됨')
-        showSnackbar('다른 작업이 진행 중입니다. 먼저 완료해주세요.', 'warning')
         return
       }
       
@@ -1698,12 +1694,9 @@ export default {
           selectedPet.value = { ...selectedPet.value, ...updatedPet }
         }
         
-        // 성공 알림 표시
-        showSnackbar('반려동물 정보가 성공적으로 수정되었습니다.', 'success')
         
       } catch (error) {
         console.error('❌ 펫 수정 실패:', error)
-        showSnackbar('펫 정보 수정에 실패했습니다.', 'error')
       }
     }
     
@@ -1711,10 +1704,9 @@ export default {
     const handlePetDelete = async (petId) => {
       try {
         await petStore.deletePet(petId)
-        showSnackbar('반려동물이 삭제되었습니다.', 'success')
         closeDetailModal()
       } catch (error) {
-        showSnackbar('반려동물 삭제에 실패했습니다.', 'error')
+        console.error('반려동물 삭제 실패:', error)
       }
     }
     
@@ -1726,7 +1718,6 @@ export default {
       
       if (!selectedPet.value) {
         console.error('❌ selectedPet이 없습니다!')
-        showSnackbar('펫 정보를 찾을 수 없습니다.', 'error')
         return
       }
       
@@ -1824,7 +1815,6 @@ export default {
         // 이미지 미리보기 초기화
         imagePreviewUrl.value = null
         
-        showSnackbar('변경사항이 초기화되었습니다.', 'info')
       }
     }
 
@@ -1857,7 +1847,6 @@ export default {
         // selectedPet이 있는지 확인
         if (!selectedPet.value) {
           console.error('❌ 선택된 펫이 없습니다')
-          showSnackbar('펫을 선택해주세요.', 'error')
           return
         }
         
@@ -1951,7 +1940,6 @@ export default {
         editingPet.value.birthday = date
         console.log('📅 선택된 날짜:', date)
         showDatePicker.value = false
-        showSnackbar('생일이 선택되었습니다.', 'success')
       }
     }
     
@@ -1988,7 +1976,6 @@ export default {
         
         if (!allowedTypes.includes(file.type) || !allowedExtensions.includes(fileExtension)) {
           console.log('❌ 파일 형식 검증 실패 - 크롭 모달 열기 차단')
-          showSnackbar('이미지 파일만 업로드 가능합니다. (JPG, PNG, GIF, WebP)', 'error')
           // 파일 입력 강제 초기화
           event.target.value = ''
           // 추가로 파일 입력 요소도 초기화
@@ -2006,7 +1993,6 @@ export default {
         // 파일 크기 체크 (5MB)
         if (file.size > 5 * 1024 * 1024) {
           console.log('❌ 파일 크기 초과 - 크롭 모달 열기 차단')
-          showSnackbar('파일 크기는 5MB 이하여야 합니다.', 'error')
           // 파일 입력 강제 초기화
           event.target.value = ''
           if (fileInput.value) {
@@ -2020,14 +2006,12 @@ export default {
         
         // 수정 모드가 아닐 때는 바로 이미지 변경
         if (!isEditing.value) {
-          showSnackbar('수정 모드에서만 이미지를 변경할 수 있습니다.', 'info')
           return
         }
         
         // editingPet과 selectedPet이 있는지 확인
         if (!editingPet.value || !selectedPet.value) {
           console.error('❌ 편집 데이터가 없습니다')
-          showSnackbar('편집 데이터를 불러올 수 없습니다.', 'error')
           return
         }
         
@@ -2037,7 +2021,6 @@ export default {
         
       } catch (error) {
         console.error('❌ 이미지 변경 실패:', error)
-        showSnackbar('이미지 변경에 실패했습니다.', 'error')
       }
       
       // 파일 입력 초기화
@@ -2076,14 +2059,12 @@ export default {
         cropperImageUrl.value = ''
       }
       
-      showSnackbar('이미지가 크롭되었습니다. 저장 버튼을 눌러 변경사항을 저장하세요.', 'success')
     }
     
     // 변경사항 저장
     const saveChanges = async () => {
       if (!editingPet.value) {
         console.error('❌ 편집 데이터가 없습니다')
-        showSnackbar('편집할 데이터가 없습니다.', 'error')
         return
       }
       
@@ -2091,24 +2072,14 @@ export default {
       if (!editingPet.value.name || editingPet.value.age === null || editingPet.value.age === undefined || editingPet.value.age === '' || !editingPet.value.gender || !editingPet.value.weight) {
         console.error('❌ 필수 필드가 누락되었습니다:', editingPet.value)
         
-        // 구체적인 오류 메시지 제공
-        if (!editingPet.value.name) {
-          showSnackbar('이름을 입력해주세요.', 'error')
-        } else if (editingPet.value.age === null || editingPet.value.age === undefined || editingPet.value.age === '') {
-          showSnackbar('나이를 입력해주세요.', 'error')
-          // 나이 입력 필드에 포커스
+        // 나이 입력 필드에 포커스
+        if (editingPet.value.age === null || editingPet.value.age === undefined || editingPet.value.age === '') {
           setTimeout(() => {
             const ageInput = document.querySelector('.info-item .edit-field input[type="number"]')
             if (ageInput) {
               ageInput.focus()
             }
           }, 100)
-        } else if (!editingPet.value.gender) {
-          showSnackbar('성별을 선택해주세요.', 'error')
-        } else if (!editingPet.value.weight) {
-          showSnackbar('체중을 입력해주세요.', 'error')
-        } else {
-          showSnackbar('필수 정보를 모두 입력해주세요.', 'error')
         }
         return
       }
@@ -2196,13 +2167,10 @@ export default {
         selectedMonth.value = null
         console.log('📅 수정 완료 후 달력을 오늘 날짜로 초기화:', today)
         
-        showSnackbar('반려동물 정보가 성공적으로 수정되었습니다.', 'success')
         console.log('🎉 수정 완료 - 상세보기에 반영됨')
         
       } catch (error) {
         console.error('❌ 수정 실패:', error)
-        const errorMessage = error.response?.data?.status?.message || error.message
-        showSnackbar(`수정 중 오류가 발생했습니다: ${errorMessage}`, 'error')
       } finally {
         saving.value = false
       }
@@ -2230,13 +2198,12 @@ export default {
       try {
         deleting.value = true
         await petStore.deletePet(petToDelete.value.id)
-          showSnackbar('반려동물이 삭제되었습니다.', 'success')
           showDeleteConfirm.value = false
           petToDelete.value = null
           // 삭제 완료 후 상세보기 모달도 닫기
           closeDetailModal()
       } catch (error) {
-        showSnackbar('반려동물 삭제에 실패했습니다.', 'error')
+        console.error('반려동물 삭제 실패:', error)
       } finally {
         deleting.value = false
       }
@@ -2247,7 +2214,6 @@ export default {
       // 다른 모달이 열려있으면 추가 차단
       if (showDetailModal.value || showEditForm.value || showDeleteConfirm.value) {
         console.log('⚠️ 다른 모달이 열려있어서 반려동물 추가 차단됨')
-        showSnackbar('다른 작업이 진행 중입니다. 먼저 완료해주세요.', 'warning')
         return
       }
       
@@ -2263,7 +2229,6 @@ export default {
     
     const handleFormSuccess = () => {
       showAddForm.value = false
-      showSnackbar('반려동물이 성공적으로 등록되었습니다.', 'success')
     }
     
     // 컴포넌트 마운트 시 반려동물 데이터 로드
@@ -2354,7 +2319,6 @@ export default {
         editingPet.value.age = null  // 나이도 초기화
       }
       selectedDate.value = null
-      showSnackbar('생일이 초기화되었습니다. 나이를 직접 입력해주세요.', 'warning')
     }
     
     const cancelDateSelection = () => {
@@ -2399,7 +2363,6 @@ export default {
         }
         
         selectedDate.value = null
-        showSnackbar('생일이 선택되었습니다.', 'success')
       }
     }
     
@@ -2411,7 +2374,6 @@ export default {
     const clearBirthday = () => {
       editingPet.value.birthday = null
       editingPet.value.age = null
-      showSnackbar('생일이 삭제되었습니다. 나이를 직접 입력할 수 있습니다.', 'info')
     }
     
     // 오늘 날짜 포맷팅

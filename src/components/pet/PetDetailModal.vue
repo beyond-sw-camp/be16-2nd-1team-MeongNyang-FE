@@ -379,19 +379,6 @@
         </v-card>
       </v-dialog>
 
-      <!-- 성공/에러 메시지 -->
-      <v-snackbar
-        v-model="showSnackbar"
-        :color="snackbarColor"
-        timeout="4000"
-        location="top"
-        rounded="lg"
-      >
-        <div class="d-flex align-center">
-          <v-icon class="me-3">{{ snackbarIcon }}</v-icon>
-          <span class="font-weight-medium">{{ snackbarMessage }}</span>
-        </div>
-      </v-snackbar>
 
       <!-- 삭제 확인 모달 - PetForm 스타일 적용 -->
       <v-dialog
@@ -499,10 +486,6 @@ const loading = ref(false)
 const showDeleteConfirm = ref(false)
 const deleting = ref(false)
 const petToDelete = ref(null)
-const showSnackbar = ref(false)
-const snackbarMessage = ref('')
-const snackbarColor = ref('success')
-const snackbarIcon = ref('mdi-check-circle')
 
 // 이미지 관련
 const imageInput = ref(null)
@@ -607,18 +590,14 @@ const saveEdit = async () => {
     const result = await petStore.updateField(props.pet.id, editingField.value, fieldValue)
     
     if (result.success) {
-      showMessage(`${getEditModalTitle()}이(가) 성공적으로 수정되었습니다.`, 'success')
       showEditModal.value = false
       editingField.value = ''
       
       // 부모 컴포넌트에 업데이트 알림
       emit('update', { ...props.pet, [editingField.value]: fieldValue })
-    } else {
-      showMessage(result.message || `${getEditModalTitle()} 수정에 실패했습니다.`, 'error')
     }
   } catch (error) {
     console.error('수정 실패:', error)
-    showMessage(`${getEditModalTitle()} 수정에 실패했습니다.`, 'error')
   } finally {
     saving.value = false
   }
@@ -710,7 +689,6 @@ const saveImage = async () => {
     // 여기에 이미지 업로드 로직 추가
     // await petStore.uploadPetImage(props.pet.id, file)
     
-    showMessage('프로필 사진이 변경되었습니다.', 'success')
     showImageConfirm.value = false
     imagePreviewUrl.value = null
     
@@ -718,7 +696,6 @@ const saveImage = async () => {
     emit('update', { ...props.pet, url: imagePreviewUrl.value })
   } catch (error) {
     console.error('이미지 저장 실패:', error)
-    showMessage('이미지 저장에 실패했습니다.', 'error')
   }
 }
 
@@ -730,15 +707,11 @@ const setAsRepresentative = async (pet) => {
     const result = await petStore.setRepresentativePet(pet)
     
     if (result.success) {
-      showMessage('대표 반려동물이 설정되었습니다.', 'success')
       // 부모 컴포넌트에 업데이트 알림
       emit('update', pet)
-    } else {
-      showMessage(result.message || '대표 반려동물 설정에 실패했습니다.', 'error')
     }
   } catch (error) {
     console.error('대표 반려동물 설정 실패:', error)
-    showMessage('대표 반려동물 설정에 실패했습니다.', 'error')
   }
 }
 
@@ -757,29 +730,18 @@ const deletePet = async () => {
     const result = await petStore.deletePet(petToDelete.value.id)
     
     if (result.success) {
-      showMessage('반려동물이 삭제되었습니다.', 'success')
       // 부모 컴포넌트에 삭제 알림
       emit('delete', petToDelete.value.id)
       emit('close')
-    } else {
-      showMessage(result.message || '반려동물 삭제에 실패했습니다.', 'error')
     }
   } catch (error) {
     console.error('펫 삭제 실패:', error)
-    showMessage('반려동물 삭제에 실패했습니다.', 'error')
   } finally {
     deleting.value = false
     showDeleteConfirm.value = false
   }
 }
 
-// 메시지 표시
-const showMessage = (message, type = 'success') => {
-  snackbarMessage.value = message
-  snackbarColor.value = type
-  snackbarIcon.value = type === 'success' ? 'mdi-check-circle' : 'mdi-alert-circle'
-  showSnackbar.value = true
-}
 
 // 종류에 따른 아이콘 반환
 const getSpeciesIcon = (petOrder) => {
