@@ -1258,7 +1258,7 @@ const handleUnlockAccount = async () => {
     
     // 응답에 따라 다른 메시지 표시
     if (response?.isSuccess) {
-      unlockAccountSuccessMsg.value = '계정 잠금이 해제되었습니다. 이제 로그인할 수 있습니다.'
+      unlockAccountSuccessMsg.value = '계정 잠금이 해제되었습니다. 이메일로 발송된 임시비밀번호로 로그인해주세요.'
     } else {
       unlockAccountSuccessMsg.value = response?.message || '계정 잠금 해제 요청이 처리되었습니다.'
     }
