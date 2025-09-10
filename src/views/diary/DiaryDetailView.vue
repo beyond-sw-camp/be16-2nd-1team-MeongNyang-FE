@@ -1009,7 +1009,7 @@ export default {
   overflow: hidden;
 }
 .caption {
-  padding: 0 16px 8px 16px;
+  padding: 10px 16px 8px 20px;
   line-height: 1.4;
   text-align: left;
   margin: 0;
