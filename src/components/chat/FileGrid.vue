@@ -144,7 +144,6 @@
           flat 
           class="image-viewer-toolbar"
           :class="{ 'toolbar-hidden': toolbarHidden }"
-          style="top: 0; left: 0; right: 0; position: absolute;"
         >
           <v-btn icon @click="closeImageViewer" class="mr-2 toolbar-btn" style="margin-left: 8px;">
             <v-icon color="white">mdi-close</v-icon>
@@ -1019,6 +1018,7 @@ export default {
   top: 0 !important;
   left: 0 !important;
   right: 0 !important;
+  width: 100% !important;
   margin: 0 !important;
   padding: 0 !important;
 }
@@ -1028,6 +1028,7 @@ export default {
   top: 0 !important;
   left: 0 !important;
   right: 0 !important;
+  width: 100% !important;
   z-index: 1000;
   transition: transform 0.3s ease;
   margin: 0 !important;
@@ -1050,6 +1051,13 @@ export default {
 /* 툴바 텍스트 스타일 */
 .toolbar-text {
   color: white !important;
+}
+
+/* 툴바 컨텐츠 정렬 */
+.image-viewer-toolbar .v-toolbar__content {
+  width: 100% !important;
+  padding: 0 16px !important;
+  margin: 0 !important;
 }
 
 .toolbar-hidden {

@@ -2,8 +2,22 @@
   <div class="all-posts-container" :class="{ 'modal-open': showCommentsModal }">
     <!-- 로딩 스피너 -->
     <div v-if="loading && posts.length === 0" class="loading-container">
-      <v-progress-circular indeterminate color="#FF8B8B" size="64"></v-progress-circular>
-      <p class="loading-text">일기를 불러오는 중...</p>
+      <div class="loading-content">
+        <div class="loading-spinner">
+          <div class="spinner-ring"></div>
+          <div class="spinner-ring"></div>
+          <div class="spinner-ring"></div>
+        </div>
+        <div class="loading-text-container">
+          <h3 class="loading-title">일기를 불러오는 중</h3>
+          <p class="loading-subtitle">잠시만 기다려주세요...</p>
+        </div>
+        <div class="loading-dots">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
     </div>
 
     <!-- 메인 콘텐츠 영역 -->
@@ -94,8 +108,14 @@
 
     <!-- 더 로딩 스피너 -->
     <div v-if="loading && posts.length > 0" class="more-loading">
-      <v-progress-circular indeterminate color="#FF8B8B" size="32"></v-progress-circular>
-      <span>더 많은 일기를 불러오는 중...</span>
+      <div class="more-loading-content">
+        <div class="more-loading-spinner">
+          <div class="pulse-dot"></div>
+          <div class="pulse-dot"></div>
+          <div class="pulse-dot"></div>
+        </div>
+        <span class="more-loading-text">더 많은 일기를 불러오는 중...</span>
+      </div>
     </div>
 
     <!-- 무한 스크롤 트리거 -->
@@ -1221,16 +1241,127 @@ export default {
 
 .loading-container {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
+  min-height: 60vh;
   padding: 80px 20px;
+  background: linear-gradient(135deg, #FFFAF0 0%, #FFF5E6 100%);
 }
 
-.loading-text {
-  margin-top: 16px;
-  color: #6B7280;
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  text-align: center;
+}
+
+/* 메인 로딩 스피너 */
+.loading-spinner {
+  position: relative;
+  width: 80px;
+  height: 80px;
+}
+
+.spinner-ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border: 3px solid transparent;
+  border-top: 3px solid #FF8B8B;
+  border-radius: 50%;
+  animation: spin 1.5s linear infinite;
+}
+
+.spinner-ring:nth-child(1) {
+  animation-delay: 0s;
+  border-top-color: #FF8B8B;
+}
+
+.spinner-ring:nth-child(2) {
+  animation-delay: 0.3s;
+  border-top-color: #FFB3B3;
+  width: 70px;
+  height: 70px;
+  top: 5px;
+  left: 5px;
+}
+
+.spinner-ring:nth-child(3) {
+  animation-delay: 0.6s;
+  border-top-color: #FFD9D9;
+  width: 60px;
+  height: 60px;
+  top: 10px;
+  left: 10px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 로딩 텍스트 */
+.loading-text-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.loading-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1E293B;
+  margin: 0;
+  background: linear-gradient(135deg, #FF8B8B, #FFB3B3);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.loading-subtitle {
   font-size: 1rem;
+  color: #6B7280;
+  margin: 0;
+  font-weight: 400;
+}
+
+/* 로딩 점들 */
+.loading-dots {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.loading-dots span {
+  width: 8px;
+  height: 8px;
+  background: #FF8B8B;
+  border-radius: 50%;
+  animation: bounce 1.4s ease-in-out infinite both;
+}
+
+.loading-dots span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.loading-dots span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+.loading-dots span:nth-child(3) {
+  animation-delay: 0s;
+}
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
 }
 
 /* 메인 콘텐츠 영역 */
@@ -1738,9 +1869,62 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  padding: 20px;
+  padding: 32px 20px;
+  background: rgba(255, 250, 240, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  margin: 16px 0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.more-loading-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.more-loading-spinner {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  background: #FF8B8B;
+  border-radius: 50%;
+  animation: pulse 1.4s ease-in-out infinite both;
+}
+
+.pulse-dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.pulse-dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+.pulse-dot:nth-child(3) {
+  animation-delay: 0s;
+}
+
+@keyframes pulse {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+.more-loading-text {
+  font-size: 0.9rem;
   color: #6B7280;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .scroll-trigger {
@@ -1787,6 +1971,48 @@ export default {
   
   .hashtags {
     padding: 0 12px 8px 12px;
+  }
+
+  /* 모바일 로딩 스타일 */
+  .loading-container {
+    min-height: 50vh;
+    padding: 40px 20px;
+  }
+
+  .loading-spinner {
+    width: 60px;
+    height: 60px;
+  }
+
+  .spinner-ring:nth-child(2) {
+    width: 50px;
+    height: 50px;
+    top: 5px;
+    left: 5px;
+  }
+
+  .spinner-ring:nth-child(3) {
+    width: 40px;
+    height: 40px;
+    top: 10px;
+    left: 10px;
+  }
+
+  .loading-title {
+    font-size: 1.25rem;
+  }
+
+  .loading-subtitle {
+    font-size: 0.9rem;
+  }
+
+  .more-loading {
+    padding: 24px 16px;
+    margin: 12px 0;
+  }
+
+  .more-loading-text {
+    font-size: 0.85rem;
   }
 }
 
