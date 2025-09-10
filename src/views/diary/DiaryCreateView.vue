@@ -6,14 +6,21 @@
         <h1 class="page-title">새 일기</h1>
       </div>
       <div class="header-right">
-        <v-btn 
-          color="#FF8B8B" 
+        <button 
+          type="button"
           class="write-btn"
           @click="handleSubmit"
-          :disabled="!canSubmit"
+          :disabled="!canSubmit || isSubmitting"
         >
-          작성
-        </v-btn>
+          <div v-if="!isSubmitting" class="btn-content">
+            <v-icon icon="mdi-check" size="18" />
+            작성
+          </div>
+          <div v-else class="btn-content">
+            <div class="loading-spinner-small"></div>
+            작성 중...
+          </div>
+        </button>
       </div>
     </div>
 
@@ -33,7 +40,7 @@
                 v-if="currentMedia.type === 'image'"
                 :src="currentMedia.url" 
                 class="main-media"
-                cover
+                contain
               ></v-img>
               
               <!-- 삭제 버튼 -->
@@ -136,6 +143,7 @@ export default {
     const isDragging = ref(false)
     const dragStartX = ref(0)
     const dragStartIndex = ref(0)
+    const isSubmitting = ref(false)
     
     // 현재 미디어
     const currentMedia = computed(() => {
@@ -147,7 +155,7 @@ export default {
     
     // 제출 가능 여부
     const canSubmit = computed(() => {
-      return content.value.trim() && mediaList.value.length > 0
+      return content.value.trim() && mediaList.value.length > 0 && !isSubmitting.value
     })
     
     // 미디어 추가
@@ -276,6 +284,11 @@ export default {
     
     // 제출 처리
     const handleSubmit = async () => {
+      // 이미 제출 중이면 중복 제출 방지
+      if (isSubmitting.value) {
+        return
+      }
+      
       if (!content.value.trim()) {
         alert('내용을 입력해주세요.')
         return
@@ -285,6 +298,9 @@ export default {
         alert('최소 하나의 이미지를 업로드해주세요.')
         return
       }
+      
+      // 제출 시작
+      isSubmitting.value = true
       
       try {
         console.log('=== 다이어리 작성 시작 ===')
@@ -358,6 +374,9 @@ export default {
       } catch (error) {
         console.error('다이어리 작성 실패:', error)
         handleApiError(error, $router, '다이어리 작성에 실패했습니다.')
+      } finally {
+        // 제출 완료 (성공/실패 관계없이)
+        isSubmitting.value = false
       }
     }
     
@@ -420,6 +439,7 @@ export default {
         currentMediaIndex,
         currentMedia,
         canSubmit,
+        isSubmitting,
         addImage,
         handleFileSelect,
         removeCurrentMedia,
@@ -468,16 +488,53 @@ export default {
 }
 
 .write-btn {
-  font-weight: 700;
+  font-weight: 600;
   text-transform: none;
-  border-radius: 8px;
-  padding: 12px 24px;
-  background-color: #FF8B8B !important;
+  border-radius: 12px;
+  padding: 16px 24px;
+  background: linear-gradient(135deg, #E87D7D, #FF6B6B) !important;
   color: white !important;
+  box-shadow: 0 4px 15px rgba(232, 125, 125, 0.3) !important;
   line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.3s ease !important;
+  border: none !important;
+  font-size: 1rem !important;
+}
+
+.write-btn:hover:not(:disabled) {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(232, 125, 125, 0.4) !important;
+}
+
+.write-btn:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
+/* 로딩 스피너 */
+.loading-spinner-small {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.btn-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .image-upload-section {
@@ -549,25 +606,62 @@ export default {
 .main-media {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  background-color: #f8f9fa;
 }
 
 .delete-btn {
   position: absolute;
   top: 16px;
   right: 16px;
-  background: rgba(0, 0, 0, 0.7) !important;
+  background: linear-gradient(135deg, #f87171 0%, #fca5a5 100%) !important;
   color: white !important;
   z-index: 10;
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 50% !important;
+  box-shadow: 0 4px 12px rgba(248, 113, 113, 0.25) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  backdrop-filter: blur(10px) !important;
+  border: 2px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+.delete-btn:hover {
+  transform: translateY(-2px) scale(1.05) !important;
+  box-shadow: 0 8px 20px rgba(248, 113, 113, 0.35) !important;
+  background: linear-gradient(135deg, #fb7185 0%, #f87171 100%) !important;
+}
+
+.delete-btn:active {
+  transform: translateY(0) scale(0.95) !important;
+  box-shadow: 0 2px 8px rgba(248, 113, 113, 0.25) !important;
 }
 
 .add-btn {
   position: absolute;
   top: 16px;
   right: 60px;
-  background: rgba(0, 0, 0, 0.7) !important;
+  background: linear-gradient(135deg, #60a5fa 0%, #93c5fd 100%) !important;
   color: white !important;
   z-index: 10;
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 50% !important;
+  box-shadow: 0 4px 12px rgba(96, 165, 250, 0.25) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  backdrop-filter: blur(10px) !important;
+  border: 2px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+.add-btn:hover {
+  transform: translateY(-2px) scale(1.05) !important;
+  box-shadow: 0 8px 20px rgba(96, 165, 250, 0.35) !important;
+  background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%) !important;
+}
+
+.add-btn:active {
+  transform: translateY(0) scale(0.95) !important;
+  box-shadow: 0 2px 8px rgba(96, 165, 250, 0.25) !important;
 }
 
 .media-navigation {
@@ -583,9 +677,57 @@ export default {
 }
 
 .nav-btn {
-  background: rgba(0, 0, 0, 0.5) !important;
+  background: transparent !important;
+  background-color: transparent !important;
   color: white !important;
   pointer-events: auto;
+  transition: color 0.3s ease, transform 0.3s ease;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  min-width: 60px !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.nav-btn .v-icon {
+  font-size: 36px !important;
+}
+
+.nav-btn :deep(.v-btn__overlay) {
+  background: transparent !important;
+  opacity: 0 !important;
+}
+
+.nav-btn :deep(.v-btn__underlay) {
+  background: transparent !important;
+  opacity: 0 !important;
+}
+
+.nav-btn :deep(.v-ripple__container) {
+  display: none !important;
+}
+
+.nav-btn :deep(.v-btn__ripple) {
+  display: none !important;
+}
+
+.nav-btn:hover {
+  background: transparent !important;
+  background-color: transparent !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  transform: scale(1.1);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+  box-shadow: none !important;
+}
+
+.nav-btn:disabled {
+  opacity: 0.3;
+  transform: none;
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
 }
 
 .media-indicators {
@@ -598,16 +740,24 @@ export default {
 }
 
 .indicator {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(0, 0, 0, 0.4);
   cursor: pointer;
   transition: all 0.3s ease;
+  border: 2px solid rgba(255, 255, 255, 0.8);
 }
 
 .indicator.active {
-  background: white;
+  background: #FF8B8B;
+  border-color: #FF8B8B;
+  transform: scale(1.2);
+}
+
+.indicator:hover {
+  background: #FF8B8B;
+  transform: scale(1.1);
 }
 
 .input-section {

@@ -61,8 +61,8 @@ export default {
     const hasInitialData = ref(false)
     let pollingTimer = null
     
-    // 1분 = 1 * 60 * 1000 밀리초
-    const POLLING_INTERVAL = 1 * 60 * 1000
+    // 30초 = 0.5 * 60 * 1000 밀리초
+    const POLLING_INTERVAL = 0.5 * 60 * 1000
 
     // 해시태그 클릭 핸들러
     const handleHashtagClick = (tagName) => {
