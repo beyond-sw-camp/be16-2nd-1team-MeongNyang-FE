@@ -541,13 +541,6 @@ export default {
   }
 }
 
-/* 다크 모드 지원 */
-@media (prefers-color-scheme: dark) {
-  .v-text-field input:focus {
-    outline-color: var(--v-theme-primary);
-  }
-}
-
 /* 모션 감소 설정 지원 */
 @media (prefers-reduced-motion: reduce) {
   .v-text-field {

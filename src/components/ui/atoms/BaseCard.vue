@@ -451,21 +451,6 @@ export default {
   }
 }
 
-/* 다크 모드 지원 */
-@media (prefers-color-scheme: dark) {
-  .v-card {
-    background-color: var(--v-theme-surface);
-  }
-  
-  .v-card--link:hover {
-    background-color: rgba(var(--v-theme-on-surface), 0.05);
-  }
-  
-  .v-card:focus-visible {
-    outline-color: var(--v-theme-primary);
-  }
-}
-
 /* 모션 감소 설정 지원 */
 @media (prefers-reduced-motion: reduce) {
   .v-card {

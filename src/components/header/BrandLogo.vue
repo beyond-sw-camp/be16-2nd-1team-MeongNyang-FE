@@ -85,11 +85,4 @@ export default {
   }
 }
 
-/* 다크 모드 지원 */
-@media (prefers-color-scheme: dark) {
-  .brand-title,
-  .brand-title-mobile {
-    color: #f8f9fa;
-  }
-}
 </style>

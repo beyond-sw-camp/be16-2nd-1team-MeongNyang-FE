@@ -216,30 +216,6 @@ export default {
   }
 }
 
-/* 다크 모드 지원 */
-@media (prefers-color-scheme: dark) {
-  .chat-view-container {
-    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
-  }
-  
-  .desktop-list {
-    background: #2d2d2d;
-    border-right-color: #404040;
-  }
-  
-  .desktop-list::before {
-    background: linear-gradient(135deg, rgba(232, 125, 125, 0.05) 0%, rgba(255, 107, 107, 0.02) 100%);
-  }
-  
-  .desktop-room {
-    background: #2d2d2d;
-  }
-  
-  .desktop-room::before {
-    background: linear-gradient(135deg, rgba(232, 125, 125, 0.02) 0%, rgba(255, 107, 107, 0.01) 100%);
-  }
-}
-
 /* 애니메이션 */
 @keyframes fadeIn {
   from {

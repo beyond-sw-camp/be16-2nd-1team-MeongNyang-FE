@@ -569,43 +569,6 @@ export default {
   }
 }
 
-/* 다크 모드 지원 */
-@media (prefers-color-scheme: dark) {
-  .chat-list-container {
-    background: #2d2d2d;
-  }
-  
-  .chat-room-item {
-    background: #2d2d2d;
-    border-color: #404040;
-  }
-  
-  .chat-room-item:hover {
-    background: #404040;
-  }
-  
-  .chat-room-item.has-unread {
-    background: rgba(232, 125, 125, 0.05);
-  }
-  
-  .chat-room-item.selected {
-    background: linear-gradient(135deg, rgba(232, 125, 125, 0.15) 0%, rgba(255, 107, 107, 0.15) 100%);
-    border-color: #E87D7D;
-  }
-  
-  .room-info {
-    text-align: left;
-  }
-  
-  .room-name {
-    text-align: left;
-  }
-  
-  .last-message {
-    text-align: left;
-  }
-}
-
 /* 애니메이션 */
 @keyframes fadeInUp {
   from {

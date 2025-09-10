@@ -294,21 +294,6 @@ export default {
   }
 }
 
-/* 다크 모드 지원 */
-@media (prefers-color-scheme: dark) {
-  .global-loading-overlay__content {
-    background: rgba(var(--v-theme-surface), 0.95);
-  }
-  
-  .global-loading-overlay__title {
-    color: var(--v-theme-on-surface);
-  }
-  
-  .global-loading-overlay__text {
-    color: rgba(var(--v-theme-on-surface), 0.8);
-  }
-}
-
 /* 애니메이션 */
 .global-loading-overlay__content {
   animation: fadeInScale 0.3s ease-out;

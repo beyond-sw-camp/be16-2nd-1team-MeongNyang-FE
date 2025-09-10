@@ -178,14 +178,4 @@ export default {
   }
 }
 
-/* 다크 모드 지원 */
-@media (prefers-color-scheme: dark) {
-  .user-section {
-    background: rgba(255, 255, 255, 0.05);
-  }
-  
-  .user-name {
-    color: #f8f9fa;
-  }
-}
 </style>

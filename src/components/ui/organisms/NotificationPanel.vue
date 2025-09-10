@@ -669,27 +669,6 @@ export default {
   }
 }
 
-/* 다크 모드 지원 */
-@media (prefers-color-scheme: dark) {
-  .notification-panel {
-    background: var(--v-theme-surface);
-  }
-  
-  .notification-panel__header {
-    background: var(--v-theme-surface-variant);
-    border-bottom-color: rgba(var(--v-theme-on-surface), 0.24);
-  }
-  
-  .notification-panel__item {
-    border-bottom-color: rgba(var(--v-theme-on-surface), 0.16);
-  }
-  
-  .notification-panel__footer {
-    background: var(--v-theme-surface-variant);
-    border-top-color: rgba(var(--v-theme-on-surface), 0.24);
-  }
-}
-
 /* 스크롤바 스타일링 */
 .notification-panel__list--scrollable::-webkit-scrollbar {
   width: 4px;

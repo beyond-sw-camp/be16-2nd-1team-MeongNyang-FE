@@ -447,44 +447,4 @@ export default {
 }
 
 
-/* 다크 모드 지원 */
-@media (prefers-color-scheme: dark) {
-  .notification-drawer {
-    background: #1A1A1A;
-    border-right-color: rgba(255, 255, 255, 0.1);
-  }
-  
-  .notification-list {
-    background: #1F2937;
-  }
-  
-  .drawer-actions {
-    background: #111827;
-    border-top-color: rgba(255, 255, 255, 0.1);
-  }
-  
-  .loading-text,
-  .error-title,
-  .empty-title {
-    color: #F9FAFB;
-  }
-  
-  .error-text,
-  .empty-text {
-    color: #9CA3AF;
-  }
-  
-  .simple-text-btn {
-    color: #E5E7EB !important;
-  }
-  
-  .simple-text-btn:hover {
-    background: rgba(232, 125, 125, 0.15) !important;
-  }
-  
-  .simple-text-btn:disabled {
-    color: #6B7280 !important;
-  }
-}
-
 </style>
