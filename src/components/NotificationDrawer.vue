@@ -349,7 +349,8 @@ export default {
   flex: 1;
   overflow-y: auto;
   padding: 20px;
-  background: #FAFBFC;
+  /* background: #FAFBFC; */
+  background: #FFFFFF;
 }
 
 .empty-state {
