@@ -1330,7 +1330,7 @@ export default {
               // 크기 초과 파일이 있으면 경고 메시지 표시
         if (invalidFiles.length > 0) {
           const fileList = invalidFiles.join(', ')
-          const errorMessage = `파일 크기 초과로 제외됨: ${fileList}\n\n50MB 이하의 파일만 첨부 가능합니다.`
+          const errorMessage = `파일 크기 초과로 제외됨: ${fileList}\n50MB 이하의 파일만 첨부 가능합니다.`
           
           if (showMessage) {
             showMessage({
@@ -1461,7 +1461,7 @@ export default {
               // 크기 초과 파일이 있으면 경고 메시지 표시
       if (invalidFiles.length > 0) {
         const fileList = invalidFiles.join(', ')
-        const errorMessage = `파일 크기 초과로 제외됨: ${fileList}\n\n50MB 이하의 파일만 첨부 가능합니다.`
+        const errorMessage = `파일 크기 초과로 제외됨: ${fileList}\n50MB 이하의 파일만 첨부 가능합니다.`
         
         if (showMessage) {
           showMessage({

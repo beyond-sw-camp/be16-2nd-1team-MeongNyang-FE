@@ -281,6 +281,7 @@ export default {
   color: inherit;
   line-height: 1.4;
   opacity: 0.9;
+  white-space: pre-line;
 }
 
 .global-snackbar__actions {
