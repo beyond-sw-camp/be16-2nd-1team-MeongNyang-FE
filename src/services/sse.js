@@ -308,13 +308,15 @@ class SseService {
 
   // 재연결 스케줄링
   scheduleReconnect() {
-    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.log('SSE 최대 재연결 시도 횟수에 도달했습니다. 재연결을 중단합니다.');
+    // 이미 재연결이 스케줄되어 있으면 중복 호출 방지
+    if (this.reconnectTimer) {
+      console.log('SSE 재연결이 이미 스케줄되어 있습니다. 중복 호출을 무시합니다.');
       return;
     }
 
-    if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer);
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.log('SSE 최대 재연결 시도 횟수에 도달했습니다. 재연결을 중단합니다.');
+      return;
     }
 
     this.reconnectAttempts++;
@@ -323,6 +325,7 @@ class SseService {
     console.log(`SSE 재연결 시도 ${this.reconnectAttempts}/${this.maxReconnectAttempts} (${delay}ms 후)`);
     
     this.reconnectTimer = setTimeout(async () => {
+      this.reconnectTimer = null; // 타이머 완료 시 null로 설정
       try {
         await this.connect();
       } catch (error) {
