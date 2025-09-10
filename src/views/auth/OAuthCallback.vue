@@ -43,7 +43,14 @@ onMounted(async () => {
       saveTokens(at, rt)
       auth.accessToken = at
       if (rt) auth.refreshToken = rt
-      try { await auth.getCurrentUser() } catch(e) {void e}
+      try { 
+        await auth.getCurrentUser()
+        // OAuth 로그인 성공 시 이메일을 로컬 스토리지에 저장
+        if (auth.user?.email) {
+          localStorage.setItem('email', auth.user.email)
+          console.log('🔍 OAuth 콜백에서 이메일 로컬 스토리지에 저장:', auth.user.email)
+        }
+      } catch(e) {void e}
       
       // 로그인 성공 후 홈화면으로 이동
       console.log('✅ OAuth 로그인 성공! 홈화면으로 이동 중...')

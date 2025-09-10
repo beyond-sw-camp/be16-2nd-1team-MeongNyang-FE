@@ -508,6 +508,12 @@ export default {
       console.log('OAuth 추가정보 성공:', result)
       showOAuthExtraModal.value = false
       
+      // OAuth 추가정보 성공 시 이메일을 로컬 스토리지에 저장
+      if (oauthExtraData.value?.email) {
+        localStorage.setItem('email', oauthExtraData.value.email)
+        console.log('🔍 OAuth 추가정보 성공 후 이메일 로컬 스토리지에 저장:', oauthExtraData.value.email)
+      }
+      
       // 성공 메시지 표시
       uiStore.showSnackbar('성공', '소셜 계정 연동이 완료되었습니다!', 'success')
       
@@ -543,6 +549,12 @@ export default {
     const handleAuthSuccess = (type) => {
       console.log(`${type} 성공!`)
       showAuthModal.value = false
+      
+      // 로그인 성공 시 이메일이 로컬 스토리지에 저장되었는지 확인
+      if (type === 'login' && authStore.user?.email) {
+        localStorage.setItem('email', authStore.user.email)
+        console.log('🔍 로그인 성공 후 이메일 로컬 스토리지에 저장 확인:', authStore.user.email)
+      }
       
       // 로그인 성공 후 화면 새로고침하여 로그인된 상태로 표시
       console.log(`✅ ${type} 성공! 화면 새로고침 중...`)
@@ -641,6 +653,11 @@ export default {
             // 사용자 정보 가져오기
             try {
               await authStore.getCurrentUser()
+              // OAuth 연동 성공 시 이메일을 로컬 스토리지에 저장
+              if (authStore.user?.email) {
+                localStorage.setItem('email', authStore.user.email)
+                console.log('🔍 OAuth 연동 성공 후 이메일 로컬 스토리지에 저장:', authStore.user.email)
+              }
               uiStore.showSnackbar('성공', '계정이 성공적으로 연동되었습니다!', 'success')
             } catch (userError) {
               console.error('사용자 정보 가져오기 실패:', userError)
