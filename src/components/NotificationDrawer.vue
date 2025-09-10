@@ -104,6 +104,7 @@
 
 <script>
 import { computed, watch, onBeforeUnmount } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAlarmStore } from '@/stores/alarm'
 import { useSnackbar } from '@/composables/useSnackbar'
 import NotificationItem from './NotificationItem.vue'
@@ -121,6 +122,7 @@ export default {
   },
   emits: ['update:modelValue'],
   setup(props, { emit }) {
+    const router = useRouter()
     const alarmStore = useAlarmStore()
     const { showSnackbar } = useSnackbar()
 
@@ -176,23 +178,37 @@ export default {
         // 알림 타입에 따른 네비게이션 처리
         if (alarm.targetId) {
           switch (alarm.alarmType) {
+            case 'POST_LIKE':
+            case 'POST_COMMENT':
+            case 'POST_REPLY':
+              // 다이어리 관련 알림 - 다이어리 상세 페이지로 이동
+              router.push(`/diary/${alarm.targetId}`)
+              break
+            case 'MARKET_WISHLIST':
+            case 'TRADE_SOLD':
+              // 마켓 관련 알림 - 마켓 상품 상세 페이지로 이동
+              router.push(`/market/${alarm.targetId}`)
+              break
+            case 'FOLLOW_ADD_FOLLOWER':
+              // 팔로우 관련 알림 - 사용자 다이어리 목록으로 이동
+              router.push(`/diarys/${alarm.targetId}`)
+              break
+            case 'TRADE_APPROVED_PURCHASE':
             case 'CHAT':
-              // router.push(`/chat/${alarm.targetId}`)
+              // 채팅 관련 알림 - 채팅방으로 이동
+              router.push(`/chat/${alarm.targetId}`)
               break
-            case 'LIKE':
-            case 'COMMENT':
-              // router.push(`/post/${alarm.targetId}`)
+            case 'NOTICE':
+              // 공지사항 관련 알림 - 공지사항 상세 페이지로 이동 (현재 구현되지 않음)
+              console.log('공지사항 알림 - 라우팅 경로 미구현:', alarm.targetId)
               break
-            case 'FOLLOW':
-              // router.push(`/profile/${alarm.targetId}`)
-              break
-            case 'MARKET':
-              // router.push(`/market/${alarm.targetId}`)
-              break
-            case 'PET':
-              // router.push(`/pet/${alarm.targetId}`)
+            default:
+              console.log('알 수 없는 알림 타입:', alarm.alarmType)
               break
           }
+          
+          // 네비게이션 후 알림 드로워 닫기
+          closeDrawer()
         }
       } catch (error) {
         notifyError('알림 처리 실패', '알림을 처리하는데 실패했습니다.')

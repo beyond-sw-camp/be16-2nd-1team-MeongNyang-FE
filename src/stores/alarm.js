@@ -111,11 +111,17 @@ export const useAlarmStore = defineStore('alarm', () => {
   }
 
   const addAlarm = (alarmData) => {
+    // SSE에서 받은 알림 데이터를 백엔드 API 응답 구조에 맞게 변환
     const newAlarm = {
-      ...alarmData,
+      id: alarmData.id || Date.now(), // 임시 ID (백엔드에서 생성된 ID가 없을 경우)
+      content: alarmData.content || alarmData.message || alarmData.title || '새 알림',
+      alarmType: alarmData.alarmType || alarmData.type || 'SYSTEM',
+      targetId: alarmData.targetId || alarmData.target_id || null,
       isRead: "FALSE", // 새 알림은 기본적으로 읽지 않은 상태
-      createdAt: new Date().toISOString()
+      createdAt: alarmData.createdAt || alarmData.created_at || new Date().toISOString(),
+      ...alarmData // 기타 필드들 유지
     }
+    
     alarms.value.unshift(newAlarm)
     console.log('새 알림 추가:', newAlarm)
   }

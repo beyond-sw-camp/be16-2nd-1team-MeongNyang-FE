@@ -122,8 +122,9 @@ class SseService {
       else if (data.id && data.roomName && data.lastMessage && data.lastMessageTime) {
         eventName = 'new-room';
       }
-      // 알림 구조인지 확인
-      else if (data.title && data.message && (data.type || data.type === 'info')) {
+      // 알림 구조인지 확인 (다양한 필드명 지원)
+      else if ((data.content || data.message || data.title) && 
+               (data.alarmType || data.type || data.alarm_type)) {
         eventName = 'notification';
       }
       // 구매 승인 상태 변경인지 확인
@@ -252,18 +253,25 @@ class SseService {
   // 알림 처리
   handleNotification(notificationData) {
     try {
-      // UI 스토어 import
-      import('@/stores/ui').then(({ useUIStore }) => {
+      // 알림 스토어와 UI 스토어 import
+      Promise.all([
+        import('@/stores/alarm'),
+        import('@/stores/ui')
+      ]).then(([{ useAlarmStore }, { useUIStore }]) => {
+        const alarmStore = useAlarmStore();
         const uiStore = useUIStore();
+        
+        // 알림 스토어에 새 알림 추가
+        alarmStore.addAlarm(notificationData);
         
         // 스낵바로 알림 표시
         uiStore.showSnackbar({
-          title: notificationData.title || '알림',
-          message: notificationData.message,
-          type: notificationData.type || 'info'
+          title: '새 알림',
+          message: notificationData.content || notificationData.message || notificationData.title || '새로운 알림이 있습니다',
+          type: 'info'
         });
         
-        console.log('SSE 알림이 표시되었습니다:', notificationData);
+        console.log('SSE 알림이 처리되었습니다:', notificationData);
       });
     } catch (error) {
       console.error('알림 처리 중 오류:', error);
