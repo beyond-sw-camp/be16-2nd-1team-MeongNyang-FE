@@ -338,20 +338,6 @@ export default {
   }
 }
 
-/* 다크 모드 지원 */
-@media (prefers-color-scheme: dark) {
-  .button-group--border {
-    border-color: rgba(var(--v-theme-on-surface), 0.24);
-  }
-  
-  .button-group__button--middle,
-  .button-group__button--last,
-  .button-group--vertical .button-group__button--middle,
-  .button-group--vertical .button-group__button--last {
-    border-color: rgba(var(--v-theme-on-surface), 0.24);
-  }
-}
-
 /* 애니메이션 */
 .button-group__button {
   transition: all 0.2s ease-in-out;

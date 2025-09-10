@@ -303,13 +303,6 @@ export default {
   }
 }
 
-/* 다크 모드 지원 */
-@media (prefers-color-scheme: dark) {
-  .v-btn:focus-visible {
-    outline-color: var(--v-theme-primary);
-  }
-}
-
 /* 모션 감소 설정 지원 */
 @media (prefers-reduced-motion: reduce) {
   .v-btn {

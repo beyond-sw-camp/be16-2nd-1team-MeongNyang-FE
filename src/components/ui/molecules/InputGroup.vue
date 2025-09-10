@@ -516,22 +516,6 @@ export default {
   }
 }
 
-/* 다크 모드 지원 */
-@media (prefers-color-scheme: dark) {
-  .input-group__label,
-  .input-group__field-label {
-    color: var(--v-theme-on-surface);
-  }
-  
-  .input-group__description {
-    color: rgba(var(--v-theme-on-surface), 0.7);
-  }
-  
-  .input-group--border {
-    border-color: rgba(var(--v-theme-on-surface), 0.24);
-  }
-}
-
 /* 애니메이션 */
 .input-group__field {
   transition: all 0.2s ease-in-out;

@@ -1025,34 +1025,6 @@ export default {
 
 }
 
-/* 다크 모드 지원 */
-@media (prefers-color-scheme: dark) {
-  .tab-content {
-    background: var(--mm-surface);
-  }
-  
-  .custom-tabs {
-    background: var(--mm-surface-variant);
-  }
-  
-  .tab-status-info {
-    background: var(--mm-surface-variant);
-    border-color: var(--mm-border-light);
-  }
-  
-  .user-card {
-    background: var(--mm-surface);
-  }
-  
-  .user-card-selected {
-    background: linear-gradient(135deg, rgba(232, 125, 125, 0.15) 0%, rgba(255, 107, 107, 0.15) 100%);
-  }
-  
-  .user-card-disabled {
-    background: var(--mm-surface-variant);
-  }
-}
-
 /* 스크롤바 스타일링 */
 .user-grid::-webkit-scrollbar {
   width: 6px;

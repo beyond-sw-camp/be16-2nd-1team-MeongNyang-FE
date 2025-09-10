@@ -151,13 +151,6 @@ export default {
   }
 }
 
-/* 다크 모드 지원 */
-@media (prefers-color-scheme: dark) {
-  .theme-toggle__text {
-    color: var(--v-theme-on-surface);
-  }
-}
-
 /* 모션 감소 설정 지원 */
 @media (prefers-reduced-motion: reduce) {
   .theme-toggle__text {

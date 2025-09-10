@@ -539,10 +539,4 @@ export default {
   }
 }
 
-/* 다크 모드 지원 */
-@media (prefers-color-scheme: dark) {
-  .demo-section {
-    border-color: var(--v-border-color);
-  }
-}
 </style>

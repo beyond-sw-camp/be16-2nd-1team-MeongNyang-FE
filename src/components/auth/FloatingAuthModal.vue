@@ -1977,23 +1977,6 @@ onBeforeUnmount(() => {
   letter-spacing: 0.5px;
 }
 
-/* 다크 모드 지원 */
-@media (prefers-color-scheme: dark) {
-  .auth-modal-card {
-    background: rgba(33, 37, 41, 0.95);
-    border-color: rgba(255, 255, 255, 0.1);
-  }
-  
-  .auth-modal-header {
-    background: linear-gradient(135deg, #495057 0%, #343a40 100%);
-    border-bottom-color: rgba(255, 255, 255, 0.1);
-  }
-  
-  .auth-tabs {
-    background: rgba(73, 80, 87, 0.8);
-  }
-}
-
 .floating-auth-modal .v-dialog {
   transition: none !important;
   transform: none !important;
