@@ -12,6 +12,7 @@
     "@tosspayments/tosspayments-sdk": "^2.3.7",
     "axios": "^1.11.0",
     "core-js": "^3.8.3",
+    "heic2any": "^0.0.4",
     "jwt-decode": "^4.0.0",
     "pinia": "^3.0.3",
     "sockjs-client": "^1.6.1",

@@ -129,6 +129,7 @@ import { validatePetAndRedirect } from '@/utils/petValidation'
 import { useRouter } from 'vue-router'
 import { postAPI } from '@/services/api'
 import { handleApiError } from '@/utils/errorHandler'
+import { convertImageForBrowser, isHeicFile, validateImageFile } from '@/utils/imageConverter'
 
 export default {
   name: 'DiaryCreateView',
@@ -168,7 +169,7 @@ export default {
     }
     
     // 파일 선택 처리
-    const handleFileSelect = (event) => {
+    const handleFileSelect = async (event) => {
       const files = Array.from(event.target.files)
       
       if (mediaList.value.length + files.length > 10) {
@@ -176,31 +177,37 @@ export default {
         return
       }
       
-      files.forEach(file => {
-        const allowedTypes = [
-          'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
-          'image/heic', 'image/heif', 'image/avif', 'image/bmp', 'image/tiff', 'image/tif'
-        ]
-        const allowedExtensions = [
-          '.jpg', '.jpeg', '.png', '.gif', '.webp',
-          '.heic', '.heif', '.avif', '.bmp', '.tiff', '.tif'
-        ]
-        const fileExtension = '.' + file.name.split('.').pop().toLowerCase()
+      for (const file of files) {
+        // 파일 유효성 검사
+        const validation = validateImageFile(file, 10 * 1024 * 1024)
+        if (!validation.isValid) {
+          alert(validation.error)
+          continue
+        }
         
-        if (allowedTypes.includes(file.type) && allowedExtensions.includes(fileExtension)) {
+        try {
+          // HEIC 파일인 경우 변환
+          let processedFile = file
+          if (isHeicFile(file)) {
+            console.log('🔄 HEIC 파일 감지, 변환 시작...')
+            processedFile = await convertImageForBrowser(file)
+            console.log('✅ HEIC 파일 변환 완료')
+          }
+          
           const reader = new FileReader()
           reader.onload = (e) => {
             mediaList.value.push({
               url: e.target.result,
               type: 'image',
-              file: file
+              file: processedFile
             })
           }
-          reader.readAsDataURL(file)
-        } else {
-          alert('이미지 파일만 업로드할 수 있습니다. (JPG, PNG, GIF, WebP, HEIC, HEIF, AVIF, BMP, TIFF)')
+          reader.readAsDataURL(processedFile)
+        } catch (error) {
+          console.error('❌ 이미지 처리 실패:', error)
+          alert(`이미지 처리 중 오류가 발생했습니다: ${error.message}`)
         }
-      })
+      }
       
       // 파일 입력 초기화
       event.target.value = ''
@@ -395,7 +402,7 @@ export default {
       e.preventDefault()
     }
     
-    const handleDrop = (e) => {
+    const handleDrop = async (e) => {
       e.preventDefault()
       const files = Array.from(e.dataTransfer.files)
       
@@ -404,31 +411,37 @@ export default {
         return
       }
       
-      files.forEach(file => {
-        const allowedTypes = [
-          'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
-          'image/heic', 'image/heif', 'image/avif', 'image/bmp', 'image/tiff', 'image/tif'
-        ]
-        const allowedExtensions = [
-          '.jpg', '.jpeg', '.png', '.gif', '.webp',
-          '.heic', '.heif', '.avif', '.bmp', '.tiff', '.tif'
-        ]
-        const fileExtension = '.' + file.name.split('.').pop().toLowerCase()
+      for (const file of files) {
+        // 파일 유효성 검사
+        const validation = validateImageFile(file, 10 * 1024 * 1024)
+        if (!validation.isValid) {
+          alert(validation.error)
+          continue
+        }
         
-        if (allowedTypes.includes(file.type) && allowedExtensions.includes(fileExtension)) {
+        try {
+          // HEIC 파일인 경우 변환
+          let processedFile = file
+          if (isHeicFile(file)) {
+            console.log('🔄 HEIC 파일 감지, 변환 시작...')
+            processedFile = await convertImageForBrowser(file)
+            console.log('✅ HEIC 파일 변환 완료')
+          }
+          
           const reader = new FileReader()
           reader.onload = (e) => {
             mediaList.value.push({
               url: e.target.result,
               type: 'image',
-              file: file
+              file: processedFile
             })
           }
-          reader.readAsDataURL(file)
-        } else {
-          alert('이미지 파일만 업로드할 수 있습니다. (JPG, PNG, GIF, WebP, HEIC, HEIF, AVIF, BMP, TIFF)')
+          reader.readAsDataURL(processedFile)
+        } catch (error) {
+          console.error('❌ 이미지 처리 실패:', error)
+          alert(`이미지 처리 중 오류가 발생했습니다: ${error.message}`)
         }
-      })
+      }
     }
     
     onMounted(async () => {

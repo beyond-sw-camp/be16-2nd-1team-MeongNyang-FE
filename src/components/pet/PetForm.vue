@@ -531,6 +531,7 @@
 import { ref, reactive, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { usePetStore } from '@/stores/pet'
 import ImageCropper from '@/components/common/ImageCropper.vue'
+import { convertImageForBrowser, isHeicFile, validateImageFile } from '@/utils/imageConverter'
 
 export default {
   name: 'PetForm',
@@ -804,37 +805,35 @@ export default {
       fileInput.value?.click()
     }
     
-    const handleImageChange = (event) => {
+    const handleImageChange = async (event) => {
       const file = event.target.files[0]
       if (file) {
-        // 파일 형식 검증
-        const allowedTypes = [
-          'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
-          'image/heic', 'image/heif', 'image/avif', 'image/bmp', 'image/tiff', 'image/tif'
-        ]
-        const allowedExtensions = [
-          '.jpg', '.jpeg', '.png', '.gif', '.webp',
-          '.heic', '.heif', '.avif', '.bmp', '.tiff', '.tif'
-        ]
-        const fileExtension = '.' + file.name.split('.').pop().toLowerCase()
-        
-        if (!allowedTypes.includes(file.type) || !allowedExtensions.includes(fileExtension)) {
-          alert('이미지 파일만 업로드 가능합니다. (JPG, PNG, GIF, WebP, HEIC, HEIF, AVIF, BMP, TIFF)')
-          // 파일 입력 초기화
+        // 파일 유효성 검사
+        const validation = validateImageFile(file, 5 * 1024 * 1024)
+        if (!validation.isValid) {
+          alert(validation.error)
           event.target.value = ''
           return
         }
         
-        if (file.size > 5 * 1024 * 1024) {
-          alert('이미지 크기는 5MB 이하로 선택해주세요.')
+        try {
+          // HEIC 파일인 경우 변환
+          let processedFile = file
+          if (isHeicFile(file)) {
+            console.log('🔄 HEIC 파일 감지, 변환 시작...')
+            processedFile = await convertImageForBrowser(file)
+            console.log('✅ HEIC 파일 변환 완료')
+          }
+          
+          // 크롭 모달 열기
+          cropperImageUrl.value = URL.createObjectURL(processedFile)
+          showCropper.value = true
+        } catch (error) {
+          console.error('❌ 이미지 처리 실패:', error)
+          alert('이미지 처리 중 오류가 발생했습니다: ' + error.message)
           // 파일 입력 초기화
           event.target.value = ''
-          return
         }
-        
-        // 크롭 모달 열기
-        cropperImageUrl.value = URL.createObjectURL(file)
-        showCropper.value = true
       }
     }
     

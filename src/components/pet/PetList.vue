@@ -1137,6 +1137,7 @@ import { useSnackbar } from '@/composables/useSnackbar'
 import PetCard from './PetCard.vue'
 import PetForm from './PetForm.vue'
 import ImageCropper from '@/components/common/ImageCropper.vue'
+import { convertImageForBrowser, isHeicFile, validateImageFile } from '@/utils/imageConverter'
 
 export default {
   name: 'PetList',
@@ -1973,41 +1974,30 @@ export default {
       try {
         console.log('📸 이미지 변경 시작:', file.name, file.size)
         
-        // 이미지 파일 형식 체크 (MIME 타입과 확장자 모두 확인)
-        const allowedTypes = [
-          'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
-          'image/heic', 'image/heif', 'image/avif', 'image/bmp', 'image/tiff', 'image/tif'
-        ]
-        const allowedExtensions = [
-          '.jpg', '.jpeg', '.png', '.gif', '.webp',
-          '.heic', '.heif', '.avif', '.bmp', '.tiff', '.tif'
-        ]
-        const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'))
-        
-        console.log('🔍 파일 형식 검증:', {
-          fileName: file.name,
-          fileType: file.type,
-          fileExtension: fileExtension,
-          isTypeAllowed: allowedTypes.includes(file.type),
-          isExtensionAllowed: allowedExtensions.includes(fileExtension)
-        })
-        
-        if (!allowedTypes.includes(file.type) || !allowedExtensions.includes(fileExtension)) {
-          console.log('❌ 파일 형식 검증 실패 - 크롭 모달 열기 차단')
-          showSnackbar('이미지 파일만 업로드 가능합니다. (JPG, PNG, GIF, WebP, HEIC, HEIF, AVIF, BMP, TIFF)', 'error')
+        // 파일 유효성 검사
+        const validation = validateImageFile(file, 5 * 1024 * 1024)
+        if (!validation.isValid) {
+          console.log('❌ 파일 유효성 검증 실패:', validation.error)
+          showSnackbar(validation.error, 'error')
           // 파일 입력 강제 초기화
           event.target.value = ''
-          // 추가로 파일 입력 요소도 초기화
           if (fileInput.value) {
             fileInput.value.value = ''
           }
-          // 이벤트 전파 중지로 크롭 모달 열기 방지
           event.stopPropagation()
           event.preventDefault()
           return false
         }
         
-        console.log('✅ 파일 형식 검증 통과')
+        console.log('✅ 파일 유효성 검증 통과')
+        
+        // HEIC 파일인 경우 변환
+        let processedFile = file
+        if (isHeicFile(file)) {
+          console.log('🔄 HEIC 파일 감지, 변환 시작...')
+          processedFile = await convertImageForBrowser(file)
+          console.log('✅ HEIC 파일 변환 완료')
+        }
         
         // 파일 크기 체크 (5MB)
         if (file.size > 5 * 1024 * 1024) {
@@ -2038,7 +2028,7 @@ export default {
         }
         
         // 크롭 모달 열기
-        cropperImageUrl.value = URL.createObjectURL(file)
+        cropperImageUrl.value = URL.createObjectURL(processedFile)
         showCropper.value = true
         
       } catch (error) {
