@@ -177,7 +177,17 @@ export default {
       }
       
       files.forEach(file => {
-        if (file.type.startsWith('image/')) {
+        const allowedTypes = [
+          'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+          'image/heic', 'image/heif', 'image/avif', 'image/bmp', 'image/tiff', 'image/tif'
+        ]
+        const allowedExtensions = [
+          '.jpg', '.jpeg', '.png', '.gif', '.webp',
+          '.heic', '.heif', '.avif', '.bmp', '.tiff', '.tif'
+        ]
+        const fileExtension = '.' + file.name.split('.').pop().toLowerCase()
+        
+        if (allowedTypes.includes(file.type) && allowedExtensions.includes(fileExtension)) {
           const reader = new FileReader()
           reader.onload = (e) => {
             mediaList.value.push({
@@ -188,7 +198,7 @@ export default {
           }
           reader.readAsDataURL(file)
         } else {
-          alert('이미지 파일만 업로드할 수 있습니다.')
+          alert('이미지 파일만 업로드할 수 있습니다. (JPG, PNG, GIF, WebP, HEIC, HEIF, AVIF, BMP, TIFF)')
         }
       })
       
@@ -395,7 +405,17 @@ export default {
       }
       
       files.forEach(file => {
-        if (file.type.startsWith('image/')) {
+        const allowedTypes = [
+          'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+          'image/heic', 'image/heif', 'image/avif', 'image/bmp', 'image/tiff', 'image/tif'
+        ]
+        const allowedExtensions = [
+          '.jpg', '.jpeg', '.png', '.gif', '.webp',
+          '.heic', '.heif', '.avif', '.bmp', '.tiff', '.tif'
+        ]
+        const fileExtension = '.' + file.name.split('.').pop().toLowerCase()
+        
+        if (allowedTypes.includes(file.type) && allowedExtensions.includes(fileExtension)) {
           const reader = new FileReader()
           reader.onload = (e) => {
             mediaList.value.push({
@@ -406,7 +426,7 @@ export default {
           }
           reader.readAsDataURL(file)
         } else {
-          alert('이미지 파일만 업로드할 수 있습니다.')
+          alert('이미지 파일만 업로드할 수 있습니다. (JPG, PNG, GIF, WebP, HEIC, HEIF, AVIF, BMP, TIFF)')
         }
       })
     }

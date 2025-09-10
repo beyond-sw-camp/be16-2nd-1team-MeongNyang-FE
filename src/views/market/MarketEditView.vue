@@ -816,13 +816,24 @@ export default {
          // 파일 유효성 검사
          const validFiles = Array.from(files).filter(file => {
            if (!file || !(file instanceof File)) return false
-           if (!file.type.startsWith('image/')) return false
+           
+           const allowedTypes = [
+             'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+             'image/heic', 'image/heif', 'image/avif', 'image/bmp', 'image/tiff', 'image/tif'
+           ]
+           const allowedExtensions = [
+             '.jpg', '.jpeg', '.png', '.gif', '.webp',
+             '.heic', '.heif', '.avif', '.bmp', '.tiff', '.tif'
+           ]
+           const fileExtension = '.' + file.name.split('.').pop().toLowerCase()
+           
+           if (!allowedTypes.includes(file.type) || !allowedExtensions.includes(fileExtension)) return false
            if (file.size > 10 * 1024 * 1024) return false // 10MB 제한
            return true
          })
 
          if (validFiles.length === 0) {
-           imageError.value = '유효한 이미지 파일을 선택해주세요. (JPG, PNG, GIF, 최대 10MB)'
+           imageError.value = '유효한 이미지 파일을 선택해주세요. (JPG, PNG, GIF, WebP, HEIC, HEIF, AVIF, BMP, TIFF, 최대 10MB)'
            return
          }
 

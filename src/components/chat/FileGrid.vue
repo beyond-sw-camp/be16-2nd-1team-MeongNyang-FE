@@ -366,7 +366,7 @@ export default {
     // 파일 타입 체크 함수들
     const isImage = (url) => {
       if (!url) return false
-      const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp']
+      const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'heic', 'heif', 'avif', 'tiff', 'tif']
       const extension = url.split('.').pop().toLowerCase()
       return imageExtensions.includes(extension)
     }

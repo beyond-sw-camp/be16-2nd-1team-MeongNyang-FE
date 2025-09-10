@@ -358,8 +358,18 @@ export default {
       
       // 파일 유효성 검사 및 처리
       const validFiles = files.filter(file => {
-        if (!file.type.startsWith('image/')) {
-          alert(`${file.name}은(는) 지원하지 않는 파일 형식입니다. 이미지 파일만 업로드 가능합니다.`)
+        const allowedTypes = [
+          'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+          'image/heic', 'image/heif', 'image/avif', 'image/bmp', 'image/tiff', 'image/tif'
+        ]
+        const allowedExtensions = [
+          '.jpg', '.jpeg', '.png', '.gif', '.webp',
+          '.heic', '.heif', '.avif', '.bmp', '.tiff', '.tif'
+        ]
+        const fileExtension = '.' + file.name.split('.').pop().toLowerCase()
+        
+        if (!allowedTypes.includes(file.type) || !allowedExtensions.includes(fileExtension)) {
+          alert(`${file.name}은(는) 지원하지 않는 파일 형식입니다. 이미지 파일만 업로드 가능합니다. (JPG, PNG, GIF, WebP, HEIC, HEIF, AVIF, BMP, TIFF)`)
           return false
         }
         
