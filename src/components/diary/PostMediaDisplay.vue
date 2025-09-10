@@ -26,22 +26,22 @@
         
         <!-- 이미지 네비게이션 버튼 -->
         <div class="image-navigation">
-          <v-btn 
-            icon 
-            class="nav-btn prev-btn"
-            @click="previousImage"
-            :disabled="currentImageIndex === 0"
-          >
-            <v-icon>mdi-chevron-left</v-icon>
-          </v-btn>
-          <v-btn 
-            icon 
-            class="nav-btn next-btn"
-            @click="nextImage"
-            :disabled="currentImageIndex === mediaList.length - 1"
-          >
-            <v-icon>mdi-chevron-right</v-icon>
-          </v-btn>
+        <v-btn 
+          icon 
+          class="nav-btn prev-btn"
+          @click="previousImage"
+          :disabled="currentImageIndex === 0"
+        >
+          <v-icon>mdi-chevron-left</v-icon>
+        </v-btn>
+        <v-btn 
+          icon 
+          class="nav-btn next-btn"
+          @click="nextImage"
+          :disabled="currentImageIndex === mediaList.length - 1"
+        >
+          <v-icon>mdi-chevron-right</v-icon>
+        </v-btn>
         </div>
         
         <!-- 이미지 인디케이터 -->
@@ -164,22 +164,58 @@ const closeImageModal = () => {
 }
 
 .nav-btn {
-  background: rgba(0, 0, 0, 0.6) !important;
+  background: transparent !important;
+  background-color: transparent !important;
   color: white !important;
   pointer-events: auto;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(4px);
+  transition: color 0.3s ease, transform 0.3s ease;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  min-width: 60px !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.nav-btn .v-icon {
+  font-size: 36px !important;
+}
+
+.nav-btn :deep(.v-btn__overlay) {
+  background: transparent !important;
+  opacity: 0 !important;
+}
+
+.nav-btn :deep(.v-btn__underlay) {
+  background: transparent !important;
+  opacity: 0 !important;
+}
+
+.nav-btn :deep(.v-ripple__container) {
+  display: none !important;
+}
+
+.nav-btn :deep(.v-btn__ripple) {
+  display: none !important;
 }
 
 .nav-btn:hover {
-  background: rgba(0, 0, 0, 0.8) !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  color: rgba(255, 255, 255, 0.8) !important;
   transform: scale(1.1);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+  box-shadow: none !important;
 }
 
 .nav-btn:disabled {
   opacity: 0.3;
-  cursor: not-allowed;
+  /* cursor: not-allowed; */
   transform: none;
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
 }
 
 .image-indicators {
