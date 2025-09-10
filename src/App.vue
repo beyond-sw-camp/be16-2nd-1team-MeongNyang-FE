@@ -497,7 +497,7 @@ export default {
       showOAuthExtraModal.value = false
     }
     
-    const handleOAuthExtraSuccess = (result) => {
+    const handleOAuthExtraSuccess = async (result) => {
       console.log('OAuth 추가정보 성공:', result)
       showOAuthExtraModal.value = false
       
@@ -507,6 +507,15 @@ export default {
         console.log('🔍 OAuth 추가정보 성공 후 이메일 로컬 스토리지에 저장:', oauthExtraData.value.email)
       }
       
+      // 🔥 OAuth 추가정보 완료 후 펫 데이터도 함께 로드
+      try {
+        const { usePetStore } = await import('@/stores/pet')
+        const petStore = usePetStore()
+        await petStore.fetchPets()
+        console.log('✅ OAuth 추가정보 완료 후 펫 데이터 로드 완료')
+      } catch (error) {
+        console.error('OAuth 추가정보 완료 후 펫 데이터 로드 실패:', error)
+      }
       
       // 로그인 성공 후 화면 새로고침하여 로그인된 상태로 표시
       console.log('✅ OAuth 추가정보 완료! 화면 새로고침 중...')
@@ -649,6 +658,12 @@ export default {
                 localStorage.setItem('email', authStore.user.email)
                 console.log('🔍 OAuth 연동 성공 후 이메일 로컬 스토리지에 저장:', authStore.user.email)
               }
+              
+              // 🔥 OAuth 연동 성공 후 펫 데이터도 함께 로드
+              const { usePetStore } = await import('@/stores/pet')
+              const petStore = usePetStore()
+              await petStore.fetchPets()
+              console.log('✅ OAuth 연동 성공 후 펫 데이터 로드 완료')
             } catch (userError) {
               console.error('사용자 정보 가져오기 실패:', userError)
             }

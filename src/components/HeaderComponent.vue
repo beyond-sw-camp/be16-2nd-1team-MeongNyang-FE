@@ -198,6 +198,21 @@ export default {
       }
     })
     
+    // 🔥 로그인 상태 변화 감지하여 펫 데이터 로드
+    watch(() => authStore.isAuthenticated, async (newValue, oldValue) => {
+      console.log('Header - 로그인 상태 변화 감지:', { newValue, oldValue })
+      if (newValue && !oldValue) {
+        // 로그인 상태로 변경된 경우 펫 데이터 로드
+        try {
+          console.log('Header - 로그인 감지, 펫 데이터 로드 시작')
+          await petStore.fetchPets()
+          console.log('Header - 펫 데이터 로드 완료')
+        } catch (error) {
+          console.error('Header - 로그인 후 펫 데이터 로드 실패:', error)
+        }
+      }
+    }, { immediate: false })
+    
     return {
       // 상태
       isLoggedIn,

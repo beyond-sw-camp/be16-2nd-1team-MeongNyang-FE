@@ -50,6 +50,12 @@ onMounted(async () => {
           localStorage.setItem('email', auth.user.email)
           console.log('🔍 OAuth 콜백에서 이메일 로컬 스토리지에 저장:', auth.user.email)
         }
+        
+        // 🔥 소셜 로그인 후 펫 데이터도 함께 로드
+        const { usePetStore } = await import('@/stores/pet')
+        const petStore = usePetStore()
+        await petStore.fetchPets()
+        console.log('✅ OAuth 콜백에서 펫 데이터 로드 완료')
       } catch(e) {void e}
       
       // 로그인 성공 후 홈화면으로 이동
