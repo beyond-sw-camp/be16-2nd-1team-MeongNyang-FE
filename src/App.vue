@@ -465,18 +465,13 @@ export default {
         const result = await response.json()
         
         if (result.isSuccess === true) {
-          // 성공 메시지 표시
-          uiStore.showSnackbar('알림', '인증 이메일이 재전송되었습니다.', 'info')
           console.log('✅ 이메일 재전송 성공')
         } else {
           // 실패 시 에러 메시지 표시
-          const errorMsg = result.status?.message || '이메일 재전송에 실패했습니다.'
-          uiStore.showSnackbar('오류', errorMsg, 'error')
           console.error('❌ 이메일 재전송 실패:', result)
         }
       } catch (error) {
         console.error('이메일 재전송 실패:', error)
-        uiStore.showSnackbar('오류', '이메일 재전송에 실패했습니다.', 'error')
       }
     }
     
@@ -489,8 +484,6 @@ export default {
       console.log('최종 등록 성공:', result)
       showFinalRegistrationModal.value = false
       
-      // 성공 메시지 표시
-      uiStore.showSnackbar('성공', '회원가입이 완료되었습니다!', 'success')
       
       // 회원가입 완료 후 화면 새로고침하여 로그인된 상태로 표시
       console.log('✅ 회원가입 완료! 화면 새로고침 중...')
@@ -514,8 +507,6 @@ export default {
         console.log('🔍 OAuth 추가정보 성공 후 이메일 로컬 스토리지에 저장:', oauthExtraData.value.email)
       }
       
-      // 성공 메시지 표시
-      uiStore.showSnackbar('성공', '소셜 계정 연동이 완료되었습니다!', 'success')
       
       // 로그인 성공 후 화면 새로고침하여 로그인된 상태로 표시
       console.log('✅ OAuth 추가정보 완료! 화면 새로고침 중...')
@@ -658,10 +649,8 @@ export default {
                 localStorage.setItem('email', authStore.user.email)
                 console.log('🔍 OAuth 연동 성공 후 이메일 로컬 스토리지에 저장:', authStore.user.email)
               }
-              uiStore.showSnackbar('성공', '계정이 성공적으로 연동되었습니다!', 'success')
             } catch (userError) {
               console.error('사용자 정보 가져오기 실패:', userError)
-              uiStore.showSnackbar('성공', '계정이 연동되었습니다!', 'success')
             }
           } else {
             throw new Error(response.data.message || '연동에 실패했습니다.')
@@ -669,12 +658,10 @@ export default {
         } else if (action === 'cancel') {
           // 연동 취소
           console.log('❌ 연동 취소')
-          uiStore.showSnackbar('알림', '연동을 취소했습니다.', 'info')
         } else {
           // 새 계정 생성
           console.log('🆕 새 계정 생성 처리')
           // TODO: 백엔드 API 호출하여 새 계정 생성
-          uiStore.showSnackbar('성공', '새 계정이 생성되었습니다!', 'success')
         }
         
         showOAuthLinkModal.value = false
@@ -687,7 +674,6 @@ export default {
         }, 1000) // 1초 후 새로고침 (스낵바 메시지 확인 후)
       } catch (error) {
         console.error('❌ 소셜 로그인 연동 실패:', error)
-        uiStore.showSnackbar('오류', error.message || '소셜 로그인 연동에 실패했습니다.', 'error')
       }
     }
     

@@ -2,7 +2,7 @@
   <v-snackbar
     :model-value="modelValue"
     :timeout="timeout"
-    :color="color"
+    :color="getSnackbarColor"
     :location="location"
     :elevation="elevation"
     :rounded="rounded"
@@ -50,13 +50,14 @@
     
     <!-- 닫기 버튼 -->
     <template #actions>
-      <BaseButton
+      <v-btn
         v-if="showCloseButton"
         :icon="closeIcon"
         :size="closeButtonSize"
-        :variant="closeButtonVariant"
-        :color="closeButtonColor"
+        variant="text"
+        color="white"
         :aria-label="closeButtonAriaLabel"
+        class="snackbar-close-btn"
         @click="handleClose"
       />
     </template>
@@ -205,6 +206,24 @@ export default {
     'action'
   ],
   
+  computed: {
+    getSnackbarColor() {
+      // color prop이 명시적으로 설정된 경우 우선 사용
+      if (this.color) {
+        return this.color
+      }
+      
+      // type에 따라 기본 색상 반환
+      const colors = {
+        success: 'success',
+        error: 'error',
+        warning: 'warning',
+        info: 'info'
+      }
+      return colors[this.type] || 'info'
+    }
+  },
+  
   methods: {
     getDefaultIcon(type) {
       const icons = {
@@ -294,6 +313,23 @@ export default {
   .global-snackbar__actions {
     gap: 4px;
   }
+}
+
+/* 닫기 버튼 스타일 */
+.snackbar-close-btn {
+  background: transparent !important;
+  box-shadow: none !important;
+  cursor: pointer !important;
+}
+
+.snackbar-close-btn:hover {
+  background: transparent !important;
+  cursor: pointer !important;
+}
+
+.snackbar-close-btn:focus {
+  background: transparent !important;
+  cursor: pointer !important;
 }
 
 /* 애니메이션 */

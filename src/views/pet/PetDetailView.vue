@@ -492,19 +492,6 @@
       </v-card>
     </v-dialog>
 
-    <!-- 성공/에러 메시지 -->
-    <v-snackbar
-      v-model="showSnackbar"
-      :color="snackbarColor"
-      timeout="4000"
-      location="top"
-      rounded="lg"
-    >
-      <div class="d-flex align-center">
-        <v-icon class="me-3">{{ snackbarIcon }}</v-icon>
-        <span class="font-weight-medium">{{ snackbarMessage }}</span>
-      </div>
-    </v-snackbar>
   </div>
 </template>
 
@@ -525,10 +512,6 @@ const loading = ref(true)
 
 const showDeleteConfirm = ref(false)
 const deleting = ref(false)
-const showSnackbar = ref(false)
-const snackbarMessage = ref('')
-const snackbarColor = ref('success')
-const snackbarIcon = ref('mdi-check-circle')
 
 // 인라인 편집 상태
 const editingFields = ref({
@@ -628,7 +611,6 @@ const loadPet = async () => {
     console.log('=== 펫 상세 로딩 디버깅 끝 ===')
   } catch (error) {
     console.error('펫 정보 로드 실패:', error)
-    showMessage('펫 정보를 불러오는데 실패했습니다.', 'error')
   } finally {
     loading.value = false
   }
@@ -756,14 +738,10 @@ const cancelEditField = (fieldName) => {
                     if (result.success) {
                       editingFields.value[fieldName] = false
                       await loadPet()
-                      showMessage(`${fieldName}이(가) 성공적으로 수정되었습니다.`, 'success')
                       console.log(`✅ ${fieldName} 항목 저장 완료`)
-                    } else {
-                      showMessage(result.message || `${fieldName} 수정에 실패했습니다.`, 'error')
                     }
                   } catch (error) {
                     console.error(`${fieldName} 항목 저장 실패:`, error)
-                    showMessage(`${fieldName} 수정에 실패했습니다.`, 'error')
                   }
                 }
 
@@ -864,13 +842,11 @@ const startEditImage = () => {
     if (file) {
       // 파일 크기 체크 (5MB)
       if (file.size > 5 * 1024 * 1024) {
-        showMessage('파일 크기는 5MB 이하여야 합니다.', 'error')
         return
       }
       
       // 파일 타입 체크
       if (!file.type.startsWith('image/')) {
-        showMessage('이미지 파일만 선택할 수 있습니다.', 'error')
         return
       }
       
@@ -932,14 +908,11 @@ const startEditImage = () => {
           imageInput.value.value = ''
         }
         
-        showMessage('프로필 사진이 성공적으로 변경되었습니다.', 'success')
       } else {
         // 실패 시 에러 메시지 표시
-        showMessage(result.message || '프로필 사진 변경에 실패했습니다.', 'error')
       }
     } catch (error) {
       console.error('이미지 업로드 실패:', error)
-      showMessage('프로필 사진 변경에 실패했습니다.', 'error')
     }
   }
   
@@ -962,15 +935,11 @@ const setAsRepresentative = async () => {
     const result = await petStore.setRepresentativePet(pet.value)
     
     if (result.success) {
-      showMessage('대표 반려동물이 설정되었습니다.', 'success')
       // 펫 정보 새로고침
       loadPet()
-    } else {
-      showMessage(result.message || '대표 반려동물 설정에 실패했습니다.', 'error')
     }
   } catch (error) {
     console.error('대표 반려동물 설정 실패:', error)
-    showMessage('대표 반려동물 설정에 실패했습니다.', 'error')
   }
 }
 
@@ -983,17 +952,13 @@ const deletePet = async () => {
     const result = await petStore.deletePet(pet.value.id)
     
     if (result.success) {
-      showMessage('반려동물이 삭제되었습니다.', 'success')
       // 목록 페이지로 이동
       setTimeout(() => {
         router.push('/pets')
       }, 1500)
-    } else {
-      showMessage(result.message || '반려동물 삭제에 실패했습니다.', 'error')
     }
   } catch (error) {
     console.error('펫 삭제 실패:', error)
-    showMessage('반려동물 삭제에 실패했습니다.', 'error')
   } finally {
     deleting.value = false
     showDeleteConfirm.value = false
@@ -1001,13 +966,6 @@ const deletePet = async () => {
 
 }
 
-// 메시지 표시
-const showMessage = (message, type = 'success') => {
-  snackbarMessage.value = message
-  snackbarColor.value = type
-  snackbarIcon.value = type === 'success' ? 'mdi-check-circle' : 'mdi-alert-circle'
-  showSnackbar.value = true
-}
 
 // 종류에 따른 아이콘 반환 (백엔드 응답의 petOrder 직접 사용)
 const getSpeciesIcon = (petOrder) => {
