@@ -34,7 +34,7 @@
                 v-if="currentMedia.type === 'image'"
                 :src="currentMedia.url" 
                 class="main-media"
-                cover
+                contain
               ></v-img>
               
               <!-- 삭제 버튼 -->
@@ -563,7 +563,8 @@ export default {
 .main-media {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  background-color: #f8f9fa;
 }
 
 .delete-btn {

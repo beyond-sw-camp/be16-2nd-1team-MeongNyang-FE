@@ -7,6 +7,7 @@
         class="post-image"
         :aspect-ratio="16/9"
         max-height="500"
+        contain
       ></v-img>
     </div>
     
@@ -18,6 +19,7 @@
           class="post-image"
           :aspect-ratio="16/9"
           max-height="500"
+          contain
         ></v-img>
         
         <!-- 이미지 네비게이션 버튼 -->
@@ -95,6 +97,7 @@ const nextImage = () => {
 .post-image {
   border-radius: 4px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background-color: #f8f9fa;
 }
 
 /* 다중 이미지 슬라이더 스타일 */
