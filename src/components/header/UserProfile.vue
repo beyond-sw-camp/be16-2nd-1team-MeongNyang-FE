@@ -5,7 +5,8 @@
       <v-avatar 
         :size="avatarSize" 
         :class="avatarClass" 
-        
+        @click="navigateToDiarys"
+        style="cursor: pointer;"
       >
         <v-img 
           v-if="representativePet?.url" 
@@ -19,7 +20,7 @@
         ></v-img>
         <v-icon v-else>mdi-account</v-icon>
       </v-avatar>
-      <div :class="textClass">
+      <div :class="textClass" @click="navigateToDiarys" style="cursor: pointer;">
         <div :class="nameClass">{{ user?.nickname || '사용자' }}</div>
       </div>
       <v-btn 
@@ -51,6 +52,11 @@ export default {
     }
   },
   emits: ['avatar-click', 'logout'],
+  methods: {
+    navigateToDiarys() {
+      this.$router.push('/diarys');
+    }
+  },
   computed: {
     containerClass() {
       return this.isMobile ? 'mobile-user-info' : 'user-section'
@@ -92,13 +98,18 @@ export default {
 }
 
 .user-avatar {
+  cursor: pointer;
   border: 2px solid #E87D7D;
   box-shadow: 0 4px 15px rgba(232, 125, 125, 0.2);
+  transition: transform 0.2s ease;
   -webkit-user-drag: none;
   -khtml-user-drag: none;
   -moz-user-drag: none;
   -o-user-drag: none;
-  user-drag: none;
+}
+
+.user-avatar:hover {
+  transform: scale(1.05);
 }
 
 .user-details {
@@ -116,6 +127,11 @@ export default {
   text-overflow: ellipsis;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: color 0.2s ease;
+}
+
+.user-details:hover .user-name {
+  color: #E87D7D;
 }
 
 .logout-btn {
@@ -152,6 +168,11 @@ export default {
 .mobile-user-avatar {
   cursor: pointer;
   border: 2px solid #FF8B8B;
+  transition: transform 0.2s ease;
+}
+
+.mobile-user-avatar:hover {
+  transform: scale(1.05);
 }
 
 .mobile-user-text {
@@ -162,6 +183,11 @@ export default {
   font-size: 0.875rem;
   font-weight: 600;
   color: #1E293B;
+  transition: color 0.2s ease;
+}
+
+.mobile-user-text:hover .mobile-user-name {
+  color: #FF8B8B;
 }
 
 .mobile-logout-btn {
