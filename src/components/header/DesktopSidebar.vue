@@ -129,13 +129,4 @@
     }
   } */
 
-
-
-  /* 다크 모드 지원 */
-  @media (prefers-color-scheme: dark) {
-    .modern-sidebar {
-      background: linear-gradient(180deg, #1a1a1a 0%, #2d2d2d 100%);
-      border-right-color: rgba(255, 255, 255, 0.1);
-    }
-  }
 </style>

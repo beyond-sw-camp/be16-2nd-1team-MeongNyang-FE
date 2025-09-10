@@ -41,6 +41,7 @@ export const getTokenExpiryTime = (token) => {
 export const saveTokens = (accessToken, refreshToken) => {
   if (accessToken) localStorage.setItem(ACCESS_KEY, accessToken)
   if (refreshToken) localStorage.setItem(REFRESH_KEY, refreshToken)
+  if (accessToken) localStorage.setItem('email', jwtDecode(accessToken).email)
 }
 
 // ===== 토큰 조회 =====

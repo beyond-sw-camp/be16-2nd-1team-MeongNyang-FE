@@ -220,9 +220,6 @@
       @click="closeImageModal"
     >
       <div class="image-modal-content" @click.stop>
-        <button class="modal-close-btn" @click="closeImageModal">
-          <v-icon icon="mdi-close" size="24" />
-        </button>
         <img
           :src="modalImage"
           :alt="post?.title || '이미지'"

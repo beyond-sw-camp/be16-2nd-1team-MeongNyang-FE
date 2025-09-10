@@ -460,63 +460,6 @@ export default {
   }
 }
 
-/* 다크 모드 지원 */
-@media (prefers-color-scheme: dark) {
-  .notification-item {
-    background: #1F2937;
-    border-color: rgba(255, 255, 255, 0.1);
-    text-align: left;
-  }
-  
-  .notification-item:hover {
-    background: #374151;
-  }
-  
-  .notification-item.unread {
-    background: linear-gradient(135deg, rgba(232, 125, 125, 0.08) 0%, rgba(255, 107, 107, 0.08) 100%);
-    border-color: rgba(232, 125, 125, 0.25);
-  }
-
-  .notification-item.unread:hover {
-    background: linear-gradient(135deg, rgba(232, 125, 125, 0.12) 0%, rgba(255, 107, 107, 0.12) 100%);
-  }
-
-  .notification-item.read {
-    background: #1F2937;
-    border-color: rgba(255, 255, 255, 0.1);
-  }
-  
-  .notification-item.read:hover {
-    background: #374151;
-  }
-  
-  .notification-content {
-    text-align: left;
-  }
-  
-  .notification-title {
-    color: #F9FAFB;
-    text-align: left;
-    font-size: 0.95rem;
-    font-family: inherit;
-  }
-  
-  .notification-title.unread-text {
-    color: #FCA5A5;
-    text-align: left;
-    font-size: 0.95rem;
-    font-family: inherit;
-  }
-  
-  .notification-time {
-    color: #9CA3AF;
-  }
-
-  .unread-text {
-    color: #FCA5A5;
-  }
-}
-
 /* 반응형 디자인 */
 @media (max-width: 480px) {
   .notification-item {

@@ -693,21 +693,6 @@ export default {
   }
 }
 
-/* 다크 모드 지원 */
-@media (prefers-color-scheme: dark) {
-  /* 다크 모드에서도 동일 팔레트 유지 */
-  .features-section {
-    background: linear-gradient(135deg, #FF8B8B 0%, #FFC1C1 100%);
-  }
-  .feature-card {
-    background: #FFFFFF;
-    border-color: rgba(0, 0, 0, 0.06);
-  }
-  .feature-title { color: #1E293B; }
-  .feature-description { color: #475569; }
-  .section-title { color: #FFFFFF !important; }
-}
-
 /* 모션 감소 설정 지원 */
 @media (prefers-reduced-motion: reduce) {
   .shape,

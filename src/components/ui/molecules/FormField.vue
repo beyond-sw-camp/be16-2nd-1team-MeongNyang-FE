@@ -608,17 +608,6 @@ export default {
   }
 }
 
-/* 다크 모드 지원 */
-@media (prefers-color-scheme: dark) {
-  .form-field__label {
-    color: var(--v-theme-on-surface);
-  }
-  
-  .form-field__description {
-    color: rgba(var(--v-theme-on-surface), 0.7);
-  }
-}
-
 /* 모션 감소 설정 지원 */
 @media (prefers-reduced-motion: reduce) {
   .form-field {
