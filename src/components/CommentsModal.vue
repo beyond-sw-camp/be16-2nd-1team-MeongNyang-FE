@@ -254,7 +254,13 @@ export default {
     // 사용자 다이어리로 이동하는 메서드
     goToUserDiary(userId) {
       if (userId) {
-        this.$router.push(`/diarys/${userId}`)
+        const currentUserId = this.authStore.user?.userId || this.authStore.user?.id
+        // 내 댓글인 경우 /diarys로 이동, 다른 사용자 댓글인 경우 /diarys/{userId}로 이동
+        if (currentUserId === userId) {
+          this.$router.push('/diarys')
+        } else {
+          this.$router.push(`/diarys/${userId}`)
+        }
       }
     },
     
