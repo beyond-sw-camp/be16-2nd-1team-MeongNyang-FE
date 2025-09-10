@@ -64,12 +64,30 @@ export const useSseStore = defineStore('sse', {
       // 예: 채팅 메시지, 알림, 실시간 업데이트 등
     },
 
-    // 연결 재시도
+    // 연결 재시도 (수동)
     async reconnect() {
-      await this.disconnect();
-      setTimeout(() => {
-        this.connect();
-      }, 1000);
+      try {
+        this.connectionStatus = 'connecting';
+        this.error = null;
+        
+        await sseService.connect();
+        
+        this.connectionStatus = 'connected';
+        this.isConnected = true;
+        
+        console.log('SSE manual reconnection successful');
+      } catch (error) {
+        this.error = error.message;
+        this.connectionStatus = 'error';
+        this.isConnected = false;
+        console.error('SSE manual reconnection failed:', error);
+      }
+    },
+
+    // 재연결 중단
+    cancelReconnect() {
+      sseService.cancelReconnect();
+      this.connectionStatus = 'disconnected';
     }
   }
 });

@@ -6,6 +6,10 @@ class SseService {
     this.isConnected = false;
     this.reader = null;
     this.decoder = null;
+    this.reconnectAttempts = 0;
+    this.maxReconnectAttempts = 5;
+    this.reconnectDelay = 1000; // 1초
+    this.reconnectTimer = null;
   }
 
   // SSE 연결 (JWT 토큰 포함)
@@ -48,11 +52,13 @@ class SseService {
       this.isConnected = true;
 
       console.log('SSE connected successfully');
+      this.reconnectAttempts = 0; // 연결 성공 시 재연결 시도 횟수 초기화
       this.readStream();
 
     } catch (error) {
       console.error('Failed to create SSE connection:', error);
       this.isConnected = false;
+      this.scheduleReconnect();
       throw error;
     }
   }
@@ -67,6 +73,7 @@ class SseService {
         if (done) {
           console.log('SSE 스트림이 닫혔습니다.');
           this.isConnected = false;
+          this.scheduleReconnect();
           break;
         }
 
@@ -107,6 +114,7 @@ class SseService {
     } catch (error) {
       console.error('SSE 스트림 읽기 오류:', error);
       this.isConnected = false;
+      this.scheduleReconnect();
     }
   }
 
@@ -298,8 +306,46 @@ class SseService {
     }
   }
 
+  // 재연결 스케줄링
+  scheduleReconnect() {
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.log('SSE 최대 재연결 시도 횟수에 도달했습니다. 재연결을 중단합니다.');
+      return;
+    }
+
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+    }
+
+    this.reconnectAttempts++;
+    const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1); // 지수 백오프
+    
+    console.log(`SSE 재연결 시도 ${this.reconnectAttempts}/${this.maxReconnectAttempts} (${delay}ms 후)`);
+    
+    this.reconnectTimer = setTimeout(async () => {
+      try {
+        await this.connect();
+      } catch (error) {
+        console.error('SSE 재연결 실패:', error);
+        // 재연결 실패 시 다시 스케줄링
+        this.scheduleReconnect();
+      }
+    }, delay);
+  }
+
+  // 재연결 중단
+  cancelReconnect() {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    this.reconnectAttempts = 0;
+  }
+
   // SSE 연결 해제
   disconnect() {
+    this.cancelReconnect(); // 재연결 중단
+    
     if (this.reader) {
       this.reader.cancel();
       this.reader = null;
