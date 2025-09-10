@@ -9,7 +9,7 @@
             :alt="mainPet?.name || '프로필 이미지'"
           ></v-img>
         </v-avatar>
-        <div class="edit-hint">
+        <div v-if="isMyProfile" class="edit-hint">
           <v-icon size="16">mdi-pencil</v-icon>
           <span>대표동물 변경</span>
         </div>
