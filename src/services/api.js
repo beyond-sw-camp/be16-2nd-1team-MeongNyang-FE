@@ -386,7 +386,7 @@ export const marketAPI = {
   unlikeMarket: (postId) => apiClient.delete(`/markets/${postId}/likes`),
 
   // 찜 목록 조회
-  getLikes: (pageable) => apiClient.get('/markets/like', { params: pageable }),
+  getLikes: (pageable) => apiClient.get('/markets/likes', { params: pageable }),
 
   // 사용자의 찜한 게시글 목록 조회
   getUserLikedPosts() {

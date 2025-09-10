@@ -191,6 +191,10 @@ export default {
       // OAuth 추가정보 모달
       const { openOAuthExtra, provider, signupTicket, email } = route.query
       if (openOAuthExtra === 'true' && provider && signupTicket && email) {
+        // OAuth 이메일을 로컬 스토리지에 저장
+        localStorage.setItem('email', email)
+        console.log('🔍 OAuth 이메일 로컬 스토리지에 저장:', email)
+        
         const openOAuthExtraModal = inject('openOAuthExtraModal')
         if (openOAuthExtraModal) {
           openOAuthExtraModal({
@@ -206,6 +210,10 @@ export default {
       // 소셜 연동 모달
       const { openOAuthLink, provider: linkProvider, email: linkEmail, linkTicket } = route.query
       if (openOAuthLink === 'true' && linkProvider && linkEmail && linkTicket) {
+        // OAuth 연동 이메일을 로컬 스토리지에 저장
+        localStorage.setItem('email', linkEmail)
+        console.log('🔍 OAuth 연동 이메일 로컬 스토리지에 저장:', linkEmail)
+        
         const openOAuthLinkModal = inject('openOAuthLinkModal')
         if (openOAuthLinkModal) {
           openOAuthLinkModal({
@@ -221,6 +229,10 @@ export default {
       // OAuth 추가정보 모달 (중복 제거)
       const { openOAuthExtra: extraFlag, provider: extraProvider, email: extraEmail, signupTicket: extraTicket } = route.query
       if (extraFlag === 'true' && extraProvider && extraEmail && extraTicket) {
+        // OAuth 이메일을 로컬 스토리지에 저장 (중복 처리)
+        localStorage.setItem('email', extraEmail)
+        console.log('🔍 OAuth 이메일 로컬 스토리지에 저장 (중복 처리):', extraEmail)
+        
         const openOAuthExtraModal = inject('openOAuthExtraModal')
         if (openOAuthExtraModal) {
           openOAuthExtraModal({

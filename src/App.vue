@@ -571,6 +571,12 @@ export default {
       console.log('- data.signupTicket:', data.signupTicket)
       console.log('- data.email:', data.email)
       
+      // OAuth 이메일을 로컬 스토리지에 저장
+      if (data.email) {
+        localStorage.setItem('email', data.email)
+        console.log('🔍 OAuth 추가정보 모달에서 이메일 로컬 스토리지에 저장:', data.email)
+      }
+      
       oauthExtraData.value = data
       console.log('- oauthExtraData 설정 후:', oauthExtraData.value)
       
@@ -598,6 +604,13 @@ export default {
     const openOAuthLinkModal = (data) => {
       console.log('OAuth 연동 모달 열기:', data)
       console.log('showOAuthLinkModal 변경 전:', showOAuthLinkModal.value)
+      
+      // OAuth 연동 이메일을 로컬 스토리지에 저장
+      if (data.email) {
+        localStorage.setItem('email', data.email)
+        console.log('🔍 OAuth 연동 모달에서 이메일 로컬 스토리지에 저장:', data.email)
+      }
+      
       // OAuth 연동 모달 데이터 설정 및 표시
       oauthLinkData.value = data
       showOAuthLinkModal.value = true

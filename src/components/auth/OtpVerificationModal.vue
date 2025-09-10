@@ -78,6 +78,7 @@
 
 <script>
 import { ref, computed, watch, onUnmounted } from 'vue'
+import { userAPI } from '@/services/api'
 
 export default {
   name: 'OtpVerificationModal',
@@ -186,21 +187,10 @@ export default {
       }
       
       try {
-        // 백엔드 API 호출하여 OTP 인증 확인
-        const response = await fetch('/users/verify-email-check', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: props.email,
-            code: otpString
-          })
-        })
+        // api.js의 verifyEmailCheck 함수 사용
+        const response = await userAPI.verifyEmailCheck(props.email, otpString)
         
-        const result = await response.json()
-        
-        if (result.isSuccess === true) {
+        if (response.data.isSuccess === true) {
           // 성공 시 부모 컴포넌트에 알림
           emit('success', {
             email: props.email,
@@ -208,7 +198,7 @@ export default {
           })
         } else {
           // 실패 시 에러 메시지 표시
-          errorMessage.value = result.status?.message || '인증번호가 올바르지 않습니다.'
+          errorMessage.value = response.data.status?.message || '인증번호가 올바르지 않습니다.'
           // 입력 필드 초기화
           otpDigits.value = ['', '', '', '', '', '']
           activeOtpIndex.value = 0
