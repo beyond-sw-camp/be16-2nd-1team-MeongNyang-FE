@@ -722,8 +722,8 @@ export default {
     }
     
     // SSE 연결 해제
-    const cleanupSse = () => {
-      sseStore.disconnect()
+    const cleanupSse = async () => {
+      await sseStore.disconnect()
       console.log('SSE connection cleaned up in App.vue')
     }
     
@@ -746,6 +746,25 @@ export default {
       }
     }, { immediate: true })
     
+    // 페이지 새로고침/종료 시 SSE 연결 해제
+    const handleBeforeUnload = async () => {
+      await cleanupSse()
+    }
+
+    // 네트워크 오프라인 시 SSE 연결 해제
+    const handleOffline = async () => {
+      console.log('네트워크 오프라인 감지 - SSE 연결 해제')
+      await cleanupSse()
+    }
+
+    // 네트워크 온라인 시 SSE 재연결
+    const handleOnline = async () => {
+      console.log('네트워크 온라인 감지 - SSE 재연결')
+      if (authStore.isAuthenticated) {
+        await setupSse()
+      }
+    }
+
     // 컴포넌트 마운트 시 초기화
     onMounted(async () => {
       // 인증 초기화
@@ -758,6 +777,13 @@ export default {
       if (authStore.isAuthenticated) {
         loadInitialAlarms()
       }
+
+      // 페이지 새로고침/종료 시 SSE 연결 해제
+      window.addEventListener('beforeunload', handleBeforeUnload)
+      
+      // 네트워크 상태 변화 감지
+      window.addEventListener('offline', handleOffline)
+      window.addEventListener('online', handleOnline)
     })
     
     // 라우트 변경 감지 (댓글 모달 상태 초기화)
@@ -770,8 +796,14 @@ export default {
     })
     
     // 컴포넌트 언마운트 시 SSE 연결 해제
-    onUnmounted(() => {
-      cleanupSse()
+    onUnmounted(async () => {
+      // 이벤트 리스너 정리
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+      window.removeEventListener('offline', handleOffline)
+      window.removeEventListener('online', handleOnline)
+      
+      // SSE 연결 해제
+      await cleanupSse()
     })
     
     return {

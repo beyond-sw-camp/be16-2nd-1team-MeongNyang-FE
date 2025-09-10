@@ -346,8 +346,16 @@ class SseService {
   }
 
   // SSE 연결 해제
-  disconnect() {
+  async disconnect() {
     this.cancelReconnect(); // 재연결 중단
+    
+    // 서버에 SSE 연결 해제 알림 (선택적)
+    try {
+      await this.notifyServerDisconnect();
+    } catch (error) {
+      console.warn('SSE 서버 disconnect 알림 실패:', error);
+      // 서버 알림 실패해도 클라이언트 disconnect는 진행
+    }
     
     if (this.reader) {
       this.reader.cancel();
@@ -355,6 +363,33 @@ class SseService {
     }
     this.isConnected = false;
     console.log('SSE disconnected');
+  }
+
+  // 서버에 SSE 연결 해제 알림
+  async notifyServerDisconnect() {
+    const accessToken = localStorage.getItem('accessToken');
+    if (!accessToken) {
+      return; // 토큰이 없으면 서버 알림 생략
+    }
+
+    try {
+      const response = await fetch(`${process.env.VUE_APP_API_BASE_URL}/sse`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`SSE disconnect API 오류: ${response.status}`);
+      }
+
+      console.log('SSE 서버 disconnect 알림 완료');
+    } catch (error) {
+      console.error('SSE 서버 disconnect 알림 실패:', error);
+      throw error;
+    }
   }
 
   // 연결 상태 확인

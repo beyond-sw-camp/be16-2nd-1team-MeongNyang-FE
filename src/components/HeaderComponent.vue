@@ -176,8 +176,8 @@ export default {
     }
 
     // 로그아웃 처리
-    const handleLogout = () => {
-      authStore.logout()
+    const handleLogout = async () => {
+      await authStore.logout()
       router.push('/')
       drawer.value = false
     }

@@ -42,9 +42,9 @@ export const useSseStore = defineStore('sse', {
     },
 
     // SSE 연결 해제
-    disconnect() {
+    async disconnect() {
       try {
-        sseService.disconnect();
+        await sseService.disconnect();
         this.connectionStatus = 'disconnected';
         this.isConnected = false;
         this.lastMessage = null;
