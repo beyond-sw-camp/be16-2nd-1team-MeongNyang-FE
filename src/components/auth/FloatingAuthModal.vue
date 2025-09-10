@@ -1096,6 +1096,12 @@ const unlockAccountForm = reactive({
   email: ''
 })
 
+const oauthExtraForm = reactive({
+  name: '',
+  nickname: '',
+  email: ''
+})
+
 
 
 // Validation rules
@@ -1172,6 +1178,12 @@ const closeForgotPasswordModal = () => {
 
 const closeOAuthExtraModal = () => {
   showOAuthExtraModal.value = false
+  // OAuth 추가정보 모달 닫을 때 폼 초기화
+  oauthExtraForm.name = ''
+  oauthExtraForm.nickname = ''
+  oauthExtraForm.email = ''
+  oauthExtraErrorMsg.value = ''
+  nicknameCheckResult.value = null
 }
 
 const handleForgotPassword = async () => {

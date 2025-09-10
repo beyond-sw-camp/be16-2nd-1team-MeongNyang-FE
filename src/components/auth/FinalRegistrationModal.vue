@@ -391,6 +391,12 @@ export default {
         console.log('props.isOAuth 타입:', typeof props.isOAuth)
         console.log('props.isOAuth 값:', props.isOAuth)
         
+        // OAuth 모드일 때 이메일을 로컬 스토리지에 저장
+        if (props.isOAuth && props.email) {
+          localStorage.setItem('email', props.email)
+          console.log('🔍 OAuth 모드에서 이메일 로컬 스토리지에 저장:', props.email)
+        }
+        
         // 폼 초기화
         form.value.name = ''
         form.value.nickname = ''
