@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { chatAPI } from '@/services/api'
+import { jwtDecode } from 'jwt-decode'
 
 export const useChatStore = defineStore('chat', {
   state: () => ({
@@ -44,8 +45,9 @@ export const useChatStore = defineStore('chat', {
     async createChatRoom(roomName, participantEmails = [], marketPostId = null) {
       try {
         // 현재 로그인한 사용자의 이메일 가져오기
-        const currentUserEmail = localStorage.getItem('email')
-        
+        let currentUserEmail = localStorage.getItem('email')
+        if (currentUserEmail == null) 
+          currentUserEmail = jwtDecode(localStorage.getItem('accessToken')).email
         // 참여자 목록에 현재 사용자 이메일도 포함 (중복 제거)
         const allParticipantEmails = [...new Set([currentUserEmail, ...participantEmails])]
         const roomData = { 
