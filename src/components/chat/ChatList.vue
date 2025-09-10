@@ -139,12 +139,6 @@ export default {
         console.log('생성된 roomId:', roomId, typeof roomId);
         console.log('roomId가 유효한지 확인:', roomId && roomId !== null && roomId !== undefined);
         
-        // 성공 메시지 표시
-        this.$emit('show-message', {
-          type: 'success',
-          text: `${selectedUsers.length}명과의 새 채팅방이 생성되었습니다.`
-        });
-        
         // 채팅방 목록 새로고침
         await this.refreshChatList();
         
