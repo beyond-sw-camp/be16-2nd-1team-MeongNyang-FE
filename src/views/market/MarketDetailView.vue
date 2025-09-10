@@ -150,6 +150,7 @@
                   class="chat-btn-inline"
                   @click="startChat"
                   :disabled="!canStartChat"
+                  :class="{ 'sold-out': post && post.saleStatus === 'SOLD' }"
                 >
                   <v-icon icon="mdi-chat" size="16" />
                   {{ getChatButtonText() }}
@@ -698,11 +699,12 @@ export default {
 
     // 채팅 시작 가능 여부 확인
     const canStartChat = computed(() => {
-      // 로그인한 사용자이고, 본인이 작성한 글이 아닌 경우에만 채팅 가능
+      // 로그인한 사용자이고, 본인이 작성한 글이 아니며, 판매중인 경우에만 채팅 가능
       return (
         currentUserEmail.value &&
         post.value &&
-        post.value.sellerEmail !== currentUserEmail.value
+        post.value.sellerEmail !== currentUserEmail.value &&
+        post.value.saleStatus === "SALE"
       );
     });
 
@@ -713,6 +715,9 @@ export default {
       }
       if (post.value && post.value.sellerEmail === currentUserEmail.value) {
         return "본인 글입니다";
+      }
+      if (post.value && post.value.saleStatus === "SOLD") {
+        return "판매완료";
       }
       return "채팅하기";
     };
@@ -1651,6 +1656,17 @@ export default {
 .chat-btn-inline:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 6px 15px rgba(232, 125, 125, 0.3);
+}
+
+.chat-btn-inline.sold-out {
+  background: linear-gradient(135deg, #6c757d, #495057);
+  color: white;
+  cursor: not-allowed;
+}
+
+.chat-btn-inline.sold-out:hover {
+  transform: none;
+  box-shadow: none;
 }
 
 .seller-row {
