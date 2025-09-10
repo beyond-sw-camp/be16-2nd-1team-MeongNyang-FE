@@ -11,8 +11,9 @@
           class="write-btn"
           @click="handleSubmit"
           :disabled="!canSubmit"
+          :loading="isSubmitting"
         >
-          작성
+          {{ isSubmitting ? '작성 중...' : '작성' }}
         </v-btn>
       </div>
     </div>
@@ -136,6 +137,7 @@ export default {
     const isDragging = ref(false)
     const dragStartX = ref(0)
     const dragStartIndex = ref(0)
+    const isSubmitting = ref(false)
     
     // 현재 미디어
     const currentMedia = computed(() => {
@@ -147,7 +149,7 @@ export default {
     
     // 제출 가능 여부
     const canSubmit = computed(() => {
-      return content.value.trim() && mediaList.value.length > 0
+      return content.value.trim() && mediaList.value.length > 0 && !isSubmitting.value
     })
     
     // 미디어 추가
@@ -276,6 +278,11 @@ export default {
     
     // 제출 처리
     const handleSubmit = async () => {
+      // 이미 제출 중이면 중복 제출 방지
+      if (isSubmitting.value) {
+        return
+      }
+      
       if (!content.value.trim()) {
         alert('내용을 입력해주세요.')
         return
@@ -285,6 +292,9 @@ export default {
         alert('최소 하나의 이미지를 업로드해주세요.')
         return
       }
+      
+      // 제출 시작
+      isSubmitting.value = true
       
       try {
         console.log('=== 다이어리 작성 시작 ===')
@@ -358,6 +368,9 @@ export default {
       } catch (error) {
         console.error('다이어리 작성 실패:', error)
         handleApiError(error, $router, '다이어리 작성에 실패했습니다.')
+      } finally {
+        // 제출 완료 (성공/실패 관계없이)
+        isSubmitting.value = false
       }
     }
     
@@ -420,6 +433,7 @@ export default {
         currentMediaIndex,
         currentMedia,
         canSubmit,
+        isSubmitting,
         addImage,
         handleFileSelect,
         removeCurrentMedia,
