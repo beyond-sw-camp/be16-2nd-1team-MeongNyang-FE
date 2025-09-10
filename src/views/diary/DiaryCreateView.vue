@@ -6,15 +6,21 @@
         <h1 class="page-title">새 일기</h1>
       </div>
       <div class="header-right">
-        <v-btn 
-          color="#FF8B8B" 
+        <button 
+          type="button"
           class="write-btn"
           @click="handleSubmit"
-          :disabled="!canSubmit"
-          :loading="isSubmitting"
+          :disabled="!canSubmit || isSubmitting"
         >
-          {{ isSubmitting ? '작성 중...' : '작성' }}
-        </v-btn>
+          <div v-if="!isSubmitting" class="btn-content">
+            <v-icon icon="mdi-check" size="18" />
+            작성
+          </div>
+          <div v-else class="btn-content">
+            <div class="loading-spinner-small"></div>
+            작성 중...
+          </div>
+        </button>
       </div>
     </div>
 
@@ -482,16 +488,53 @@ export default {
 }
 
 .write-btn {
-  font-weight: 700;
+  font-weight: 600;
   text-transform: none;
-  border-radius: 8px;
-  padding: 12px 24px;
-  background-color: #FF8B8B !important;
+  border-radius: 12px;
+  padding: 16px 24px;
+  background: linear-gradient(135deg, #E87D7D, #FF6B6B) !important;
   color: white !important;
+  box-shadow: 0 4px 15px rgba(232, 125, 125, 0.3) !important;
   line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.3s ease !important;
+  border: none !important;
+  font-size: 1rem !important;
+}
+
+.write-btn:hover:not(:disabled) {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(232, 125, 125, 0.4) !important;
+}
+
+.write-btn:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
+/* 로딩 스피너 */
+.loading-spinner-small {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.btn-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .image-upload-section {
