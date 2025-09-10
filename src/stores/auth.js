@@ -47,6 +47,12 @@ export const useAuthStore = defineStore('auth', () => {
       // JWT에서 이메일 추출하여 저장
       user.value = member
       
+      // 로그인 성공 시 이메일을 로컬 스토리지에 저장
+      if (member?.email) {
+        localStorage.setItem('email', member.email)
+        console.log('🔍 일반 로그인에서 이메일 로컬 스토리지에 저장:', member.email)
+      }
+      
       // 토큰 자동 갱신 설정
       setupTokenRefresh(refreshAccessToken)
       
@@ -68,6 +74,12 @@ export const useAuthStore = defineStore('auth', () => {
       
       // 사용자 정보 저장
       user.value = member
+      
+      // OAuth 로그인 성공 시 이메일을 로컬 스토리지에 저장
+      if (member?.email) {
+        localStorage.setItem('email', member.email)
+        console.log('🔍 OAuth 로그인에서 이메일 로컬 스토리지에 저장:', member.email)
+      }
       
       // 토큰 자동 갱신 설정
       setupTokenRefresh(refreshAccessToken)
