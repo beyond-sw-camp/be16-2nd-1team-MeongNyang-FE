@@ -600,6 +600,15 @@ export default {
     const showCropper = ref(false)
     const cropperImageUrl = ref('')
     
+    // 크롭 모달이 닫힐 때 파일 입력 초기화
+    watch(showCropper, (newValue) => {
+      if (!newValue && fileInput.value) {
+        // 크롭 모달이 닫힐 때 파일 입력 초기화
+        fileInput.value.value = ''
+        console.log('🔄 크롭 모달 닫힘 - 파일 입력 초기화 (PetForm)')
+      }
+    })
+    
     // 달력 관련 변수들
     const currentDate = ref(new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"})))
     const selectedDate = ref(null)
@@ -801,7 +810,11 @@ export default {
     
     // 이미지 관련 메서드들
     const handleImageClick = () => {
-      fileInput.value?.click()
+      // 파일 입력 초기화 후 클릭
+      if (fileInput.value) {
+        fileInput.value.value = ''
+        fileInput.value.click()
+      }
     }
     
     const handleImageChange = (event) => {
@@ -830,6 +843,9 @@ export default {
         cropperImageUrl.value = URL.createObjectURL(file)
         showCropper.value = true
       }
+      
+      // 파일 입력 초기화 - 크롭 모달이 열린 후에도 초기화
+      event.target.value = ''
     }
     
     // 이미지 크롭 완료 처리
