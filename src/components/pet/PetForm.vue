@@ -808,12 +808,18 @@ export default {
       const file = event.target.files[0]
       if (file) {
         // 파일 형식 검증
-        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
-        const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp']
+        const allowedTypes = [
+          'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+          'image/heic', 'image/heif', 'image/avif', 'image/bmp', 'image/tiff', 'image/tif'
+        ]
+        const allowedExtensions = [
+          '.jpg', '.jpeg', '.png', '.gif', '.webp',
+          '.heic', '.heif', '.avif', '.bmp', '.tiff', '.tif'
+        ]
         const fileExtension = '.' + file.name.split('.').pop().toLowerCase()
         
         if (!allowedTypes.includes(file.type) || !allowedExtensions.includes(fileExtension)) {
-          alert('이미지 파일만 업로드 가능합니다. (JPG, PNG, GIF, WebP)')
+          alert('이미지 파일만 업로드 가능합니다. (JPG, PNG, GIF, WebP, HEIC, HEIF, AVIF, BMP, TIFF)')
           // 파일 입력 초기화
           event.target.value = ''
           return

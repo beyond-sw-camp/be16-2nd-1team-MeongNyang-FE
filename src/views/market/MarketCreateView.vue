@@ -666,12 +666,23 @@ export default {
       // 파일 유효성 검사 및 URL 생성
       const validFiles = Array.from(files).filter((file) => {
         if (!file || !(file instanceof File)) return false;
-        if (!file.type.startsWith("image/")) return false;
+        
+        const allowedTypes = [
+          'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+          'image/heic', 'image/heif', 'image/avif', 'image/bmp', 'image/tiff', 'image/tif'
+        ]
+        const allowedExtensions = [
+          '.jpg', '.jpeg', '.png', '.gif', '.webp',
+          '.heic', '.heif', '.avif', '.bmp', '.tiff', '.tif'
+        ]
+        const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+        
+        if (!allowedTypes.includes(file.type) || !allowedExtensions.includes(fileExtension)) return false;
         return true;
       });
 
       if (validFiles.length === 0) {
-        console.error("유효한 이미지 파일을 선택해주세요");
+        console.error("유효한 이미지 파일을 선택해주세요 (JPG, PNG, GIF, WebP, HEIC, HEIF, AVIF, BMP, TIFF)");
         return;
       }
 
