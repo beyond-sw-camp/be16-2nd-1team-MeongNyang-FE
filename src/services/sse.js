@@ -6,6 +6,10 @@ class SseService {
     this.isConnected = false;
     this.reader = null;
     this.decoder = null;
+    this.reconnectAttempts = 0;
+    this.maxReconnectAttempts = 5;
+    this.reconnectDelay = 1000; // 1초
+    this.reconnectTimer = null;
   }
 
   // SSE 연결 (JWT 토큰 포함)
@@ -48,11 +52,13 @@ class SseService {
       this.isConnected = true;
 
       console.log('SSE connected successfully');
+      this.reconnectAttempts = 0; // 연결 성공 시 재연결 시도 횟수 초기화
       this.readStream();
 
     } catch (error) {
       console.error('Failed to create SSE connection:', error);
       this.isConnected = false;
+      this.scheduleReconnect();
       throw error;
     }
   }
@@ -67,6 +73,7 @@ class SseService {
         if (done) {
           console.log('SSE 스트림이 닫혔습니다.');
           this.isConnected = false;
+          this.scheduleReconnect();
           break;
         }
 
@@ -107,6 +114,7 @@ class SseService {
     } catch (error) {
       console.error('SSE 스트림 읽기 오류:', error);
       this.isConnected = false;
+      this.scheduleReconnect();
     }
   }
 
@@ -122,8 +130,9 @@ class SseService {
       else if (data.id && data.roomName && data.lastMessage && data.lastMessageTime) {
         eventName = 'new-room';
       }
-      // 알림 구조인지 확인
-      else if (data.title && data.message && (data.type || data.type === 'info')) {
+      // 알림 구조인지 확인 (다양한 필드명 지원)
+      else if ((data.content || data.message || data.title) && 
+               (data.alarmType || data.type || data.alarm_type)) {
         eventName = 'notification';
       }
       // 구매 승인 상태 변경인지 확인
@@ -252,18 +261,25 @@ class SseService {
   // 알림 처리
   handleNotification(notificationData) {
     try {
-      // UI 스토어 import
-      import('@/stores/ui').then(({ useUIStore }) => {
+      // 알림 스토어와 UI 스토어 import
+      Promise.all([
+        import('@/stores/alarm'),
+        import('@/stores/ui')
+      ]).then(([{ useAlarmStore }, { useUIStore }]) => {
+        const alarmStore = useAlarmStore();
         const uiStore = useUIStore();
+        
+        // 알림 스토어에 새 알림 추가
+        alarmStore.addAlarm(notificationData);
         
         // 스낵바로 알림 표시
         uiStore.showSnackbar({
-          title: notificationData.title || '알림',
-          message: notificationData.message,
-          type: notificationData.type || 'info'
+          title: '새 알림',
+          message: notificationData.content || notificationData.message || notificationData.title || '새로운 알림이 있습니다',
+          type: 'info'
         });
         
-        console.log('SSE 알림이 표시되었습니다:', notificationData);
+        console.log('SSE 알림이 처리되었습니다:', notificationData);
       });
     } catch (error) {
       console.error('알림 처리 중 오류:', error);
@@ -290,14 +306,90 @@ class SseService {
     }
   }
 
+  // 재연결 스케줄링
+  scheduleReconnect() {
+    // 이미 재연결이 스케줄되어 있으면 중복 호출 방지
+    if (this.reconnectTimer) {
+      console.log('SSE 재연결이 이미 스케줄되어 있습니다. 중복 호출을 무시합니다.');
+      return;
+    }
+
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.log('SSE 최대 재연결 시도 횟수에 도달했습니다. 재연결을 중단합니다.');
+      return;
+    }
+
+    this.reconnectAttempts++;
+    const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1); // 지수 백오프
+    
+    console.log(`SSE 재연결 시도 ${this.reconnectAttempts}/${this.maxReconnectAttempts} (${delay}ms 후)`);
+    
+    this.reconnectTimer = setTimeout(async () => {
+      this.reconnectTimer = null; // 타이머 완료 시 null로 설정
+      try {
+        await this.connect();
+      } catch (error) {
+        console.error('SSE 재연결 실패:', error);
+        // 재연결 실패 시 다시 스케줄링
+        this.scheduleReconnect();
+      }
+    }, delay);
+  }
+
+  // 재연결 중단
+  cancelReconnect() {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    this.reconnectAttempts = 0;
+  }
+
   // SSE 연결 해제
-  disconnect() {
+  async disconnect() {
+    this.cancelReconnect(); // 재연결 중단
+    
+    // 서버에 SSE 연결 해제 알림 (선택적)
+    try {
+      await this.notifyServerDisconnect();
+    } catch (error) {
+      console.warn('SSE 서버 disconnect 알림 실패:', error);
+      // 서버 알림 실패해도 클라이언트 disconnect는 진행
+    }
+    
     if (this.reader) {
       this.reader.cancel();
       this.reader = null;
     }
     this.isConnected = false;
     console.log('SSE disconnected');
+  }
+
+  // 서버에 SSE 연결 해제 알림
+  async notifyServerDisconnect() {
+    const accessToken = localStorage.getItem('accessToken');
+    if (!accessToken) {
+      return; // 토큰이 없으면 서버 알림 생략
+    }
+
+    try {
+      const response = await fetch(`${process.env.VUE_APP_API_BASE_URL}/sse`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`SSE disconnect API 오류: ${response.status}`);
+      }
+
+      console.log('SSE 서버 disconnect 알림 완료');
+    } catch (error) {
+      console.error('SSE 서버 disconnect 알림 실패:', error);
+      throw error;
+    }
   }
 
   // 연결 상태 확인

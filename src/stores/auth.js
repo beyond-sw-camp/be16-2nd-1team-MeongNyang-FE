@@ -102,7 +102,17 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  const logout = () => {
+  const logout = async () => {
+    // SSE 연결 해제
+    try {
+      const { useSseStore } = await import('./sse.js')
+      const sseStore = useSseStore()
+      await sseStore.disconnect()
+      console.log('로그아웃 시 SSE 연결 해제 완료')
+    } catch (error) {
+      console.error('로그아웃 시 SSE 연결 해제 실패:', error)
+    }
+    
     user.value = null
     accessToken.value = null
     refreshToken.value = null
