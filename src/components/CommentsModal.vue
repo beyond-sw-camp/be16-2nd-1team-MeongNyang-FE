@@ -272,7 +272,6 @@ export default {
           // 펫 등록 여부 확인
           const hasPet = await checkPetExist()
           if (!hasPet) {
-            this.$router.back()
             return
           }
           
@@ -504,7 +503,6 @@ export default {
       // 펫 등록 여부 확인
       const hasPet = await checkPetExist()
       if (!hasPet) {
-        this.$router.back()
         return
       }
       
@@ -519,7 +517,6 @@ export default {
       // 펫 등록 여부 확인
       const hasPet = await checkPetExist()
       if (!hasPet) {
-        this.$router.back()
         return
       }
       
@@ -533,7 +530,6 @@ export default {
       // 펫 등록 여부 확인
       const hasPet = await checkPetExist()
       if (!hasPet) {
-        this.$router.back()
         return
       }
       
@@ -557,7 +553,6 @@ export default {
       // 펫 등록 여부 확인
       const hasPet = await checkPetExist()
       if (!hasPet) {
-        this.$router.back()
         return
       }
       
@@ -623,7 +618,6 @@ export default {
       // 펫 등록 여부 확인
       const hasPet = await checkPetExist()
       if (!hasPet) {
-        this.$router.back()
         return
       }
       
@@ -698,7 +692,6 @@ export default {
       // 펫 등록 여부 확인
       const hasPet = await checkPetExist()
       if (!hasPet) {
-        this.$router.back()
         return
       }
       
