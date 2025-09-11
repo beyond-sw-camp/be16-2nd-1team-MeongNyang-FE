@@ -176,17 +176,34 @@ export default {
       try {
         const now = new Date();
         const messageTime = new Date(timestamp);
-        const diffInHours = (now - messageTime) / (1000 * 60 * 60);
+
+        const diffInSeconds = (now - messageTime) / 1000;
+        if (diffInSeconds < 60) return '방금 전';
         
-        if (diffInHours < 1) {
-          return '방금 전';
-        } else if (diffInHours < 24) {
+        const diffInMinutes = diffInSeconds / 60;
+        if (diffInMinutes < 60) return `${Math.floor(diffInMinutes)}분 전`;
+
+        const diffInHours = diffInMinutes / 60;
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        
+        if (messageTime >= startOfToday) {
           return `${Math.floor(diffInHours)}시간 전`;
-        } else if (diffInHours < 48) {
-          return '어제';
-        } else {
-          return messageTime.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
         }
+
+        const startOfYesterday = new Date(startOfToday);
+        startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+        if (messageTime >= startOfYesterday) {
+          return '어제';
+        }
+
+        const startOfWeek = new Date(startOfToday);
+        startOfWeek.setDate(startOfWeek.getDate() - startOfToday.getDay());
+        if (messageTime >= startOfWeek) {
+          return messageTime.toLocaleDateString('ko-KR', { weekday: 'long' });
+        } 
+        
+        return messageTime.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+        
       } catch (error) {
         console.warn('시간 포맷팅 오류:', error);
         return '';
